@@ -87,11 +87,11 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
   if (surveys.length === 0) {
     return (
-      <div className="p-12 bg-slate-900/30 rounded-2xl border border-slate-800/60 text-center space-y-4 max-w-xl mx-auto my-12">
-        <FileText className="w-12 h-12 text-indigo-500/30 mx-auto animate-pulse" />
-        <h3 className="text-base font-bold text-slate-200">Belum Ada Dokumen Laporan</h3>
-        <p className="text-xs text-slate-400 leading-relaxed">
-          Seluruh data ditiadakan untuk menjamin kepatuhan data realtime. Silakan masukkan data kuesioner terlebih dahulu pada menu <strong className="text-indigo-400">Input Data Survei</strong> agar dokumen laporan otomatis terbuat secara realtime.
+      <div className="p-12 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30)] rounded-2xl text-center space-y-4 max-w-xl mx-auto my-12">
+        <FileText className="w-12 h-12 text-indigo-500/50 mx-auto animate-pulse" />
+        <h3 className="text-[16px] font-bold text-white tracking-[0.5px]">Belum Ada Dokumen Laporan</h3>
+        <p className="text-[14px] text-white/75 leading-relaxed">
+          Seluruh data ditiadakan untuk menjamin kepatuhan data realtime. Silakan masukkan data kuesioner terlebih dahulu pada menu <strong className="text-cyan-400">Input Data Survei</strong> agar dokumen laporan otomatis terbuat secara realtime.
         </p>
       </div>
     );
@@ -178,19 +178,19 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
       `}</style>
 
       {/* Control panel (no-print) */}
-      <div className="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+      <div className="no-print flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 rounded-2xl">
         <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
+          <h2 className="text-[18px] md:text-[20px] font-semibold flex items-center gap-2 text-[#F8FAFC]">
             <FileText className="w-5 h-5 text-indigo-400" /> Dokumen & Laporan Cetak SOPS 2.0
           </h2>
-          <p className="text-xs text-slate-400 mt-1">Pilih data survei untuk menghasilkan laporan komprehensif, rekomendasi taktis, dan format cetak.</p>
+          <p className="text-[14px] text-white/75 mt-1">Pilih data survei untuk menghasilkan laporan komprehensif, rekomendasi taktis, dan format cetak.</p>
         </div>
 
         <div className="flex flex-wrap gap-3 items-center">
           <select
             value={selectedReportId}
             onChange={e => setSelectedReportId(e.target.value)}
-            className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-xs font-semibold focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200 cursor-pointer"
+            className="bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-[14px] font-medium focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white cursor-pointer"
           >
             <option value="compiled">Gabungan (Kompilasi RS)</option>
             {surveys.map((s, idx) => (
@@ -202,7 +202,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
           <button
             onClick={handlePrint}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow transition-all cursor-pointer"
+            className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold rounded-xl text-[14px] flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] hover:shadow-[0_6px_16px_rgba(79,70,229,0.5)] transition-all cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Cetak PDF / Kertas
           </button>
@@ -210,19 +210,19 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
       </div>
 
       {/* Compiled Professional Report */}
-      <div className="print-container bg-slate-900/20 rounded-3xl border border-slate-800/80 p-8 space-y-8 shadow-xl">
+      <div className="print-container bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-3xl p-8 space-y-8">
         
         {/* Document Header */}
-        <div className="border-b border-slate-800 pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="border-b border-white/[0.08] pb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="space-y-1">
             <span className="text-[10px] font-mono uppercase bg-indigo-500/10 text-indigo-400 px-2.5 py-1 rounded-full border border-indigo-500/20 font-bold tracking-wider">
               AHRQ OFFICIAL REPORT TEMPLATE
             </span>
-            <h1 className="text-2xl font-sans font-bold text-white print-text-dark">Laporan Budaya Keselamatan Pasien</h1>
-            <p className="text-sm text-slate-400 print-text-muted font-medium">{namaRs}</p>
+            <h1 className="text-[24px] font-bold text-white print-text-dark mt-2 tracking-[0.5px]">Laporan Budaya Keselamatan Pasien</h1>
+            <p className="text-[14px] text-white/75 print-text-muted font-medium">{namaRs}</p>
           </div>
 
-          <div className="space-y-1 text-left sm:text-right text-xs text-slate-400 print-text-muted">
+          <div className="space-y-1 text-left sm:text-right text-[12px] text-white/60 print-text-muted">
             <p><strong>Cakupan Unit:</strong> {activeUnit}</p>
             <p><strong>Total Responden Staf:</strong> {activeRespondenCount} orang</p>
             <p><strong>Tanggal Dokumen:</strong> {activeTanggal}</p>
@@ -230,20 +230,20 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         </div>
 
         {/* Overview Statement */}
-        <div className="p-4 bg-slate-900/50 print-card rounded-xl border border-slate-800 text-xs text-slate-300 print-text-muted leading-relaxed">
+        <div className="p-5 bg-slate-900/50 print-card rounded-xl border border-white/[0.08] text-[14px] text-white/80 print-text-muted leading-[1.7]">
           Dokumen ini berisi hasil analisis terstruktur mengenai kuesioner Budaya Keselamatan Pasien berdasarkan instrumen evaluasi resmi <strong>AHRQ SOPS (Surveys on Patient Safety Culture) Versi 2.0</strong>. Penilaian dikategorikan ke dalam 10 dimensi inti untuk mengukur seberapa kondusif fasyankes mendukung keselamatan pasien dalam aktivitas operasional harian.
         </div>
 
         {/* Dimension Table */}
         <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-slate-200 print-text-dark flex items-center gap-2">
+          <h3 className="text-[16px] font-semibold text-white print-text-dark flex items-center gap-2">
             Matriks Hasil Penilaian Dimensi AHRQ SOPS 2.0
           </h3>
 
-          <div className="overflow-x-auto border border-slate-800/80 rounded-2xl print-card">
-            <table className="w-full text-left text-xs border-collapse">
+          <div className="overflow-x-auto border border-white/[0.08] rounded-2xl print-card">
+            <table className="w-full text-left text-[14px] border-collapse">
               <thead>
-                <tr className="bg-slate-950 border-b border-slate-800 print-badge text-slate-300 font-semibold">
+                <tr className="bg-slate-900/60 border-b border-white/[0.08] print-badge text-white/90 font-semibold">
                   <th className="p-4 w-12 text-center">NO</th>
                   <th className="p-4">DIMENSI BUDAYA KESELAMATAN PASIEN</th>
                   <th className="p-4 text-center w-24">SKOR (1-5)</th>
@@ -251,15 +251,15 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                   <th className="p-4 text-center w-36">KATEGORI EVALUASI</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 print-card">
+              <tbody className="divide-y divide-white/[0.05] print-card">
                 {assessments.map((item, idx) => (
-                  <tr key={item.key} className="hover:bg-slate-900/20">
-                    <td className="p-4 text-center font-mono font-bold text-slate-400 print-text-muted">{idx + 1}</td>
+                  <tr key={item.key} className="hover:bg-slate-800/40 transition-colors">
+                    <td className="p-4 text-center font-mono font-bold text-white/50 print-text-muted">{idx + 1}</td>
                     <td className="p-4">
-                      <p className="font-semibold text-slate-200 print-text-dark">{item.name}</p>
+                      <p className="font-semibold text-white print-text-dark">{item.name}</p>
                     </td>
-                    <td className="p-4 text-center font-mono font-semibold text-slate-300 print-text-dark">{item.raw}</td>
-                    <td className="p-4 text-center font-mono font-bold text-indigo-400 print-text-dark">{item.percent}%</td>
+                    <td className="p-4 text-center font-mono font-semibold text-white/90 print-text-dark">{item.raw}</td>
+                    <td className="p-4 text-center font-mono font-bold text-cyan-400 print-text-dark">{item.percent}%</td>
                     <td className="p-4 text-center">
                       <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold border print-badge ${item.colorClass}`}>
                         {item.label}
@@ -274,28 +274,28 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
         {/* AI Recommendations */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-slate-200 print-text-dark flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" /> AI-Generated Rekomendasi Taktis & Program Kerja
+          <h3 className="text-[16px] font-semibold text-white print-text-dark flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-indigo-400 shrink-0" /> AI-Generated Rekomendasi Taktis & Program Kerja
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             
             {/* Recommendations to improve weak points */}
-            <div className="p-5 bg-slate-900/40 print-card border border-slate-800 rounded-2xl space-y-4">
-              <h4 className="text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 text-amber-400" /> Program Perbaikan Prioritas (Area Lemah)
+            <div className="p-6 bg-[#0f172a]/60 print-card border border-white/[0.08] shadow-[0_4px_12px_rgba(0,0,0,0.2)] rounded-2xl space-y-4">
+              <h4 className="text-[14px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                <ShieldAlert className="w-[18px] h-[18px] text-amber-400" /> Program Perbaikan Prioritas (Area Lemah)
               </h4>
 
               {weakPoints.length === 0 ? (
-                <p className="text-xs text-slate-400">Tidak ditemukan dimensi dengan nilai di bawah 50%. Budaya fasyankes berada pada tingkat yang stabil.</p>
+                <p className="text-[14px] text-white/60">Tidak ditemukan dimensi dengan nilai di bawah 50%. Budaya fasyankes berada pada tingkat yang stabil.</p>
               ) : (
-                <div className="space-y-4 divide-y divide-slate-800/50">
+                <div className="space-y-4 divide-y divide-white/[0.05]">
                   {weakPoints.slice(0, 2).map((weak, i) => (
-                    <div key={weak.key} className={`space-y-1.5 ${i > 0 ? 'pt-4' : ''}`}>
-                      <p className="text-xs font-bold text-slate-200 print-text-dark">{weak.name} ({weak.percent}% Respon Positif)</p>
+                    <div key={weak.key} className={`space-y-2 ${i > 0 ? 'pt-4' : ''}`}>
+                      <p className="text-[14px] font-bold text-white print-text-dark">{weak.name} ({weak.percent}% Respon Positif)</p>
                       
                       {/* Detailed action plan */}
-                      <ul className="list-disc pl-4 text-[11px] text-slate-400 print-text-muted space-y-1">
+                      <ul className="list-disc pl-5 text-[13px] text-white/70 print-text-muted space-y-1.5 leading-[1.6]">
                         {weak.key === 'd4' && (
                           <>
                             <li>Terapkan protokol <strong>&quot;Just Culture&quot;</strong> untuk memisahkan kesalahan manusia tidak disengaja dengan kelalaian sistematis.</li>
@@ -332,20 +332,20 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
             </div>
 
             {/* Recommendations to maintain strengths */}
-            <div className="p-5 bg-slate-900/40 print-card border border-slate-800 rounded-2xl space-y-4">
-              <h4 className="text-xs font-semibold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-indigo-400" /> Strategi Pemeliharaan (Kekuatan Budaya)
+            <div className="p-6 bg-[#0f172a]/60 print-card border border-white/[0.08] shadow-[0_4px_12px_rgba(0,0,0,0.2)] rounded-2xl space-y-4">
+              <h4 className="text-[14px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-2">
+                <CheckCircle2 className="w-[18px] h-[18px] text-indigo-400" /> Strategi Pemeliharaan (Kekuatan Budaya)
               </h4>
 
               {strongPoints.length === 0 ? (
-                <p className="text-xs text-slate-400">Belum ada dimensi dengan nilai di atas 75%. Terus lakukan pemantauan dan peningkatkan mutu budaya fasyankes Anda.</p>
+                <p className="text-[14px] text-white/60">Belum ada dimensi dengan nilai di atas 75%. Terus lakukan pemantauan dan peningkatkan mutu budaya fasyankes Anda.</p>
               ) : (
-                <div className="space-y-4 divide-y divide-slate-800/50">
+                <div className="space-y-4 divide-y divide-white/[0.05]">
                   {strongPoints.slice(0, 2).map((strong, i) => (
-                    <div key={strong.key} className={`space-y-1.5 ${i > 0 ? 'pt-4' : ''}`}>
-                      <p className="text-xs font-bold text-slate-200 print-text-dark">{strong.name} ({strong.percent}% Respon Positif)</p>
+                    <div key={strong.key} className={`space-y-2 ${i > 0 ? 'pt-4' : ''}`}>
+                      <p className="text-[14px] font-bold text-white print-text-dark">{strong.name} ({strong.percent}% Respon Positif)</p>
                       
-                      <ul className="list-disc pl-4 text-[11px] text-slate-400 print-text-muted space-y-1">
+                      <ul className="list-disc pl-5 text-[13px] text-white/70 print-text-muted space-y-1.5 leading-[1.6]">
                         <li>Jadikan unit kerja yang bersangkutan sebagai <strong>&quot;Role Model / Benchmark&quot;</strong> percontohan bagi departemen fasyankes lainnya.</li>
                         <li>Berikan apresiasi resmi berupa penghargaan berkala (safety award) kepada perwakilan staf fasyankes.</li>
                         <li>Dokumentasikan SOP dan cara kerja di bidang ini ke dalam modul onboarding staf medis baru.</li>
@@ -360,15 +360,15 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         </div>
 
         {/* Validation signatures (nice document realism) */}
-        <div className="pt-12 border-t border-slate-800 flex justify-between items-end gap-6 text-xs text-slate-400 print-text-muted">
+        <div className="pt-12 border-t border-white/[0.08] flex justify-between items-end gap-6 text-[12px] text-white/60 print-text-muted">
           <div>
             <p>Sistem Akreditasi Kemenkes RI</p>
-            <p className="font-mono text-[10px] text-slate-600">ID Dokumen: SOPS-RSAM-{selectedReportId.substring(4, 10)}</p>
+            <p className="font-mono text-[10px] text-white/40 mt-1">ID Dokumen: SOPS-RSAM-{selectedReportId.substring(4, 10)}</p>
           </div>
           <div className="text-right space-y-12">
             <p>Disetujui Oleh,</p>
-            <div className="border-t border-slate-700 pt-2 w-48 text-center ml-auto">
-              <p className="font-semibold text-slate-200 print-text-dark">Ketua Komite Mutu & KKP</p>
+            <div className="border-t border-white/20 pt-2 w-56 text-center ml-auto">
+              <p className="font-semibold text-white print-text-dark text-[14px]">Ketua Komite Mutu & KKP</p>
             </div>
           </div>
         </div>

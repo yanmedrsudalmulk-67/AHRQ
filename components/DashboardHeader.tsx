@@ -206,7 +206,7 @@ export default function DashboardHeader({ role, namaRs }: DashboardHeaderProps) 
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="relative overflow-hidden w-full p-6 md:p-8 rounded-3xl bg-gradient-to-br from-indigo-950/20 via-[#07111c]/60 to-[#020710]/85 backdrop-blur-xl border border-indigo-500/15 shadow-2xl flex flex-col lg:flex-row justify-between items-start gap-8"
+      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[32px] bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.30)] flex flex-col lg:flex-row justify-between items-start gap-8"
     >
       {/* Decorative premium radial glow & gradient elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-[100px] pointer-events-none -z-10" />

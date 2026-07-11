@@ -78,10 +78,10 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
 
   // Safety status label
   const getSafetyStatus = (score: number) => {
-    if (score >= 80) return { label: 'Sangat Baik (Kuat)', color: 'text-emerald-600 bg-emerald-50 border-emerald-200' };
-    if (score >= 60) return { label: 'Baik (Sedang)', color: 'text-blue-600 bg-blue-50 border-blue-200' };
-    if (score >= 40) return { label: 'Cukup (Butuh Perhatian)', color: 'text-amber-600 bg-amber-50 border-amber-200' };
-    return { label: 'Kurang (Prioritas Perbaikan)', color: 'text-red-600 bg-red-50 border-red-200' };
+    if (score >= 80) return { label: 'Sangat Baik (Kuat)', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-[0_0_10px_rgba(16,185,129,0.2)]' };
+    if (score >= 60) return { label: 'Baik (Sedang)', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.2)]' };
+    if (score >= 40) return { label: 'Cukup (Butuh Perhatian)', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.2)]' };
+    return { label: 'Kurang (Prioritas Perbaikan)', color: 'text-red-400 bg-red-500/10 border-red-500/20 shadow-[0_0_10px_rgba(239,68,68,0.2)]' };
   };
 
   const status = getSafetyStatus(avgOverall);
@@ -91,18 +91,18 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
       {/* Supabase connection alert */}
       <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all ${
         isSupabase 
-          ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-800' 
-          : 'bg-amber-500/5 border-amber-500/20 text-amber-800'
+          ? 'bg-[#121826]/90 backdrop-blur-[64px] border-emerald-500/20 text-emerald-400 shadow-[0_8px_24px_rgba(0,0,0,0.30)]' 
+          : 'bg-[#121826]/90 backdrop-blur-[64px] border-amber-500/20 text-amber-400 shadow-[0_8px_24px_rgba(0,0,0,0.30)]'
       }`}>
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl shrink-0 ${isSupabase ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
-            <Database className="w-5 h-5" />
+          <div className={`w-10 h-10 rounded-[14px] shrink-0 flex items-center justify-center border shadow-sm ${isSupabase ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+            <Database className="w-[20px] h-[20px]" />
           </div>
           <div>
-            <h4 className="text-sm font-semibold">
+            <h4 className="text-[14px] font-semibold text-[#F8FAFC]">
               {isSupabase ? 'Koneksi Supabase Cloud Aktif' : 'Berjalan dalam Mode Penyimpanan Lokal (Local Storage)'}
             </h4>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-[12px] text-white/75 mt-0.5 leading-[1.6]">
               {isSupabase 
                 ? 'Seluruh data survei tersinkronisasi secara real-time ke database cloud Supabase Anda.' 
                 : 'Data disimpan di browser Anda. Hubungkan ke Supabase di tab Pengaturan untuk sinkronisasi cloud.'}
@@ -113,53 +113,53 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
 
       {/* Main KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+        <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-medium">Total Responden</span>
-            <h3 className="text-3xl font-display font-bold text-slate-800">{totalSubmissions}</h3>
-            <span className="text-[10px] text-slate-500">Staf RS yang berpartisipasi</span>
+            <span className="text-[14px] text-[#F8FAFC] font-semibold tracking-[0.5px]">Total Responden</span>
+            <h3 className="text-[48px] md:text-[56px] font-extrabold text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] leading-tight">{totalSubmissions}</h3>
+            <span className="text-[12px] text-white/75 leading-[1.6]">Staf RS yang berpartisipasi</span>
           </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Users className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-slate-800 to-[#0f172a] border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.2),0_0_12px_rgba(16,185,129,0.25)] flex items-center justify-center text-emerald-400 shrink-0">
+            <Users className="w-[22px] h-[22px]" />
           </div>
         </div>
 
-        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+        <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-medium">Rerata Skor Positif</span>
-            <h3 className="text-3xl font-display font-bold text-slate-800">{avgOverall}%</h3>
-            <span className="text-[10px] text-slate-500">Target kelulusan akreditasi {'>'}70%</span>
+            <span className="text-[14px] text-[#F8FAFC] font-semibold tracking-[0.5px]">Rerata Skor Positif</span>
+            <h3 className="text-[48px] md:text-[56px] font-extrabold text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.3)] leading-tight">{avgOverall}%</h3>
+            <span className="text-[12px] text-white/75 leading-[1.6]">Target kelulusan akreditasi {'>'}70%</span>
           </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Award className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-slate-800 to-[#0f172a] border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.2),0_0_12px_rgba(16,185,129,0.25)] flex items-center justify-center text-emerald-400 shrink-0">
+            <Award className="w-[22px] h-[22px]" />
           </div>
         </div>
 
-        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+        <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-medium">Predikat Budaya RS</span>
-            <div className={`text-xs px-2.5 py-1 rounded-full font-semibold border mt-1.5 w-fit ${status.color}`}>
+            <span className="text-[14px] text-[#F8FAFC] font-semibold tracking-[0.5px]">Predikat Budaya RS</span>
+            <div className={`text-[12px] px-3 py-1 rounded-full font-bold border mt-2 w-fit ${status.color}`}>
               {status.label}
             </div>
-            <span className="text-[10px] text-slate-500">Berdasarkan skor AHRQ</span>
+            <span className="text-[12px] text-white/75 leading-[1.6] mt-2 block">Berdasarkan skor AHRQ</span>
           </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Heart className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-slate-800 to-[#0f172a] border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.2),0_0_12px_rgba(16,185,129,0.25)] flex items-center justify-center text-emerald-400 shrink-0">
+            <Heart className="w-[22px] h-[22px]" />
           </div>
         </div>
 
-        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all flex items-center justify-between">
+        <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-xs text-slate-400 font-medium">Kekuatan Utama</span>
-            <h3 className="text-sm font-semibold text-slate-800 truncate max-w-[160px] mt-1">
-              {avgB >= avgA && avgB >= avgC ? 'Kepemimpinan RS (B)' : avgC >= avgA ? 'Keterbukaan Komunikasi (C)' : 'Kerja Sama Tim (A)'}
+            <span className="text-[14px] text-[#F8FAFC] font-semibold tracking-[0.5px]">Kekuatan Utama</span>
+            <h3 className="text-[18px] md:text-[20px] font-extrabold text-white truncate max-w-[160px] mt-2 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">
+              {avgB >= avgA && avgB >= avgC ? 'Kepemimpinan (B)' : avgC >= avgA ? 'Komunikasi (C)' : 'Kerja Sama (A)'}
             </h3>
-            <span className="text-[10px] text-indigo-600 font-medium flex items-center gap-0.5 mt-1">
-              <TrendingUp className="w-3.5 h-3.5" /> Skor Tertinggi
+            <span className="text-[12px] text-cyan-400 font-medium flex items-center gap-1 mt-2">
+              <TrendingUp className="w-[14px] h-[14px]" /> Skor Tertinggi
             </span>
           </div>
-          <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
-            <Sparkles className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-[14px] bg-gradient-to-br from-slate-800 to-[#0f172a] border border-white/10 shadow-[0_4px_12px_rgba(0,0,0,0.2),0_0_12px_rgba(16,185,129,0.25)] flex items-center justify-center text-emerald-400 shrink-0">
+            <Sparkles className="w-[22px] h-[22px]" />
           </div>
         </div>
       </div>
@@ -167,18 +167,18 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
       {/* Charts Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Composite Score Bar Chart */}
-        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+        <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15">
           <div className="mb-4">
-            <h4 className="text-sm font-semibold text-slate-800">Skor Budaya Keselamatan Pasien per Bagian (%)</h4>
-            <p className="text-xs text-slate-400">Rerata persentase tanggapan positif berdasarkan komposit kuesioner AHRQ 2.0</p>
+            <h4 className="text-[16px] md:text-[18px] font-semibold tracking-[0.5px] text-[#F8FAFC]">Skor Budaya Keselamatan Pasien per Bagian (%)</h4>
+            <p className="text-[14px] text-white/75 leading-[1.6]">Rerata persentase tanggapan positif berdasarkan komposit kuesioner AHRQ 2.0</p>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={compositeData} margin={{ top: 10, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(value) => [`${value}%`, 'Skor Positif']} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="name" tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.6)', fontSize: 11 }} axisLine={{ stroke: 'rgba(255,255,255,0.1)' }} tickLine={{ stroke: 'rgba(255,255,255,0.1)' }} />
+                <Tooltip formatter={(value) => [`${value}%`, 'Skor Positif']} contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
                 <Bar dataKey="skor" radius={[4, 4, 0, 0]}>
                   {compositeData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -190,24 +190,24 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
         </div>
 
         {/* Top Units Performance */}
-        <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
+        <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15 flex flex-col justify-between">
           <div>
             <div className="mb-4">
-              <h4 className="text-sm font-semibold text-slate-800">Skor Budaya Keselamatan per Unit Kerja</h4>
-              <p className="text-xs text-slate-400">Peringkat unit berdasarkan rerata skor positif keseluruhan</p>
+              <h4 className="text-[16px] md:text-[18px] font-semibold tracking-[0.5px] text-[#F8FAFC]">Skor Budaya Keselamatan per Unit Kerja</h4>
+              <p className="text-[14px] text-white/75 leading-[1.6]">Peringkat unit berdasarkan rerata skor positif keseluruhan</p>
             </div>
             {unitData.length > 0 ? (
-              <div className="space-y-3.5">
+              <div className="space-y-4">
                 {unitData.slice(0, 4).map((unit, idx) => (
-                  <div key={idx} className="space-y-1.5">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-medium text-slate-700 truncate max-w-[240px]">{unit.name}</span>
-                      <span className="font-bold text-slate-800">{unit.skor}%</span>
+                  <div key={idx} className="space-y-2">
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="font-medium text-slate-300 truncate max-w-[240px]">{unit.name}</span>
+                      <span className="font-bold text-white">{unit.skor}%</span>
                     </div>
-                    <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-slate-800/50 h-2 rounded-full overflow-hidden border border-white/5">
                       <div 
-                        className={`h-full rounded-full ${
-                          unit.skor >= 80 ? 'bg-indigo-600' : unit.skor >= 60 ? 'bg-indigo-400' : 'bg-indigo-200'
+                        className={`h-full rounded-full shadow-[0_0_8px_rgba(255,255,255,0.2)] ${
+                          unit.skor >= 80 ? 'bg-emerald-500' : unit.skor >= 60 ? 'bg-cyan-500' : 'bg-amber-500'
                         }`}
                         style={{ width: `${unit.skor}%` }}
                       />
@@ -216,18 +216,18 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
                 ))}
               </div>
             ) : (
-              <div className="text-center py-12 text-slate-400 text-xs">Belum ada data unit kerja.</div>
+              <div className="text-center py-12 text-white/50 text-[14px]">Belum ada data unit kerja.</div>
             )}
           </div>
-          <span className="text-[10px] text-slate-400 italic block mt-4">Kriteria: Kuat ({'>'}75%), Sedang (50-75%), Lemah ({'<'}50%)</span>
+          <span className="text-[12px] text-white/50 italic block mt-6">Kriteria: Kuat ({'>'}75%), Sedang (50-75%), Lemah ({'<'}50%)</span>
         </div>
       </div>
 
       {/* Demographics / Pie Chart */}
-      <div className="p-6 bg-white rounded-2xl border border-slate-100 shadow-sm">
+      <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15">
         <div className="mb-6">
-          <h4 className="text-sm font-semibold text-slate-800">Distribusi Responden Berdasarkan Posisi Staf</h4>
-          <p className="text-xs text-slate-400">Komposisi profesi staf medis dan non-medis yang telah mengisi kuesioner</p>
+          <h4 className="text-[16px] md:text-[18px] font-semibold tracking-[0.5px] text-[#F8FAFC]">Distribusi Responden Berdasarkan Posisi Staf</h4>
+          <p className="text-[14px] text-white/75 leading-[1.6]">Komposisi profesi staf medis dan non-medis yang telah mengisi kuesioner</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
           <div className="h-60 flex justify-center">
@@ -238,29 +238,30 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
                     data={pieData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={50}
-                    outerRadius={80}
+                    innerRadius={60}
+                    outerRadius={90}
                     paddingAngle={3}
                     dataKey="value"
+                    stroke="rgba(0,0,0,0.2)"
                   >
                     {pieData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="flex items-center text-slate-400 text-xs">Belum ada data responden.</div>
+              <div className="flex items-center text-white/50 text-[14px]">Belum ada data responden.</div>
             )}
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {pieData.map((entry, index) => (
-              <div key={index} className="flex items-center gap-2.5 p-2 rounded-xl bg-slate-50 border border-slate-100">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: entry.color }} />
+              <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 transition-colors">
+                <span className="w-3.5 h-3.5 rounded-full shrink-0 shadow-[0_0_5px_rgba(255,255,255,0.2)]" style={{ backgroundColor: entry.color }} />
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-600 font-medium truncate" title={entry.name}>{entry.name}</p>
-                  <p className="text-[10px] text-slate-400 font-semibold">{entry.value} Responden</p>
+                  <p className="text-[13px] text-slate-200 font-medium truncate" title={entry.name}>{entry.name}</p>
+                  <p className="text-[11px] text-cyan-400 font-semibold mt-0.5">{entry.value} Responden</p>
                 </div>
               </div>
             ))}
@@ -270,3 +271,4 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
     </div>
   );
 }
+

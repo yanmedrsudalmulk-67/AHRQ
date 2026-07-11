@@ -417,14 +417,14 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#121826]/90 backdrop-blur-[64px] p-6 rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)]">
         <div>
-          <h2 className="text-xl font-semibold flex items-center gap-2 text-white">
+          <h2 className="text-[18px] md:text-[20px] font-semibold flex items-center gap-2 text-[#F8FAFC]">
             <Settings className="w-5 h-5 text-indigo-400" /> Pengaturan Sistem
           </h2>
-          <p className="text-xs text-slate-400 mt-1">Konfigurasikan profil fasyankes dan wallpaper personalisasi Anda.</p>
+          <p className="text-[14px] text-white/75 mt-1">Konfigurasikan profil fasyankes dan wallpaper personalisasi Anda.</p>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800/80 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-white/[0.08] text-[10px] font-bold text-white/60 uppercase tracking-wider">
           <Database className={`w-3.5 h-3.5 ${hasSupabase ? 'text-emerald-400' : 'text-amber-500'}`} />
           {hasSupabase ? 'Database Supabase Terhubung' : 'Database Lokal (Fallback)'}
         </div>
@@ -438,38 +438,38 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Identitas Rumah Sakit */}
-        <div className="bg-slate-900/30 rounded-2xl border border-slate-800/60 p-6 space-y-6">
-          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-1.5">
+        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+          <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
             <Settings className="w-4 h-4 text-slate-400" /> Profil Fasyankes
           </h3>
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">Nama Rumah Sakit / Instansi</label>
+              <label className="text-[14px] font-semibold text-white/90">Nama Rumah Sakit / Instansi</label>
               <input
                 type="text"
                 required
                 value={tempName}
                 onChange={e => setTempName(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-300">Alamat Lengkap</label>
+              <label className="text-[14px] font-semibold text-white/90">Alamat Lengkap</label>
               <input
                 type="text"
                 required
                 value={alamatRs}
                 onChange={e => setAlamatRs(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
               />
             </div>
 
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs shadow-lg shadow-indigo-500/15 transition-all cursor-pointer flex items-center gap-1.5"
+                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold rounded-xl text-[14px] flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all cursor-pointer"
               >
                 <Save className="w-4 h-4" /> Perbarui Profil RS
               </button>
@@ -478,32 +478,32 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         </div>
 
         {/* Wallpaper Konfigurasi */}
-        <div className="bg-slate-900/30 rounded-2xl border border-slate-800/60 p-6 space-y-6">
+        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-1.5">
+            <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
               <ImageIcon className="w-4 h-4 text-cyan-400" /> Wallpaper Latar Belakang
             </h3>
-            <p className="text-[11px] text-slate-400 mt-1">Ubah latar belakang halaman utama, login, dan landing page.</p>
+            <p className="text-[12px] text-white/50 mt-1">Ubah latar belakang halaman utama, login, dan landing page.</p>
           </div>
 
           {/* Sub-tab Selection */}
-          <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+          <div className="flex bg-slate-900/60 p-1 rounded-xl border border-white/[0.08]">
             <button
               onClick={() => setActiveSubTab('upload')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
                 activeSubTab === 'upload' 
-                  ? 'bg-slate-850 text-white shadow-sm' 
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  : 'text-white/50 hover:text-white'
               }`}
             >
               Unggah Berkas
             </button>
             <button
               onClick={() => setActiveSubTab('url')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
                 activeSubTab === 'url' 
-                  ? 'bg-slate-850 text-white shadow-sm' 
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  : 'text-white/50 hover:text-white'
               }`}
             >
               Gunakan Tautan/URL
@@ -657,32 +657,32 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         </div>
 
         {/* Logo AHRQ Konfigurasi */}
-        <div className="bg-slate-900/30 rounded-2xl border border-slate-800/60 p-6 space-y-6">
+        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
           <div>
-            <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-1.5">
+            <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
               <UploadCloud className="w-4 h-4 text-cyan-400 animate-pulse" /> Logo Instansi / AHRQ
             </h3>
-            <p className="text-[11px] text-slate-400 mt-1">Ubah logo lambang instansi yang tampil di Side Bar dan Hero Section halaman utama.</p>
+            <p className="text-[12px] text-white/50 mt-1">Ubah logo lambang instansi yang tampil di Side Bar dan Hero Section halaman utama.</p>
           </div>
 
           {/* Sub-tab Selection */}
-          <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+          <div className="flex bg-slate-900/60 p-1 rounded-xl border border-white/[0.08]">
             <button
               onClick={() => setActiveLogoSubTab('upload')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
                 activeLogoSubTab === 'upload' 
-                  ? 'bg-slate-850 text-white shadow-sm' 
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  : 'text-white/50 hover:text-white'
               }`}
             >
               Unggah Berkas
             </button>
             <button
               onClick={() => setActiveLogoSubTab('url')}
-              className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
                 activeLogoSubTab === 'url' 
-                  ? 'bg-slate-850 text-white shadow-sm' 
-                  : 'text-slate-400 hover:text-white'
+                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  : 'text-white/50 hover:text-white'
               }`}
             >
               Gunakan Tautan/URL
@@ -818,12 +818,12 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
       </div>
 
       {/* Supabase Database Integration Settings */}
-      <div className="bg-slate-900/30 rounded-2xl border border-slate-800/60 p-6 space-y-6">
+      <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
         <div>
-          <h3 className="text-sm font-semibold text-slate-200 border-b border-slate-800 pb-2 flex items-center gap-1.5">
+          <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
             <Database className="w-4 h-4 text-emerald-400" /> Integrasi Database Supabase Cloud
           </h3>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[12px] text-white/50 mt-1">
             Gunakan database cloud Supabase untuk mengaktifkan sinkronisasi real-time instan dan penyimpanan permanen bagi seluruh unit kerja fasyankes Anda.
           </p>
         </div>

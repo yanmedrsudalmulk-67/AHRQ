@@ -741,16 +741,16 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
         </div>
 
         {/* 4. MAIN DATA TABLE */}
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/40 backdrop-blur-md shadow-inner">
+        <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#121826]/90 backdrop-blur-[64px] shadow-[0_8px_24px_rgba(0,0,0,0.30)]">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-950/60 border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider divide-x divide-white/10">
-                <th className="p-4 text-center w-12 text-[14px] text-[#f1f4f8]">No</th>
-                <th className="p-4 text-center text-[14px] text-[#f7f9fc]">KOMPOSIT BUDAYA KESELAMATAN PASIEN</th>
-                <th className="p-4 text-center w-52 text-[14px] text-[#f0f3f8]">Hasil Persentase (%)</th>
+              <tr className="bg-gradient-to-r from-slate-900 to-[#121826] border-b border-white/[0.08] text-white/80 font-bold uppercase tracking-wider divide-x divide-white/5">
+                <th className="p-4 text-center w-12 text-[14px]">No</th>
+                <th className="p-4 text-center text-[14px]">KOMPOSIT BUDAYA KESELAMATAN PASIEN</th>
+                <th className="p-4 text-center w-52 text-[14px]">Hasil Persentase (%)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 text-slate-300">
+            <tbody className="divide-y divide-white/[0.05] bg-[#1c2230] text-slate-300">
               {filteredSurveys.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="p-12 text-center text-slate-400 font-light leading-relaxed">
@@ -774,22 +774,22 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   const globalIdx = idx + 1;
                   
                   const scoreColor = dim.percentage >= 75 
-                    ? 'text-emerald-400' 
-                    : (dim.percentage >= 50 ? 'text-yellow-400' : 'text-red-400');
+                    ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
+                    : (dim.percentage >= 50 ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]');
 
                   return (
                     <tr 
                       key={dim.id} 
                       onClick={() => setSelectedDimensi(dim.id)}
-                      className="hover:bg-white/[0.04] active:bg-white/[0.08] transition-all cursor-pointer group divide-x divide-white/5"
+                      className="hover:bg-[#252c3c] transition-all cursor-pointer group divide-x divide-white/5"
                     >
                       <td className="p-4 text-center font-bold font-mono group-hover:text-blue-400 transition-colors text-base text-[#f3f5f8]">
                         {globalIdx}
                       </td>
                       <td className="p-4 text-left">
-                        <div className="group-hover:text-blue-400 transition-colors text-[14px] font-bold text-slate-200 flex items-center justify-between">
+                        <div className="group-hover:text-cyan-400 transition-colors text-[14px] font-bold text-slate-200 flex items-center justify-between">
                           <span>{dim.nama}</span>
-                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-cyan-400" />
                         </div>
                       </td>
                       <td className="p-4 text-center">
@@ -847,7 +847,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
       </div>
 
       {/* Respondent Profile Dashboard Section */}
-      <div id="ahrq-respondent-profile-card" className="relative bg-white/[0.05] border border-white/20 rounded-[32px] shadow-2xl shadow-black/50 backdrop-blur-3xl p-6 md:p-8 space-y-8 overflow-hidden group">
+      <div id="ahrq-respondent-profile-card" className="relative bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-[32px] p-6 md:p-8 space-y-8 overflow-hidden group">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -z-10 group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -z-10 group-hover:bg-purple-500/20 transition-colors duration-700"></div>
         
