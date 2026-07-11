@@ -29,6 +29,8 @@ export interface HospitalAccount {
   approvedBy?: string;
   rejectionReason?: string;
   updated_at?: string;
+  kodePos?: string;
+  noTelepon?: string;
 }
 
 export interface EmailNotification {
@@ -75,26 +77,46 @@ export const mapToSurveyData = (item: any): SurveyData => ({
     : (item.dimensi_scores || item.dimensiScores || {})
 });
 
-export const mapToHospitalAccount = (item: any): HospitalAccount => ({
-  id: item.id,
-  username: item.username || '',
-  kodeRs: item.kode_rs || item.kodeRs || '',
-  namaRs: item.nama_rs || item.namaRs || '',
-  alamatRs: item.alamat_rs || item.alamatRs || '',
-  password: item.password || '',
-  created_at: item.created_at,
-  provinsi: item.provinsi || '',
-  kotaKab: item.kota_kab || '',
-  penanggungJawab: item.penanggung_jawab || '',
-  jabatan: item.jabatan || '',
-  noWhatsapp: item.no_whatsapp || '',
-  emailRs: item.email_rs || '',
-  status: (item.status as any) || 'Active', // Fallback for legacy accounts
-  approvalDate: item.approval_date,
-  approvedBy: item.approved_by,
-  rejectionReason: item.rejection_reason,
-  updated_at: item.updated_at
-});
+export const mapToHospitalAccount = (item: any): HospitalAccount => {
+  let alamat = item.alamat_rs || item.alamatRs || '';
+  let kodePos = item.kode_pos || '';
+  let noTelepon = item.no_telepon || '';
+
+  if (alamat && alamat.includes('||KP:')) {
+    const parts = alamat.split('||KP:');
+    alamat = parts[0].trim();
+    if (parts[1]) {
+      const kpAndTel = parts[1].split('||TEL:');
+      kodePos = kpAndTel[0].trim();
+      if (kpAndTel[1]) {
+        noTelepon = kpAndTel[1].trim();
+      }
+    }
+  }
+
+  return {
+    id: item.id,
+    username: item.username || '',
+    kodeRs: item.kode_rs || item.kodeRs || '',
+    namaRs: item.nama_rs || item.namaRs || '',
+    alamatRs: alamat,
+    password: item.password || '',
+    created_at: item.created_at,
+    provinsi: item.provinsi || '',
+    kotaKab: item.kota_kab || '',
+    penanggungJawab: item.penanggung_jawab || '',
+    jabatan: item.jabatan || '',
+    noWhatsapp: item.no_whatsapp || '',
+    emailRs: item.email_rs || '',
+    status: (item.status as any) || 'Active', // Fallback for legacy accounts
+    approvalDate: item.approval_date,
+    approvedBy: item.approved_by,
+    rejectionReason: item.rejection_reason,
+    updated_at: item.updated_at,
+    kodePos: kodePos || item.kode_pos || '',
+    noTelepon: noTelepon || item.no_telepon || ''
+  };
+};
 
 // Check if an item is negative
 export function isNegativeItem(groupId: string, itemId: string): boolean {
@@ -393,39 +415,105 @@ export async function updateHospitalProfile(id: string, updates: Partial<Hospita
     throw new Error("Koneksi Supabase belum terkonfigurasi.");
   }
   
-  try {
-    const updateData: any = {
-      updated_at: new Date().toISOString()
-    };
-    
-    if (updates.namaRs) updateData.nama_rs = updates.namaRs;
-    if (updates.alamatRs) updateData.alamat_rs = updates.alamatRs;
-    if (updates.emailRs) updateData.email_rs = updates.emailRs;
-    if (updates.noWhatsapp) updateData.no_whatsapp = updates.noWhatsapp;
-    if (updates.username) updateData.username = updates.username.toLowerCase().trim();
-    if (updates.password) {
-      updateData.password = await bcrypt.hash(updates.password, 10);
-    }
-    
-    const { data, error } = await supabase
-      .from('hospital_accounts')
-      .update(updateData)
-      .eq('id', id)
-      .select();
-      
-    if (error) {
-      throw new Error(`Gagal memperbarui profil: ${error.message}`);
-    }
-    
-    if (data && data.length > 0) {
-      return mapToHospitalAccount(data[0]);
-    }
-    
-    throw new Error("Data tidak ditemukan setelah diperbarui.");
-  } catch (e: any) {
-    console.error("Supabase updateHospitalProfile exception:", e);
-    throw new Error(e.message || "Gagal memperbarui profil.");
+  const updateData: any = {
+    updated_at: new Date().toISOString()
+  };
+  
+  if (updates.namaRs !== undefined) updateData.nama_rs = updates.namaRs;
+  
+  // Serialize kode_pos and no_telepon into alamat_rs as metadata fallback
+  if (updates.alamatRs !== undefined || updates.kodePos !== undefined || updates.noTelepon !== undefined) {
+    const baseAddr = updates.alamatRs !== undefined ? updates.alamatRs : '';
+    const kp = updates.kodePos !== undefined ? updates.kodePos : '';
+    const tel = updates.noTelepon !== undefined ? updates.noTelepon : '';
+    updateData.alamat_rs = `${baseAddr} ||KP:${kp}||TEL:${tel}`;
   }
+  
+  if (updates.emailRs !== undefined) updateData.email_rs = updates.emailRs;
+  if (updates.noWhatsapp !== undefined) updateData.no_whatsapp = updates.noWhatsapp;
+  if (updates.provinsi !== undefined) updateData.provinsi = updates.provinsi;
+  if (updates.kotaKab !== undefined) updateData.kota_kab = updates.kotaKab;
+  if (updates.username !== undefined) updateData.username = updates.username.toLowerCase().trim();
+  if (updates.password) {
+    updateData.password = await bcrypt.hash(updates.password, 10);
+  }
+  
+  // Attempt to add optional columns which might not be in the database yet
+  if (updates.kodePos !== undefined) updateData.kode_pos = updates.kodePos;
+  if (updates.noTelepon !== undefined) updateData.no_telepon = updates.noTelepon;
+
+  let attempts = 0;
+  const maxAttempts = 10;
+  
+  while (attempts < maxAttempts) {
+    attempts++;
+    try {
+      const { data, error } = await supabase
+        .from('hospital_accounts')
+        .update(updateData)
+        .eq('id', id)
+        .select();
+        
+      if (!error) {
+        if (data && data.length > 0) {
+          return mapToHospitalAccount(data[0]);
+        }
+        throw new Error("Data tidak ditemukan setelah diperbarui.");
+      }
+      
+      console.warn(`Update attempt ${attempts} failed with error:`, error);
+      
+      const isColumnError = error.code === '42703' || 
+                            error.message?.includes('column') || 
+                            error.message?.includes('does not exist') ||
+                            error.message?.includes('not found in the schema cache');
+                            
+      if (isColumnError) {
+        // Find the column name from the error message
+        const match = error.message.match(/column "([^"]+)"/) || error.message.match(/column ([a-zA-Z0-9_]+) does/);
+        let colName = match ? match[1] : null;
+        
+        if (!colName) {
+          if (error.message?.includes('kode_pos')) colName = 'kode_pos';
+          else if (error.message?.includes('no_telepon')) colName = 'no_telepon';
+          else if (error.message?.includes('updated_at')) colName = 'updated_at';
+          else if (error.message?.includes('provinsi')) colName = 'provinsi';
+          else if (error.message?.includes('kota_kab')) colName = 'kota_kab';
+          else if (error.message?.includes('email_rs')) colName = 'email_rs';
+          else if (error.message?.includes('no_whatsapp')) colName = 'no_whatsapp';
+        }
+        
+        if (colName && updateData[colName] !== undefined) {
+          console.warn(`Removing missing column "${colName}" from update payload and retrying...`);
+          delete updateData[colName];
+          continue;
+        }
+        
+        // Fallback removals
+        if (updateData.kode_pos !== undefined) {
+          delete updateData.kode_pos;
+          continue;
+        }
+        if (updateData.no_telepon !== undefined) {
+          delete updateData.no_telepon;
+          continue;
+        }
+        if (updateData.updated_at !== undefined) {
+          delete updateData.updated_at;
+          continue;
+        }
+      }
+      
+      throw new Error(error.message);
+    } catch (e: any) {
+      if (attempts >= maxAttempts) {
+        throw new Error(e.message || "Gagal memperbarui profil setelah beberapa percobaan.");
+      }
+      throw e;
+    }
+  }
+  
+  throw new Error("Gagal memperbarui profil: Melebihi batas percobaan penyesuaian skema.");
 }
 
 export async function createHospitalAccount(account: Omit<HospitalAccount, 'id'>): Promise<HospitalAccount> {

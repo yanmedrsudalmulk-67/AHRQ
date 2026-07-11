@@ -21,12 +21,21 @@ import {
   WifiOff,
   Terminal,
   Eye,
-  EyeOff
+  EyeOff,
+  X,
+  Mail,
+  Phone,
+  User,
+  Building2,
+  MapPin,
+  Lock,
+  Edit
 } from 'lucide-react';
+import bcrypt from 'bcryptjs';
 import { saveWallpaper, clearWallpaper, WallpaperData } from '../lib/wallpaper';
 import { saveLogo, clearLogo, LogoData } from '../lib/logo';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
-import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile } from '../lib/db';
+import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile, HospitalAccount } from '../lib/db';
 
 interface PengaturanTabProps {
   role?: 'admin' | 'rs';
@@ -53,8 +62,12 @@ export default function PengaturanTab({
 }: PengaturanTabProps) {
   const [tempName, setTempName] = useState(namaRs);
   const [alamatRs, setAlamatRs] = useState('');
+  const [provinsi, setProvinsi] = useState('');
+  const [kotaKab, setKotaKab] = useState('');
+  const [kodePos, setKodePos] = useState('');
   const [emailRs, setEmailRs] = useState('');
   const [noTelepon, setNoTelepon] = useState('');
+  const [noWhatsapp, setNoWhatsapp] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -63,6 +76,26 @@ export default function PengaturanTab({
   const [isSaved, setIsSaved] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isFetchingProfile, setIsFetchingProfile] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Change password states
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [dbPassword, setDbPassword] = useState('');
+
+  // Toast notification state
+  const [toast, setToast] = useState<{ show: boolean; message: string; type: 'success' | 'error' }>({ show: false, message: '', type: 'success' });
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ show: true, message, type });
+    setTimeout(() => {
+      setToast(prev => ({ ...prev, show: false }));
+    }, 4000);
+  };
   
   useEffect(() => {
     if (identifier) {
@@ -74,11 +107,14 @@ export default function PengaturanTab({
             setAccountId(account.id);
             setTempName(account.namaRs || '');
             setAlamatRs(account.alamatRs || '');
+            setProvinsi(account.provinsi || '');
+            setKotaKab(account.kotaKab || '');
+            setKodePos(account.kodePos || '');
             setEmailRs(account.emailRs || '');
-            setNoTelepon(account.noWhatsapp || '');
+            setNoTelepon(account.noTelepon || '');
+            setNoWhatsapp(account.noWhatsapp || '');
             setUsername(account.username || '');
-            // Password remains empty unless user wants to change it
-            setPassword('');
+            setDbPassword(account.password || '');
           }
         } catch (e) {
           console.error("Failed to fetch profile", e);
@@ -119,39 +155,113 @@ export default function PengaturanTab({
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tempName.trim()) {
+      showToast("❌ Nama RS tidak boleh kosong.", "error");
+      return;
+    }
+    if (emailRs && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRs)) {
+      showToast("❌ Format email tidak valid.", "error");
+      return;
+    }
+    
+    // Friendly phone regex that allows digits, spaces, dashes, parentheses, and leading '+'
+    const phoneRegex = /^[0-9+\s\-()]+$/;
+    if (noTelepon && !phoneRegex.test(noTelepon)) {
+      showToast("❌ Nomor telepon tidak valid (hanya boleh angka, spasi, tanda hubung, tanda kurung, atau '+').", "error");
+      return;
+    }
+    if (noWhatsapp && !phoneRegex.test(noWhatsapp)) {
+      showToast("❌ Nomor WhatsApp tidak valid (hanya boleh angka, spasi, tanda hubung, tanda kurung, atau '+').", "error");
+      return;
+    }
+    if (username.length < 3) {
+      showToast("❌ Username minimal 3 karakter.", "error");
+      return;
+    }
+
     if (accountId) {
       setIsSavingProfile(true);
       try {
-        const updates: any = {
-          namaRs: tempName,
-          alamatRs: alamatRs,
-          emailRs: emailRs,
-          noWhatsapp: noTelepon,
-          username: username,
+        const updates: Partial<HospitalAccount> = {
+          namaRs: tempName.trim(),
+          alamatRs: alamatRs.trim(),
+          provinsi: provinsi.trim(),
+          kotaKab: kotaKab.trim(),
+          kodePos: kodePos.trim(),
+          emailRs: emailRs.trim(),
+          noTelepon: noTelepon.trim(),
+          noWhatsapp: noWhatsapp.trim(),
+          username: username.trim(),
         };
-        if (password) {
-          if (password.length < 8) {
-            alert("Password baru minimal 8 karakter");
-            setIsSavingProfile(false);
-            return;
-          }
-          updates.password = password;
-        }
+
         await updateHospitalProfile(accountId, updates);
-        onUpdateRsName(tempName);
-        setPassword('');
+        onUpdateRsName(tempName.trim());
+        setIsEditing(false);
         setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 3000);
-      } catch (err) {
-        alert("Gagal memperbarui profil: " + err);
+        setTimeout(() => setIsSaved(false), 4000);
+        showToast("✅ Profil berhasil diperbarui.", "success");
+      } catch (err: any) {
+        showToast(`❌ Gagal memperbarui profil: ${err.message || err}`, "error");
       } finally {
         setIsSavingProfile(false);
       }
     } else {
       // Fallback if not connected to Supabase or no accountId
-      onUpdateRsName(tempName);
+      onUpdateRsName(tempName.trim());
+      setIsEditing(false);
       setIsSaved(true);
-      setTimeout(() => setIsSaved(false), 3000);
+      setTimeout(() => setIsSaved(false), 4000);
+      showToast("✅ Profil lokal berhasil diperbarui.", "success");
+    }
+  };
+
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPassword) {
+      showToast("❌ Masukkan password lama Anda.", "error");
+      return;
+    }
+    if (newPassword.length < 8) {
+      showToast("❌ Password baru minimal 8 karakter.", "error");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      showToast("❌ Konfirmasi password baru tidak cocok.", "error");
+      return;
+    }
+
+    if (accountId) {
+      setIsSavingProfile(true);
+      try {
+        // Verify old password client-side
+        const isMatch = await bcrypt.compare(oldPassword, dbPassword);
+        if (!isMatch) {
+          showToast("❌ Password lama yang Anda masukkan salah.", "error");
+          setIsSavingProfile(false);
+          return;
+        }
+
+        const updates = {
+          password: newPassword,
+        };
+        const updatedAcc = await updateHospitalProfile(accountId, updates);
+        if (updatedAcc.password) {
+          setDbPassword(updatedAcc.password);
+        }
+        
+        // Reset fields
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setShowChangePassword(false);
+        showToast("✅ Password berhasil diperbarui.", "success");
+      } catch (err: any) {
+        showToast(`❌ Gagal memperbarui password: ${err.message || err}`, "error");
+      } finally {
+        setIsSavingProfile(false);
+      }
+    } else {
+      showToast("❌ Tidak dapat memperbarui password dalam mode lokal.", "error");
     }
   };
 
@@ -505,102 +615,403 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         </div>
       )}
 
+        {/* Toast notification component */}
+        {toast.show && (
+          <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-xl border text-xs flex items-center gap-2 shadow-2xl transition-all duration-300 animate-fadeIn ${
+            toast.type === 'success' 
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
+              : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+          }`}>
+            <AlertCircle className="w-4 h-4" />
+            <span className="font-semibold">{toast.message}</span>
+          </div>
+        )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Identitas Rumah Sakit */}
         <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
-          <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
-            <Settings className="w-4 h-4 text-slate-400" /> Profil Fasyankes
-          </h3>
+          <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
+            <h3 className="text-[16px] font-semibold text-[#F8FAFC] flex items-center gap-1.5">
+              <Building2 className="w-4 h-4 text-indigo-400" /> Profil Fasyankes
+            </h3>
+            
+            {!isEditing && (
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditing(true);
+                  setShowChangePassword(false);
+                }}
+                className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+              >
+                <Edit className="w-3.5 h-3.5" /> Perbarui Profil
+              </button>
+            )}
+          </div>
 
-          <form onSubmit={handleSaveProfile} className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[14px] font-semibold text-white/90">Nama Rumah Sakit / Instansi</label>
-              <input
-                type="text"
-                required
-                value={tempName}
-                onChange={e => setTempName(e.target.value)}
-                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
-              />
+          {isFetchingProfile ? (
+            <div className="flex flex-col items-center justify-center py-12 space-y-3">
+              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
+              <p className="text-xs text-slate-400">Memuat profil fasyankes...</p>
             </div>
+          ) : !isEditing ? (
+            /* ================= READ ONLY MODE ================= */
+            <div className="space-y-6">
+              {/* Bagian 1: Informasi Fasyankes */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-indigo-400 tracking-wider uppercase">Informasi Rumah Sakit</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/40 border border-white/[0.04] p-4 rounded-xl">
+                  <div className="col-span-1 sm:col-span-2 space-y-1">
+                    <span className="text-[11px] text-slate-400">Nama Rumah Sakit / Instansi</span>
+                    <p className="text-sm font-semibold text-white">{tempName || '-'}</p>
+                  </div>
+                  <div className="col-span-1 sm:col-span-2 space-y-1">
+                    <span className="text-[11px] text-slate-400 font-medium">Alamat Lengkap</span>
+                    <p className="text-xs text-slate-200 leading-relaxed">{alamatRs || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400">Provinsi</span>
+                    <p className="text-xs font-medium text-slate-200">{provinsi || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400">Kota / Kabupaten</span>
+                    <p className="text-xs font-medium text-slate-200">{kotaKab || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400">Kode Pos</span>
+                    <p className="text-xs font-mono text-slate-200">{kodePos || '-'}</p>
+                  </div>
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-[14px] font-semibold text-white/90">Alamat Lengkap</label>
-              <input
-                type="text"
-                required
-                value={alamatRs}
-                onChange={e => setAlamatRs(e.target.value)}
-                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
-              />
+              {/* Bagian 2: Informasi Kontak */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-emerald-400 tracking-wider uppercase">Informasi Kontak</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/40 border border-white/[0.04] p-4 rounded-xl">
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Mail className="w-3 h-3 text-emerald-400/80" /> Email</span>
+                    <p className="text-xs font-medium text-slate-200">{emailRs || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-400/80" /> No. Telepon</span>
+                    <p className="text-xs font-medium text-slate-200">{noTelepon || '-'}</p>
+                  </div>
+                  <div className="col-span-1 sm:col-span-2 space-y-1">
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-400/80" /> No. WhatsApp</span>
+                    <p className="text-xs font-medium text-slate-200">{noWhatsapp || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bagian 3: Informasi Kredensial Akun */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-cyan-400 tracking-wider uppercase">Kredensial Akun</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/40 border border-white/[0.04] p-4 rounded-xl">
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><User className="w-3 h-3 text-cyan-400/80" /> Username</span>
+                    <p className="text-xs font-semibold text-slate-200 font-mono">{username || '-'}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Lock className="w-3 h-3 text-cyan-400/80" /> Password</span>
+                    <p className="text-xs text-slate-400 tracking-widest font-bold">••••••••</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Ubah Password Trigger Button */}
+              {accountId && !showChangePassword && (
+                <div className="pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowChangePassword(true)}
+                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 border border-white/10 hover:border-white/20 text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-cyan-400" /> Ubah Password Akun
+                  </button>
+                </div>
+              )}
+
+              {/* Ubah Password Form */}
+              {showChangePassword && (
+                <form onSubmit={handleUpdatePassword} className="border border-cyan-500/30 bg-cyan-500/5 p-4 rounded-xl space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center border-b border-white/[0.05] pb-2">
+                    <h5 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                      <Lock className="w-3.5 h-3.5" /> Formulir Ubah Password
+                    </h5>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowChangePassword(false);
+                        setOldPassword('');
+                        setNewPassword('');
+                        setConfirmPassword('');
+                      }}
+                      className="text-slate-400 hover:text-white"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-slate-300 font-medium">Password Lama</label>
+                      <div className="relative">
+                        <input
+                          type={showOldPassword ? 'text' : 'password'}
+                          required
+                          value={oldPassword}
+                          onChange={e => setOldPassword(e.target.value)}
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all outline-none pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowOldPassword(!showOldPassword)}
+                          className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+                        >
+                          {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-slate-300 font-medium">Password Baru (Min. 8 Karakter)</label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? 'text' : 'password'}
+                          required
+                          value={newPassword}
+                          onChange={e => setNewPassword(e.target.value)}
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all outline-none pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                          className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+                        >
+                          {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-slate-300 font-medium">Konfirmasi Password Baru</label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          required
+                          value={confirmPassword}
+                          onChange={e => setConfirmPassword(e.target.value)}
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all outline-none pr-10"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+                        >
+                          {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowChangePassword(false);
+                          setOldPassword('');
+                          setNewPassword('');
+                          setConfirmPassword('');
+                        }}
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSavingProfile}
+                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        {isSavingProfile ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                        Simpan Password
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              )}
             </div>
+          ) : (
+            /* ================= EDIT MODE ================= */
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <div className="space-y-3 bg-slate-900/20 border border-white/[0.03] p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-indigo-400 tracking-wider uppercase border-b border-white/[0.05] pb-1">Ubah Informasi Rumah Sakit</h4>
+                
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-indigo-400/80" /> Nama Rumah Sakit / Instansi <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={tempName}
+                    onChange={e => setTempName(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    placeholder="Contoh: RSUD AL-MULK"
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-[14px] font-semibold text-white/90">Email</label>
-              <input
-                type="email"
-                value={emailRs}
-                onChange={e => setEmailRs(e.target.value)}
-                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
-                placeholder="email@rs.com"
-              />
-            </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-400/80" /> Alamat Lengkap <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={alamatRs}
+                    onChange={e => setAlamatRs(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    placeholder="Jl. Merdeka No. 10..."
+                  />
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-[14px] font-semibold text-white/90">No. Telepon / WhatsApp</label>
-              <input
-                type="tel"
-                value={noTelepon}
-                onChange={e => setNoTelepon(e.target.value)}
-                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
-                placeholder="08123456789"
-              />
-            </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-300 font-semibold">Provinsi</label>
+                    <input
+                      type="text"
+                      value={provinsi}
+                      onChange={e => setProvinsi(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                      placeholder="Contoh: Jawa Barat"
+                    />
+                  </div>
 
-            <div className="space-y-2">
-              <label className="text-[14px] font-semibold text-white/90">Akun (Username)</label>
-              <input
-                type="text"
-                required
-                value={username}
-                onChange={e => setUsername(e.target.value)}
-                disabled={role === 'rs'}
-                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white disabled:opacity-60 disabled:cursor-not-allowed"
-              />
-              {role === 'rs' && <p className="text-[10px] text-white/50">Username tidak dapat diubah oleh RS.</p>}
-            </div>
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-slate-300 font-semibold">Kota / Kabupaten</label>
+                    <input
+                      type="text"
+                      value={kotaKab}
+                      onChange={e => setKotaKab(e.target.value)}
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                      placeholder="Contoh: Bandung"
+                    />
+                  </div>
+                </div>
 
-            <div className="space-y-2">
-              <label className="text-[14px] font-semibold text-white/90">Password Baru (Opsional)</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={e => setPassword(e.target.value)}
-                  placeholder="Kosongkan jika tidak ingin diubah"
-                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white pr-12"
-                />
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-300 font-semibold">Kode Pos</label>
+                  <input
+                    type="text"
+                    value={kodePos}
+                    onChange={e => setKodePos(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    placeholder="Contoh: 40123"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-slate-900/20 border border-white/[0.03] p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-emerald-400 tracking-wider uppercase border-b border-white/[0.05] pb-1">Ubah Informasi Kontak</h4>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <Mail className="w-3.5 h-3.5 text-emerald-400/80" /> Email <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={emailRs}
+                    onChange={e => setEmailRs(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    placeholder="email@rumahsakit.com"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400/80" /> Nomor Telepon
+                  </label>
+                  <input
+                    type="tel"
+                    value={noTelepon}
+                    onChange={e => setNoTelepon(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    placeholder="Contoh: 021123456"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-emerald-400/80" /> Nomor WhatsApp <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={noWhatsapp}
+                    onChange={e => setNoWhatsapp(e.target.value)}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    placeholder="Contoh: 08123456789"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 bg-slate-900/20 border border-white/[0.03] p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-cyan-400 tracking-wider uppercase border-b border-white/[0.05] pb-1">Ubah Kredensial Akun</h4>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
+                    <User className="w-3.5 h-3.5 text-cyan-400/80" /> Username <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={e => setUsername(e.target.value)}
+                    disabled={role === 'rs'}
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  />
+                  {role === 'rs' && <p className="text-[10px] text-slate-500">Username akun portal rumah sakit hanya dapat diubah oleh Admin Utama.</p>}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3.5 text-slate-400 hover:text-white"
+                  onClick={() => {
+                    setIsEditing(false);
+                    // Reset to database state
+                    if (identifier) {
+                      const resetFetch = async () => {
+                        const account = await getHospitalAccountByUsername(identifier);
+                        if (account) {
+                          setTempName(account.namaRs || '');
+                          setAlamatRs(account.alamatRs || '');
+                          setProvinsi(account.provinsi || '');
+                          setKotaKab(account.kotaKab || '');
+                          setKodePos(account.kodePos || '');
+                          setEmailRs(account.emailRs || '');
+                          setNoTelepon(account.noTelepon || '');
+                          setNoWhatsapp(account.noWhatsapp || '');
+                          setUsername(account.username || '');
+                        }
+                      };
+                      resetFetch();
+                    }
+                  }}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl text-xs font-semibold transition-all cursor-pointer"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingProfile}
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all cursor-pointer"
+                >
+                  {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
+                  {isSavingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
               </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="submit"
-                disabled={isSavingProfile || isFetchingProfile}
-                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 text-white font-semibold rounded-xl text-[14px] flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all cursor-pointer"
-              >
-                {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
-                {isSavingProfile ? 'Menyimpan...' : 'Perbarui Profil RS'}
-              </button>
-            </div>
-          </form>
+            </form>
+          )}
         </div>
 
         {/* Wallpaper Konfigurasi */}
@@ -1124,7 +1535,20 @@ CREATE TABLE IF NOT EXISTS hospital_accounts (
   nama_rs TEXT,
   alamat_rs TEXT,
   password TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+  provinsi TEXT,
+  kota_kab TEXT,
+  penanggung_jawab TEXT,
+  jabatan TEXT,
+  no_whatsapp TEXT,
+  email_rs TEXT,
+  status TEXT DEFAULT 'Pending',
+  approval_date TIMESTAMP WITH TIME ZONE,
+  approved_by TEXT,
+  rejection_reason TEXT,
+  kode_pos TEXT,
+  no_telepon TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
 );
 
 ALTER TABLE hospital_accounts ENABLE ROW LEVEL SECURITY;

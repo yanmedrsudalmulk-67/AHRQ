@@ -153,7 +153,7 @@ export default function DashboardHeader({ role, namaRs }: DashboardHeaderProps) 
   };
 
   const greeting = getGreeting();
-  const displayHospital = role === 'admin' ? 'Pusat Analisis' : namaRs;
+  const displayHospital = role === 'admin' ? 'Admin AHRQ' : namaRs;
 
   // Framer Motion variants
   const containerVariants: any = {
@@ -264,7 +264,7 @@ export default function DashboardHeader({ role, namaRs }: DashboardHeaderProps) 
               variants={namaRsVariants}
               className="text-[34px] md:text-[48px] font-extrabold text-white tracking-tight leading-none"
             >
-              Hai, Admin <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(99,102,241,0.25)] font-extrabold">{displayHospital}</span>
+              Hai, Sobat <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(99,102,241,0.25)] font-extrabold">{displayHospital}</span>
             </motion.h2>
           </div>
 

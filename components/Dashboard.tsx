@@ -195,11 +195,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('dashboard')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-sky-500 md:to-[#00a2e8] md:shadow-lg md:shadow-[#00a2e8]/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-cyan-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
-              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'dashboard' ? 'text-cyan-300 md:text-white drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] md:drop-shadow-none' : ''}`} /> 
+              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'dashboard' ? 'text-indigo-300 md:text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] md:drop-shadow-none' : ''}`} /> 
               <span className="hidden md:block text-[15px] leading-none">Dashboard</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Beranda</span>
             </button>
@@ -208,11 +208,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('input')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'input'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-sky-500 md:to-[#00a2e8] md:shadow-lg md:shadow-[#00a2e8]/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-cyan-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
-              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'input' ? 'text-cyan-300 md:text-white drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] md:drop-shadow-none' : ''}`} /> 
+              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'input' ? 'text-indigo-300 md:text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] md:drop-shadow-none' : ''}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Input Data Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Survei</span>
             </button>
@@ -221,11 +221,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('grafik')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'grafik'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-sky-500 md:to-[#00a2e8] md:shadow-lg md:shadow-[#00a2e8]/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-cyan-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
-              <BarChart2 className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'grafik' ? 'text-cyan-300 md:text-white drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] md:drop-shadow-none' : ''}`} /> 
+              <BarChart2 className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'grafik' ? 'text-indigo-300 md:text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] md:drop-shadow-none' : ''}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Analisis Grafik</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Grafik</span>
             </button>
@@ -234,11 +234,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('laporan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'laporan'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-sky-500 md:to-[#00a2e8] md:shadow-lg md:shadow-[#00a2e8]/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-cyan-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
-              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-cyan-300 md:text-white drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] md:drop-shadow-none' : ''}`} /> 
+              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-indigo-300 md:text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] md:drop-shadow-none' : ''}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Laporan Detail</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
             </button>
@@ -247,11 +247,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('pengaturan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'pengaturan'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-sky-500 md:to-[#00a2e8] md:shadow-lg md:shadow-[#00a2e8]/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-cyan-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
-              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-cyan-300 md:text-white drop-shadow-[0_0_8px_rgba(6,182,212,0.8)] md:drop-shadow-none' : ''}`} /> 
+              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-indigo-300 md:text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] md:drop-shadow-none' : ''}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Pengaturan RS</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
