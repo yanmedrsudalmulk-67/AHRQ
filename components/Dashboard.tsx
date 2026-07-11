@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
   LayoutDashboard, 
@@ -165,7 +166,15 @@ export default function Dashboard({
           </div>
 
           <div className="hidden md:block px-4">
-            <hr className="border-white/10" />
+            <motion.div 
+              animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              style={{
+                backgroundSize: "200% 100%",
+                backgroundImage: "linear-gradient(to right, #22d3ee, #6366f1, #a855f7, #6366f1, #22d3ee)"
+              }}
+              className="h-px w-full rounded-full shadow-[0_0_10px_rgba(99,102,241,0.4)]" 
+            />
           </div>
 
           {/* Navigation Links */}
@@ -237,7 +246,18 @@ export default function Dashboard({
             </button>
 
             {/* Logout Button - Integrated inside menu list, positioned slightly downwards */}
-            <div className="hidden md:block pt-4 border-t border-white/10 mt-8 w-full">
+            <div className="hidden md:block pt-4 mt-8 w-full">
+              <div className="px-4 mb-4">
+                <motion.div 
+                  animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                  style={{
+                    backgroundSize: "200% 100%",
+                    backgroundImage: "linear-gradient(to right, #22d3ee, #6366f1, #a855f7, #6366f1, #22d3ee)"
+                  }}
+                  className="h-px w-full rounded-full shadow-[0_0_10px_rgba(99,102,241,0.4)]" 
+                />
+              </div>
               <button
                 onClick={onLogout}
                 className="w-full py-2.5 px-4 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-[14px] font-bold flex items-center gap-3 transition-all cursor-pointer"
