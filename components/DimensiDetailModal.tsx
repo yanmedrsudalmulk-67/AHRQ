@@ -228,7 +228,7 @@ export default function DimensiDetailModal({ dimensiId, onClose, surveys, rsName
         </div>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 scrollbar-hide">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 ">
           
           {/* Quick Stats Summary */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

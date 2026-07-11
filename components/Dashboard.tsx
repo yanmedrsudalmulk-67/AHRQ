@@ -16,7 +16,8 @@ import {
   TrendingUp, 
   Calendar,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  Clock
 } from 'lucide-react';
 import useSWR from 'swr';
 import InputDataTab from './InputDataTab';
@@ -24,7 +25,8 @@ import GrafikTab from './GrafikTab';
 import LaporanTab from './LaporanTab';
 import PengaturanTab from './PengaturanTab';
 import DashboardTable from './DashboardTable';
-import { getSurveys, saveSurvey } from '../lib/db';
+import PersetujuanTab from './PersetujuanTab';
+import { getSurveys, saveSurvey, getHospitalAccounts } from '../lib/db';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
 import DashboardHeader from './DashboardHeader';
@@ -61,12 +63,21 @@ export default function Dashboard({
   activeLogo,
   onUpdateLogo
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan' | 'persetujuan'>('dashboard');
 
   // SWR for real-time survey synchronization with background polling
   const { data: surveys = [], mutate } = useSWR('ahrq_surveys', getSurveys, {
     fallbackData: [], refreshInterval: 3000
   });
+
+  // SWR for real-time hospital accounts with background polling (only for admin)
+  const { data: accounts = [], mutate: mutateAccounts } = useSWR(
+    role === 'admin' ? 'hospital_accounts' : null,
+    getHospitalAccounts,
+    { fallbackData: [], refreshInterval: 3000 }
+  );
+
+  const pendingAccountsCount = accounts.filter(a => a.status === 'Pending').length;
 
   const handleSaveSurvey = async (newSurvey: SurveyData) => {
     try {
@@ -245,6 +256,27 @@ export default function Dashboard({
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
 
+            {role === 'admin' && (
+              <button
+                onClick={() => setActiveTab('persetujuan')}
+                className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer relative ${
+                  activeTab === 'persetujuan'
+                    ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                    : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                }`}
+              >
+                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'persetujuan' ? 'text-indigo-300 md:text-white drop-shadow-[0_0_8px_rgba(99,102,241,0.8)] md:drop-shadow-none' : ''}`} /> 
+                <span className="hidden md:block text-[14px] leading-none">Persetujuan Akun</span>
+                <span className="md:hidden text-[10px] mt-1 tracking-wide">Persetujuan</span>
+                
+                {pendingAccountsCount > 0 && (
+                  <span className="absolute top-1 right-2 md:top-2 md:right-3 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white animate-bounce shadow-md">
+                    {pendingAccountsCount}
+                  </span>
+                )}
+              </button>
+            )}
+
             {/* Logout Button - Integrated inside menu list, positioned slightly downwards */}
             <div className="hidden md:block pt-4 mt-8 w-full">
               <div className="px-4 mb-4">
@@ -278,6 +310,27 @@ export default function Dashboard({
           <div className="space-y-8">
             {/* Greeting */}
             <DashboardHeader role={role} namaRs={namaRs} surveys={surveys} />
+
+            {/* Quick alert for admin about pending registrations */}
+            {role === 'admin' && pendingAccountsCount > 0 && (
+              <div className="p-4 bg-gradient-to-r from-yellow-500/10 to-amber-500/5 border border-yellow-500/20 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-yellow-500/15 text-yellow-400 rounded-xl border border-yellow-500/20">
+                    <Clock className="w-5 h-5 animate-pulse" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-white">Permohonan Registrasi RS Menunggu Persetujuan</h4>
+                    <p className="text-xs text-slate-400 mt-0.5">Terdapat <strong className="text-yellow-400">{pendingAccountsCount} fasyankes baru</strong> yang mendaftar dan menunggu verifikasi Anda.</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('persetujuan')}
+                  className="px-4 py-2 bg-yellow-500 text-slate-950 hover:bg-yellow-400 text-xs font-bold rounded-xl transition-all cursor-pointer shadow-md flex items-center gap-1.5 shrink-0"
+                >
+                  Buka Menu Persetujuan <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
 
             {/* Stats Summary Widgets */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
@@ -352,6 +405,8 @@ export default function Dashboard({
 
         {activeTab === 'pengaturan' && (
           <PengaturanTab 
+            role={role}
+            identifier={identifier}
             namaRs={namaRs} 
             onUpdateRsName={onUpdateRsName} 
             onResetData={handleResetData} 
@@ -359,6 +414,13 @@ export default function Dashboard({
             onUpdateWallpaper={onUpdateWallpaper}
             activeLogo={activeLogo}
             onUpdateLogo={onUpdateLogo}
+          />
+        )}
+
+        {activeTab === 'persetujuan' && role === 'admin' && (
+          <PersetujuanTab 
+            accounts={accounts} 
+            onMutateAccounts={mutateAccounts} 
           />
         )}
 

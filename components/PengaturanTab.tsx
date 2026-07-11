@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, DragEvent, ChangeEvent } from 'react';
+import { useState, useRef, DragEvent, ChangeEvent, useEffect } from 'react';
 import { 
   Settings, 
   Save, 
@@ -19,14 +19,18 @@ import {
   RefreshCw,
   Wifi,
   WifiOff,
-  Terminal
+  Terminal,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 import { saveWallpaper, clearWallpaper, WallpaperData } from '../lib/wallpaper';
 import { saveLogo, clearLogo, LogoData } from '../lib/logo';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
-import { syncAllLocalDataToSupabase } from '../lib/db';
+import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile } from '../lib/db';
 
 interface PengaturanTabProps {
+  role?: 'admin' | 'rs';
+  identifier?: string;
   namaRs: string;
   onUpdateRsName: (name: string) => void;
   onResetData: () => void;
@@ -37,17 +41,55 @@ interface PengaturanTabProps {
 }
 
 export default function PengaturanTab({ 
+  role = 'admin',
+  identifier = '',
   namaRs, 
   onUpdateRsName, 
+  onResetData,
   activeWallpaper,
   onUpdateWallpaper,
   activeLogo,
   onUpdateLogo
 }: PengaturanTabProps) {
   const [tempName, setTempName] = useState(namaRs);
-  const [alamatRs, setAlamatRs] = useState('Jl. Kesehatan Raya No. 100, Jakarta');
-  const [isSaved, setIsSaved] = useState(false);
+  const [alamatRs, setAlamatRs] = useState('');
+  const [emailRs, setEmailRs] = useState('');
+  const [noTelepon, setNoTelepon] = useState('');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [accountId, setAccountId] = useState<string | null>(null);
   
+  const [isSaved, setIsSaved] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isFetchingProfile, setIsFetchingProfile] = useState(false);
+  
+  useEffect(() => {
+    if (identifier) {
+      const fetchProfile = async () => {
+        setIsFetchingProfile(true);
+        try {
+          const account = await getHospitalAccountByUsername(identifier);
+          if (account) {
+            setAccountId(account.id);
+            setTempName(account.namaRs || '');
+            setAlamatRs(account.alamatRs || '');
+            setEmailRs(account.emailRs || '');
+            setNoTelepon(account.noWhatsapp || '');
+            setUsername(account.username || '');
+            // Password remains empty unless user wants to change it
+            setPassword('');
+          }
+        } catch (e) {
+          console.error("Failed to fetch profile", e);
+        } finally {
+          setIsFetchingProfile(false);
+        }
+      };
+      fetchProfile();
+    }
+  }, [identifier]);
+
   // Wallpaper states
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -75,11 +117,42 @@ export default function PengaturanTab({
   const [showSqlSchema, setShowSqlSchema] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateRsName(tempName);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    if (accountId) {
+      setIsSavingProfile(true);
+      try {
+        const updates: any = {
+          namaRs: tempName,
+          alamatRs: alamatRs,
+          emailRs: emailRs,
+          noWhatsapp: noTelepon,
+          username: username,
+        };
+        if (password) {
+          if (password.length < 8) {
+            alert("Password baru minimal 8 karakter");
+            setIsSavingProfile(false);
+            return;
+          }
+          updates.password = password;
+        }
+        await updateHospitalProfile(accountId, updates);
+        onUpdateRsName(tempName);
+        setPassword('');
+        setIsSaved(true);
+        setTimeout(() => setIsSaved(false), 3000);
+      } catch (err) {
+        alert("Gagal memperbarui profil: " + err);
+      } finally {
+        setIsSavingProfile(false);
+      }
+    } else {
+      // Fallback if not connected to Supabase or no accountId
+      onUpdateRsName(tempName);
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    }
   };
 
   const handleTestConnection = async () => {
@@ -422,11 +495,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           <h2 className="text-[18px] md:text-[20px] font-semibold flex items-center gap-2 text-[#F8FAFC]">
             <Settings className="w-5 h-5 text-indigo-400" /> Pengaturan Sistem
           </h2>
-          <p className="text-[14px] text-white/75 mt-1">Konfigurasikan profil fasyankes dan wallpaper personalisasi Anda.</p>
-        </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-white/[0.08] text-[10px] font-bold text-white/60 uppercase tracking-wider">
-          <Database className={`w-3.5 h-3.5 ${hasSupabase ? 'text-emerald-400' : 'text-amber-500'}`} />
-          {hasSupabase ? 'Database Supabase Terhubung' : 'Database Lokal (Fallback)'}
+          <p className="text-[14px] text-white/75 mt-1">Kelola profil fasyankes dan pengaturan sistem untuk mendukung pengelolaan Survei Budaya Keselamatan Pasien yang terintegrasi, aman, dan profesional</p>
         </div>
       </div>
 
@@ -466,23 +535,81 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-[14px] font-semibold text-white/90">Email</label>
+              <input
+                type="email"
+                value={emailRs}
+                onChange={e => setEmailRs(e.target.value)}
+                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
+                placeholder="email@rs.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[14px] font-semibold text-white/90">No. Telepon / WhatsApp</label>
+              <input
+                type="tel"
+                value={noTelepon}
+                onChange={e => setNoTelepon(e.target.value)}
+                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white"
+                placeholder="08123456789"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[14px] font-semibold text-white/90">Akun (Username)</label>
+              <input
+                type="text"
+                required
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                disabled={role === 'rs'}
+                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white disabled:opacity-60 disabled:cursor-not-allowed"
+              />
+              {role === 'rs' && <p className="text-[10px] text-white/50">Username tidak dapat diubah oleh RS.</p>}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[14px] font-semibold text-white/90">Password Baru (Opsional)</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  placeholder="Kosongkan jika tidak ingin diubah"
+                  className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-[14px] focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all outline-none text-white pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3.5 text-slate-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+            </div>
+
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-semibold rounded-xl text-[14px] flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all cursor-pointer"
+                disabled={isSavingProfile || isFetchingProfile}
+                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 disabled:opacity-50 text-white font-semibold rounded-xl text-[14px] flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all cursor-pointer"
               >
-                <Save className="w-4 h-4" /> Perbarui Profil RS
+                {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
+                {isSavingProfile ? 'Menyimpan...' : 'Perbarui Profil RS'}
               </button>
             </div>
           </form>
         </div>
 
         {/* Wallpaper Konfigurasi */}
-        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
-          <div>
-            <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
-              <ImageIcon className="w-4 h-4 text-cyan-400" /> Wallpaper Latar Belakang
-            </h3>
+        {role === 'admin' && (
+          <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+            <div>
+              <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-cyan-400" /> Wallpaper Latar Belakang
+              </h3>
             <p className="text-[12px] text-white/50 mt-1">Ubah latar belakang halaman utama, login, dan landing page.</p>
           </div>
 
@@ -655,8 +782,10 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
             </p>
           </div>
         </div>
+        )}
 
         {/* Logo AHRQ Konfigurasi */}
+        {role === 'admin' && (
         <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
           <div>
             <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
@@ -815,9 +944,11 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
             </p>
           </div>
         </div>
+        )}
       </div>
 
       {/* Supabase Database Integration Settings */}
+      {role === 'admin' && (
       <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
         <div>
           <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
@@ -957,7 +1088,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               </p>
 
               <div className="relative">
-                <pre className="p-4 bg-slate-900 border border-slate-850 rounded-xl text-[10px] font-mono overflow-x-auto text-slate-300 max-h-64 scrollbar-thin">
+                <pre className="p-4 bg-slate-900 border border-slate-850 rounded-xl text-[10px] font-mono overflow-x-auto text-slate-300 max-h-64 ">
                   {`-- SCRIPT SQL SCHEMA UNTUK SUPABASE SQL EDITOR --
 -- Jalankan kode ini di tab "SQL Editor" pada dashboard Supabase Anda --
 
@@ -1046,6 +1177,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }

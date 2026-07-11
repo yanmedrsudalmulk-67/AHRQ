@@ -27,11 +27,22 @@ CREATE POLICY "Enable delete access for all users" ON public.ahrq_surveys FOR DE
 CREATE TABLE IF NOT EXISTS public.hospital_accounts (
     id TEXT PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
-    kode_rs TEXT NOT NULL,
+    kode_rs TEXT,
     nama_rs TEXT NOT NULL,
     alamat_rs TEXT NOT NULL,
     password TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    provinsi TEXT,
+    kota_kab TEXT,
+    penanggung_jawab TEXT,
+    jabatan TEXT,
+    no_whatsapp TEXT,
+    email_rs TEXT,
+    status TEXT NOT NULL DEFAULT 'Pending', -- 'Pending', 'Active', 'Rejected'
+    approval_date TIMESTAMP WITH TIME ZONE,
+    approved_by TEXT,
+    rejection_reason TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
 ALTER TABLE public.hospital_accounts ENABLE ROW LEVEL SECURITY;
@@ -93,3 +104,43 @@ DROP POLICY IF EXISTS "Enable update access for all users" ON public.app_setting
 CREATE POLICY "Enable update access for all users" ON public.app_settings FOR UPDATE USING (true);
 DROP POLICY IF EXISTS "Enable delete access for all users" ON public.app_settings;
 CREATE POLICY "Enable delete access for all users" ON public.app_settings FOR DELETE USING (true);
+
+-- 5. Table: email_notifications (To store sent emails / logs)
+CREATE TABLE IF NOT EXISTS public.email_notifications (
+    id TEXT PRIMARY KEY,
+    to_email TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    body TEXT NOT NULL,
+    type TEXT NOT NULL, -- 'admin_notification', 'approval', 'rejection'
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.email_notifications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable read access for all users" ON public.email_notifications;
+CREATE POLICY "Enable read access for all users" ON public.email_notifications FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Enable insert access for all users" ON public.email_notifications;
+CREATE POLICY "Enable insert access for all users" ON public.email_notifications FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Enable update access for all users" ON public.email_notifications;
+CREATE POLICY "Enable update access for all users" ON public.email_notifications FOR UPDATE USING (true);
+DROP POLICY IF EXISTS "Enable delete access for all users" ON public.email_notifications;
+CREATE POLICY "Enable delete access for all users" ON public.email_notifications FOR DELETE USING (true);
+
+
+-- =========================================================================
+-- DATABASE MIGRATION SCRIPT (For existing databases)
+-- Run these queries if you already have the hospital_accounts table
+-- =========================================================================
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS kode_rs TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS provinsi TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS kota_kab TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS penanggung_jawab TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS jabatan TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS no_whatsapp TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS email_rs TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'Pending';
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS approval_date TIMESTAMP WITH TIME ZONE;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS approved_by TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
+-- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+-- ALTER TABLE public.hospital_accounts ALTER COLUMN kode_rs DROP NOT NULL;
+

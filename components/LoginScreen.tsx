@@ -1,14 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LogIn, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { LogIn, ArrowLeft, ShieldCheck, ClipboardCheck, Eye, EyeOff } from 'lucide-react';
+import bcrypt from 'bcryptjs';
 import { getHospitalAccounts } from '../lib/db';
+import { LogoData } from '../lib/logo';
 
 interface LoginScreenProps {
   onBack: () => void;
   onLoginSuccess: (role: 'rs' | 'admin', identifier: string, name: string) => void;
   onGoToRegister: () => void;
   registeredHospitals: Array<{ username: string; kodeRs: string; namaRs: string }>;
+  activeLogo?: LogoData | null;
 }
 
 export default function LoginScreen({
@@ -16,12 +19,15 @@ export default function LoginScreen({
   onLoginSuccess,
   onGoToRegister,
   registeredHospitals,
+  activeLogo,
 }: LoginScreenProps) {
   const [activeTab, setActiveTab] = useState<'rs' | 'admin'>('rs');
   const [rsUsername, setRsUsername] = useState('');
   const [rsPassword, setRsPassword] = useState('');
   const [adminUsername, setAdminUsername] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
+  const [showRsPassword, setShowRsPassword] = useState(false);
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
   const [error, setError] = useState('');
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +46,7 @@ export default function LoginScreen({
     loadHospitals();
   }, [registeredHospitals]);
 
-  const handleRsSubmit = (e: React.FormEvent) => {
+  const handleRsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -49,14 +55,49 @@ export default function LoginScreen({
       return;
     }
 
-    const found = hospitals.find(
-      h => h.username.toLowerCase() === rsUsername.toLowerCase() && h.kodeRs === rsPassword
-    );
+    try {
+      // Find the account by username (case-insensitive)
+      const found = hospitals.find(
+        h => h.username.toLowerCase() === rsUsername.toLowerCase().trim()
+      );
 
-    if (found) {
+      if (!found) {
+        setError('Username Rumah Sakit tidak ditemukan.');
+        return;
+      }
+
+      // Check Password
+      let isMatch = false;
+      if (found.password && (found.password.startsWith('$2a$') || found.password.startsWith('$2b$'))) {
+        isMatch = await bcrypt.compare(rsPassword, found.password);
+      } else {
+        // Fallback check for plain text legacy accounts
+        isMatch = found.password === rsPassword || found.kodeRs === rsPassword;
+      }
+
+      if (!isMatch) {
+        setError('Password yang Anda masukkan salah.');
+        return;
+      }
+
+      // Check Status
+      const status = found.status || 'Active'; // Fallback for legacy accounts
+
+      if (status === 'Pending') {
+        setError('Akun Anda masih menunggu persetujuan Administrator.');
+        return;
+      }
+
+      if (status === 'Rejected') {
+        setError('Akun Anda belum disetujui. Silakan hubungi Administrator.');
+        return;
+      }
+
+      // Proceed on Active status
       onLoginSuccess('rs', found.username, found.namaRs);
-    } else {
-      setError('Kombinasi Username RS dan Kode RS salah');
+    } catch (err) {
+      console.error("Login error:", err);
+      setError('Terjadi kesalahan koneksi saat login.');
     }
   };
 
@@ -90,12 +131,19 @@ export default function LoginScreen({
       </button>
 
       <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-md rounded-3xl border border-slate-800/80 shadow-2xl p-8">
-        <div className="text-center space-y-2 mb-8">
-          <div className="mx-auto w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-4">
-            <LogIn className="w-6 h-6" />
+        <div className="text-center space-y-4 mb-8">
+          <div className="mx-auto p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0 w-16 h-16">
+            {activeLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
+            ) : (
+              <ShieldCheck className="w-10 h-10 animate-pulse" />
+            )}
           </div>
-          <h2 className="text-2xl font-sans font-semibold text-white">Selamat Datang</h2>
-          <p className="text-xs text-slate-400">Silakan login ke dalam Sistem Survei AHRQ SOPS 2.0</p>
+          <div className="space-y-2">
+            <h2 className="text-2xl font-sans font-semibold text-white">Selamat Datang</h2>
+            <p className="text-xs text-slate-400">Silakan login ke dalam Sistem Survei AHRQ SOPS 2.0</p>
+          </div>
         </div>
 
         {/* Tab Selector */}
@@ -144,15 +192,24 @@ export default function LoginScreen({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Kode RS (Password)</label>
-              <input
-                type="password"
-                required
-                placeholder="Masukkan Kode RS (cth: RS1002)"
-                value={rsPassword}
-                onChange={e => setRsPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
-              />
+              <label className="text-xs font-semibold text-slate-300">Password</label>
+              <div className="relative">
+                <input
+                  type={showRsPassword ? 'text' : 'password'}
+                  required
+                  placeholder="Masukkan Password"
+                  value={rsPassword}
+                  onChange={e => setRsPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowRsPassword(!showRsPassword)}
+                  className="absolute right-3 top-3.5 text-slate-400 hover:text-white"
+                >
+                  {showRsPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             <button
@@ -191,14 +248,23 @@ export default function LoginScreen({
 
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-300">Password</label>
-              <input
-                type="password"
-                required
-                placeholder="••••••"
-                value={adminPassword}
-                onChange={e => setAdminPassword(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
-              />
+              <div className="relative">
+                <input
+                  type={showAdminPassword ? 'text' : 'password'}
+                  required
+                  placeholder="••••••"
+                  value={adminPassword}
+                  onChange={e => setAdminPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200 pr-12"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdminPassword(!showAdminPassword)}
+                  className="absolute right-3 top-3.5 text-slate-400 hover:text-white"
+                >
+                  {showAdminPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
             </div>
 
             <button

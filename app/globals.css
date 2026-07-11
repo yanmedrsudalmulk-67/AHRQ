@@ -2,10 +2,84 @@
 
 @theme {
   --animate-float: float 3s ease-in-out infinite;
+
   @keyframes float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-4px); }
   }
 }
 
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
 
+  /* Global Scrollbar Customization for Firefox */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #6366F1 rgba(255, 255, 255, 0.03);
+  }
+
+  /* WebKit (Chrome, Safari, Edge) */
+  ::-webkit-scrollbar {
+    width: 8px; /* 8px max width for hover state */
+    height: 8px;
+  }
+
+  /* Responsive Width */
+  @media (max-width: 1024px) {
+    ::-webkit-scrollbar {
+      width: 7px;
+      height: 7px;
+    }
+  }
+
+  ::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 10px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    /* Using background-clip to create the "thin" effect inside an 8px track */
+    background-color: #6366F1;
+    background-image: linear-gradient(180deg, #3B82F6, #6366F1, #8B5CF6);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 10px;
+    box-shadow: 
+      inset 0 0 6px rgba(255,255,255,0.1),
+      0 0 4px rgba(59,130,246,0.5),
+      0 0 8px rgba(99,102,241,0.35),
+      0 0 12px rgba(139,92,246,0.25);
+    animation: scrollbarPulse 4s ease-in-out infinite;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-image: linear-gradient(180deg, #60A5FA, #818CF8, #A78BFA);
+    /* Removing the border allows the thumb to fill the entire 8px track */
+    border: 0px solid transparent;
+    box-shadow: 
+      inset 0 0 8px rgba(255,255,255,0.2),
+      0 0 6px rgba(59,130,246,0.7),
+      0 0 10px rgba(99,102,241,0.5),
+      0 0 14px rgba(139,92,246,0.4);
+  }
+}
+
+@keyframes scrollbarPulse {
+  0%, 100% {
+    box-shadow: 
+      inset 0 0 6px rgba(255,255,255,0.1),
+      0 0 4px rgba(59,130,246,0.5),
+      0 0 8px rgba(99,102,241,0.35),
+      0 0 12px rgba(139,92,246,0.25);
+  }
+  50% {
+    box-shadow: 
+      inset 0 0 8px rgba(255,255,255,0.15),
+      0 0 6px rgba(59,130,246,0.7),
+      0 0 10px rgba(99,102,241,0.5),
+      0 0 16px rgba(139,92,246,0.4);
+  }
+}

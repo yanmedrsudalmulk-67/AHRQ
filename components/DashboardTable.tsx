@@ -783,13 +783,13 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                       onClick={() => setSelectedDimensi(dim.id)}
                       className="hover:bg-[#252c3c] transition-all cursor-pointer group divide-x divide-white/5"
                     >
-                      <td className="p-4 text-center font-bold font-mono group-hover:text-blue-400 transition-colors text-base text-[#f3f5f8]">
+                      <td className="p-4 text-center font-bold font-mono hover:text-blue-400 transition-colors text-base text-[#f3f5f8]">
                         {globalIdx}
                       </td>
                       <td className="p-4 text-left">
-                        <div className="group-hover:text-cyan-400 transition-colors text-[14px] font-bold text-slate-200 flex items-center justify-between">
+                        <div className="hover:text-blue-400 transition-colors text-[14px] font-bold text-slate-200 flex items-center justify-between">
                           <span>{dim.nama}</span>
-                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-cyan-400" />
+                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
                         </div>
                       </td>
                       <td className="p-4 text-center">

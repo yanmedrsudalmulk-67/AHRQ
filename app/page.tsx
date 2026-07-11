@@ -97,6 +97,7 @@ export default function Home() {
           onLoginSuccess={handleLoginSuccess}
           onGoToRegister={() => setScreen('register')}
           registeredHospitals={registeredHospitals}
+          activeLogo={activeLogo}
         />
       )}
 
