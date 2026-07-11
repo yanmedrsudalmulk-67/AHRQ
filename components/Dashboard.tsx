@@ -144,13 +144,13 @@ export default function Dashboard({
       </header>
 
       {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-      <aside className="w-full fixed bottom-0 left-0 z-50 md:relative md:w-64 bg-slate-950/90 md:bg-gradient-to-b md:from-[#00244d]/75 md:via-[#0c1a36]/80 md:to-[#020918]/80 backdrop-blur-3xl border-t border-white/10 md:border-t-0 md:border-r md:border-white/10 md:p-5 flex flex-col justify-between shrink-0 no-print shadow-[0_-15px_40px_rgba(0,0,0,0.6)] md:shadow-[inset_1px_1px_0_rgba(255,255,255,0.06)] md:shadow-2xl md:shadow-blue-950/40 md:h-full md:overflow-hidden pb-safe">
+      <aside className="w-full fixed bottom-0 left-0 z-50 md:relative md:w-64 bg-slate-950/90 md:bg-gradient-to-b md:from-[#00244d]/75 md:via-[#0c1a36]/80 md:to-[#020918]/80 backdrop-blur-3xl border-t border-white/10 md:border-t-0 md:border-r md:border-white/10 md:pt-16 md:px-5 md:pb-5 flex flex-col justify-between shrink-0 no-print shadow-[0_-15px_40px_rgba(0,0,0,0.6)] md:shadow-[inset_1px_1px_0_rgba(255,255,255,0.06)] md:shadow-2xl md:shadow-blue-950/40 md:h-full md:overflow-hidden pb-safe">
         
         <div className="md:space-y-6 flex-1 flex flex-col justify-center md:justify-start">
           
           {/* Brand/Title - Hidden on Mobile */}
           <div className="hidden md:flex items-center gap-2.5 px-2">
-            <div className="p-0.5 bg-blue-600 text-white rounded-lg border border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] flex items-center justify-center shrink-0 w-10 h-10">
+            <div className="p-0 bg-blue-600 text-white rounded-lg border border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.3)] flex items-center justify-center shrink-0 w-[50px] h-[50px]">
               {activeLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
@@ -159,9 +159,13 @@ export default function Dashboard({
               )}
             </div>
             <div>
-              <span className="font-sans font-bold text-sm text-slate-100 tracking-tight">AHRQ SOPS 2.0</span>
-              <p className="text-[9px] text-cyan-500 font-mono tracking-wider font-semibold block">Agency for Healthcare Research and Quality</p>
+              <span className="font-sans font-bold text-[15px] text-slate-100 tracking-tight">AHRQ SOPS 2.0</span>
+              <p className="text-[10px] text-cyan-500 font-mono tracking-wider font-semibold block">Agency for Healthcare Research and Quality</p>
             </div>
+          </div>
+
+          <div className="hidden md:block px-4">
+            <hr className="border-white/10" />
           </div>
 
           {/* Navigation Links */}
