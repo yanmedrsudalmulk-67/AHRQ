@@ -62,7 +62,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       {/* 1. Header (Translucent Glass Bar) */}
       <header 
         id="welcome-header" 
-        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-slate-900/30 backdrop-blur-md rounded-2xl border border-slate-800/60 shadow-xl"
+        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/60"
       >
         <div className="flex items-center gap-3">
           <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0 w-12 h-12">
@@ -74,7 +74,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
             )}
           </div>
           <div>
-            <span className="font-extrabold tracking-wider text-sm text-slate-100 block font-sans">AHRQ SOPS 2.0</span>
+            <span className="font-extrabold tracking-wider text-sm text-slate-100 block font-sans">AHRQ SOPS v2.0</span>
             <span className="text-[10px] text-cyan-400 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</span>
           </div>
         </div>
@@ -102,7 +102,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       >
         
         {/* Headline & CTA */}
-        <div className="space-y-6 flex flex-col justify-center items-start text-left w-full max-w-[620px]">
+        <div className="space-y-6 flex flex-col justify-center items-start text-left w-[620px] max-w-[620px]">
           
           <div className="space-y-4">
             <motion.h1

@@ -141,7 +141,7 @@ export default function Dashboard({
             )}
           </div>
           <div>
-            <span className="font-sans font-bold text-sm text-slate-100 tracking-tight">AHRQ SOPS 2.0</span>
+            <span className="font-sans font-bold text-sm text-slate-100 tracking-tight">AHRQ SOPS v2.0</span>
             <p className="text-[9px] text-cyan-500 font-mono tracking-wider font-semibold block">Agency for Healthcare Research and Quality</p>
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function Dashboard({
               )}
             </div>
             <div>
-              <span className="font-sans font-bold text-[15px] text-slate-100 tracking-tight">AHRQ SOPS 2.0</span>
+              <span className="font-sans font-bold text-[15px] text-slate-100 tracking-tight">AHRQ SOPS v2.0</span>
               <p className="text-[10px] text-cyan-500 font-mono tracking-wider font-semibold block">Agency for Healthcare Research and Quality</p>
             </div>
           </div>
@@ -195,7 +195,7 @@ export default function Dashboard({
               onClick={() => setActiveTab('dashboard')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-cyan-500 md:via-indigo-500 md:to-indigo-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
                   : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
@@ -208,7 +208,7 @@ export default function Dashboard({
               onClick={() => setActiveTab('input')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'input'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-cyan-500 md:via-indigo-500 md:to-indigo-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
                   : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
@@ -221,7 +221,7 @@ export default function Dashboard({
               onClick={() => setActiveTab('grafik')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'grafik'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-cyan-500 md:via-indigo-500 md:to-indigo-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
                   : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
@@ -234,7 +234,7 @@ export default function Dashboard({
               onClick={() => setActiveTab('laporan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'laporan'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-cyan-500 md:via-indigo-500 md:to-indigo-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
                   : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
@@ -247,7 +247,7 @@ export default function Dashboard({
               onClick={() => setActiveTab('pengaturan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer ${
                 activeTab === 'pengaturan'
-                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                  ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-cyan-500 md:via-indigo-500 md:to-indigo-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
                   : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
               }`}
             >
@@ -261,7 +261,7 @@ export default function Dashboard({
                 onClick={() => setActiveTab('persetujuan')}
                 className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all cursor-pointer relative ${
                   activeTab === 'persetujuan'
-                    ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-indigo-600 md:to-purple-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                    ? 'text-white bg-white/10 md:bg-gradient-to-r md:from-cyan-500 md:via-indigo-500 md:to-indigo-600 md:shadow-lg md:shadow-indigo-500/30 shadow-[inset_0_1px_1px_rgba(255,255,255,0.2)] md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
                     : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
                 }`}
               >

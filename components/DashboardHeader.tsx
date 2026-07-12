@@ -29,8 +29,6 @@ interface DashboardHeaderProps {
   role: 'rs' | 'admin';
   namaRs: string;
   surveys: SurveyData[];
-  selectedYear: string;
-  setSelectedYear: (year: string) => void;
 }
 
 interface CompactCardProps {
@@ -65,7 +63,7 @@ function CompactCard({ icon, label, value, isMono }: CompactCardProps) {
   );
 }
 
-export default function DashboardHeader({ role, namaRs, surveys, selectedYear, setSelectedYear }: DashboardHeaderProps) {
+export default function DashboardHeader({ role, namaRs, surveys }: DashboardHeaderProps) {
   const [timeString, setTimeString] = useState<string>('');
   const [dateString, setDateString] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);

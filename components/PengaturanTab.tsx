@@ -466,6 +466,11 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
     e.preventDefault();
     if (!wallpaperUrlInput.trim()) return;
 
+    if (wallpaperUrlInput.trim().match(/\.(mp4|webm)$/i)) {
+      setUploadError('Tautan URL tidak boleh berupa video. Harap unggah video melalui tab "Unggah Berkas" dengan maksimal 5MB.');
+      return;
+    }
+
     setIsUploading(true);
     setUploadError(null);
 
