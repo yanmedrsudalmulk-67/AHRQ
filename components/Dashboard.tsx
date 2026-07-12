@@ -66,15 +66,15 @@ export default function Dashboard({
   const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan' | 'persetujuan'>('dashboard');
 
   // SWR for real-time survey synchronization with background polling
-  const { data: surveys = [], mutate } = useSWR('ahrq_surveys', getSurveys, {
-    fallbackData: [], refreshInterval: 3000
+  const { data: surveys = [], mutate, isLoading: surveysLoading } = useSWR('ahrq_surveys', getSurveys, {
+    refreshInterval: 3000
   });
 
   // SWR for real-time hospital accounts with background polling (only for admin)
-  const { data: accounts = [], mutate: mutateAccounts } = useSWR(
+  const { data: accounts = [], mutate: mutateAccounts, isLoading: accountsLoading } = useSWR(
     role === 'admin' ? 'hospital_accounts' : null,
     getHospitalAccounts,
-    { fallbackData: [], refreshInterval: 3000 }
+    { refreshInterval: 3000 }
   );
 
   const pendingAccountsCount = accounts.filter(a => a.status === 'Pending').length;
@@ -306,6 +306,15 @@ export default function Dashboard({
       <main className="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto md:h-full pb-24 md:pb-8">
         
         {/* Dynamic View rendering */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.3, ease: 'easeInOut' }}
+            className="w-full"
+          >
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             {/* Greeting */}
@@ -423,6 +432,8 @@ export default function Dashboard({
             onMutateAccounts={mutateAccounts} 
           />
         )}
+          </motion.div>
+        </AnimatePresence>
 
       </main>
     </div>

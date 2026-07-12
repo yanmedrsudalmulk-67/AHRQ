@@ -346,31 +346,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
     { id: 9, label: 'Review', key: 'review' }
   ];
 
-  // Load draft from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const draft = localStorage.getItem(draftKey);
-      if (draft) {
-        try {
-          const parsed = JSON.parse(draft);
-          if (parsed.responderName) setResponderName(parsed.responderName);
-          if (parsed.posisiStaf) setPosisiStaf(parsed.posisiStaf);
-          if (parsed.unitKerja) setUnitKerja(parsed.unitKerja);
-          if (parsed.ansA) setAnsA(parsed.ansA);
-          if (parsed.ansB) setAnsB(parsed.ansB);
-          if (parsed.ansC) setAnsC(parsed.ansC);
-          if (parsed.ansD) setAnsD(parsed.ansD);
-          if (parsed.ansE) setAnsE(parsed.ansE);
-          if (parsed.ansF) setAnsF(parsed.ansF);
-          if (parsed.ansG) setAnsG(parsed.ansG);
-          if (parsed.komentar) setKomentar(parsed.komentar);
-          if (parsed.step !== undefined) setStep(parsed.step);
-        } catch (e) {
-          console.error("Gagal memuat draf survei", e);
-        }
-      }
-    }
-  }, [draftKey]);
+
 
   // Automatically scroll to the top of the page / container when step changes
   useEffect(() => {
@@ -390,28 +366,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
   }, [step]);
 
   // Save draft whenever answers change
-  const triggerAutoSave = (updatedData: any) => {
-    if (typeof window !== 'undefined') {
-      const currentDraft = {
-        responderName,
-        posisiStaf,
-        unitKerja,
-        ansA,
-        ansB,
-        ansC,
-        ansD,
-        ansE,
-        ansF,
-        ansG,
-        komentar,
-        step,
-        ...updatedData
-      };
-      localStorage.setItem(draftKey, JSON.stringify(currentDraft));
-      setAutoSavePulse(true);
-      setTimeout(() => setAutoSavePulse(false), 800);
-    }
-  };
+  const triggerAutoSave = (data: any) => {};
 
   // Auto-scroll to next question helper
   const scrollToQuestion = (nextId: string) => {
@@ -575,96 +530,30 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
   };
 
   const handleSelectD3 = (val: string) => {
-    const updated = { ...ansD, 3: val };
+    const updated = { ...ansD };
+    if (updated[3] === val) delete updated[3]; else updated[3] = val;
     setAnsD(updated);
     triggerAutoSave({ ansD: updated });
-    scrollToQuestion('E-1');
+    if (updated[3]) scrollToQuestion('E-1');
   };
 
   const handleSelectE = (val: number) => {
-    setAnsE(val);
-    triggerAutoSave({ ansE: val });
-    scrollToQuestion('F-1');
+    const updatedVal = ansE === val ? undefined : val;
+    setAnsE(updatedVal);
+    triggerAutoSave({ ansE: updatedVal });
+    if (updatedVal) scrollToQuestion('F-1');
   };
 
   const handleSelectG = (id: number, val: string) => {
-    const updated = { ...ansG, [id]: val };
+    const updated = { ...ansG } as any;
+    if (updated[id] === val) delete updated[id]; else updated[id] = val;
     setAnsG(updated);
     triggerAutoSave({ ansG: updated });
-    scrollToQuestion(`G-${id + 1}`);
+    if (updated[id]) scrollToQuestion(`G-${id + 1}`);
   };
 
   const handleNextStep = () => {
-    let firstUnansweredKey: string | null = null;
-
-    if (step === 1) {
-      for (const st of STATEMENTS_A) {
-        if (!ansA[st.id]) {
-          firstUnansweredKey = `A-${st.id}`;
-          break;
-        }
-      }
-    } else if (step === 2) {
-      for (const st of STATEMENTS_B) {
-        if (!ansB[st.id]) {
-          firstUnansweredKey = `B-${st.id}`;
-          break;
-        }
-      }
-    } else if (step === 3) {
-      for (const st of STATEMENTS_C) {
-        if (!ansC[st.id]) {
-          firstUnansweredKey = `C-${st.id}`;
-          break;
-        }
-      }
-    } else if (step === 4) {
-      if (!ansD[1]) {
-        firstUnansweredKey = 'D-1';
-      } else if (!ansD[2]) {
-        firstUnansweredKey = 'D-2';
-      } else if (!ansD[3]) {
-        firstUnansweredKey = 'D-3';
-      }
-    } else if (step === 5) {
-      if (ansE === undefined) {
-        firstUnansweredKey = 'E-1';
-      }
-    } else if (step === 6) {
-      for (const st of STATEMENTS_F) {
-        if (!ansF[st.id]) {
-          firstUnansweredKey = `F-${st.id}`;
-          break;
-        }
-      }
-    } else if (step === 7) {
-      if (!ansG[1]) {
-        firstUnansweredKey = 'G-1';
-      } else if (!ansG[2]) {
-        firstUnansweredKey = 'G-2';
-      } else if (!ansG[3]) {
-        firstUnansweredKey = 'G-3';
-      } else if (!ansG[4]) {
-        firstUnansweredKey = 'G-4';
-      }
-    } else if (step === 8) {
-      if (!komentar.trim()) {
-        firstUnansweredKey = 'H-1';
-      }
-    }
-
-    if (firstUnansweredKey) {
-      const element = questionRefs.current[firstUnansweredKey];
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        element.classList.add('ring-2', 'ring-red-500/50');
-        setTimeout(() => {
-          element.classList.remove('ring-2', 'ring-red-500/50');
-        }, 2000);
-      }
-    } else {
-      setStep(step + 1);
-    }
+    setStep(step + 1);
   };
 
   const handleRandomize = () => {
@@ -735,7 +624,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
       setKomentar('');
       setStep(0);
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(draftKey);
+        
       }
     }
   };
@@ -773,7 +662,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
       setShowConfirmModal(false);
       setStep(10); // Success step
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(draftKey);
+        
       }
     } catch (err) {
       console.error("Kesalahan menyimpan kuesioner:", err);
@@ -782,7 +671,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
       setShowConfirmModal(false);
       setStep(10);
       if (typeof window !== 'undefined') {
-        localStorage.removeItem(draftKey);
+        
       }
     }
   };
@@ -911,7 +800,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       posisiStaf && unitKerja 
                         ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
                     <div className="space-y-2">
@@ -987,7 +876,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
                             : category === 'negative'
                             ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1104,7 +993,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
                             : category === 'negative'
                             ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1211,7 +1100,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
                             : category === 'negative'
                             ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1318,7 +1207,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
                             : category === 'negative'
                             ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1418,7 +1307,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
                             : category === 'negative'
                             ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1516,7 +1405,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
                             : category === 'neutral'
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1604,7 +1493,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
                             : category === 'negative'
                             ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1711,7 +1600,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
                             : category === 'negative'
                             ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
@@ -1810,7 +1699,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[1] 
                         ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1843,7 +1732,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[2] 
                         ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1876,7 +1765,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[3] 
                         ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1909,7 +1798,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[4] 
                         ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1948,7 +1837,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                   className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                     komentar.trim() 
                       ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                      : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                      : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                   }`}
                 >
                   <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
