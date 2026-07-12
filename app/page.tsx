@@ -68,6 +68,7 @@ export default function Home() {
               loop
               muted
               playsInline
+              preload="auto"
               className="w-full h-full object-cover"
             />
             {/* Dark overlay to ensure contrast - 50% on welcome/hero screen, 70% elsewhere */}

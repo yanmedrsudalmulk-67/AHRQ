@@ -35,7 +35,9 @@ import bcrypt from 'bcryptjs';
 import { saveWallpaper, clearWallpaper, WallpaperData } from '../lib/wallpaper';
 import { saveLogo, clearLogo, LogoData } from '../lib/logo';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
-import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile, HospitalAccount } from '../lib/db';
+import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile, HospitalAccount, getMasterBenchmark, saveMasterBenchmark } from '../lib/db';
+import { DIMENSI_INFO } from '../lib/scoring';
+import { BarChart2 } from 'lucide-react';
 
 interface PengaturanTabProps {
   role?: 'admin' | 'rs';
@@ -60,6 +62,52 @@ export default function PengaturanTab({
   activeLogo,
   onUpdateLogo
 }: PengaturanTabProps) {
+  // Benchmark state
+  const [benchmarks, setBenchmarks] = useState<Record<string, { min: number, max: number }>>({});
+  const [isSavingBenchmark, setIsSavingBenchmark] = useState(false);
+
+  useEffect(() => {
+    if (role === 'admin') {
+      const fetchBenchmark = async () => {
+        const bm = await getMasterBenchmark();
+        if (bm) {
+          setBenchmarks(bm);
+        } else {
+          // prefill from DIMENSI_INFO
+          const prefilled: Record<string, {min: number, max: number}> = {};
+          Object.keys(DIMENSI_INFO).forEach(k => {
+            prefilled[k] = { min: DIMENSI_INFO[k].benchmarkMin, max: DIMENSI_INFO[k].benchmarkMax };
+          });
+          setBenchmarks(prefilled);
+        }
+      };
+      fetchBenchmark();
+    }
+  }, [role]);
+
+  const handleSaveBenchmark = async () => {
+    setIsSavingBenchmark(true);
+    try {
+      await saveMasterBenchmark(benchmarks);
+      showToast("✅ Master Benchmark berhasil disimpan.", "success");
+    } catch (e: any) {
+      showToast(`❌ Gagal menyimpan benchmark: ${e.message}`, "error");
+    } finally {
+      setIsSavingBenchmark(false);
+    }
+  };
+
+  const handleBenchmarkChange = (dimId: string, field: 'min' | 'max', value: string) => {
+    const val = parseInt(value, 10);
+    setBenchmarks(prev => ({
+      ...prev,
+      [dimId]: {
+        ...prev[dimId],
+        [field]: isNaN(val) ? 0 : val
+      }
+    }));
+  };
+
   const [tempName, setTempName] = useState(namaRs);
   const [alamatRs, setAlamatRs] = useState('');
   const [provinsi, setProvinsi] = useState('');
@@ -403,8 +451,8 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
       return;
     }
 
-    if (isVideo && file.size > 5 * 1024 * 1024) {
-      setUploadError('Ukuran video terlalu besar. Batas maksimal unggah video adalah 5MB.');
+    if (isVideo && file.size > 15 * 1024 * 1024) {
+      setUploadError('Ukuran video terlalu besar. Batas maksimal unggah video adalah 15MB.');
       return;
     }
 
@@ -467,7 +515,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
     if (!wallpaperUrlInput.trim()) return;
 
     if (wallpaperUrlInput.trim().match(/\.(mp4|webm)$/i)) {
-      setUploadError('Tautan URL tidak boleh berupa video. Harap unggah video melalui tab "Unggah Berkas" dengan maksimal 5MB.');
+      setUploadError('Tautan URL tidak boleh berupa video. Harap unggah video melalui tab "Unggah Berkas" dengan maksimal 15MB.');
       return;
     }
 
@@ -1095,7 +1143,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     Tarik & Letakkan berkas di sini, atau <span className="text-indigo-400 underline">pilih berkas</span>
                   </h4>
                   <p className="text-[10px] text-slate-500 max-w-xs mx-auto">
-                    Mendukung gambar kustom (PNG, JPG, JPEG) hingga maks. 15MB atau video (MP4/WebM) hingga maks. 5MB.
+                    Mendukung gambar kustom (PNG, JPG, JPEG) hingga maks. 15MB atau video (MP4/WebM) hingga maks. 15MB.
                   </p>
                 </div>
               )}
@@ -1117,7 +1165,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                   <LinkIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 </div>
                 <p className="text-[10px] text-slate-400">
-                  Masukkan tautan URL langsung ke gambar (PNG/JPG). Video latar belakang tidak lagi menggunakan tautan URL dan wajib diunggah secara langsung pada tab &quot;Unggah Berkas&quot; dengan batasan maksimal 5MB.
+                  Masukkan tautan URL langsung ke gambar (PNG/JPG). Video latar belakang tidak lagi menggunakan tautan URL dan wajib diunggah secara langsung pada tab &quot;Unggah Berkas&quot; dengan batasan maksimal 15MB.
                 </p>
               </div>
  
@@ -1174,6 +1222,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     loop
                     muted
                     playsInline
+                    preload="auto"
                     className="w-full h-full object-cover"
                   />
                 ) : (
@@ -1362,6 +1411,70 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         </div>
         )}
       </div>
+
+      {/* Benchmark Konfigurasi */}
+      {role === 'admin' && (
+        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/[0.08] pb-3">
+            <div>
+              <h3 className="text-[16px] font-semibold text-[#F8FAFC] flex items-center gap-1.5">
+                <BarChart2 className="w-4 h-4 text-emerald-400" /> Kelola Master Benchmark
+              </h3>
+              <p className="text-[12px] text-white/50 mt-1">Atur nilai referensi rata-rata rumah sakit percontohan untuk setiap dimensi. Nilai ini akan tampil pada Grafik Capaian Komposit.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveBenchmark}
+              disabled={isSavingBenchmark}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-[0_4px_12px_rgba(16,185,129,0.3)] shrink-0"
+            >
+              {isSavingBenchmark ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
+              {isSavingBenchmark ? 'Menyimpan...' : 'Simpan Benchmark'}
+            </button>
+          </div>
+
+          <div className="overflow-x-auto border border-white/5 rounded-xl bg-slate-900/30">
+            <table className="w-full text-left text-[11px]">
+              <thead className="bg-slate-950/60 border-b border-white/10 text-slate-400 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th className="p-3 w-8 text-center">No</th>
+                  <th className="p-3">Dimensi Budaya Keselamatan Pasien</th>
+                  <th className="p-3 w-28 text-center text-emerald-400">Min (%)</th>
+                  <th className="p-3 w-28 text-center text-cyan-400">Max (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5 text-slate-300">
+                {Object.keys(DIMENSI_INFO).map((k, i) => (
+                  <tr key={k} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="p-3 text-center text-slate-500 font-bold">{i + 1}</td>
+                    <td className="p-3 font-medium text-slate-200">{DIMENSI_INFO[k].nama}</td>
+                    <td className="p-3">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={benchmarks[k]?.min ?? ''}
+                          onChange={e => handleBenchmarkChange(k, 'min', e.target.value)}
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-center text-emerald-400 font-mono focus:border-emerald-500 outline-none transition-colors"
+                        />
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={benchmarks[k]?.max ?? ''}
+                          onChange={e => handleBenchmarkChange(k, 'max', e.target.value)}
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-center text-cyan-400 font-mono focus:border-cyan-500 outline-none transition-colors"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Supabase Database Integration Settings */}
       {role === 'admin' && (

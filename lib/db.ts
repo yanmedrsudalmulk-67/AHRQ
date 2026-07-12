@@ -696,3 +696,48 @@ export async function syncAllLocalDataToSupabase(): Promise<{
   };
 }
 
+export async function getMasterBenchmark(): Promise<Record<string, { min: number, max: number }> | null> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('ahrq_surveys')
+        .select('dimensi_scores')
+        .eq('id', 'MASTER_BENCHMARK')
+        .single();
+      
+      if (!error && data && data.dimensi_scores) {
+        return data.dimensi_scores as Record<string, { min: number, max: number }>;
+      }
+    } catch (e) {
+      console.error("Failed to get master benchmark", e);
+    }
+  }
+  return null;
+}
+
+export async function saveMasterBenchmark(benchmarkData: Record<string, { min: number, max: number }>): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data: existing } = await supabase.from('ahrq_surveys').select('id').eq('id', 'MASTER_BENCHMARK').single();
+      
+      if (existing) {
+        await supabase.from('ahrq_surveys').update({ dimensi_scores: benchmarkData }).eq('id', 'MASTER_BENCHMARK');
+      } else {
+        await supabase.from('ahrq_surveys').insert([{
+          id: 'MASTER_BENCHMARK',
+          nama_rs: 'SYSTEM_BENCHMARK',
+          unit_kerja: 'SYSTEM',
+          jumlah_responden: 0,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: benchmarkData
+        }]);
+      }
+    } catch (e) {
+      console.error("Failed to save master benchmark", e);
+    }
+  }
+}
+
+

@@ -1,16 +1,16 @@
 import { SurveyData } from './db';
 
-export const DIMENSI_INFO: { [key: string]: { nama: string; kode: string; totalPertanyaan: number; deskripsi: string; benchmark: number } } = {
-  d7: { nama: 'Komunikasi tentang Kesalahan', kode: 'D7', totalPertanyaan: 3, deskripsi: 'Seberapa sering staf diberi informasi tentang kesalahan yang terjadi di unit, dan mendiskusikan cara mencegahnya.', benchmark: 71 },
-  d6: { nama: 'Keterbukaan Komunikasi', kode: 'D6', totalPertanyaan: 4, deskripsi: 'Staf bebas berbicara jika melihat sesuatu yang dapat berdampak buruk pada pasien dan berani bertanya kepada atasan.', benchmark: 68 },
-  d10: { nama: 'Serah Terima Pasien & Pertukaran Informasi', kode: 'D10', totalPertanyaan: 3, deskripsi: 'Pemberian informasi penting tentang perawatan pasien yang hilang atau terdistorsi saat pergantian shift atau transfer unit.', benchmark: 59 },
-  d9: { nama: 'Dukungan Manajemen RS terhadap Keselamatan Pasien', kode: 'D9', totalPertanyaan: 3, deskripsi: 'Manajemen rumah sakit menciptakan iklim kerja yang memprioritaskan keselamatan pasien di atas target lainnya.', benchmark: 60 },
-  d3: { nama: 'Pembelajaran Organisasi & Peningkatan Berkelanjutan', kode: 'D3', totalPertanyaan: 2, deskripsi: 'Seberapa jauh kesalahan mengarah pada perubahan positif dan efektivitas perubahan dievaluasi.', benchmark: 76 },
-  d8: { nama: 'Frekuensi Pelaporan Kejadian Keselamatan Pasien', kode: 'D8', totalPertanyaan: 2, deskripsi: 'Sejauh mana jenis kesalahan tertentu dilaporkan, baik sebelum berdampak pada pasien maupun sesudahnya.', benchmark: 64 },
-  d4: { nama: 'Respon terhadap Kesalahan secara Non-Punitif', kode: 'D4', totalPertanyaan: 5, deskripsi: 'Staf merasa bahwa kesalahan tidak digunakan untuk menyalahkan atau menghukum mereka secara pribadi.', benchmark: 48 },
-  d2: { nama: 'Ketenagaan dan Beban Kerja', kode: 'D2', totalPertanyaan: 4, deskripsi: 'Kecukupan jumlah staf untuk menangani beban kerja and apakah jam kerja sesuai untuk keselamatan pasien.', benchmark: 57 },
-  d5: { nama: 'Dukungan Supervisor/Manajer untuk Keselamatan', kode: 'D5', totalPertanyaan: 3, deskripsi: 'Seberapa jauh supervisor mengapresiasi staf karena mengikuti prosedur keselamatan dan tidak mendesak penyelesaian tugas dengan mengabaikan keselamatan.', benchmark: 72 },
-  d1: { nama: 'Kerjasama Tim', kode: 'D1', totalPertanyaan: 3, deskripsi: 'Seberapa jauh staf bekerja sama, saling mendukung, dan memperlakukan satu sama lain dengan hormat.', benchmark: 82 },
+export const DIMENSI_INFO: { [key: string]: { nama: string; kode: string; totalPertanyaan: number; deskripsi: string; benchmarkMin: number; benchmarkMax: number } } = {
+  d7: { nama: 'Komunikasi tentang Kesalahan', kode: 'D7', totalPertanyaan: 3, deskripsi: 'Seberapa sering staf diberi informasi tentang kesalahan yang terjadi di unit, dan mendiskusikan cara mencegahnya.', benchmarkMin: 47, benchmarkMax: 82 },
+  d6: { nama: 'Keterbukaan Komunikasi', kode: 'D6', totalPertanyaan: 4, deskripsi: 'Staf bebas berbicara jika melihat sesuatu yang dapat berdampak buruk pada pasien dan berani bertanya kepada atasan.', benchmarkMin: 64, benchmarkMax: 88 },
+  d10: { nama: 'Serah Terima Pasien & Pertukaran Informasi', kode: 'D10', totalPertanyaan: 3, deskripsi: 'Pemberian informasi penting tentang perawatan pasien yang hilang atau terdistorsi saat pergantian shift atau transfer unit.', benchmarkMin: 40, benchmarkMax: 70 },
+  d9: { nama: 'Dukungan Manajemen RS terhadap Keselamatan Pasien', kode: 'D9', totalPertanyaan: 3, deskripsi: 'Manajemen rumah sakit menciptakan iklim kerja yang memprioritaskan keselamatan pasien di atas target lainnya.', benchmarkMin: 51, benchmarkMax: 84 },
+  d3: { nama: 'Pembelajaran Organisasi & Peningkatan Berkelanjutan', kode: 'D3', totalPertanyaan: 2, deskripsi: 'Seberapa jauh kesalahan mengarah pada perubahan positif dan efektivitas perubahan dievaluasi.', benchmarkMin: 61, benchmarkMax: 81 },
+  d8: { nama: 'Frekuensi Pelaporan Kejadian Keselamatan Pasien', kode: 'D8', totalPertanyaan: 2, deskripsi: 'Sejauh mana jenis kesalahan tertentu dilaporkan, baik sebelum berdampak pada pasien maupun sesudahnya.', benchmarkMin: 54, benchmarkMax: 88 },
+  d4: { nama: 'Respon terhadap Kesalahan secara Non-Punitif', kode: 'D4', totalPertanyaan: 5, deskripsi: 'Staf merasa bahwa kesalahan tidak digunakan untuk menyalahkan atau menghukum mereka secara pribadi.', benchmarkMin: 44, benchmarkMax: 75 },
+  d2: { nama: 'Ketenagaan dan Beban Kerja', kode: 'D2', totalPertanyaan: 4, deskripsi: 'Kecukupan jumlah staf untuk menangani beban kerja and apakah jam kerja sesuai untuk keselamatan pasien.', benchmarkMin: 30, benchmarkMax: 60 },
+  d5: { nama: 'Dukungan Supervisor/Manajer untuk Keselamatan', kode: 'D5', totalPertanyaan: 3, deskripsi: 'Seberapa jauh supervisor mengapresiasi staf karena mengikuti prosedur keselamatan dan tidak mendesak penyelesaian tugas dengan mengabaikan keselamatan.', benchmarkMin: 71, benchmarkMax: 87 },
+  d1: { nama: 'Kerjasama Tim', kode: 'D1', totalPertanyaan: 3, deskripsi: 'Seberapa jauh staf bekerja sama, saling mendukung, dan memperlakukan satu sama lain dengan hormat.', benchmarkMin: 71, benchmarkMax: 89 },
 };
 
 export const DIMENSI_ITEMS: { [key: string]: { section: string; id: number; isReversed?: boolean }[] } = {
@@ -34,7 +34,7 @@ export function scoreToPercent(score: number): number {
   return Math.max(0, (score - 1) * 20);
 }
 
-export function computeDimensionScores(targetSurveys: SurveyData[]) {
+export function computeDimensionScores(targetSurveys: SurveyData[], masterBenchmark?: Record<string, { min: number, max: number }>) {
   return Object.keys(DIMENSI_INFO).map(dimId => {
     let totalPositive = 0;
     let totalNeutral = 0;
@@ -43,6 +43,8 @@ export function computeDimensionScores(targetSurveys: SurveyData[]) {
     let totalResponden = 0;
 
     targetSurveys.forEach(survey => {
+      // Exclude the MASTER_BENCHMARK row if it accidentally gets passed
+      if (survey.id === 'MASTER_BENCHMARK') return;
       totalResponden += survey.jumlahResponden || 1;
       const raw = (survey.dimensiScores as any)?._rawAnswers;
       if (raw) {
@@ -118,6 +120,9 @@ export function computeDimensionScores(targetSurveys: SurveyData[]) {
       ];
     }
 
+    const bMin = masterBenchmark && masterBenchmark[dimId] ? masterBenchmark[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
+    const bMax = masterBenchmark && masterBenchmark[dimId] ? masterBenchmark[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
+
     return {
       id: dimId,
       kode: DIMENSI_INFO[dimId].kode,
@@ -128,7 +133,8 @@ export function computeDimensionScores(targetSurveys: SurveyData[]) {
       neutralPercentage,
       negativePercentage,
       komposit,
-      benchmark: DIMENSI_INFO[dimId].benchmark,
+      benchmarkMin: bMin,
+      benchmarkMax: bMax,
       positiveCount: totalPositive,
       neutralCount: totalNeutral,
       negativeCount: totalNegative,

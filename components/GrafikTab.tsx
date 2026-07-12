@@ -32,16 +32,18 @@ const fetchAI = async (prompt: string) => {
 };
 
 function GrafikTabContent({ surveys }: GrafikTabProps) {
+  const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
+
   const actualDataYears = useMemo(() => {
     const years = new Set<string>();
-    surveys.forEach(s => {
+    actualSurveys.forEach(s => {
       if (s.tanggalInput) {
         const y = s.tanggalInput.split('-')[0];
         if (y) years.add(y);
       }
     });
     return Array.from(years).sort((a, b) => b.localeCompare(a));
-  }, [surveys]);
+  }, [actualSurveys]);
 
   const allSelectableYears = useMemo(() => {
     const years = new Set<string>([...actualDataYears]);
@@ -62,12 +64,17 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
   const [tahun2, setTahun2] = useState<string>(actualDataYears[1] || actualDataYears[0] || currentYear);
   const [chartType, setChartType] = useState<'Bar' | 'Line'>('Bar');
 
+  const masterBenchmarkData = useMemo(() => {
+    const mb = surveys.find(s => s.id === 'MASTER_BENCHMARK');
+    return mb ? (mb.dimensiScores as any) : undefined;
+  }, [surveys]);
+
   const computeStats = (targetSurveys: SurveyData[]) => {
-    return computeDimensionScores(targetSurveys);
+    return computeDimensionScores(targetSurveys, masterBenchmarkData);
   };
 
-  const dataTahun1 = useMemo(() => computeStats(surveys.filter(s => s.tanggalInput?.startsWith(tahun1))), [surveys, tahun1]);
-  const dataTahun2 = useMemo(() => computeStats(surveys.filter(s => s.tanggalInput?.startsWith(tahun2))), [surveys, tahun2]);
+  const dataTahun1 = useMemo(() => computeStats(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1))), [actualSurveys, tahun1]);
+  const dataTahun2 = useMemo(() => computeStats(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun2))), [actualSurveys, tahun2]);
 
   const combinedData = useMemo(() => {
     return dataTahun1.map((d1, i) => {
@@ -77,7 +84,8 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
         'Capaian': parseFloat(d1.percentage.toFixed(2)),
         'Tahun 1': parseFloat(d1.percentage.toFixed(2)),
         'Tahun 2': parseFloat(d2.percentage.toFixed(2)),
-        'Benchmark': d1.benchmark,
+        'BenchmarkMin': d1.benchmarkMin,
+        'BenchmarkMax': d1.benchmarkMax,
         id: d1.id, d1, d2
       };
     });
@@ -112,7 +120,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
     staleTime: Infinity,
   });
 
-  const rsName = surveys.length > 0 ? surveys[0].namaRs : "Rumah Sakit";
+  const rsName = actualSurveys.length > 0 ? actualSurveys[0].namaRs : "Rumah Sakit";
 
   const CustomBarTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -161,7 +169,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
     return null;
   };
 
-  if (surveys.length === 0) {
+  if (actualSurveys.length === 0) {
     return (
       <div className="p-12 bg-white/[0.07] border border-white/10 rounded-[24px] shadow-sm text-center space-y-4 max-w-xl mx-auto my-12 backdrop-blur-xl">
         <BarChart2 className="w-12 h-12 text-slate-500 mx-auto animate-pulse" />
@@ -233,125 +241,134 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
       <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-xl">
         <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
           {chartType === 'Bar' ? <BarChart2 className="w-5 h-5 text-emerald-400" /> : <TrendingUp className="w-5 h-5 text-cyan-400" />}
-          Grafik {mode === 'Tunggal' ? 'Capaian 10 Dimensi' : 'Perbandingan Capaian 10 Dimensi'}
+          Hasil Perbandingan Pengukuran Komposit Untuk {rsName}
         </h3>
-        <div className="h-[500px] w-full text-xs font-medium">
-          <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'Bar' ? (
-              <BarChart data={combinedData} layout="horizontal" margin={{ top: 20, right: 30, left: 10, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                <XAxis dataKey="dimensiSingkat" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
-                <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(val) => `${val}%`} />
-                <RechartsTooltip cursor={{ fill: '#1e293b' }} content={<CustomBarTooltip />} />
-                <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#94a3b8' }} />
-                {mode === 'Tunggal' ? (
-                  <Bar dataKey="Capaian" radius={[6, 6, 0, 0]} barSize={40}>
-                    {combinedData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.Capaian >= 75 ? '#34d399' : entry.Capaian >= 50 ? '#fbbf24' : '#f87171'} />
-                    ))}
-                  </Bar>
-                ) : (
-                  <>
-                    <Bar dataKey="Tahun 1" fill="#34d399" radius={[6, 6, 0, 0]} barSize={24} />
-                    <Bar dataKey="Tahun 2" fill="#38bdf8" radius={[6, 6, 0, 0]} barSize={24} />
-                  </>
-                )}
-                <ReferenceLine y={50} stroke="#f87171" strokeDasharray="4 4" label={{ value: 'Batas Minimum 50%', fill: '#f87171', position: 'insideTopLeft' }} />
-                <ReferenceLine y={75} stroke="#34d399" strokeDasharray="4 4" label={{ value: 'Target Unggul 75%', fill: '#34d399', position: 'insideTopLeft' }} />
-              </BarChart>
-            ) : (
-              <LineChart data={combinedData} margin={{ top: 20, right: 30, left: 10, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="dimensiSingkat" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
-                <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(val) => `${val}%`} />
-                <RechartsTooltip content={<CustomLineTooltip />} />
-                <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#94a3b8' }} />
-                {mode === 'Tunggal' ? (
-                  <Line type="monotone" dataKey="Capaian" stroke="#34d399" strokeWidth={3} dot={{ r: 6, fill: '#34d399', strokeWidth: 2, stroke: '#0f172a' }} activeDot={{ r: 8 }} />
-                ) : (
-                  <>
-                    <Line type="monotone" dataKey="Tahun 1" stroke="#34d399" strokeWidth={3} dot={{ r: 5, fill: '#34d399' }} activeDot={{ r: 7 }} />
-                    <Line type="monotone" dataKey="Tahun 2" stroke="#38bdf8" strokeWidth={3} dot={{ r: 5, fill: '#38bdf8' }} activeDot={{ r: 7 }} />
-                  </>
-                )}
-                <ReferenceLine y={50} stroke="#f87171" strokeDasharray="4 4" />
-                <ReferenceLine y={75} stroke="#34d399" strokeDasharray="4 4" />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
+        <div className="w-full text-xs font-medium">
+          {chartType === 'Bar' ? (
+            <div className="overflow-x-auto w-full">
+              <table className="w-full text-left text-sm border-collapse min-w-[800px]">
+                <thead>
+                  <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="p-3 w-10 text-center align-bottom">No.</th>
+                    <th className="p-3 w-64 align-bottom">Komponen Budaya<br/>Keselamatan Pasien</th>
+                    <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
+                    <th className="p-3 w-40 text-center border-l border-white/10">
+                      <div>Rata-rata RS Percontohan<br/>(% Respons Positif)</div>
+                      <div className="flex justify-between mt-2 pt-2 border-t border-white/5 text-emerald-400">
+                        <span className="w-1/2 text-center">MIN</span>
+                        <span className="w-1/2 text-center border-l border-white/5">MAX</span>
+                      </div>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {combinedData.map((row, i) => {
+                    const getBarColor = (val: number) => {
+                      if (val >= 85) return 'bg-blue-500';
+                      if (val >= 70) return 'bg-emerald-500';
+                      if (val >= 50) return 'bg-yellow-500';
+                      return 'bg-red-500';
+                    };
+
+                    return (
+                      <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
+                        <td className="p-3 text-center font-bold text-slate-500 align-top pt-5">{i + 1}.</td>
+                        <td className="p-3 font-semibold text-slate-200 text-xs align-top pt-5 pr-4 leading-relaxed">{row.dimensiSingkat}</td>
+                        <td className="p-3 align-middle py-4">
+                          {mode === 'Tunggal' ? (
+                            <div className="flex items-center gap-3 w-full">
+                              <div className="flex-1 bg-slate-800/50 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                                <motion.div 
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${row.Capaian}%` }}
+                                  transition={{ duration: 1, ease: "easeOut" }}
+                                  className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all`}
+                                >
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                </motion.div>
+                              </div>
+                              <span className="text-sm font-bold text-slate-200 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
+                            </div>
+                          ) : (
+                            <div className="space-y-2 w-full pt-1">
+                              {/* Bar Tahun 1 */}
+                              <div className="flex items-center gap-3 w-full">
+                                <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun1}</span>
+                                <div className="flex-1 bg-slate-800/50 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${row['Tahun 1']}%` }}
+                                    transition={{ duration: 1, ease: "easeOut" }}
+                                    className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all opacity-70`}
+                                  >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                  </motion.div>
+                                </div>
+                                <span className="text-xs font-bold text-slate-400 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
+                              </div>
+                              {/* Bar Tahun 2 */}
+                              <div className="flex items-center gap-3 w-full">
+                                <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun2}</span>
+                                <div className="flex-1 bg-slate-800/50 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                                  <motion.div 
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${row['Tahun 2']}%` }}
+                                    transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                                    className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all`}
+                                  >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                  </motion.div>
+                                </div>
+                                <span className="text-sm font-bold text-slate-200 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
+                              </div>
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-0 border-l border-white/10 text-center font-bold text-slate-300 text-sm align-middle bg-slate-900/20">
+                          <div className="flex h-full items-center justify-center min-h-[60px]">
+                            <span className="w-1/2 py-2">{row.d1.benchmarkMin}%</span>
+                            <span className="w-1/2 py-2 border-l border-white/5">{row.d1.benchmarkMax}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              
+              <div className="mt-6 flex flex-wrap gap-4 items-center justify-center text-[11px] font-medium text-slate-400 bg-slate-900/50 p-4 rounded-xl border border-white/5">
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> &lt;50% (Perlu Perbaikan)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]"></div> 50-69% (Cukup)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div> 70-84% (Baik)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div> &ge;85% (Sangat Baik)</div>
+              </div>
+            </div>
+          ) : (
+            <div className="h-[500px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={combinedData} margin={{ top: 20, right: 30, left: 10, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="dimensiSingkat" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
+                  <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(val) => `${val}%`} />
+                  <RechartsTooltip content={<CustomLineTooltip />} />
+                  <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#94a3b8' }} />
+                  {mode === 'Tunggal' ? (
+                    <Line type="monotone" dataKey="Capaian" stroke="#34d399" strokeWidth={3} dot={{ r: 6, fill: '#34d399', strokeWidth: 2, stroke: '#0f172a' }} activeDot={{ r: 8 }} />
+                  ) : (
+                    <>
+                      <Line type="monotone" dataKey="Tahun 1" stroke="#34d399" strokeWidth={3} dot={{ r: 5, fill: '#34d399' }} activeDot={{ r: 7 }} />
+                      <Line type="monotone" dataKey="Tahun 2" stroke="#38bdf8" strokeWidth={3} dot={{ r: 5, fill: '#38bdf8' }} activeDot={{ r: 7 }} />
+                    </>
+                  )}
+                  <ReferenceLine y={50} stroke="#f87171" strokeDasharray="4 4" />
+                  <ReferenceLine y={75} stroke="#34d399" strokeDasharray="4 4" />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="bg-white/[0.05] border border-white/20 p-6 md:p-8 rounded-[32px] backdrop-blur-3xl shadow-2xl shadow-black/50 overflow-hidden relative group">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl -z-10 group-hover:bg-teal-500/30 transition-colors duration-700"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/20 transition-colors duration-700"></div>
-        
-        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
-          <div className="p-2.5 bg-white/10 rounded-xl border border-white/10 backdrop-blur-md">
-            <FileText className="w-5 h-5 text-teal-400" />
-          </div>
-          Hasil Survei Budaya Keselamatan Pasien {mode === 'Tunggal' ? tahun1 : `${tahun1} vs ${tahun2}`}
-        </h3>
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/40 backdrop-blur-md shadow-inner">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="bg-slate-950/60 border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider text-xs">
-                <th className="p-4 w-12 text-center">No</th>
-                <th className="p-4">Dimensi Budaya Keselamatan</th>
-                {mode === 'Tunggal' ? (
-                  <>
-                    <th className="p-4 text-center">Positive %</th>
-                    <th className="p-4 text-center">Neutral %</th>
-                    <th className="p-4 text-center">Negative %</th>
-                    <th className="p-4 text-center">Komposit</th>
-                    <th className="p-4 text-center">Status</th>
-                  </>
-                ) : (
-                  <>
-                    <th className="p-4 text-center">Tahun {tahun1}</th>
-                    <th className="p-4 text-center">Tahun {tahun2}</th>
-                    <th className="p-4 text-center">Selisih</th>
-                    <th className="p-4 text-center">Tren</th>
-                  </>
-                )}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5 text-slate-300">
-              {combinedData.map((row, i) => {
-                const statusLabel = row.Capaian >= 75 ? 'Sangat Baik' : row.Capaian >= 60 ? 'Baik' : row.Capaian >= 50 ? 'Cukup' : 'Perlu Perbaikan';
-                const statusColor = row.Capaian >= 75 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : row.Capaian >= 60 ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20' : row.Capaian >= 50 ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20';
-                const diff = row['Tahun 2'] - row['Tahun 1'];
-                return (
-                  <tr key={row.id} className="hover:bg-white/[0.04] transition-colors">
-                    <td className="p-4 text-center font-bold text-slate-500">{i + 1}</td>
-                    <td className="p-4 font-semibold text-slate-200">{row.dimensiSingkat}</td>
-                    {mode === 'Tunggal' ? (
-                      <>
-                        <td className="p-4 text-center font-bold text-emerald-400">{row.d1.percentage.toFixed(2)}%</td>
-                        <td className="p-4 text-center font-medium text-slate-400">{row.d1.neutralPercentage.toFixed(2)}%</td>
-                        <td className="p-4 text-center font-medium text-rose-400">{row.d1.negativePercentage.toFixed(2)}%</td>
-                        <td className="p-4 text-center font-mono font-bold text-cyan-400">{row.d1.komposit.toFixed(2)}</td>
-                        <td className="p-4 text-center"><span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${statusColor}`}>{statusLabel}</span></td>
-                      </>
-                    ) : (
-                      <>
-                        <td className="p-4 text-center font-bold text-slate-400">{row['Tahun 1'].toFixed(2)}%</td>
-                        <td className="p-4 text-center font-bold text-slate-200">{row['Tahun 2'].toFixed(2)}%</td>
-                        <td className="p-4 text-center font-bold"><span className={diff > 0 ? 'text-emerald-400' : diff < 0 ? 'text-red-400' : 'text-slate-500'}>{diff > 0 ? '+' : ''}{diff.toFixed(2)}%</span></td>
-                        <td className="p-4 text-center">
-                          {diff > 0 ? <span className="inline-flex text-emerald-400 text-xs font-bold bg-emerald-500/10 px-2.5 py-1 rounded-lg gap-1 border border-emerald-500/20"><TrendingUp className="w-3 h-3" /> Naik</span>
-                           : diff < 0 ? <span className="inline-flex text-red-400 text-xs font-bold bg-red-500/10 px-2.5 py-1 rounded-lg gap-1 border border-red-500/20"><Activity className="w-3 h-3" /> Turun</span>
-                           : <span className="text-slate-500 text-xs font-bold">Stabil</span>}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-xl relative overflow-hidden group">
