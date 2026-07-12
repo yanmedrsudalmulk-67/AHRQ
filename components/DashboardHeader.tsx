@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Calendar, 
@@ -10,7 +10,10 @@ import {
   Sunrise,
   Sun,
   Sunset,
-  Moon
+  Moon,
+  ChevronDown,
+  Check,
+  Sparkles
 } from 'lucide-react';
 
 interface SurveyData {
@@ -26,6 +29,8 @@ interface DashboardHeaderProps {
   role: 'rs' | 'admin';
   namaRs: string;
   surveys: SurveyData[];
+  selectedYear: string;
+  setSelectedYear: (year: string) => void;
 }
 
 interface CompactCardProps {
@@ -60,9 +65,32 @@ function CompactCard({ icon, label, value, isMono }: CompactCardProps) {
   );
 }
 
-export default function DashboardHeader({ role, namaRs }: DashboardHeaderProps) {
+export default function DashboardHeader({ role, namaRs, surveys, selectedYear, setSelectedYear }: DashboardHeaderProps) {
   const [timeString, setTimeString] = useState<string>('');
   const [dateString, setDateString] = useState<string>('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentYear = new Date().getFullYear();
+  const availableYears = [
+    currentYear.toString(),
+    (currentYear - 1).toString(),
+    (currentYear - 2).toString(),
+    (currentYear - 3).toString(),
+    (currentYear - 4).toString(),
+    'Semua Tahun'
+  ];
 
   // Update dynamic clock every second
   useEffect(() => {

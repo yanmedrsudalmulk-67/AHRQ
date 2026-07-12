@@ -30,14 +30,16 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConnected } from '../lib/supabase';
 
-interface RippleButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface RippleButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag' | 'style'> {
   isSelected?: boolean;
+  shakeOnHover?: boolean;
 }
 
 const RippleButton: React.FC<RippleButtonProps> = ({ 
   onClick, 
   className, 
   isSelected, 
+  shakeOnHover,
   children, 
   ...props 
 }) => {
@@ -68,9 +70,16 @@ const RippleButton: React.FC<RippleButtonProps> = ({
   }, [ripples]);
 
   return (
-    <button
-      ref={buttonRef}
+    <motion.button
+      ref={buttonRef as any}
       onClick={handleClick}
+      whileTap={{ scale: 0.94 }}
+      whileHover={shakeOnHover ? {
+        y: -4,
+        rotate: [0, -0.6, 0.6, -0.6, 0],
+        transition: { duration: 0.3, ease: "easeInOut" }
+      } : undefined}
+      transition={{ type: "spring", stiffness: 500, damping: 15 }}
       className={`relative overflow-hidden ${className || ''}`}
       {...props}
     >
@@ -96,7 +105,7 @@ const RippleButton: React.FC<RippleButtonProps> = ({
           }}
         />
       ))}
-    </button>
+    </motion.button>
   );
 };
 
@@ -235,6 +244,19 @@ const WORK_UNITS = {
   'Lainnya': [
     { value: '34', label: 'Lainnya' }
   ]
+};
+
+const getFeedbackCategory = (val: number | undefined, isReversed: boolean = false) => {
+  if (val === undefined || val === 9) return 'none';
+  if (!isReversed) {
+    if (val >= 4) return 'positive';
+    if (val === 3) return 'neutral';
+    return 'negative';
+  } else {
+    if (val <= 2) return 'positive';
+    if (val === 3) return 'neutral';
+    return 'negative';
+  }
 };
 
 export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataTabProps) {
@@ -419,6 +441,79 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
   const answeredCount = getAnsweredCount();
   const unansweredCount = totalQuestions - answeredCount;
   const progressPercent = Math.round((answeredCount / totalQuestions) * 100);
+
+  const getProgressGradient = () => {
+    let positiveCount = 0;
+    let neutralCount = 0;
+    let negativeCount = 0;
+    
+    STATEMENTS_A.forEach(st => {
+      const ans = ansA[st.id];
+      const cat = getFeedbackCategory(ans, st.isReversed);
+      if (cat === 'positive') positiveCount++;
+      else if (cat === 'neutral') neutralCount++;
+      else if (cat === 'negative') negativeCount++;
+    });
+    
+    STATEMENTS_B.forEach(st => {
+      const ans = ansB[st.id];
+      const cat = getFeedbackCategory(ans, st.isReversed);
+      if (cat === 'positive') positiveCount++;
+      else if (cat === 'neutral') neutralCount++;
+      else if (cat === 'negative') negativeCount++;
+    });
+
+    STATEMENTS_C.forEach(st => {
+      const ans = ansC[st.id];
+      const cat = getFeedbackCategory(ans, st.isReversed);
+      if (cat === 'positive') positiveCount++;
+      else if (cat === 'neutral') neutralCount++;
+      else if (cat === 'negative') negativeCount++;
+    });
+
+    if (ansD[1]) {
+      const cat = getFeedbackCategory(ansD[1], false);
+      if (cat === 'positive') positiveCount++;
+      else if (cat === 'neutral') neutralCount++;
+      else if (cat === 'negative') negativeCount++;
+    }
+    if (ansD[2]) {
+      const cat = getFeedbackCategory(ansD[2], false);
+      if (cat === 'positive') positiveCount++;
+      else if (cat === 'neutral') neutralCount++;
+      else if (cat === 'negative') negativeCount++;
+    }
+
+    if (ansE) {
+      const cat = getFeedbackCategory(ansE, false);
+      if (cat === 'positive') positiveCount++;
+      else if (cat === 'neutral') neutralCount++;
+      else if (cat === 'negative') negativeCount++;
+    }
+
+    STATEMENTS_F.forEach(st => {
+      const ans = ansF[st.id];
+      const cat = getFeedbackCategory(ans, st.isReversed);
+      if (cat === 'positive') positiveCount++;
+      else if (cat === 'neutral') neutralCount++;
+      else if (cat === 'negative') negativeCount++;
+    });
+
+    const total = positiveCount + neutralCount + negativeCount;
+    if (total === 0) {
+      return 'from-emerald-500 to-teal-400';
+    }
+
+    if (positiveCount > neutralCount && positiveCount > negativeCount) {
+      return 'from-emerald-500 via-teal-400 to-cyan-500';
+    } else if (neutralCount > positiveCount && neutralCount > negativeCount) {
+      return 'from-amber-500 via-yellow-400 to-orange-500';
+    } else if (negativeCount > positiveCount && negativeCount > neutralCount) {
+      return 'from-rose-500 via-red-500 to-orange-500';
+    }
+    
+    return 'from-emerald-500 via-teal-400 to-cyan-500';
+  };
 
   // Scoring mapping helper
   const computeScores = () => {
@@ -702,10 +797,10 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
   };
 
   return (
-    <div id="survey-main-wrapper" className="bg-transparent text-slate-200 min-h-screen rounded-3xl border border-slate-800/50 overflow-hidden shadow-xl flex flex-col font-sans">
+    <div id="survey-main-wrapper" className="bg-transparent text-slate-200 min-h-screen rounded-3xl border border-[#00244d]/30 overflow-hidden shadow-xl flex flex-col font-sans">
       
       {/* 1. STICKY HEADER */}
-      <header id="survey-sticky-header" className="sticky top-0 bg-slate-900/50 backdrop-blur-md border-b border-slate-800/50 py-4 px-6 md:px-8 flex justify-between items-center z-20 shadow-sm">
+      <header id="survey-sticky-header" className="sticky top-0 bg-[#0c1a36]/75 backdrop-blur-md border-b border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-20 shadow-sm">
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-lg md:text-xl font-bold text-slate-100 leading-tight">Formulir Survei Budaya Keselamatan Pasien</h1>
@@ -732,15 +827,15 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
       </header>
 
       {/* 2. ELEGANT HORIZONTAL PROGRESS BAR */}
-      <div id="survey-horizontal-progress" className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800/50 px-6 md:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div id="survey-horizontal-progress" className="bg-[#0c1a36]/60 backdrop-blur-md border-b border-[#00244d]/40 px-6 md:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Progres Pengisian Kuesioner</span>
           <span className="text-xs font-extrabold text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{progressPercent}%</span>
           <span className="text-xs font-medium text-slate-400">({answeredCount} dari {totalQuestions} Pertanyaan Terjawab)</span>
         </div>
-        <div className="w-full sm:w-80 bg-slate-800/50 h-2 rounded-full overflow-hidden relative">
+        <div className="w-full sm:w-80 bg-[#020918]/55 h-2 rounded-full overflow-hidden relative">
           <div 
-            className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-300" 
+            className={`bg-gradient-to-r ${getProgressGradient()} h-full rounded-full transition-all duration-500`} 
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -762,7 +857,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
             >
               {/* Header card for the current section */}
               {step > 0 && step < 9 && (
-                <div className="bg-slate-900/50 backdrop-blur-md rounded-3xl border border-slate-800/50 p-8 shadow-sm space-y-3 relative overflow-hidden">
+                <div className="bg-[#0c1a36]/70 backdrop-blur-md rounded-3xl border border-[#00244d]/40 p-8 shadow-sm space-y-3 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400" />
                   <span className="inline-flex items-center px-3 py-1 bg-emerald-500/10 text-emerald-700 text-xs font-extrabold rounded-full tracking-wide">
                     {SECTIONS[step].label}
@@ -776,7 +871,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
               {step === 0 && (
                 <div className="space-y-6">
                   {/* PETUNJUK CARD (PREMIUM & MODERN) */}
-                  <div className="bg-slate-900/30 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-6 md:p-8 shadow-2xl relative overflow-hidden space-y-6">
+                  <div className="bg-[#0c1a36]/40 backdrop-blur-xl rounded-3xl border border-[#00244d]/30 p-6 md:p-8 shadow-2xl relative overflow-hidden space-y-6">
                     <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/80 via-teal-500/80 to-cyan-500/80 animate-pulse" />
                     
                     <div className="flex items-center gap-3">
@@ -794,11 +889,11 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     </p>
 
                     {/* DEFINITION BOX (OUTLINED, PREMIUM GLOW) */}
-                    <div className="border border-white/[0.08] bg-slate-950/40 rounded-2xl p-5 md:p-6 space-y-4 shadow-inner relative">
+                    <div className="border border-[#00244d]/30 bg-[#020918]/60 rounded-2xl p-5 md:p-6 space-y-4 shadow-inner relative">
                       <div className="flex items-start gap-3">
                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                         <p className="text-xs text-slate-300 leading-relaxed font-light">
-                          <span className="text-emerald-400 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Keselamatan pasien"`}</span> didefinisikan sebagai penghindaran dan pencegahan cedera pasien atau kejadian yang tidak diinginkan yang diakibatkan oleh proses pemberian layanan kesehatan.
+                          <span className="text-emerald-400 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Keselamatan pasien"`}</span> didefinisikan sebagai penghindaran and pencegahan cedera pasien atau kejadian yang tidak diinginkan yang diakibatkan oleh proses pemberian layanan kesehatan.
                         </p>
                       </div>
 
@@ -815,8 +910,8 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                   <div
                     className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       posisiStaf && unitKerja 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                     }`}
                   >
                     <div className="space-y-2">
@@ -825,7 +920,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                       <p className="text-xs text-slate-400">Silakan masukkan identitas opsional Anda sebelum melangkah ke lembar kuesioner utama AHRQ.</p>
                     </div>
 
-                    <hr className="border-white/[0.08]" />
+                    <hr className="border-[#00244d]/30" />
 
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -835,7 +930,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                           </label>
                           <button
                             onClick={() => setIsPosisiModalOpen(true)}
-                            className="w-full bg-slate-950/50 border border-slate-800/50 rounded-xl px-4 py-3.5 text-sm text-left transition-all outline-none flex items-center justify-between hover:bg-slate-900/50 backdrop-blur-md"
+                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-md"
                           >
                             <span className={posisiStaf ? 'text-slate-100' : 'text-slate-400'}>{posisiStaf || 'Pilih Posisi Anda'}</span>
                             <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -848,7 +943,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                           </label>
                           <button
                             onClick={() => setIsUnitModalOpen(true)}
-                            className="w-full bg-slate-950/50 border border-slate-800/50 rounded-xl px-4 py-3.5 text-sm text-left transition-all outline-none flex items-center justify-between hover:bg-slate-900/50 backdrop-blur-md"
+                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-md"
                           >
                             <span className={unitKerja ? 'text-slate-100' : 'text-slate-400'}>{unitKerja || 'Pilih Unit / Area Kerja'}</span>
                             <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -858,18 +953,18 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     </div>
 
                     <div className="flex justify-end pt-4">
-                      <button
+                      <RippleButton
                         type="button"
                         onClick={() => setStep(1)}
                         disabled={!posisiStaf || !unitKerja}
                         className={`px-6 py-3.5 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all ${
                           posisiStaf && unitKerja 
-                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20' 
-                            : 'bg-slate-800 text-slate-400 cursor-not-allowed'
+                            ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 cursor-pointer' 
+                            : 'bg-[#020918]/40 text-slate-500 cursor-not-allowed border border-[#00244d]/20'
                         }`}
                       >
                         Mulai Pengisian Kuesioner <ArrowRight className="w-4 h-4" />
-                      </button>
+                      </RippleButton>
                     </div>
                   </div>
                 </div>
@@ -880,19 +975,33 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                 <div className="space-y-6">
                   {STATEMENTS_A.map((st) => {
                     const ans = ansA[st.id];
+                    const category = getFeedbackCategory(ans, st.isReversed);
                     return (
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`A-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                          ans 
-                            ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                            : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : category === 'negative'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                         }`}
                       >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+                        {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
+
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">{st.code}</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>{st.code}</span>
                             
                             {/* Hover tooltip for dimension */}
                             <div className="relative group">
@@ -908,11 +1017,28 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-2 text-xs font-semibold">
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {/* Response Quality Indicator */}
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              </span>
+                            )}
+                            {category === 'negative' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              </span>
+                            )}
+
                             {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1"><Check className="w-4 h-4" /> Selesai</span>
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
                             ) : (
-                              <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
                             )}
                           </div>
                         </div>
@@ -922,18 +1048,35 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {LIKERT_OPTIONS.map((opt) => {
                             const isSelected = ans === opt.value;
+                            const optCategory = getFeedbackCategory(opt.value, st.isReversed);
                             return (
                               <RippleButton
                                 key={opt.value}
                                 isSelected={isSelected}
+                                shakeOnHover={true}
                                 onClick={() => handleSelectOption('A', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
-                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                                    : 'border-slate-800/50 bg-slate-950/50 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                    ? opt.value === 9
+                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
+                                      : optCategory === 'positive'
+                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                        : optCategory === 'neutral'
+                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                        : optCategory === 'negative'
+                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
+                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : opt.value === 9
+                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
+                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                                 }`}
                               >
-                                <span className="text-xs leading-tight font-medium">{opt.label}</span>
+                                <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                                  {opt.label}
+                                </span>
                               </RippleButton>
                             );
                           })}
@@ -949,28 +1092,60 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                 <div className="space-y-6">
                   {STATEMENTS_B.map((st) => {
                     const ans = ansB[st.id];
+                    const category = getFeedbackCategory(ans, st.isReversed);
                     return (
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`B-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                          ans 
-                            ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                            : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : category === 'negative'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                         }`}
                       >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+                        {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
+
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">{st.code}</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>{st.code}</span>
                             <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-500/20/50">
                               {DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama || 'Dimensi'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-semibold">
+
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {/* Response Quality Indicator */}
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              </span>
+                            )}
+                            {category === 'negative' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              </span>
+                            )}
+
                             {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1"><Check className="w-4 h-4" /> Selesai</span>
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
                             ) : (
-                              <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
                             )}
                           </div>
                         </div>
@@ -980,18 +1155,35 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {LIKERT_OPTIONS.map((opt) => {
                             const isSelected = ans === opt.value;
+                            const optCategory = getFeedbackCategory(opt.value, st.isReversed);
                             return (
                               <RippleButton
                                 key={opt.value}
                                 isSelected={isSelected}
+                                shakeOnHover={true}
                                 onClick={() => handleSelectOption('B', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
-                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                                    : 'border-slate-800/50 bg-slate-950/50 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                    ? opt.value === 9
+                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
+                                      : optCategory === 'positive'
+                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                        : optCategory === 'neutral'
+                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                        : optCategory === 'negative'
+                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
+                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : opt.value === 9
+                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
+                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                                 }`}
                               >
-                                <span className="text-xs leading-tight font-medium">{opt.label}</span>
+                                <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                                  {opt.label}
+                                </span>
                               </RippleButton>
                             );
                           })}
@@ -1007,28 +1199,60 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                 <div className="space-y-6">
                   {STATEMENTS_C.map((st) => {
                     const ans = ansC[st.id];
+                    const category = getFeedbackCategory(ans, st.isReversed);
                     return (
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`C-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                          ans 
-                            ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                            : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : category === 'negative'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                         }`}
                       >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+                        {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
+
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">{st.code}</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>{st.code}</span>
                             <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-500/20/50">
                               {DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama || 'Dimensi'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-semibold">
+
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {/* Response Quality Indicator */}
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              </span>
+                            )}
+                            {category === 'negative' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              </span>
+                            )}
+
                             {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1"><Check className="w-4 h-4" /> Selesai</span>
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
                             ) : (
-                              <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
                             )}
                           </div>
                         </div>
@@ -1038,18 +1262,35 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {FREQUENCY_OPTIONS.map((opt) => {
                             const isSelected = ans === opt.value;
+                            const optCategory = getFeedbackCategory(opt.value, st.isReversed);
                             return (
                               <RippleButton
                                 key={opt.value}
                                 isSelected={isSelected}
+                                shakeOnHover={true}
                                 onClick={() => handleSelectOption('C', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
-                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                                    : 'border-slate-800/50 bg-slate-950/50 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                    ? opt.value === 9
+                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
+                                      : optCategory === 'positive'
+                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                        : optCategory === 'neutral'
+                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                        : optCategory === 'negative'
+                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
+                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : opt.value === 9
+                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
+                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                                 }`}
                               >
-                                <span className="text-xs leading-tight font-medium">{opt.label}</span>
+                                <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                                  {opt.label}
+                                </span>
                               </RippleButton>
                             );
                           })}
@@ -1064,149 +1305,392 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
               {step === 4 && (
                 <div className="space-y-6">
                   {/* D1 */}
-                  <div
-                    ref={(el) => { questionRefs.current[`D-1`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                      ansD[1] 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">D1</span>
-                        <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Pelaporan Kejadian</span>
+                  {(() => {
+                    const ans = ansD[1];
+                    const category = getFeedbackCategory(ans, false);
+                    return (
+                      <div
+                        ref={(el) => { questionRefs.current[`D-1`] = el; }}
+                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : category === 'negative'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        }`}
+                      >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+                        {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
+
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>D1</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Pelaporan Kejadian</span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {/* Response Quality Indicator */}
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              </span>
+                            )}
+                            {category === 'negative' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              </span>
+                            )}
+
+                            {ans ? (
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
+                            ) : (
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-base md:text-lg font-bold text-slate-200">Ketika kesalahan diketahui dan diperbaiki sebelum sampai ke pasien, seberapa sering hal ini dilaporkan?</p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                          {FREQUENCY_OPTIONS.map((opt) => {
+                            const isSelected = ans === opt.value;
+                            const optCategory = getFeedbackCategory(opt.value, false);
+                            return (
+                              <RippleButton
+                                key={opt.value}
+                                isSelected={isSelected}
+                                shakeOnHover={true}
+                                onClick={() => handleSelectD(1, opt.value)}
+                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                  isSelected 
+                                    ? opt.value === 9
+                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
+                                      : optCategory === 'positive'
+                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                        : optCategory === 'neutral'
+                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                        : optCategory === 'negative'
+                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
+                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : opt.value === 9
+                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
+                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                }`}
+                              >
+                                <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                                  {opt.label}
+                                </span>
+                              </RippleButton>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-base md:text-lg font-bold text-slate-200">Ketika kesalahan diketahui dan diperbaiki sebelum sampai ke pasien, seberapa sering hal ini dilaporkan?</p>
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                      {FREQUENCY_OPTIONS.map(opt => (
-                        <RippleButton
-                          key={opt.value}
-                          isSelected={ansD[1] === opt.value}
-                          onClick={() => handleSelectD(1, opt.value)}
-                          className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center min-h-[64px] ${
-                            ansD[1] === opt.value 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                          }`}
-                        >
-                          <span className="text-xs leading-tight font-medium">{opt.label}</span>
-                        </RippleButton>
-                      ))}
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* D2 */}
-                  <div
-                    ref={(el) => { questionRefs.current[`D-2`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                      ansD[2] 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">D2</span>
-                        <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Pelaporan Kejadian</span>
+                  {(() => {
+                    const ans = ansD[2];
+                    const category = getFeedbackCategory(ans, false);
+                    return (
+                      <div
+                        ref={(el) => { questionRefs.current[`D-2`] = el; }}
+                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : category === 'negative'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        }`}
+                      >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+                        {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
+
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>D2</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Pelaporan Kejadian</span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {/* Response Quality Indicator */}
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              </span>
+                            )}
+                            {category === 'negative' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              </span>
+                            )}
+
+                            {ans ? (
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
+                            ) : (
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-base md:text-lg font-bold text-slate-200">Ketika suatu kesalahan sampai ke pasien dan dapat membahayakan pasien, tetapi tidak terjadi, seberapa sering hal ini dilaporkan?</p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                          {FREQUENCY_OPTIONS.map((opt) => {
+                            const isSelected = ans === opt.value;
+                            const optCategory = getFeedbackCategory(opt.value, false);
+                            return (
+                              <RippleButton
+                                key={opt.value}
+                                isSelected={isSelected}
+                                shakeOnHover={true}
+                                onClick={() => handleSelectD(2, opt.value)}
+                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                  isSelected 
+                                    ? opt.value === 9
+                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
+                                      : optCategory === 'positive'
+                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                        : optCategory === 'neutral'
+                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                        : optCategory === 'negative'
+                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
+                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : opt.value === 9
+                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
+                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                }`}
+                              >
+                                <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                                  {opt.label}
+                                </span>
+                              </RippleButton>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-base md:text-lg font-bold text-slate-200">Ketika suatu kesalahan sampai ke pasien dan dapat membahayakan pasien, tetapi tidak terjadi, seberapa sering hal ini dilaporkan?</p>
-                    <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-                      {FREQUENCY_OPTIONS.map(opt => (
-                        <RippleButton
-                          key={opt.value}
-                          isSelected={ansD[2] === opt.value}
-                          onClick={() => handleSelectD(2, opt.value)}
-                          className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center min-h-[64px] ${
-                            ansD[2] === opt.value 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                          }`}
-                        >
-                          <span className="text-xs leading-tight font-medium">{opt.label}</span>
-                        </RippleButton>
-                      ))}
-                    </div>
-                  </div>
+                    );
+                  })()}
 
                   {/* D3 */}
-                  <div
-                    ref={(el) => { questionRefs.current[`D-3`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                      ansD[3] 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between border-b border-white/[0.08] pb-4">
-                      <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">D3</span>
-                        <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Intensitas 12 Bulan Terakhir</span>
+                  {(() => {
+                    const ans = ansD[3];
+                    const category = ans ? (ans === 'Tidak ada' ? 'neutral' : 'positive') : 'none';
+                    return (
+                      <div
+                        ref={(el) => { questionRefs.current[`D-3`] = el; }}
+                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        }`}
+                      >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>D3</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Intensitas 12 Bulan Terakhir</span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Berpartisipasi Melapor
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Belum Melapor
+                              </span>
+                            )}
+
+                            {ans ? (
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
+                            ) : (
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-base md:text-lg font-bold text-slate-200">Dalam 12 bulan terakhir, berapa banyak kejadian keselamatan pasien yang telah Anda laporkan?</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                          {['Tidak ada', '1 sampai 2', '3 sampai 5', '6 hingga 10', '11 atau lebih'].map((choice, i) => {
+                            const isSelected = ans === choice;
+                            const choiceCategory = choice === 'Tidak ada' ? 'neutral' : 'positive';
+                            return (
+                              <RippleButton
+                                key={i}
+                                isSelected={isSelected}
+                                shakeOnHover={true}
+                                onClick={() => handleSelectD3(choice)}
+                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                  isSelected 
+                                    ? choiceCategory === 'positive'
+                                      ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                      : 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                }`}
+                              >
+                                <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                                  {choice}
+                                </span>
+                              </RippleButton>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                    <p className="text-base md:text-lg font-bold text-slate-200">Dalam 12 bulan terakhir, berapa banyak kejadian keselamatan pasien yang telah Anda laporkan?</p>
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-                      {['Tidak ada', '1 sampai 2', '3 sampai 5', '6 hingga 10', '11 atau lebih'].map((choice, i) => (
-                        <RippleButton
-                          key={i}
-                          isSelected={ansD[3] === choice}
-                          onClick={() => handleSelectD3(choice)}
-                          className={`p-4 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
-                            ansD[3] === choice 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                          }`}
-                        >
-                          {choice}
-                        </RippleButton>
-                      ))}
-                    </div>
-                  </div>
+                    );
+                  })()}
                 </div>
               )}
 
               {/* STEP 5: BAGIAN E */}
               {step === 5 && (
                 <div className="space-y-6">
-                  <div
-                    ref={(el) => { questionRefs.current[`E-1`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                      ansE 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
-                      <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">E1</span>
-                      <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Peringkat Budaya Keselamatan</span>
-                    </div>
-                    <p className="text-lg md:text-xl font-bold text-slate-200 leading-normal pt-2">Bagaimana Anda menilai unit/area kerja Anda dalam hal keselamatan pasien?</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                      {[
-                        { val: 1, label: 'Buruk' },
-                        { val: 2, label: 'Biasa' },
-                        { val: 3, label: 'Baik' },
-                        { val: 4, label: 'Sangat baik' },
-                        { val: 5, label: 'Luar biasa' },
-                      ].map((item) => (
-                        <RippleButton
-                          key={item.val}
-                          isSelected={ansE === item.val}
-                          onClick={() => handleSelectE(item.val)}
-                          className={`p-6 rounded-2xl border text-center transition-all cursor-pointer flex flex-col justify-center items-center gap-3 ${
-                            ansE === item.val 
-                              ? 'bg-emerald-600 border-emerald-600 text-white scale-102 font-bold shadow-lg shadow-emerald-600/25' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                          }`}
-                        >
-                          <span className="text-sm font-bold">{item.label}</span>
-                        </RippleButton>
-                      ))}
-                    </div>
-                  </div>
+                  {(() => {
+                    const ans = ansE;
+                    const category = getFeedbackCategory(ans, false);
+                    return (
+                      <div
+                        ref={(el) => { questionRefs.current[`E-1`] = el; }}
+                        className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : category === 'negative'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
+                        }`}
+                      >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+                        {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
+
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>E1</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Peringkat Budaya Keselamatan</span>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {/* Response Quality Indicator */}
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              </span>
+                            )}
+                            {category === 'negative' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              </span>
+                            )}
+
+                            {ans ? (
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
+                            ) : (
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                            )}
+                          </div>
+                        </div>
+
+                        <p className="text-lg md:text-xl font-bold text-slate-200 leading-normal pt-2">Bagaimana Anda menilai unit/area kerja Anda dalam hal keselamatan pasien?</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                          {[
+                            { val: 1, label: 'Buruk' },
+                            { val: 2, label: 'Biasa' },
+                            { val: 3, label: 'Baik' },
+                            { val: 4, label: 'Sangat baik' },
+                            { val: 5, label: 'Luar biasa' },
+                          ].map((item) => {
+                            const isSelected = ans === item.val;
+                            const optCategory = getFeedbackCategory(item.val, false);
+                            return (
+                              <RippleButton
+                                key={item.val}
+                                isSelected={isSelected}
+                                shakeOnHover={true}
+                                onClick={() => handleSelectE(item.val)}
+                                className={`p-6 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex flex-col justify-center items-center gap-3 ${
+                                  isSelected 
+                                    ? optCategory === 'positive'
+                                      ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                      : optCategory === 'neutral'
+                                      ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                      : optCategory === 'negative'
+                                      ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
+                                      : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                }`}
+                              >
+                                <span className="text-sm font-bold flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-4 h-4" />}
+                                  {item.label}
+                                </span>
+                              </RippleButton>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -1215,28 +1699,60 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                 <div className="space-y-6">
                   {STATEMENTS_F.map((st) => {
                     const ans = ansF[st.id];
+                    const category = getFeedbackCategory(ans, st.isReversed);
                     return (
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`F-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
-                          ans 
-                            ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                            : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                          category === 'positive'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            : category === 'neutral'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            : category === 'negative'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                         }`}
                       >
+                        {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
+                        {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
+                        {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
+
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">{st.code}</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20/50">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
+                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
+                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
+                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
+                            }`}>{st.code}</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-500/20/50">
                               {DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama || 'Dimensi'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-semibold">
+
+                          <div className="flex items-center gap-3 text-xs font-semibold">
+                            {/* Response Quality Indicator */}
+                            {category === 'positive' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              </span>
+                            )}
+                            {category === 'neutral' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              </span>
+                            )}
+                            {category === 'negative' && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              </span>
+                            )}
+
                             {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1"><Check className="w-4 h-4" /> Selesai</span>
+                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
                             ) : (
-                              <span className="text-red-500 flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
+                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
                             )}
                           </div>
                         </div>
@@ -1246,18 +1762,35 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {LIKERT_OPTIONS.map((opt) => {
                             const isSelected = ans === opt.value;
+                            const optCategory = getFeedbackCategory(opt.value, st.isReversed);
                             return (
                               <RippleButton
                                 key={opt.value}
                                 isSelected={isSelected}
+                                shakeOnHover={true}
                                 onClick={() => handleSelectOption('F', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
-                                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                                    : 'border-slate-800/50 bg-slate-950/50 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                    ? opt.value === 9
+                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
+                                      : optCategory === 'positive'
+                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
+                                        : optCategory === 'neutral'
+                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                        : optCategory === 'negative'
+                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
+                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
+                                    : ans !== undefined
+                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
+                                      : opt.value === 9
+                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
+                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                                 }`}
                               >
-                                <span className="text-xs leading-tight font-medium">{opt.label}</span>
+                                <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
+                                  {isSelected && <Check className="w-3.5 h-3.5" />}
+                                  {opt.label}
+                                </span>
                               </RippleButton>
                             );
                           })}
@@ -1276,8 +1809,8 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     ref={(el) => { questionRefs.current[`G-1`] = el; }}
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[1] 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1290,11 +1823,12 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <RippleButton
                           key={i}
                           isSelected={ansG[1] === opt}
+                          shakeOnHover={true}
                           onClick={() => handleSelectG(1, opt)}
                           className={`p-4 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
                             ansG[1] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                           }`}
                         >
                           {opt}
@@ -1308,8 +1842,8 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     ref={(el) => { questionRefs.current[`G-2`] = el; }}
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[2] 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1322,11 +1856,12 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <RippleButton
                           key={i}
                           isSelected={ansG[2] === opt}
+                          shakeOnHover={true}
                           onClick={() => handleSelectG(2, opt)}
                           className={`p-4 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
                             ansG[2] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                           }`}
                         >
                           {opt}
@@ -1340,8 +1875,8 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     ref={(el) => { questionRefs.current[`G-3`] = el; }}
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[3] 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1354,11 +1889,12 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <RippleButton
                           key={i}
                           isSelected={ansG[3] === opt}
+                          shakeOnHover={true}
                           onClick={() => handleSelectG(3, opt)}
                           className={`p-4 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
                             ansG[3] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                           }`}
                         >
                           {opt}
@@ -1372,8 +1908,8 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     ref={(el) => { questionRefs.current[`G-4`] = el; }}
                     className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                       ansG[4] 
-                        ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                        : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                     }`}
                   >
                     <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1389,11 +1925,12 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         <RippleButton
                           key={i}
                           isSelected={ansG[4] === opt}
+                          shakeOnHover={true}
                           onClick={() => handleSelectG(4, opt)}
                           className={`p-5 rounded-2xl border text-left transition-all cursor-pointer font-bold text-xs ${
                             ansG[4] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-slate-800/50 bg-slate-950/50 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
                           }`}
                         >
                           {opt}
@@ -1410,8 +1947,8 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                   ref={(el) => { questionRefs.current[`H-1`] = el; }}
                   className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 ${
                     komentar.trim() 
-                      ? 'bg-slate-900/40 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
-                      : 'bg-slate-900/20 border-white/[0.08] hover:border-white/15'
+                      ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                      : 'bg-[#0c1a36]/20 border-[#00244d]/30 hover:border-[#00244d]/70'
                   }`}
                 >
                   <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
@@ -1432,7 +1969,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                       triggerAutoSave({ komentar: e.target.value });
                     }}
                     placeholder="Tulis ulasan, hambatan, atau ide perbaikan konstruktif Anda di sini secara rinci..."
-                    className="w-full bg-slate-950/50 border border-slate-800/50 rounded-2xl p-4 text-sm focus:border-emerald-500 focus:bg-slate-900/50 backdrop-blur-md focus:ring-1 focus:ring-emerald-500 transition-all outline-none leading-relaxed"
+                    className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-2xl p-4 text-sm focus:border-emerald-500 focus:bg-[#0c1a36]/50 backdrop-blur-md focus:ring-1 focus:ring-emerald-500 transition-all outline-none leading-relaxed"
                   />
 
                   <div className="p-4 bg-emerald-500/10/50 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
@@ -1446,7 +1983,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
               {/* STEP 9: REVIEW SECTION */}
               {step === 9 && (
-                <div className="bg-slate-900/30 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-8 shadow-2xl space-y-8">
+                <div className="bg-[#0c1a36]/40 backdrop-blur-xl rounded-3xl border border-[#00244d]/30 p-8 shadow-2xl space-y-8">
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-emerald-400 tracking-wider">KOMPILASI</span>
                     <h2 className="text-2xl font-bold text-slate-100">Review Sebelum Kirim Kuesioner</h2>
@@ -1486,7 +2023,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
               {/* STEP 10: SUCCESS SCREEN */}
               {step === 10 && (
-                <div className="bg-slate-900/30 backdrop-blur-xl rounded-3xl border border-white/[0.08] p-12 text-center shadow-2xl space-y-6 max-w-xl mx-auto my-6">
+                <div className="bg-[#0c1a36]/40 backdrop-blur-xl rounded-3xl border border-[#00244d]/30 p-12 text-center shadow-2xl space-y-6 max-w-xl mx-auto my-6">
                   <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner animate-bounce">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
@@ -1540,14 +2077,14 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
       {/* 3. STICKY FOOTER NAVIGATION */}
       {step > 0 && step < 10 && (
-      <footer id="survey-sticky-footer" className="sticky bottom-0 bg-slate-900/50 backdrop-blur-md border-t border-slate-800/50 py-4 px-6 md:px-8 flex justify-between items-center z-10 shadow-lg">
+      <footer id="survey-sticky-footer" className="sticky bottom-0 bg-[#0c1a36]/75 backdrop-blur-md border-t border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-10 shadow-lg">
         <button
           onClick={() => step > 0 && setStep(step - 1)}
           disabled={step === 0 || step === 10}
           className={`px-5 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
             step === 0 || step === 10
               ? 'text-slate-300 bg-slate-950/50 border border-slate-100 cursor-not-allowed'
-              : 'bg-slate-900/50 backdrop-blur-md border border-slate-800/50 text-slate-300 hover:bg-slate-950/50'
+              : 'bg-[#0c1a36]/50 backdrop-blur-md border border-[#00244d]/40 text-slate-300 hover:bg-[#020918]/50'
           }`}
         >
           <ChevronLeft className="w-4 h-4" /> Sebelumnya

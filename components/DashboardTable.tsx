@@ -31,90 +31,13 @@ import {
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
 import { getSurveys, SurveyData } from '../lib/db';
+import { computeDimensionScores, DIMENSI_INFO, DIMENSI_ITEMS } from '../lib/scoring';
 import DimensiDetailModal from './DimensiDetailModal';
 
 interface DashboardTableProps {
   role: 'rs' | 'admin';
   namaRs: string;
 }
-
-// 10 Dimensions of AHRQ SOPS Version 2.0 with Indonesian mapping
-const DIMENSI_INFO: { [key: string]: { nama: string; kode: string; totalPertanyaan: number; deskripsi: string } } = {
-  d7: { 
-    nama: 'Komunikasi Tentang Kesalahan',
-    kode: 'D7',
-    totalPertanyaan: 3,
-    deskripsi: 'Seberapa sering staf diberi informasi tentang kesalahan yang terjadi dan mendiskusikan cara untuk mencegahnya kembali.'
-  },
-  d6: { 
-    nama: 'Keterbukaan Komunikasi',
-    kode: 'D6',
-    totalPertanyaan: 4,
-    deskripsi: 'Seberapa berani staf angkat bicara ketika melihat sesuatu yang berisiko membahayakan pasien atau ketika melihat pimpinan klinis melakukan tindakan yang kurang aman.'
-  },
-  d10: { 
-    nama: 'Serah Terima dan Pertukaran Informasi',
-    kode: 'D10',
-    totalPertanyaan: 3,
-    deskripsi: 'Kelancaran transfer informasi penting tentang perawatan pasien antar unit, serta pergantian giliran kerja (shift).'
-  },
-  d9: { 
-    nama: 'Dukungan Manajemen Rumah Sakit Untuk Keselamatan Pasien',
-    kode: 'D9',
-    totalPertanyaan: 3,
-    deskripsi: 'Seberapa kuat komitmen dan alokasi sumber daya oleh pihak manajemen puncak rumah sakit dalam memprioritaskan keselamatan pasien.'
-  },
-  d3: { 
-    nama: 'Pembelajaran Organisasi - Peningkatan Berkelanjutan',
-    kode: 'D3',
-    totalPertanyaan: 2,
-    deskripsi: 'Keaktifan unit dalam mengevaluasi prosedur kerja secara berkala serta menguji efektivitas perbaikan untuk keselamatan.'
-  },
-  d8: { 
-    nama: 'Melaporkan Kejadian Keselamatan Pasien',
-    kode: 'D8',
-    totalPertanyaan: 2,
-    deskripsi: 'Seberapa sering kejadian tidak diharapkan atau nyaris cedera dilaporkan secara sukarela oleh staf.'
-  },
-  d4: { 
-    nama: 'Tanggapan Terhadap Kesalahan',
-    kode: 'D4',
-    totalPertanyaan: 5,
-    deskripsi: 'Rasa aman yang dirasakan staf bahwa kesalahan mereka tidak akan dijadikan sarana menghakimi atau menghukum personal.'
-  },
-  d2: { 
-    nama: 'Kepegawaian dan Kecepatan Kerja',
-    kode: 'D2',
-    totalPertanyaan: 4,
-    deskripsi: 'Kecukupan rasio staf dalam mengelola beban kerja tanpa terburu-buru serta ketergantungan pada tenaga pengganti sementara.'
-  },
-  d5: { 
-    nama: 'Dukungan Supervisor, Manajer, atau Pemimpin Klinis untuk Keselamatan Pasien',
-    kode: 'D5',
-    totalPertanyaan: 3,
-    deskripsi: 'Bagaimana atasan langsung memimpin, mendengar usulan keselamatan pasien, dan tidak memaksakan jalan pintas klinis demi efisiensi.'
-  },
-  d1: { 
-    nama: 'Kerja Sama Tim',
-    kode: 'D1',
-    totalPertanyaan: 3,
-    deskripsi: 'Kolaborasi, kekompakan, dan kebiasaan saling membantu antar anggota staf di dalam satu unit pelayanan.'
-  }
-};
-
-// Map statement locations to calculate precise counts
-const DIMENSI_ITEMS: { [key: string]: { section: string; id: number; isReversed?: boolean }[] } = {
-  d7: [{ section: 'C', id: 1 }, { section: 'C', id: 2 }, { section: 'C', id: 3 }],
-  d6: [{ section: 'C', id: 4 }, { section: 'C', id: 5 }, { section: 'C', id: 6 }, { section: 'C', id: 7, isReversed: true }],
-  d10: [{ section: 'F', id: 4, isReversed: true }, { section: 'F', id: 5, isReversed: true }, { section: 'F', id: 6 }],
-  d9: [{ section: 'F', id: 1 }, { section: 'F', id: 2 }, { section: 'F', id: 3, isReversed: true }],
-  d3: [{ section: 'A', id: 4 }, { section: 'A', id: 12 }],
-  d8: [{ section: 'D', id: 1 }, { section: 'D', id: 2 }],
-  d4: [{ section: 'A', id: 6, isReversed: true }, { section: 'A', id: 7, isReversed: true }, { section: 'A', id: 10 }, { section: 'A', id: 13, isReversed: true }, { section: 'A', id: 14, isReversed: true }],
-  d2: [{ section: 'A', id: 2 }, { section: 'A', id: 3, isReversed: true }, { section: 'A', id: 5, isReversed: true }, { section: 'A', id: 11, isReversed: true }],
-  d5: [{ section: 'B', id: 1 }, { section: 'B', id: 2, isReversed: true }, { section: 'B', id: 3 }],
-  d1: [{ section: 'A', id: 1 }, { section: 'A', id: 8 }, { section: 'A', id: 9, isReversed: true }]
-};
 
 const STAFF_GROUPS: { [key: string]: string[] } = {
   'Keperawatan': [
@@ -312,14 +235,6 @@ const getProfExperienceAnalysis = (data: { name: string; value: number; percenta
   return `Distribusi lama kerja sesuai profesi didominasi oleh kelompok ${maxItem.name} sebesar ${maxItem.percentage}% (${maxItem.value} responden), mencerminkan kematangan tingkat keahlian dan kompetensi dalam pemberian asuhan keselamatan pasien.`;
 };
 
-// Map raw average score to positive response (backwards compatibility)
-const scoreToPercent = (score: number): number => {
-  if (score >= 5.0) return 100;
-  if (score <= 1.0) return 0;
-  // Linear scaling from score 1-5 to percent 0-100 for legacy records
-  return parseFloat(((score - 1) * 25).toFixed(2));
-};
-
 export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
   // SWR for automatic realtime data synchronization
   const { data: surveys = [], error, mutate, isValidating } = useSWR('ahrq_surveys', getSurveys, {
@@ -449,119 +364,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
 
   // Calculate Positive Response Rates Compositely for each Dimension over all filtered surveys
   const calculatedDimensions = useMemo(() => {
-    const results = Object.keys(DIMENSI_INFO).map(dimId => {
-      let totalPositive = 0;
-      let totalValid = 0;
-      let totalNeutral = 0;
-      let totalNegative = 0;
-      let totalResponden = 0;
-
-      filteredSurveys.forEach(survey => {
-        totalResponden += survey.jumlahResponden || 1;
-        const raw = (survey.dimensiScores as any)?._rawAnswers;
-
-        if (raw) {
-          // Calculate precise counts based on questionnaire responses
-          const items = DIMENSI_ITEMS[dimId];
-          items.forEach(item => {
-            let ansVal: any = undefined;
-            if (item.section === 'A') ansVal = raw.ansA?.[item.id];
-            else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
-            else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
-            else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
-            else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
-
-            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
-
-            const val = Number(ansVal);
-            totalValid++;
-            if (item.isReversed) {
-              if (val === 1 || val === 2) totalPositive++;
-              else if (val === 3) totalNeutral++;
-              else if (val === 4 || val === 5) totalNegative++;
-            } else {
-              if (val === 4 || val === 5) totalPositive++;
-              else if (val === 3) totalNeutral++;
-              else if (val === 1 || val === 2) totalNegative++;
-            }
-          });
-        } else {
-          // Legacy Compatibility: Estimate count using dimensions average
-          const score = survey.dimensiScores?.[dimId] || 3.0;
-          const posRate = scoreToPercent(score) / 100;
-          const neutRate = Math.max(0.05, 0.25 - Math.abs(score - 3.0) * 0.08);
-
-          const qCount = DIMENSI_ITEMS[dimId].length;
-          const expectedAnswers = qCount * (survey.jumlahResponden || 1);
-
-          const posCount = Math.round(posRate * expectedAnswers);
-          const neutCount = Math.round(neutRate * expectedAnswers);
-          const negCount = Math.max(0, expectedAnswers - posCount - neutCount);
-
-          totalPositive += posCount;
-          totalNeutral += neutCount;
-          totalNegative += negCount;
-          totalValid += expectedAnswers;
-        }
-      });
-
-      const percentage = totalValid > 0 ? (totalPositive / totalValid) * 100 : 0;
-      const neutralPercentage = totalValid > 0 ? (totalNeutral / totalValid) * 100 : 0;
-      const negativePercentage = totalValid > 0 ? (totalNegative / totalValid) * 100 : 0;
-
-      // Status Interpretation & Recommendation
-      let status: 'SANGAT_BAIK' | 'PERLU_PENINGKATAN' | 'PERLU_PRIORITAS' = 'PERLU_PENINGKATAN';
-      let interpretasi = '';
-      let rekomendasi: string[] = [];
-
-      if (percentage >= 75) {
-        status = 'SANGAT_BAIK';
-        interpretasi = 'Dimensi ini merupakan kekuatan organisasi budaya keselamatan rumah sakit dan perlu dipertahankan konsistensinya.';
-        rekomendasi = [
-          'Pertahankan koordinasi kerja dan bagikan pola komunikasi sukses ini ke unit lain.',
-          'Berikan penghargaan kepada staf pelopor budaya keselamatan di unit.',
-          'Terapkan program benchmarking internal agar unit lain dapat belajar.'
-        ];
-      } else if (percentage >= 50) {
-        status = 'PERLU_PENINGKATAN';
-        interpretasi = 'Dimensi menunjukkan kondisi cukup baik namun masih memerlukan beberapa pembenahan agar menjadi budaya keselamatan yang mapan.';
-        rekomendasi = [
-          'Lakukan sesi penyegaran (refreshment) SOP keselamatan pasien secara rutin.',
-          'Adakan forum diskusi bulanan tentang kejadian keselamatan kerja.',
-          'Gencarkan kampanye edukasi pengisian formulir pelaporan kejadian dengan ringkas.'
-        ];
-      } else {
-        status = 'PERLU_PRIORITAS';
-        interpretasi = 'Dimensi ini menjadi prioritas utama untuk dilakukan intervensi serta perbaikan menyeluruh karena di bawah batas aman keselamatan.';
-        rekomendasi = [
-          'Adakan rapat evaluasi darurat bersama jajaran direksi dan komite keselamatan pasien.',
-          'Laksanakan pelatihan komprehensif terkait Just Culture demi menghilangkan rasa takut staf melaporkan kesalahan.',
-          'Sederhanakan alur birokrasi pelaporan insiden agar staf berani melapor secepatnya.',
-          'Lakukan audit sarana kerja untuk menyeimbangkan beban kerja staf secara merata.'
-        ];
-      }
-
-      return {
-        id: dimId,
-        kode: DIMENSI_INFO[dimId].kode,
-        nama: DIMENSI_INFO[dimId].nama,
-        deskripsi: DIMENSI_INFO[dimId].deskripsi,
-        totalPertanyaan: DIMENSI_INFO[dimId].totalPertanyaan,
-        percentage,
-        neutralPercentage,
-        negativePercentage,
-        positiveCount: totalPositive,
-        neutralCount: totalNeutral,
-        negativeCount: totalNegative,
-        validCount: totalValid,
-        respondentsCount: totalResponden,
-        status,
-        interpretasi,
-        rekomendasi
-      };
-    });
-
-    return results;
+    return computeDimensionScores(filteredSurveys);
   }, [filteredSurveys]);
 
   // Apply search filtering on calculated dimensions
@@ -741,16 +544,16 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
         </div>
 
         {/* 4. MAIN DATA TABLE */}
-        <div className="overflow-x-auto rounded-2xl border border-white/[0.08] bg-[#121826]/90 backdrop-blur-[64px] shadow-[0_8px_24px_rgba(0,0,0,0.30)]">
+        <div className="overflow-x-auto rounded-2xl border border-[#00244d]/50 bg-[#020918]/90 backdrop-blur-[64px] shadow-[0_8px_24px_rgba(0,0,0,0.30)]">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-gradient-to-r from-slate-900 to-[#121826] border-b border-white/[0.08] text-white/80 font-bold uppercase tracking-wider divide-x divide-white/5">
+              <tr className="bg-gradient-to-r from-[#00244d] via-[#0c1a36] to-[#020918] border-b border-[#00244d]/40 text-white/95 font-bold uppercase tracking-wider divide-x divide-[#00244d]/20">
                 <th className="p-4 text-center w-12 text-[14px]">No</th>
                 <th className="p-4 text-center text-[14px]">KOMPOSIT BUDAYA KESELAMATAN PASIEN</th>
                 <th className="p-4 text-center w-52 text-[14px]">Hasil Persentase (%)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/[0.05] bg-[#1c2230] text-slate-300">
+            <tbody className="divide-y divide-[#00244d]/20 bg-[#0c1a36]/80 text-slate-300">
               {filteredSurveys.length === 0 ? (
                 <tr>
                   <td colSpan={3} className="p-12 text-center text-slate-400 font-light leading-relaxed">
@@ -774,14 +577,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   const globalIdx = idx + 1;
                   
                   const scoreColor = dim.percentage >= 75 
-                    ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
-                    : (dim.percentage >= 50 ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]');
+                     ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
+                     : (dim.percentage >= 50 ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]');
 
                   return (
                     <tr 
                       key={dim.id} 
                       onClick={() => setSelectedDimensi(dim.id)}
-                      className="hover:bg-[#252c3c] transition-all cursor-pointer group divide-x divide-white/5"
+                      className="hover:bg-[#00244d]/50 transition-all cursor-pointer group divide-x divide-[#00244d]/20"
                     >
                       <td className="p-4 text-center font-bold font-mono hover:text-blue-400 transition-colors text-base text-[#f3f5f8]">
                         {globalIdx}

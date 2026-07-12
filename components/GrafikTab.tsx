@@ -12,46 +12,13 @@ import {
   ListFilter
 } from 'lucide-react';
 import { SurveyData } from '../lib/db';
+import { computeDimensionScores } from '../lib/scoring';
 
 interface GrafikTabProps {
   surveys: SurveyData[];
 }
 
 const queryClient = new QueryClient();
-
-const DIMENSI_INFO: { [key: string]: { nama: string; benchmark: number } } = {
-  d7: { nama: 'Komunikasi Kesalahan', benchmark: 71 },
-  d6: { nama: 'Keterbukaan Komunikasi', benchmark: 68 },
-  d10: { nama: 'Serah Terima Pasien', benchmark: 59 },
-  d9: { nama: 'Dukungan Manajemen RS', benchmark: 60 },
-  d3: { nama: 'Pembelajaran Organisasi', benchmark: 76 },
-  d8: { nama: 'Pelaporan Kejadian', benchmark: 64 },
-  d4: { nama: 'Respon Non-Punitif', benchmark: 48 },
-  d2: { nama: 'Ketenagaan & Beban Kerja', benchmark: 57 },
-  d5: { nama: 'Dukungan Supervisor', benchmark: 72 },
-  d1: { nama: 'Kerjasama Tim', benchmark: 82 },
-};
-
-const DIMENSI_ITEMS: { [key: string]: { section: string; id: number; isReversed?: boolean }[] } = {
-  d7: [{ section: 'C', id: 1 }, { section: 'C', id: 2 }, { section: 'C', id: 3 }],
-  d6: [{ section: 'C', id: 4 }, { section: 'C', id: 5 }, { section: 'C', id: 6 }, { section: 'C', id: 7, isReversed: true }],
-  d10: [{ section: 'F', id: 4, isReversed: true }, { section: 'F', id: 5, isReversed: true }, { section: 'F', id: 6 }],
-  d9: [{ section: 'F', id: 1 }, { section: 'F', id: 2 }, { section: 'F', id: 3, isReversed: true }],
-  d3: [{ section: 'A', id: 4 }, { section: 'A', id: 12 }],
-  d8: [{ section: 'D', id: 1 }, { section: 'D', id: 2 }],
-  d4: [{ section: 'A', id: 6, isReversed: true }, { section: 'A', id: 7, isReversed: true }, { section: 'A', id: 10 }, { section: 'A', id: 13, isReversed: true }, { section: 'A', id: 14, isReversed: true }],
-  d2: [{ section: 'A', id: 2 }, { section: 'A', id: 3, isReversed: true }, { section: 'A', id: 5, isReversed: true }, { section: 'A', id: 11, isReversed: true }],
-  d5: [{ section: 'B', id: 1 }, { section: 'B', id: 2, isReversed: true }, { section: 'B', id: 3 }],
-  d1: [{ section: 'A', id: 1 }, { section: 'A', id: 8 }, { section: 'A', id: 9, isReversed: true }]
-};
-
-const scoreToPercent = (score: number): number => {
-  if (score >= 4.5) return 90 + (score - 4.5) * 10;
-  if (score >= 3.5) return 75 + (score - 3.5) * 15;
-  if (score >= 2.5) return 50 + (score - 2.5) * 25;
-  if (score >= 1.5) return 20 + (score - 1.5) * 30;
-  return Math.max(0, (score - 1) * 20);
-};
 
 const fetchAI = async (prompt: string) => {
   const res = await fetch('/api/gemini/generate', {
@@ -96,58 +63,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
   const [chartType, setChartType] = useState<'Bar' | 'Line'>('Bar');
 
   const computeStats = (targetSurveys: SurveyData[]) => {
-    return Object.keys(DIMENSI_INFO).map(dimId => {
-      let totalPositive = 0, totalValid = 0, totalNeutral = 0, totalNegative = 0;
-
-      targetSurveys.forEach(survey => {
-        const raw = (survey.dimensiScores as any)?._rawAnswers;
-        if (raw) {
-          DIMENSI_ITEMS[dimId].forEach(item => {
-            let ansVal: any = undefined;
-            if (item.section === 'A') ansVal = raw.ansA?.[item.id];
-            else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
-            else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
-            else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
-            else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
-
-            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
-            const val = Number(ansVal);
-            totalValid++;
-            if (item.isReversed) {
-              if (val === 1 || val === 2) totalPositive++;
-              else if (val === 3) totalNeutral++;
-              else if (val === 4 || val === 5) totalNegative++;
-            } else {
-              if (val === 4 || val === 5) totalPositive++;
-              else if (val === 3) totalNeutral++;
-              else if (val === 1 || val === 2) totalNegative++;
-            }
-          });
-        } else {
-          const score = survey.dimensiScores?.[dimId] || 3.0;
-          const posRate = scoreToPercent(score) / 100;
-          const neutRate = Math.max(0.05, 0.25 - Math.abs(score - 3.0) * 0.08);
-          const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
-          
-          totalValid += expectedAnswers;
-          totalPositive += Math.round(expectedAnswers * posRate);
-          totalNeutral += Math.round(expectedAnswers * neutRate);
-          totalNegative += expectedAnswers - Math.round(expectedAnswers * posRate) - Math.round(expectedAnswers * neutRate);
-        }
-      });
-
-      const percentage = totalValid > 0 ? (totalPositive / totalValid) * 100 : 0;
-      const neutralPercentage = totalValid > 0 ? (totalNeutral / totalValid) * 100 : 0;
-      const negativePercentage = totalValid > 0 ? (totalNegative / totalValid) * 100 : 0;
-      const komposit = (percentage * 0.6) + (neutralPercentage * 0.3) + (negativePercentage * 0.1);
-
-      return {
-        id: dimId,
-        nama: DIMENSI_INFO[dimId].nama,
-        percentage, neutralPercentage, negativePercentage, komposit,
-        benchmark: DIMENSI_INFO[dimId].benchmark
-      };
-    });
+    return computeDimensionScores(targetSurveys);
   };
 
   const dataTahun1 = useMemo(() => computeStats(surveys.filter(s => s.tanggalInput?.startsWith(tahun1))), [surveys, tahun1]);

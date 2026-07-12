@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { FileText, Printer, ShieldAlert, Sparkles, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { computeDimensionScores } from '../lib/scoring';
 
 interface SurveyData {
   id: string;
@@ -30,14 +31,6 @@ const DIMENSI_NAMES: { [key: string]: string } = {
   d1: 'Kerjasama Tim',
 };
 
-const scoreToPercent = (score: number): number => {
-  if (score === 5) return 96;
-  if (score === 4) return 78;
-  if (score === 3) return 48;
-  if (score === 2) return 22;
-  return 6;
-};
-
 export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
   const [selectedReportId, setSelectedReportId] = useState<string>(surveys[0]?.id || 'compiled');
   const [currentDate, setCurrentDate] = useState('');
@@ -50,28 +43,6 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
   // Compile totals across all surveys
   const totalResponden = surveys.reduce((acc, curr) => acc + curr.jumlahResponden, 0);
-
-  const rawAverages: { [key: string]: number } = {
-    d1: 0, d2: 0, d3: 0, d4: 0, d5: 0, d6: 0, d7: 0, d8: 0, d9: 0, d10: 0
-  };
-
-  if (surveys.length > 0) {
-    surveys.forEach(s => {
-      if (s.dimensiScores) {
-        Object.keys(rawAverages).forEach(key => {
-          rawAverages[key] += s.dimensiScores[key] || 0;
-        });
-      }
-    });
-    Object.keys(rawAverages).forEach(key => {
-      rawAverages[key] = parseFloat((rawAverages[key] / surveys.length).toFixed(2));
-    });
-  }
-
-  // Get active scores based on selection (specific unit or compiled)
-  const activeScores = selectedReportId === 'compiled' || !selectedSurvey
-    ? rawAverages
-    : (selectedSurvey.dimensiScores || rawAverages);
 
   const activeUnit = selectedReportId === 'compiled' || !selectedSurvey
     ? 'Kompilasi Seluruh Unit Kerja'
@@ -97,10 +68,17 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
     );
   }
 
+  // Get active surveys to score (specific unit or compiled)
+  const targetSurveysForScoring = selectedReportId === 'compiled' || !selectedSurvey
+    ? surveys
+    : [selectedSurvey];
+
+  const computedScoresList = computeDimensionScores(targetSurveysForScoring);
+
   // Generate assessment and actionable recommendation based on data
-  const assessments = Object.keys(DIMENSI_NAMES).map(key => {
-    const rawVal = activeScores[key];
-    const percent = Math.round(scoreToPercent(rawVal));
+  const assessments = computedScoresList.map(item => {
+    const percent = Math.round(item.percentage);
+    const rawVal = Math.round(item.komposit * 10) / 10;
     let status: 'LULUS_KUAT' | 'NETRAL' | 'PERLU_PERBAIKAN' = 'NETRAL';
     let label = 'Netral / Sedang';
     let colorClass = 'text-slate-400 bg-slate-950/40 border-slate-800';
@@ -116,8 +94,8 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
     }
 
     return {
-      key,
-      name: DIMENSI_NAMES[key],
+      key: item.id,
+      name: item.nama,
       raw: rawVal,
       percent,
       status,
