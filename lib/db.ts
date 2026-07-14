@@ -223,6 +223,49 @@ export async function saveSurvey(survey: SurveyData): Promise<SurveyData> {
   throw new Error("Koneksi Supabase belum terkonfigurasi.");
 }
 
+export async function deleteSurvey(id: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      // 1. Delete from ahrq_surveys
+      const { error } = await supabase
+        .from('ahrq_surveys')
+        .delete()
+        .eq('id', id);
+
+      if (error) {
+        throw new Error(`Gagal menghapus survei dari database Supabase: ${error.message}`);
+      }
+
+      // 2. Safely attempt to clean up any related survey_submissions (prevent orphan data)
+      try {
+        await supabase
+          .from('survey_submissions')
+          .delete()
+          .eq('id', id);
+        
+        const cleanId = id.replace('srv_', '');
+        await supabase
+          .from('survey_submissions')
+          .delete()
+          .eq('id', cleanId);
+          
+        await supabase
+          .from('survey_submissions')
+          .delete()
+          .eq('id', `sub-${cleanId}`);
+      } catch (subErr) {
+        console.warn("Latar belakang cleanup survey_submissions diabaikan atau berhasil:", subErr);
+      }
+    } catch (e: any) {
+      console.error("Supabase delete ahrq_surveys exception:", e);
+      throw new Error(e.message || "Gagal menghapus survei dari database Supabase.");
+    }
+  } else {
+    throw new Error("Koneksi Supabase belum terkonfigurasi.");
+  }
+}
+
 // 3. Fetch hospital accounts (strictly from Supabase, no localStorage)
 export async function getHospitalAccounts(): Promise<HospitalAccount[]> {
   const supabase = getSupabaseClient();

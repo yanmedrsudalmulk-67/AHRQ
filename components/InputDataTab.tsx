@@ -646,6 +646,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
           ansB,
           ansC,
           ansD,
+          ansE,
           ansF,
           ansG,
           posisiStaf,

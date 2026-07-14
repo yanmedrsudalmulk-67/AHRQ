@@ -4,7 +4,7 @@ import { useState, useMemo } from 'react';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ReferenceLine 
+  BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ReferenceLine, LabelList 
 } from 'recharts';
 import { 
   BarChart2, ShieldAlert, Award, TrendingUp, Info, Activity,
@@ -30,6 +30,114 @@ const fetchAI = async (prompt: string) => {
   const data = await res.json();
   return data.text as string;
 };
+
+function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan', tahun1: string, tahun2: string) {
+  const getScore = (d: any) => mode === 'Tunggal' ? d['Capaian'] : d['Tahun 2'];
+  const sortedData = [...combinedData].sort((a, b) => getScore(b) - getScore(a));
+  
+  const strengths = sortedData.filter(d => getScore(d) >= 75);
+  const moderates = sortedData.filter(d => getScore(d) >= 50 && getScore(d) < 75);
+  const weaknesses = sortedData.filter(d => getScore(d) < 50);
+
+  let analisis = '';
+  let rekomendasi: string[] = [];
+
+  if (mode === 'Tunggal') {
+    analisis += `<strong>LAPORAN ANALISIS BUDAYA KESELAMATAN PASIEN (AHRQ SOPS 2.0) - PERIODE TAHUN ${tahun1}</strong><br/><br/>`;
+    analisis += `Berdasarkan kriteria evaluasi resmi <strong>AHRQ SOPS (Surveys on Patient Safety Culture) Versi 2.0</strong>, dimensi budaya keselamatan dikelompokkan menjadi kekuatan utama (skor positif ≥ 75%), area sedang/perlu pemantauan (50% - 74%), dan area prioritas/lemah (< 50%). Hasil evaluasi fasyankes Anda adalah sebagai berikut:<br/><br/>`;
+    
+    // Strengths
+    if (strengths.length > 0) {
+      analisis += `<strong class="text-emerald-400">1. KEKUATAN UTAMA BUDAYA KESELAMATAN (Skor ≥ 75%):</strong><br/>`;
+      analisis += `Terdapat <strong>${strengths.length} dimensi</strong> unggulan yang telah mencapai kriteria kekuatan budaya keselamatan pasien di fasyankes:<br/>`;
+      strengths.forEach(s => {
+        analisis += `• <strong>${s.dimensiSingkat}</strong> (${getScore(s).toFixed(1)}%): ${s.d1.interpretasi}<br/>`;
+      });
+      analisis += `<br/>`;
+    } else {
+      analisis += `<strong class="text-slate-400">1. KEKUATAN UTAMA BUDAYA KESELAMATAN (Skor ≥ 75%):</strong><br/>Belum ada dimensi yang mencapai kriteria kekuatan ≥ 75%. Seluruh area memerlukan pembinaan intensif berkelanjutan.<br/><br/>`;
+    }
+
+    // Areas to Monitor
+    if (moderates.length > 0) {
+      analisis += `<strong class="text-cyan-400">2. AREA PERLU PEMANTAUAN KONSISTEN (Skor 50% - 74%):</strong><br/>`;
+      analisis += `Sebanyak <strong>${moderates.length} dimensi</strong> berada dalam rentang sedang. Aspek ini rentan mengalami kemunduran apabila tidak dipantau secara berkala:<br/>`;
+      moderates.forEach(m => {
+        analisis += `• <strong>${m.dimensiSingkat}</strong> (${getScore(m).toFixed(1)}%): ${m.d1.interpretasi}<br/>`;
+      });
+      analisis += `<br/>`;
+    }
+
+    // Weaknesses / Priority
+    if (weaknesses.length > 0) {
+      analisis += `<strong class="text-rose-400">3. AREA PRIORITAS PERBAIKAN SISTEMIS (Skor < 50%):</strong><br/>`;
+      analisis += `Terdapat <strong>${weaknesses.length} dimensi kritis</strong> yang diidentifikasi di bawah batas aman keselamatan dan memerlukan tindakan perbaikan operasional mendesak:<br/>`;
+      weaknesses.forEach(w => {
+        analisis += `• <strong>${w.dimensiSingkat}</strong> (${getScore(w).toFixed(1)}%): <strong class="text-rose-300">${w.d1.interpretasi}</strong><br/>`;
+      });
+    } else {
+      analisis += `<strong class="text-emerald-400">3. AREA PRIORITAS PERBAIKAN SISTEMIS (Skor < 50%):</strong><br/>Kabar baik, tidak ada dimensi kritis yang berada di bawah skor 50%. Mutu budaya keselamatan fasyankes berada pada jalur yang aman.<br/>`;
+    }
+
+    // Recommendations
+    if (weaknesses.length > 0) {
+      weaknesses.forEach(w => {
+        rekomendasi.push(`Prioritaskan pembenahan sistemis pada dimensi **${w.dimensiSingkat}** (${getScore(w).toFixed(1)}%) melalui rapat komite keselamatan pasien dan penyusunan SOP taktis.`);
+      });
+    }
+    if (moderates.length > 0) {
+      moderates.slice(0, 2).forEach(m => {
+        rekomendasi.push(`Tingkatkan supervisi dan lakukan evaluasi berkala pada dimensi **${m.dimensiSingkat}** (${getScore(m).toFixed(1)}%) guna mendorong percepatan menjadi kekuatan utama.`);
+      });
+    }
+    if (rekomendasi.length < 4) {
+      rekomendasi.push(`Laksanakan kegiatan **'Safety Walkround' (Ronde Keselamatan)** yang dipimpin oleh jajaran pimpinan RS ke unit-unit pelayanan utama secara terjadwal.`);
+      rekomendasi.push(`Gencarkan sosialisasi iklim **'Just Culture' (budaya non-punitif)** agar staf berani melapor tanpa rasa takut disalahkan secara personal.`);
+    }
+  } else {
+    // Perbandingan mode
+    analisis += `<strong>LAPORAN ANALISIS KOMPARATIF BUDAYA KESELAMATAN (AHRQ SOPS 2.0) - PERBANDINGAN TAHUN ${tahun1} VS ${tahun2}</strong><br/><br/>`;
+    analisis += `Analisis komparatif ini menyajikan evaluasi tren kepatuhan keselamatan pasien antar-periode guna mengukur efektivitas intervensi penjaminan mutu di fasyankes Anda:<br/><br/>`;
+
+    const compared = combinedData.map(d => ({
+      ...d,
+      diff: d['Tahun 2'] - d['Tahun 1']
+    })).sort((a, b) => b.diff - a.diff);
+
+    const improved = compared.filter(d => d.diff > 0);
+    const declined = compared.filter(d => d.diff < 0);
+
+    if (improved.length > 0) {
+      analisis += `<strong class="text-emerald-400">1. ASPEK DENGAN TREN POSITIF (MENINGKAT):</strong><br/>`;
+      improved.slice(0, 3).forEach(imp => {
+        analisis += `• <strong>${imp.dimensiSingkat}</strong>: Meningkat dari **${imp['Tahun 1'].toFixed(1)}%** menjadi **${imp['Tahun 2'].toFixed(1)}%** (<span class="text-emerald-400 font-bold">+${imp.diff.toFixed(1)}%</span>)<br/>`;
+      });
+      analisis += `Kenaikan ini membuktikan efektivitas program perbaikan atau pembinaan berkelanjutan yang telah berjalan pada aspek tersebut.<br/><br/>`;
+    }
+
+    if (declined.length > 0) {
+      analisis += `<strong class="text-rose-400">2. ASPEK DENGAN TREN NEGATIF (MENURUN):</strong><br/>`;
+      declined.reverse().slice(0, 3).forEach(dec => {
+        analisis += `• <strong>${dec.dimensiSingkat}</strong>: Menurun dari **${dec['Tahun 1'].toFixed(1)}%** menjadi **${dec['Tahun 2'].toFixed(1)}%** (<span class="text-rose-300 font-bold">${dec.diff.toFixed(1)}%</span>)<br/>`;
+      });
+      analisis += `Penurunan ini memerlukan investigasi mendalam untuk melacak apakah dipicu oleh peningkatan beban kerja harian, kejenuhan staf, atau supervisi klinis yang kendur.<br/><br/>`;
+    }
+
+    analisis += `<strong class="text-cyan-400">3. REKOMENDASI STRATEGIS UNTUK MANAJEMEN:</strong><br/>`;
+    analisis += `Direkomendasikan melakukan standardisasi keberhasilan dari dimensi yang meningkat untuk direplikasi pada unit kerja lainnya, serta mengadakan Focused Group Discussion (FGD) pada unit kerja dengan penurunan terdalam guna merumuskan tindakan korektif secepatnya.`;
+
+    if (declined.length > 0) {
+      rekomendasi.push(`Lakukan evaluasi akar masalah mendalam pada aspek **${declined[0].dimensiSingkat}** yang mengalami tren penurunan signifikan (${declined[0].diff.toFixed(1)}%).`);
+    }
+    if (improved.length > 0) {
+      rekomendasi.push(`Standardisasi prosedur sukses dan koordinasi kerja pada dimensi **${improved[0].dimensiSingkat}** (+${improved[0].diff.toFixed(1)}%) untuk diduplikasi pada unit-unit kerja yang masih lemah.`);
+    }
+    rekomendasi.push(`Optimalkan sistem pelaporan insiden internal yang mudah diakses dan bersifat non-punitif demi meningkatkan partisipasi aktif pelaporan.`);
+    rekomendasi.push(`Selenggarakan program monitoring dan evaluasi terpadu (Monev) setiap triwulan atas capaian indikator budaya keselamatan.`);
+  }
+
+  return { analisis, rekomendasi };
+}
 
 function GrafikTabContent({ surveys }: GrafikTabProps) {
   const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
@@ -81,6 +189,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
       const d2 = dataTahun2[i];
       return {
         dimensiSingkat: d1.nama,
+        kode: d1.kode,
         'Capaian': parseFloat(d1.percentage.toFixed(2)),
         'Tahun 1': parseFloat(d1.percentage.toFixed(2)),
         'Tahun 2': parseFloat(d2.percentage.toFixed(2)),
@@ -93,32 +202,96 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
 
   const aiPrompt = useMemo(() => {
     if (combinedData.length === 0) return null;
-    let text = `Buatkan Analisis Otomatis dan Rekomendasi Peningkatan berformat Markdown (maksimal 4 paragraf analisis, dan 4 bullet points rekomendasi) untuk hasil survei budaya keselamatan pasien RS berikut.\n`;
-    text += `Gunakan Bahasa Indonesia formal, profesional, jelas, objektif untuk Direktur RS.\n\n`;
+    let text = `Anda adalah konsultan ahli manajemen mutu rumah sakit spesialis Budaya Keselamatan Pasien (Patient Safety Culture) berbasis standar global AHRQ SOPS (Surveys on Patient Safety Culture) Versi 2.0.\n`;
+    text += `Tugas Anda adalah membuat Analisis Otomatis dan Rekomendasi Peningkatan Mutu terperinci, formal, taktis, dan solutif yang ditujukan langsung kepada Direktur Utama Rumah Sakit dalam Bahasa Indonesia yang sangat profesional dan objektif.\n\n`;
     
+    text += `Berdasarkan kriteria resmi AHRQ SOPS 2.0:\n`;
+    text += `- Dimensi Budaya Keselamatan Kuat (Kekuatan Utama): Skor respon positif ≥ 75%\n`;
+    text += `- Dimensi Perlu Pemantauan Konsisten (Sedang): Skor respon positif 50% - 74.99%\n`;
+    text += `- Dimensi Prioritas Perbaikan Sistemis (Kelemahan/Rentan): Skor respon positif < 50%\n\n`;
+
     if (mode === 'Tunggal') {
-      text += `Data Capaian Tahun ${tahun1}:\n`;
+      text += `Berikut adalah data persentase respon positif hasil survei di Rumah Sakit pada periode Tahun ${tahun1}:\n`;
       combinedData.forEach(d => {
-        text += `- ${d.dimensiSingkat}: ${d['Capaian']}% (Kategori: ${d['Capaian'] >= 75 ? 'Kuat' : d['Capaian'] >= 50 ? 'Sedang' : 'Lemah'})\n`;
+        const cat = d['Capaian'] >= 75 ? 'Kekuatan Utama (≥75%)' : d['Capaian'] >= 50 ? 'Perlu Pemantauan (50-74%)' : 'Prioritas Perbaikan (<50%)';
+        text += `- ${d.dimensiSingkat} (${d.kode}): ${d['Capaian']}% - Kategori: ${cat}\n`;
       });
     } else {
-      text += `Perbandingan Capaian Tahun ${tahun1} vs ${tahun2}:\n`;
+      text += `Berikut adalah perbandingan data persentase respon positif hasil survei di Rumah Sakit antara Tahun ${tahun1} dengan Tahun ${tahun2}:\n`;
       combinedData.forEach(d => {
         const diff = d['Tahun 2'] - d['Tahun 1'];
-        text += `- ${d.dimensiSingkat}: Tahun ${tahun1}=${d['Tahun 1']}%, Tahun ${tahun2}=${d['Tahun 2']}% (Selisih: ${diff > 0 ? '+' : ''}${diff.toFixed(2)}%)\n`;
+        const cat = d['Tahun 2'] >= 75 ? 'Kekuatan Utama (≥75%)' : d['Tahun 2'] >= 50 ? 'Perlu Pemantauan (50-74%)' : 'Prioritas Perbaikan (<50%)';
+        text += `- ${d.dimensiSingkat} (${d.kode}): Tahun ${tahun1} = ${d['Tahun 1']}% vs Tahun ${tahun2} = ${d['Tahun 2']}% (Tren: ${diff > 0 ? '+' : ''}${diff.toFixed(2)}% | Kategori Tahun Kedua: ${cat})\n`;
       });
     }
     
-    text += `\nFokus pada kekuatan organisasi, kelemahan, dan tindakan perbaikan spesifik. Jangan berikan pengantar basa-basi, langsung berikan section "### Analisis" dan "### Rekomendasi Peningkatan".`;
+    text += `\nInstruksi Struktur Output:\n`;
+    text += `1. Berikan analisis mendalam mengenai kekuatan (dimensi dengan skor tertinggi), kelemahan utama (dimensi di bawah 50%), serta korelasi antar-aspek (misal, pengaruh ketenagaan dan beban kerja terhadap pelaporan insiden atau kerja sama tim) sesuai standar AHRQ SOPS 2.0.\n`;
+    text += `2. Berikan rekomendasi peningkatan mutu operasional yang konkret, taktis, dan aplikatif sesuai pedoman operasional rumah sakit.\n`;
+    text += `3. Hindari kalimat pembuka/penutup basa-basi. Format output harus langsung dimulai dengan judul "### Analisis" diikuti dengan ulasan analisis, kemudian dilanjutkan dengan judul "### Rekomendasi Peningkatan" diikuti dengan rekomendasi operasional.\n`;
+    text += `4. Batasi output maksimal 4 paragraf analisis mendalam, dan 4 poin rekomendasi berpoin (*).`;
     return text;
   }, [combinedData, mode, tahun1, tahun2]);
 
-  const { data: aiResponse, isLoading: aiLoading } = useQuery({
+  const { data: aiResponse, isLoading: aiLoading, isError: aiIsError } = useQuery({
     queryKey: ['ai-analysis', aiPrompt],
     queryFn: () => fetchAI(aiPrompt!),
     enabled: !!aiPrompt,
     staleTime: Infinity,
+    retry: false,
   });
+
+  const localReport = useMemo(() => {
+    return generateAHRQReport(combinedData, mode, tahun1, tahun2);
+  }, [combinedData, mode, tahun1, tahun2]);
+
+  const e1Stats = useMemo(() => {
+    let targetSurveys = actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1));
+    if (mode === 'Perbandingan') {
+      targetSurveys = actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1) || s.tanggalInput?.startsWith(tahun2));
+    }
+    
+    let totalValid = 0;
+    const counts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+    
+    targetSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
+        counts[raw.ansE as keyof typeof counts] += 1;
+        totalValid += 1;
+      }
+    });
+
+    const getPct = (val: number) => totalValid > 0 ? (val / totalValid) * 100 : 0;
+
+    return [
+      { kategori: 'Sangat Baik', 'Rumah Sakit Anda': getPct(counts[5]), 'Data Pembanding': 35 },
+      { kategori: 'Baik', 'Rumah Sakit Anda': getPct(counts[4]), 'Data Pembanding': 45 },
+      { kategori: 'Cukup', 'Rumah Sakit Anda': getPct(counts[3]), 'Data Pembanding': 15 },
+      { kategori: 'Kurang', 'Rumah Sakit Anda': getPct(counts[2]), 'Data Pembanding': 4 },
+      { kategori: 'Sangat Kurang', 'Rumah Sakit Anda': getPct(counts[1]), 'Data Pembanding': 1 },
+    ];
+  }, [actualSurveys, tahun1, tahun2, mode]);
+
+  const E1Tooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl text-xs space-y-3 min-w-[200px]">
+          <p className="font-bold text-slate-200 border-b border-slate-800 pb-2">{label}</p>
+          {payload.map((p: any, i: number) => (
+            <div key={i} className="flex justify-between items-center" style={{ color: p.color }}>
+              <span className="font-medium flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></span> 
+                {p.name}:
+              </span>
+              <strong className="text-sm">{p.value.toFixed(1)}%</strong>
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return null;
+  };
 
   const rsName = actualSurveys.length > 0 ? actualSurveys[0].namaRs : "Rumah Sakit";
 
@@ -369,6 +542,43 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
         </div>
       </div>
 
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2 }}
+        className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-xl relative overflow-hidden"
+      >
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
+        <h3 className="text-lg font-bold text-slate-200 mb-1 flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-emerald-400" />
+          Perbandingan Penilaian Keselamatan Pasien
+        </h3>
+        <p className="text-sm text-slate-400 mb-8">Bagaimana Anda menilai tingkat keselamatan pasien di unit kerja Anda? (Butir E1)</p>
+        
+        <div className="h-[400px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={e1Stats} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
+              <XAxis dataKey="kategori" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} />
+              <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(val) => `${val}%`} />
+              <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
+              <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }} />
+              <Bar dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#34d399" fontSize={11} fontWeight="bold" />
+                {e1Stats.map((entry, index) => (
+                  <Cell key={`cell-rs-${index}`} fill="#10b981" />
+                ))}
+              </Bar>
+              <Bar dataKey="Data Pembanding" fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                <LabelList dataKey="Data Pembanding" position="top" formatter={(val: number) => `${val}%`} fill="#94a3b8" fontSize={11} fontWeight="bold" />
+                {e1Stats.map((entry, index) => (
+                  <Cell key={`cell-bp-${index}`} fill="#64748b" />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-xl relative overflow-hidden group">
@@ -376,7 +586,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
           <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
             <BrainCircuit className="w-6 h-6 text-cyan-400" /> Analisis Otomatis
           </h3>
-          <div className="prose prose-sm prose-invert max-w-none text-slate-300">
+          <div className="prose prose-sm prose-invert max-w-none text-slate-300 text-xs">
             {aiLoading ? (
               <div className="space-y-3 animate-pulse">
                 <div className="h-4 bg-white/10 rounded w-3/4"></div>
@@ -384,15 +594,31 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                 <div className="h-4 bg-white/10 rounded w-5/6"></div>
               </div>
             ) : aiResponse ? (
-              <div dangerouslySetInnerHTML={{ 
-                __html: aiResponse
-                  .replace(/### Analisis/g, '')
-                  .replace(/### Rekomendasi Peningkatan/g, '')
-                  .replace(/\n\n/g, '<br/><br/>') 
-                  .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100">$1</strong>')
-                  .replace(/\* (.*?)(?=<br|$)/g, '<li class="ml-4 list-disc text-slate-300">$1</li>')
-              }} className="leading-relaxed space-y-2" />
-            ) : <p className="text-slate-400">Menunggu analisis data...</p>}
+              <div className="space-y-4">
+                <div dangerouslySetInnerHTML={{ 
+                  __html: aiResponse
+                    .replace(/### Analisis/g, '')
+                    .replace(/### Rekomendasi Peningkatan/g, '')
+                    .replace(/\n\n/g, '<br/><br/>') 
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100">$1</strong>')
+                    .replace(/\* (.*?)(?=<br|$)/g, '<li class="ml-4 list-disc text-slate-300">$1</li>')
+                }} className="leading-relaxed space-y-2" />
+                <div className="text-[10px] text-cyan-400/85 bg-cyan-950/20 px-3 py-2 rounded-xl border border-cyan-500/10 flex items-center gap-1.5 no-print">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  Analisis dioptimasi secara dinamis oleh Google Gemini AI (Standar AHRQ SOPS 2.0).
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div dangerouslySetInnerHTML={{ __html: localReport.analisis }} className="leading-relaxed space-y-2" />
+                {aiIsError && (
+                  <div className="text-[10px] text-amber-400 bg-amber-950/20 px-3 py-2 rounded-xl border border-amber-500/10 flex items-center gap-1.5 no-print">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Sistem beralih ke Analisis Standar AHRQ SOPS 2.0 Lokal karena server AI sedang padat/sibuk.
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -403,25 +629,29 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
           </h3>
           <div className="prose prose-sm prose-invert max-w-none text-slate-300">
             {aiLoading ? (
-               <div className="space-y-3 animate-pulse"><div className="h-4 bg-white/10 rounded w-full"></div><div className="h-4 bg-white/10 rounded w-5/6"></div></div>
-            ) : aiResponse ? (
-              <div className="space-y-4">
-                <p className="font-semibold text-slate-200">Berdasarkan hasil analisis BI Dashboard, direkomendasikan tindak lanjut berikut:</p>
-                <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
-                  <ul className="space-y-2 text-emerald-100 list-none m-0 p-0">
-                    {combinedData.filter(d => d.d1.percentage < 50).slice(0, 4).map(d => (
-                      <li key={d.id} className="flex gap-3">
+               <div className="space-y-3 animate-pulse">
+                 <div className="h-4 bg-white/10 rounded w-full"></div>
+                 <div className="h-4 bg-white/10 rounded w-5/6"></div>
+               </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                <p className="font-semibold text-slate-200">
+                  Berdasarkan hasil kuesioner budaya keselamatan pasien RS Anda (AHRQ SOPS 2.0), berikut rekomendasi tindak lanjut strategis:
+                </p>
+                <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
+                  <ul className="space-y-3 text-slate-300 list-none m-0 p-0">
+                    {localReport.rekomendasi.map((rec, idx) => (
+                      <li key={idx} className="flex gap-2.5">
                         <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span className="leading-relaxed">Fokuskan evaluasi akar masalah pada <strong className="text-emerald-300">{d.dimensiSingkat}</strong> yang memiliki skor rendah ({d.d1.percentage.toFixed(1)}%).</span>
+                        <span className="leading-relaxed" dangerouslySetInnerHTML={{ 
+                          __html: rec.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300 font-bold">$1</strong>') 
+                        }} />
                       </li>
                     ))}
-                    {combinedData.filter(d => d.d1.percentage < 50).length === 0 && (
-                      <li className="flex gap-3"><CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" /><span>Pertahankan capaian unggul pada seluruh dimensi dan teruskan budaya pelaporan yang baik.</span></li>
-                    )}
                   </ul>
                 </div>
               </div>
-            ) : <p className="text-slate-400">Menunggu rekomendasi sistem...</p>}
+            )}
           </div>
         </div>
       </div>

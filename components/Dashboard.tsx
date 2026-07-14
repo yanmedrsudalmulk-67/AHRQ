@@ -17,16 +17,18 @@ import {
   Calendar,
   Sparkles,
   ArrowRight,
-  Clock
+  Clock,
+  X,
+  Trash2
 } from 'lucide-react';
-import useSWR from 'swr';
+import useSWR, { mutate as globalMutate } from 'swr';
 import InputDataTab from './InputDataTab';
 import GrafikTab from './GrafikTab';
 import LaporanTab from './LaporanTab';
 import PengaturanTab from './PengaturanTab';
 import DashboardTable from './DashboardTable';
 import PersetujuanTab from './PersetujuanTab';
-import { getSurveys, saveSurvey, getHospitalAccounts } from '../lib/db';
+import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey } from '../lib/db';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
 import DashboardHeader from './DashboardHeader';
@@ -64,6 +66,20 @@ export default function Dashboard({
   onUpdateLogo
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan' | 'persetujuan'>('dashboard');
+  const [showRespondentsModal, setShowRespondentsModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [surveyToDelete, setSurveyToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null);
+      }, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [notification]);
 
   // SWR for real-time survey synchronization with background polling
   const { data: surveys = [], mutate, isLoading: surveysLoading } = useSWR('ahrq_surveys', getSurveys, {
@@ -90,6 +106,55 @@ export default function Dashboard({
 
   const handleResetData = () => {
     mutate([]);
+  };
+
+  const handleDeleteSurvey = (id: string) => {
+    if (role !== 'admin') {
+      setNotification({ text: "Anda tidak memiliki hak akses untuk menghapus data responden.", type: 'error' });
+      return;
+    }
+    setSurveyToDelete(id);
+    setShowDeleteConfirm(true);
+  };
+
+  const executeDeleteSurvey = async () => {
+    if (!surveyToDelete) return;
+    if (role !== 'admin') {
+      setNotification({ text: "Anda tidak memiliki hak akses untuk menghapus data responden.", type: 'error' });
+      setShowDeleteConfirm(false);
+      setSurveyToDelete(null);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      // Optimistically filter out the deleted survey from the current list
+      const updatedSurveys = surveys.filter(s => s.id !== surveyToDelete);
+      
+      // Mutate locally both the bound and global cache for 'ahrq_surveys' immediately
+      mutate(updatedSurveys, false);
+      globalMutate('ahrq_surveys', updatedSurveys, false);
+
+      // Perform actual deletion on Supabase database
+      await deleteSurvey(surveyToDelete);
+      
+      // Success feedback
+      setNotification({ text: "Data responden berhasil dihapus.", type: 'success' });
+      
+      // Finally, trigger real background revalidation to make sure everyone is fully synchronized
+      await mutate();
+      await globalMutate('ahrq_surveys');
+    } catch (e) {
+      console.error("Gagal menghapus survei:", e);
+      setNotification({ text: "Gagal menghapus data. Silakan coba kembali.", type: 'error' });
+      // Rollback state in case of any database exception
+      mutate();
+      globalMutate('ahrq_surveys');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+      setSurveyToDelete(null);
+    }
   };
 
   // Filter surveys: Admin sees all, RS sees only their own
@@ -344,7 +409,10 @@ export default function Dashboard({
             {/* Stats Summary Widgets */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               
-              <div className="p-5 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]">
+              <div 
+                onClick={() => setShowRespondentsModal(true)}
+                className="cursor-pointer p-5 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]"
+              >
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Responden</span>
                   <div className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20 group-hover:bg-cyan-500/20 group-hover:border-cyan-500/30 transition-all">
@@ -433,6 +501,184 @@ export default function Dashboard({
           />
         )}
           </motion.div>
+        </AnimatePresence>
+
+        {/* Respondents Modal */}
+        <AnimatePresence>
+          {showRespondentsModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowRespondentsModal(false)}
+                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-4xl bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              >
+                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-cyan-400" />
+                      Daftar Responden
+                    </h2>
+                    <p className="text-sm text-slate-400 mt-1">Data staf yang telah berpartisipasi mengisi kuesioner.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowRespondentsModal(false)}
+                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-0">
+                  <table className="w-full text-sm text-left text-slate-300">
+                    <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-4 font-semibold">No</th>
+                        <th className="px-6 py-4 font-semibold">Tanggal Input</th>
+                        <th className="px-6 py-4 font-semibold">Posisi Staf</th>
+                        <th className="px-6 py-4 font-semibold">Unit/Area Kerja</th>
+                        {role === 'admin' && <th className="px-6 py-4 font-semibold text-center">Aksi</th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {filteredSurveys.length > 0 ? (
+                        filteredSurveys.map((survey, index) => {
+                          const rawAnswers = (survey.dimensiScores as any)?._rawAnswers || {};
+                          return (
+                            <tr key={survey.id} className="hover:bg-slate-800/20 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{survey.tanggalInput}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{rawAnswers.posisiStaf || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{survey.unitKerja || '-'}</td>
+                              {role === 'admin' && (
+                                <td className="px-6 py-4 whitespace-nowrap text-center">
+                                  <button
+                                    onClick={() => handleDeleteSurvey(survey.id)}
+                                    className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all group border border-rose-500/20 hover:border-transparent inline-flex items-center justify-center"
+                                    title="Hapus Responden"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={role === 'admin' ? 5 : 4} className="px-6 py-8 text-center text-slate-500">
+                            Belum ada data responden.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Premium Delete Confirmation Modal */}
+        <AnimatePresence>
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => {
+                  if (!isDeleting) {
+                    setShowDeleteConfirm(false);
+                    setSurveyToDelete(null);
+                  }
+                }}
+                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-md bg-slate-900/80 backdrop-blur-xl border border-rose-500/30 shadow-[0_0_50px_rgba(239,68,68,0.15)] rounded-2xl overflow-hidden p-6 text-center space-y-6"
+              >
+                <div className="w-16 h-16 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                  <Trash2 className="w-8 h-8 animate-pulse" />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-slate-100">Hapus Data Responden</h3>
+                  <p className="text-sm text-slate-400 leading-relaxed">
+                    Apakah Anda yakin ingin menghapus data responden ini?
+                  </p>
+                  <p className="text-xs text-rose-400/80 bg-rose-500/5 py-1.5 px-3 rounded-lg border border-rose-500/10 inline-block font-semibold">
+                    Tindakan ini tidak dapat dibatalkan.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setSurveyToDelete(null);
+                    }}
+                    className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isDeleting}
+                    onClick={executeDeleteSurvey}
+                    className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-rose-600/15 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    {isDeleting ? (
+                      <span className="flex items-center gap-1.5">
+                        <svg className="animate-spin -ml-1 mr-1 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Menghapus...
+                      </span>
+                    ) : (
+                      <span>Ya, Hapus Data</span>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Premium Notification Toast */}
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-md ${
+                notification.type === 'success'
+                  ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200 shadow-emerald-950/50'
+                  : 'bg-rose-950/90 border-rose-500/50 text-rose-200 shadow-rose-950/50'
+              }`}
+            >
+              {notification.type === 'success' ? (
+                <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold">✓</div>
+              ) : (
+                <div className="w-5 h-5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center text-[10px] font-bold">✕</div>
+              )}
+              <span className="text-xs font-semibold leading-none">{notification.text}</span>
+            </motion.div>
+          )}
         </AnimatePresence>
 
       </main>
