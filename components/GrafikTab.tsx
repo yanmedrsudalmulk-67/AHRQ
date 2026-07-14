@@ -603,10 +603,6 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100">$1</strong>')
                     .replace(/\* (.*?)(?=<br|$)/g, '<li class="ml-4 list-disc text-slate-300">$1</li>')
                 }} className="leading-relaxed space-y-2" />
-                <div className="text-[10px] text-cyan-400/85 bg-cyan-950/20 px-3 py-2 rounded-xl border border-cyan-500/10 flex items-center gap-1.5 no-print">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  Analisis dioptimasi secara dinamis oleh Google Gemini AI (Standar AHRQ SOPS 2.0).
-                </div>
               </div>
             ) : (
               <div className="space-y-4">

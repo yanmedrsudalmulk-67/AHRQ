@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
@@ -66,6 +66,16 @@ export default function Dashboard({
   onUpdateLogo
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan' | 'persetujuan'>('dashboard');
+  const mainContainerRef = useRef<HTMLElement | null>(null);
+
+  // Reset scroll to top immediately whenever activeTab changes
+  useEffect(() => {
+    if (mainContainerRef.current) {
+      mainContainerRef.current.scrollTop = 0;
+    }
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [activeTab]);
+
   const [showRespondentsModal, setShowRespondentsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [surveyToDelete, setSurveyToDelete] = useState<string | null>(null);
@@ -368,7 +378,7 @@ export default function Dashboard({
       </aside>
 
       {/* Main Container - Independently Scrollable */}
-      <main className="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto md:h-full pb-24 md:pb-8">
+      <main ref={mainContainerRef} className="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto md:h-full pb-24 md:pb-8">
         
         {/* Dynamic View rendering */}
         <AnimatePresence mode="wait">
