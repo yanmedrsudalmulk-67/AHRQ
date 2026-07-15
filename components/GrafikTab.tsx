@@ -177,12 +177,8 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
     return mb ? (mb.dimensiScores as any) : undefined;
   }, [surveys]);
 
-  const computeStats = (targetSurveys: SurveyData[]) => {
-    return computeDimensionScores(targetSurveys, masterBenchmarkData);
-  };
-
-  const dataTahun1 = useMemo(() => computeStats(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1))), [actualSurveys, tahun1]);
-  const dataTahun2 = useMemo(() => computeStats(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun2))), [actualSurveys, tahun2]);
+  const dataTahun1 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1)), masterBenchmarkData), [actualSurveys, tahun1, masterBenchmarkData]);
+  const dataTahun2 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun2)), masterBenchmarkData), [actualSurveys, tahun2, masterBenchmarkData]);
 
   const combinedData = useMemo(() => {
     return dataTahun1.map((d1, i) => {
@@ -587,14 +583,8 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
             <BrainCircuit className="w-6 h-6 text-cyan-400" /> Analisis Otomatis
           </h3>
           <div className="prose prose-sm prose-invert max-w-none text-slate-300 text-xs">
-            {aiLoading ? (
-              <div className="space-y-3 animate-pulse">
-                <div className="h-4 bg-white/10 rounded w-3/4"></div>
-                <div className="h-4 bg-white/10 rounded w-full"></div>
-                <div className="h-4 bg-white/10 rounded w-5/6"></div>
-              </div>
-            ) : aiResponse ? (
-              <div className="space-y-4">
+            <div className="space-y-4">
+              {aiResponse ? (
                 <div dangerouslySetInnerHTML={{ 
                   __html: aiResponse
                     .replace(/### Analisis/g, '')
@@ -603,18 +593,30 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                     .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100">$1</strong>')
                     .replace(/\* (.*?)(?=<br|$)/g, '<li class="ml-4 list-disc text-slate-300">$1</li>')
                 }} className="leading-relaxed space-y-2" />
-              </div>
-            ) : (
-              <div className="space-y-4">
+              ) : (
                 <div dangerouslySetInnerHTML={{ __html: localReport.analisis }} className="leading-relaxed space-y-2" />
-                {aiIsError && (
-                  <div className="text-[10px] text-amber-400 bg-amber-950/20 px-3 py-2 rounded-xl border border-amber-500/10 flex items-center gap-1.5 no-print">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Sistem beralih ke Analisis Standar AHRQ SOPS 2.0 Lokal karena server AI sedang padat/sibuk.
+              )}
+
+              {aiLoading && (
+                <div className="text-[10px] text-cyan-400 bg-cyan-950/30 px-3 py-2.5 rounded-xl border border-cyan-500/20 flex items-center justify-between gap-1.5 no-print animate-pulse">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                    <span>Sedang mengoptimalkan analisis mendalam dengan Google Gemini AI...</span>
                   </div>
-                )}
-              </div>
-            )}
+                  <svg className="animate-spin h-3.5 w-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                </div>
+              )}
+
+              {aiIsError && !aiLoading && (
+                <div className="text-[10px] text-amber-400 bg-amber-950/20 px-3 py-2 rounded-xl border border-amber-500/10 flex items-center gap-1.5 no-print">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                  Sistem beralih ke Analisis Standar AHRQ SOPS 2.0 Lokal karena server AI sedang padat/sibuk.
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -624,30 +626,32 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
             <Lightbulb className="w-6 h-6 text-emerald-400" /> Rekomendasi Peningkatan
           </h3>
           <div className="prose prose-sm prose-invert max-w-none text-slate-300">
-            {aiLoading ? (
-               <div className="space-y-3 animate-pulse">
-                 <div className="h-4 bg-white/10 rounded w-full"></div>
-                 <div className="h-4 bg-white/10 rounded w-5/6"></div>
-               </div>
-            ) : (
-              <div className="space-y-4 text-xs">
-                <p className="font-semibold text-slate-200">
-                  Berdasarkan hasil kuesioner budaya keselamatan pasien RS Anda (AHRQ SOPS 2.0), berikut rekomendasi tindak lanjut strategis:
-                </p>
-                <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
-                  <ul className="space-y-3 text-slate-300 list-none m-0 p-0">
-                    {localReport.rekomendasi.map((rec, idx) => (
-                      <li key={idx} className="flex gap-2.5">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span className="leading-relaxed" dangerouslySetInnerHTML={{ 
-                          __html: rec.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300 font-bold">$1</strong>') 
-                        }} />
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+            <div className="space-y-4 text-xs">
+              <p className="font-semibold text-slate-200 flex items-center justify-between gap-2">
+                <span>Berdasarkan hasil kuesioner budaya keselamatan pasien RS Anda (AHRQ SOPS 2.0), berikut rekomendasi tindak lanjut strategis:</span>
+                {aiLoading && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                    <svg className="animate-spin h-3 w-3 text-emerald-400" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Sinkronisasi AI...
+                  </span>
+                )}
+              </p>
+              <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
+                <ul className="space-y-3 text-slate-300 list-none m-0 p-0">
+                  {localReport.rekomendasi.map((rec, idx) => (
+                    <li key={idx} className="flex gap-2.5">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <span className="leading-relaxed" dangerouslySetInnerHTML={{ 
+                        __html: rec.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300 font-bold">$1</strong>') 
+                      }} />
+                    </li>
+                  ))}
+                </ul>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

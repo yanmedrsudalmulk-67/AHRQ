@@ -624,7 +624,7 @@ export default function Dashboard({
 
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold text-slate-100">Hapus Data Responden</h3>
-                  <p className="text-sm text-slate-400 leading-relaxed">
+                  <p className="text-xs text-slate-400 leading-relaxed">
                     Apakah Anda yakin ingin menghapus data responden ini?
                   </p>
                   <p className="text-xs text-rose-400/80 bg-rose-500/5 py-1.5 px-3 rounded-lg border border-rose-500/10 inline-block font-semibold">
