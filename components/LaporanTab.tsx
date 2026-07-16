@@ -235,6 +235,71 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
     return sum / DIMENSION_ORDER.length;
   };
 
+  const uniqueUnits = useMemo(() => {
+    const units = new Set<string>();
+    filteredSurveys.forEach(s => {
+      if (s.id === 'MASTER_BENCHMARK') return;
+      if (s.unitKerja) {
+        units.add(s.unitKerja);
+      } else {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.unitKerja) units.add(raw.unitKerja);
+      }
+    });
+    if (units.size === 0) {
+      return ['IGD', 'ICU', 'Rawat Inap', 'Rawat Jalan'];
+    }
+    return Array.from(units).sort();
+  }, [filteredSurveys]);
+
+  const getUnitStats = (dimId: string, unit: string) => {
+    const unitSurveys = filteredSurveys.filter(s => {
+      if (s.id === 'MASTER_BENCHMARK') return false;
+      const raw = (s.dimensiScores as any)?._rawAnswers;
+      return s.unitKerja === unit || (raw && raw.unitKerja === unit);
+    });
+
+    let totalPositive = 0;
+    let totalValid = 0;
+
+    unitSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw) {
+        DIMENSI_ITEMS[dimId].forEach(item => {
+          const ansKey = 'ans' + item.section;
+          const ansVal = raw[ansKey] ? raw[ansKey][item.id] : undefined;
+          if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+          const val = Number(ansVal);
+          totalValid++;
+          if (item.isReversed) {
+            if (val === 1 || val === 2) totalPositive++;
+          } else {
+            if (val === 4 || val === 5) totalPositive++;
+          }
+        });
+      }
+    });
+
+    const percentage = totalValid > 0 ? (totalPositive / totalValid) * 100 : null;
+    return {
+      percentage,
+      count: unitSurveys.length
+    };
+  };
+
+  const getAverageCompositeForUnit = (unit: string) => {
+    let sum = 0;
+    let count = 0;
+    DIMENSION_ORDER.forEach(dimId => {
+      const { percentage } = getUnitStats(dimId, unit);
+      if (percentage !== null) {
+        sum += percentage;
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : null;
+  };
+
   // Get CSS class and background pill styling based on score ranges (AHRQ SOPS standard threshold colors)
   const getCellColorClass = (val: number | null) => {
     if (val === null) return 'text-slate-500 font-medium';
@@ -703,6 +768,191 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                   const avgB = getAverageBenchmark();
                   return (
                     <td key={pos} className={`py-4 px-5 text-center border-r border-white/10 font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                      <span className={getCellColorClass(avgB)}>
+                        {avgB.toFixed(1)}%
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+
+      {/* Unit Kerja Comparison Table Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="bg-[#121826]/80 backdrop-blur-xl border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 md:p-8 space-y-6 mt-8 md:mt-12"
+      >
+        <div className="space-y-3 border-b border-white/5 pb-5">
+          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN KOMPOSIT</span>
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <Building2 className="w-6 h-6 text-indigo-400" />
+            Perbandingan Rata-rata Respon Positif Komposit Budaya Keselamatan Pasien Berdasarkan Unit Kerja
+          </h2>
+          <p className="text-xs md:text-sm text-slate-400 font-medium">
+            Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
+          </p>
+        </div>
+
+        {/* Dynamic Metadata Badges & Legend */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-slate-950/40 p-5 rounded-2xl border border-white/5">
+          {/* Metadata Badges */}
+          <div className="lg:col-span-2 flex flex-wrap gap-3">
+            <div className="px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span className="text-xs font-semibold text-slate-300">Total Responden RS Anda:</span>
+              <span className="text-sm font-black text-white">{filteredSurveys.length} Staf</span>
+            </div>
+            <div className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <span className="text-xs font-semibold text-slate-300">Total Unit Kerja:</span>
+              <span className="text-sm font-black text-white">{uniqueUnits.length} Unit</span>
+            </div>
+          </div>
+          
+          {/* Legend */}
+          <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3 lg:col-span-1">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div><span className="text-[10px] font-bold text-emerald-400">&ge; 75%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.5)]"></div><span className="text-[10px] font-bold text-yellow-400">50-74%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20"><div className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.5)]"></div><span className="text-[10px] font-bold text-rose-400">&lt; 50%</span></div>
+          </div>
+        </div>
+
+        {/* The Scrollable Table Container */}
+        <div className="overflow-x-auto rounded-[16px] border border-white/10 shadow-2xl bg-slate-900/50 backdrop-blur-md relative custom-scrollbar pb-2">
+          <table className="w-full text-left text-xs md:text-sm border-collapse">
+            <thead className="bg-[#0f172a] text-slate-300 uppercase tracking-wider font-semibold border-b-2 border-indigo-500/30 sticky top-0 z-20">
+              <tr>
+                <th className="py-4 px-4 text-center w-12 border-r border-white/10 shadow-sm sticky left-0 z-30 bg-[#0f172a]">No</th>
+                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm sticky left-12 z-30 bg-[#0f172a]">Komposit Budaya Keselamatan</th>
+                <th className="py-4 px-4 text-center min-w-[150px] border-r border-white/10 shadow-sm">Dataset</th>
+                <th className="py-4 px-4 text-center min-w-[120px] border-r border-white/10 shadow-sm">Total Responden</th>
+                {uniqueUnits.map(unit => {
+                  const count = filteredSurveys.filter(s => s.unitKerja === unit || (s.dimensiScores as any)?._rawAnswers?.unitKerja === unit).length;
+                  return (
+                    <th key={unit} className="py-4 px-5 min-w-[190px] text-center border-r border-white/10 last:border-r-0 font-black text-indigo-300">
+                      <div className="flex flex-col items-center">
+                        <span className="whitespace-normal break-words">{unit}</span>
+                        <span className="text-[10px] text-indigo-400/80 font-mono tracking-normal normal-case mt-0.5">(N = {count})</span>
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5 bg-slate-950/20 text-slate-300">
+              {DIMENSION_ORDER.map((dimId, idx) => {
+                const bMin = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
+                const bMax = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
+                const bAvg = (bMin + bMax) / 2;
+
+                return (
+                  <Fragment key={`unit-comp-${dimId}`}>
+                    {/* Row 1: Rumah Sakit Anda */}
+                    <tr className="hover:bg-white/[0.01] transition-all border-b border-white/5">
+                      <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-400 border-r border-white/10 bg-slate-900/40 sticky left-0 z-10">
+                        {idx + 1}
+                      </td>
+                      <td rowSpan={2} className="py-5 px-5 font-bold text-white border-r border-white/10 bg-slate-900/40 sticky left-12 z-10 leading-snug">
+                        <div className="space-y-1.5 max-w-[320px]">
+                          <p>{DIMENSI_INFO[dimId].nama}</p>
+                          <p className="text-[10px] text-slate-400 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                        RS Anda
+                      </td>
+                      <td className="py-3 px-4 text-center font-extrabold text-slate-200 border-r border-white/10 bg-cyan-500/[0.02]">
+                        {filteredSurveys.length}
+                      </td>
+                      {uniqueUnits.map((unit, unitIdx) => {
+                        const { percentage } = getUnitStats(dimId, unit);
+                        return (
+                          <td key={unit} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                            {percentage !== null ? (
+                              <span className={getCellColorClass(percentage)}>
+                                {percentage.toFixed(1)}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                    
+                    {/* Row 2: Rumah Sakit Percontohan (Pilot Hospital) */}
+                    <tr className="hover:bg-white/[0.01] transition-all bg-slate-900/20">
+                      <td className="py-3 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+                        RS Percontohan
+                      </td>
+                      <td className="py-3 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                        -
+                      </td>
+                      {uniqueUnits.map((unit, unitIdx) => (
+                        <td key={unit} className={`py-3 px-5 text-center border-r border-white/10 ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                          <div className="flex flex-col items-center justify-center">
+                            <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
+                            <span className="text-[9px] text-emerald-400/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  </Fragment>
+                );
+              })}
+
+              {/* Rata-rata Seluruh Komposit Rows */}
+              {/* Row 1: Rumah Sakit Anda Average */}
+              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all">
+                <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10 sticky left-0 z-10">
+                  ★
+                </td>
+                <td rowSpan={2} className="py-5 px-5 font-black text-white border-r border-white/10 bg-indigo-950/10 sticky left-12 z-10">
+                  <div className="space-y-1">
+                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Komposit</div>
+                    <p className="text-[10px] text-slate-400 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
+                  </div>
+                </td>
+                <td className="py-4 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                  RS Anda
+                </td>
+                <td className="py-4 px-4 text-center font-black text-slate-100 border-r border-white/10 bg-cyan-500/[0.02]">
+                  {filteredSurveys.length}
+                </td>
+                {uniqueUnits.map((unit, unitIdx) => {
+                  const avgVal = getAverageCompositeForUnit(unit);
+                  return (
+                    <td key={unit} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                      {avgVal !== null ? (
+                        <span className={getCellColorClass(avgVal)}>
+                          {avgVal.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+              
+              {/* Row 2: Rumah Sakit Percontohan Average */}
+              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all">
+                <td className="py-4 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+                  RS Percontohan
+                </td>
+                <td className="py-4 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                  -
+                </td>
+                {uniqueUnits.map((unit, unitIdx) => {
+                  const avgB = getAverageBenchmark();
+                  return (
+                    <td key={unit} className={`py-4 px-5 text-center border-r border-white/10 font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                       <span className={getCellColorClass(avgB)}>
                         {avgB.toFixed(1)}%
                       </span>
