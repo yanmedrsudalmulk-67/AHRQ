@@ -73,9 +73,9 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               <ShieldCheck className="w-8 h-8 animate-pulse" />
             )}
           </div>
-          <div>
-            <span className="font-extrabold tracking-wider text-sm text-slate-100 block font-sans">AHRQ SOPS v2.0</span>
-            <span className="text-[10px] text-cyan-400 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</span>
+          <div className="flex flex-col min-w-0">
+            <span className="font-extrabold tracking-wider text-sm text-slate-100 block font-sans whitespace-normal break-words">AHRQ SOPS v2.0</span>
+            <span className="text-[10px] text-cyan-400 font-mono tracking-wider font-bold block whitespace-normal break-words max-w-[150px] sm:max-w-none">Agency for Healthcare Research and Quality</span>
           </div>
         </div>
 
@@ -102,14 +102,14 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       >
         
         {/* Headline & CTA */}
-        <div className="space-y-6 flex flex-col justify-center items-start text-left w-[620px] max-w-[620px]">
+        <div className="space-y-6 flex flex-col justify-center items-start text-left w-full md:w-[620px] md:max-w-[620px]">
           
-          <div className="space-y-4">
+          <div className="space-y-4 w-full">
             <motion.h1
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-[51px] w-[533px] font-black text-white tracking-tight leading-[1.08] font-sans text-left"
+              className="text-[36px] md:text-[51px] w-full md:w-[533px] font-black text-white tracking-tight leading-[1.1] font-sans text-left"
             >
               Sistem Survei <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400">
@@ -121,7 +121,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-[#acbdd6] text-xs md:text-sm leading-relaxed w-[514px] text-justify font-light"
+              className="text-[#acbdd6] text-xs md:text-sm leading-relaxed w-full md:w-[514px] text-left md:text-justify font-light"
             >
               Platform digital untuk pelaksanaan, analisis, dan pelaporan Survei Budaya Keselamatan Pasien berbasis AHRQ SOPS Version 2.0 yang terintegrasi secara realtime guna mendukung peningkatan mutu pelayanan dan keselamatan pasien di rumah sakit
             </motion.p>

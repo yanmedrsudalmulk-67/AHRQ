@@ -31,38 +31,6 @@ interface DashboardHeaderProps {
   surveys: SurveyData[];
 }
 
-interface CompactCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  isMono?: boolean;
-}
-
-// Compact Glassmorphism Info Card
-function CompactCard({ icon, label, value, isMono }: CompactCardProps) {
-  const cardVariants: any = {
-    hidden: { opacity: 0, scale: 0.95, y: 10 },
-    visible: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.3, ease: 'easeOut' } }
-  };
-
-  return (
-    <motion.div 
-      variants={cardVariants}
-      className="h-[56px] flex items-center gap-3 px-3.5 py-2 rounded-2xl bg-white/[0.12] backdrop-blur-[20px] border border-white/10 shadow-sm flex-shrink-0 w-auto"
-    >
-      <div className="flex items-center justify-center w-8 h-8 rounded-xl bg-indigo-500/10 text-cyan-400 shrink-0">
-        {icon}
-      </div>
-      <div className="flex flex-col min-w-0">
-        <span className="text-[10px] uppercase tracking-wider text-slate-400 font-bold leading-none mb-1">{label}</span>
-        <span className={`text-xs font-bold truncate max-w-[120px] ${isMono ? 'font-mono text-cyan-300' : 'text-slate-100'}`} title={value}>
-          {value}
-        </span>
-      </div>
-    </motion.div>
-  );
-}
-
 export default function DashboardHeader({ role, namaRs, surveys }: DashboardHeaderProps) {
   const [timeString, setTimeString] = useState<string>('');
   const [dateString, setDateString] = useState<string>('');
@@ -240,7 +208,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
       <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-48 h-48 bg-cyan-500/5 rounded-full filter blur-[60px] pointer-events-none -z-10" />
 
       {/* Left Column: Greeting, Welcome Messages (100% on Desktop) */}
-      <div className="flex-1 w-full flex items-stretch gap-4 md:gap-5">
+      <div className="flex-1 w-full min-w-0 flex items-stretch gap-4 md:gap-5">
         {/* Blue-Indigo-Purple Vertical Accent Bar with vertical moving color animation */}
         <motion.div 
           animate={{ 
@@ -258,13 +226,13 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
           className="w-1 md:w-1.5 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] shrink-0" 
         />
         
-        <div className="space-y-4">
-          <div className="space-y-1.5">
+        <div className="space-y-4 min-w-0 w-full">
+          <div className="space-y-1.5 min-w-0 w-full">
             {/* Row 1: Greeting with Premium Badge */}
             <div className="flex items-center gap-3">
               <motion.div 
                 variants={sapaanVariants}
-                className="text-[26px] md:text-[36px] font-bold text-white/90 leading-none tracking-tight"
+                className="text-[22px] md:text-[36px] font-bold text-white/90 leading-tight md:leading-none tracking-tight whitespace-normal break-words"
               >
                 {greeting.text},
               </motion.div>
@@ -288,7 +256,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
             {/* Row 2: Hospital Title with Gradient Accent & Glow */}
             <motion.h2 
               variants={namaRsVariants}
-              className="text-[34px] md:text-[48px] font-extrabold text-white tracking-tight leading-none"
+              className="text-[28px] md:text-[48px] font-extrabold text-white tracking-tight leading-tight md:leading-none break-words whitespace-normal"
             >
               Hai, Sobat <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(99,102,241,0.25)] font-extrabold">{displayHospital}</span>
             </motion.h2>
@@ -309,34 +277,6 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
               {"\"Kelola survei, analisis hasil, dan tingkatkan budaya keselamatan pasien melalui dashboard analitik berbasis AHRQ SOPS Version 2.0.\""}
             </motion.p>
           </div>
-
-          {/* Compact Info Cards for Mobile View (Horizontal Scroll) */}
-          <motion.div 
-            variants={staggerContainerVariants}
-            className="flex md:hidden flex-row items-center gap-3 overflow-x-auto pb-2 scrollbar-none w-full mt-4"
-          >
-            <CompactCard 
-              icon={<Calendar className="w-4 h-4 text-cyan-400 shrink-0" />}
-              label="Tanggal"
-              value={dateString || 'Memuat...'}
-            />
-            <CompactCard 
-              icon={<Clock className="w-4 h-4 text-cyan-400 shrink-0" />}
-              label="Waktu"
-              value={timeString || '--:--:-- WIB'}
-              isMono={true}
-            />
-            <CompactCard 
-              icon={<Building2 className="w-4 h-4 text-cyan-400 shrink-0" />}
-              label="Fasyankes"
-              value={displayHospital}
-            />
-            <CompactCard 
-              icon={<UserCheck className="w-4 h-4 text-cyan-400 shrink-0" />}
-              label="Role"
-              value={role === 'admin' ? 'Administrator' : 'Admin RS'}
-            />
-          </motion.div>
         </div>
       </div>
 

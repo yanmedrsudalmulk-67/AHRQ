@@ -737,7 +737,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   {rsChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}></span>
-                      <span className="truncate max-w-[80px]" title={item.name}>{item.name}:</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
                       <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
@@ -797,7 +797,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   {unitChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 1) % CHART_COLORS.length] }}></span>
-                      <span className="truncate max-w-[80px]" title={item.name}>{item.name}:</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
                       <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
@@ -856,7 +856,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   {directChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.name === 'Ya' ? '#10B981' : '#F43F5E' }}></span>
-                      <span className="truncate max-w-[80px]" title={item.name}>{item.name}:</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
                       <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
@@ -915,7 +915,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   {jobChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 3) % CHART_COLORS.length] }}></span>
-                      <span className="truncate max-w-[80px]" title={item.name}>{item.name}:</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
                       <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
@@ -974,7 +974,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   {hoursChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 4) % CHART_COLORS.length] }}></span>
-                      <span className="truncate max-w-[80px]" title={item.name}>{item.name}:</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
                       <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
@@ -1033,7 +1033,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   {professionChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 5) % CHART_COLORS.length] }}></span>
-                      <span className="truncate max-w-[80px]" title={item.name}>{item.name}:</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
                       <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}

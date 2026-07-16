@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import CountUp from './CountUp';
 import { FileText, Printer, CheckCircle2, AlertTriangle, TrendingUp, TrendingDown, Users, Calendar, Filter, ChevronDown, Clock, Building2, UserCircle } from 'lucide-react';
-import { DIMENSI_INFO } from '../lib/scoring';
-import { SurveyData } from '../lib/db';
+import { DIMENSI_INFO, DIMENSI_ITEMS } from '../lib/scoring';
+import { SurveyData, getMasterBenchmark } from '../lib/db';
 
 const ALL_QUESTIONS = [
   // Bagian A
@@ -105,6 +105,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
   // Filtered Surveys
   const filteredSurveys = useMemo(() => {
     return surveys.filter(s => {
+      if (s.id === 'MASTER_BENCHMARK') return false;
       let match = true;
       const raw = (s.dimensiScores as any)?._rawAnswers;
       
@@ -126,6 +127,121 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
       return match;
     });
   }, [surveys, selectedTahun, selectedUnit, selectedProfesi]);
+
+  // Master Benchmark from surveys prop
+  const [masterBenchmarkData, setMasterBenchmarkData] = useState<Record<string, { min: number, max: number }> | null>(null);
+
+  useEffect(() => {
+    // Attempt to load from surveys first
+    const mb = surveys.find(s => s.id === 'MASTER_BENCHMARK');
+    if (mb && mb.dimensiScores) {
+      setMasterBenchmarkData(mb.dimensiScores as any);
+    } else {
+      // Otherwise fetch from database
+      const loadBenchmark = async () => {
+        try {
+          const data = await getMasterBenchmark();
+          if (data) {
+            setMasterBenchmarkData(data);
+          }
+        } catch (err) {
+          console.error("Gagal memuat master benchmark di LaporanTab", err);
+        }
+      };
+      loadBenchmark();
+    }
+  }, [surveys]);
+
+  // Dynamic unique positions mapping based on inputted surveys
+  const uniquePositions = useMemo(() => {
+    if (selectedProfesi !== 'Semua Profesi') {
+      return [selectedProfesi];
+    }
+    const positions = new Set<string>();
+    surveys.forEach(s => {
+      if (s.id === 'MASTER_BENCHMARK') return;
+      const raw = (s.dimensiScores as any)?._rawAnswers;
+      if (raw && raw.posisiStaf) {
+        positions.add(raw.posisiStaf);
+      }
+    });
+    if (positions.size === 0) {
+      // Fallback standard positions if no data has been entered yet
+      return [
+        'Perawat',
+        'Dokter Spesialis',
+        'Apoteker'
+      ];
+    }
+    return Array.from(positions).sort();
+  }, [surveys, selectedProfesi]);
+
+  // Calculate composite positive response percentage for a specific position and dimension
+  const getPositionStats = (dimId: string, position: string) => {
+    const positionSurveys = filteredSurveys.filter(s => {
+      if (s.id === 'MASTER_BENCHMARK') return false;
+      const raw = (s.dimensiScores as any)?._rawAnswers;
+      return raw && raw.posisiStaf === position;
+    });
+
+    let totalPositive = 0;
+    let totalValid = 0;
+
+    positionSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw) {
+        DIMENSI_ITEMS[dimId].forEach(item => {
+          const ansKey = 'ans' + item.section;
+          const ansVal = raw[ansKey] ? raw[ansKey][item.id] : undefined;
+
+          if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+          const val = Number(ansVal);
+          totalValid++;
+          if (item.isReversed) {
+            if (val === 1 || val === 2) totalPositive++;
+          } else {
+            if (val === 4 || val === 5) totalPositive++;
+          }
+        });
+      }
+    });
+
+    const percentage = totalValid > 0 ? (totalPositive / totalValid) * 100 : null;
+    return { percentage, respondentsCount: positionSurveys.length };
+  };
+
+  // Calculate average positive composite percentage across all 10 dimensions for a specific position
+  const getAverageCompositeForPosition = (position: string) => {
+    let sum = 0;
+    let count = 0;
+    DIMENSION_ORDER.forEach(dimId => {
+      const { percentage } = getPositionStats(dimId, position);
+      if (percentage !== null) {
+        sum += percentage;
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : null;
+  };
+
+  // Calculate average pilot benchmark across all 10 dimensions
+  const getAverageBenchmark = () => {
+    let sum = 0;
+    DIMENSION_ORDER.forEach(dimId => {
+      const bMin = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
+      const bMax = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
+      sum += (bMin + bMax) / 2;
+    });
+    return sum / DIMENSION_ORDER.length;
+  };
+
+  // Get CSS class and background pill styling based on score ranges (AHRQ SOPS standard threshold colors)
+  const getCellColorClass = (val: number | null) => {
+    if (val === null) return 'text-slate-500 font-medium';
+    if (val >= 75) return 'text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-lg px-2.5 py-1.5 font-bold inline-block whitespace-nowrap';
+    if (val >= 50) return 'text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 rounded-lg px-2.5 py-1.5 font-bold inline-block whitespace-nowrap';
+    return 'text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg px-2.5 py-1.5 font-bold inline-block whitespace-nowrap';
+  };
 
   const calculateQuestionStats = (q: any) => {
     let pos = 0, neu = 0, neg = 0, missing = 0;
@@ -222,39 +338,39 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
       </div>
 
       {/* Dynamic Filters */}
-      <div className="bg-[#0f172a]/60 backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex flex-wrap gap-4 items-center print:hidden shadow-[0_4px_15px_rgba(0,0,0,0.2)]">
-        <div className="flex items-center gap-2 mr-4">
+      <div className="bg-[#0f172a]/60 backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex flex-col md:flex-row md:flex-wrap gap-4 md:items-center print:hidden shadow-[0_4px_15px_rgba(0,0,0,0.2)]">
+        <div className="flex items-center gap-2 md:mr-4 shrink-0">
           <Filter className="w-5 h-5 text-indigo-400" />
           <span className="text-sm font-semibold text-white/80">Filter Data:</span>
         </div>
         
-        <div className="relative">
+        <div className="relative w-full md:w-auto">
           <select 
             value={selectedTahun}
             onChange={(e) => setSelectedTahun(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer"
+            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer w-full md:w-auto"
           >
             {tahunOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
           <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-3 top-2.5 pointer-events-none" />
         </div>
 
-        <div className="relative">
+        <div className="relative w-full md:w-auto">
           <select 
             value={selectedUnit}
             onChange={(e) => setSelectedUnit(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer max-w-[200px] truncate"
+            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
           >
             {unitOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
           <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-3 top-2.5 pointer-events-none" />
         </div>
 
-        <div className="relative">
+        <div className="relative w-full md:w-auto">
           <select 
             value={selectedProfesi}
             onChange={(e) => setSelectedProfesi(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer max-w-[200px] truncate"
+            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
           >
             {profesiOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -398,6 +514,206 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           );
         })}
       </div>
+
+      {/* Comparison Table Section (Glassmorphism Premium Design) */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="bg-[#121826]/80 backdrop-blur-xl border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 md:p-8 space-y-6 mt-8 md:mt-12"
+      >
+        <div className="space-y-3 border-b border-white/5 pb-5">
+          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN KOMPOSIT</span>
+          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <Users className="w-6 h-6 text-indigo-400" />
+            Perbandingan Rata-rata Persentase Respon Positif Komposit Berdasarkan Posisi Staf
+          </h2>
+          <p className="text-xs md:text-sm text-slate-400 font-medium">
+            Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
+          </p>
+        </div>
+
+        {/* Dynamic Metadata Badges & Legend */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-slate-950/40 p-5 rounded-2xl border border-white/5">
+          {/* Metadata Badges */}
+          <div className="lg:col-span-2 flex flex-wrap gap-3">
+            <div className="px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+              <span className="text-xs font-semibold text-slate-300">Total Responden RS Anda:</span>
+              <span className="text-sm font-black text-white">{filteredSurveys.length} Staf</span>
+            </div>
+            <div className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+              <span className="text-xs font-semibold text-slate-300">Total Responden RS Percontohan (Pilot):</span>
+              <span className="text-sm font-black text-white">100+ RS</span>
+            </div>
+          </div>
+
+          {/* Legend */}
+          <div className="flex flex-wrap items-center justify-start lg:justify-end gap-x-4 gap-y-2 text-[10px] md:text-xs">
+            <div className="flex items-center gap-2 bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+              <span className="text-emerald-400 font-bold">Kekuatan (≥ 75%)</span>
+            </div>
+            <div className="flex items-center gap-2 bg-yellow-500/5 px-2.5 py-1.5 rounded-lg border border-yellow-500/10">
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
+              <span className="text-yellow-400 font-bold">Sedang (50% - 74%)</span>
+            </div>
+            <div className="flex items-center gap-2 bg-rose-500/5 px-2.5 py-1.5 rounded-lg border border-rose-500/10">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
+              <span className="text-rose-400 font-bold">Prioritas (&lt; 50%)</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Responsive Table Wrapper with Horizontal Scroll */}
+        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/60 backdrop-blur-xl relative max-h-[650px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+          <table className="w-full border-collapse text-left text-xs text-slate-300">
+            <thead>
+              <tr className="border-b-2 border-white/15 bg-slate-900/90 sticky top-0 z-30 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider text-white">
+                <th className="py-4 px-4 text-center w-12 border-r border-white/10 shadow-sm">No</th>
+                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm">Komposit Budaya Keselamatan</th>
+                <th className="py-4 px-4 text-center min-w-[150px] border-r border-white/10 shadow-sm">Dataset</th>
+                <th className="py-4 px-4 text-center min-w-[120px] border-r border-white/10 shadow-sm">Total Responden</th>
+                {uniquePositions.map(pos => {
+                  // Count active respondents for each position to make column header extremely informative
+                  const count = filteredSurveys.filter(s => (s.dimensiScores as any)?._rawAnswers?.posisiStaf === pos).length;
+                  return (
+                    <th key={pos} className="py-4 px-5 min-w-[190px] text-center border-r border-white/10 last:border-r-0 font-black text-indigo-300">
+                      <div className="flex flex-col items-center">
+                        <span>{pos}</span>
+                        <span className="text-[10px] text-indigo-400/80 font-mono tracking-normal normal-case mt-0.5">(N = {count})</span>
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {DIMENSION_ORDER.map((dimId, idx) => {
+                const dimInfo = DIMENSI_INFO[dimId];
+                
+                // Get benchmark value from database or fallback from static config
+                const bMin = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
+                const bMax = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
+                const bAvg = (bMin + bMax) / 2;
+
+                return (
+                  <Fragment key={dimId}>
+                    {/* Row 1: Rumah Sakit Anda */}
+                    <tr className="hover:bg-white/[0.01] transition-all border-b border-white/5">
+                      <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-400 border-r border-white/10 bg-slate-900/40">
+                        {idx + 1}
+                      </td>
+                      <td rowSpan={2} className="py-5 px-5 font-bold text-slate-100 border-r border-white/10 bg-slate-900/40">
+                        <div className="space-y-1.5 max-w-[320px]">
+                          <div className="text-white text-xs md:text-sm tracking-tight leading-snug">{dimInfo.nama}</div>
+                          <div className="text-[10px] text-slate-400 font-normal leading-relaxed">{dimInfo.deskripsi}</div>
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                        RS Anda
+                      </td>
+                      <td className="py-3 px-4 text-center font-extrabold text-slate-200 border-r border-white/10 bg-cyan-500/[0.02]">
+                        {filteredSurveys.length}
+                      </td>
+                      {uniquePositions.map((pos, posIdx) => {
+                        const { percentage } = getPositionStats(dimId, pos);
+                        return (
+                          <td key={pos} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                            {percentage !== null ? (
+                              <span className={getCellColorClass(percentage)}>
+                                {percentage.toFixed(1)}%
+                              </span>
+                            ) : (
+                              <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Row 2: Rumah Sakit Percontohan (Pilot Hospital) */}
+                    <tr className="hover:bg-white/[0.01] transition-all bg-slate-900/20">
+                      <td className="py-3 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+                        RS Percontohan
+                      </td>
+                      <td className="py-3 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                        -
+                      </td>
+                      {uniquePositions.map((pos, posIdx) => (
+                        <td key={pos} className={`py-3 px-5 text-center border-r border-white/10 ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                          <div className="flex flex-col items-center justify-center">
+                            <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
+                            <span className="text-[9px] text-emerald-400/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                          </div>
+                        </td>
+                      ))}
+                    </tr>
+                  </Fragment>
+                );
+              })}
+
+              {/* Rata-rata Seluruh Komposit Rows */}
+              {/* Row 1: Rumah Sakit Anda Average */}
+              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all">
+                <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10">
+                  ★
+                </td>
+                <td rowSpan={2} className="py-5 px-5 font-black text-white border-r border-white/10 bg-indigo-950/10">
+                  <div className="space-y-1">
+                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Komposit</div>
+                    <p className="text-[10px] text-slate-400 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
+                  </div>
+                </td>
+
+                <td className="py-4 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                  RS Anda
+                </td>
+                <td className="py-4 px-4 text-center font-black text-slate-100 border-r border-white/10 bg-cyan-500/[0.02]">
+                  {filteredSurveys.length}
+                </td>
+                {uniquePositions.map((pos, posIdx) => {
+                  const avgVal = getAverageCompositeForPosition(pos);
+                  return (
+                    <td key={pos} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                      {avgVal !== null ? (
+                        <span className={getCellColorClass(avgVal)}>
+                          {avgVal.toFixed(1)}%
+                        </span>
+                      ) : (
+                        <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                      )}
+                    </td>
+                  );
+                })}
+              </tr>
+
+              {/* Row 2: Rumah Sakit Percontohan Average */}
+              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all">
+                <td className="py-4 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+                  RS Percontohan
+                </td>
+                <td className="py-4 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                  -
+                </td>
+                {uniquePositions.map((pos, posIdx) => {
+                  const avgB = getAverageBenchmark();
+                  return (
+                    <td key={pos} className={`py-4 px-5 text-center border-r border-white/10 font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                      <span className={getCellColorClass(avgB)}>
+                        {avgB.toFixed(1)}%
+                      </span>
+                    </td>
+                  );
+                })}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </div>
   );
 }

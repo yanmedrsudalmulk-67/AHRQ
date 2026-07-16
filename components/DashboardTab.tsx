@@ -149,9 +149,9 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
         </div>
 
         <div className="p-6 bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_36px_rgba(0,0,0,0.45)] hover:border-white/15 flex items-center justify-between">
-          <div className="space-y-1">
+          <div className="space-y-1 pr-4">
             <span className="text-[14px] text-[#F8FAFC] font-semibold tracking-[0.5px]">Kekuatan Utama</span>
-            <h3 className="text-[18px] md:text-[20px] font-extrabold text-white truncate max-w-[160px] mt-2 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">
+            <h3 className="text-[18px] md:text-[20px] font-extrabold text-white md:truncate md:max-w-[160px] whitespace-normal break-words mt-2 drop-shadow-[0_0_8px_rgba(59,130,246,0.3)]">
               {avgB >= avgA && avgB >= avgC ? 'Kepemimpinan (B)' : avgC >= avgA ? 'Komunikasi (C)' : 'Kerja Sama (A)'}
             </h3>
             <span className="text-[12px] text-cyan-400 font-medium flex items-center gap-1 mt-2">
@@ -200,9 +200,9 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
               <div className="space-y-4">
                 {unitData.slice(0, 4).map((unit, idx) => (
                   <div key={idx} className="space-y-2">
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="font-medium text-slate-300 truncate max-w-[240px]">{unit.name}</span>
-                      <span className="font-bold text-white">{unit.skor}%</span>
+                    <div className="flex justify-between items-start text-sm gap-2">
+                      <span className="font-medium text-slate-300 md:truncate md:max-w-[240px] whitespace-normal break-words flex-1">{unit.name}</span>
+                      <span className="font-bold text-white shrink-0 mt-0.5">{unit.skor}%</span>
                     </div>
                     <div className="w-full bg-slate-800/50 h-2 rounded-full overflow-hidden border border-white/5">
                       <div 
@@ -260,7 +260,7 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
               <div key={index} className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 transition-colors">
                 <span className="w-3.5 h-3.5 rounded-full shrink-0 shadow-[0_0_5px_rgba(255,255,255,0.2)]" style={{ backgroundColor: entry.color }} />
                 <div className="min-w-0">
-                  <p className="text-[13px] text-slate-200 font-medium truncate" title={entry.name}>{entry.name}</p>
+                  <p className="text-[13px] text-slate-200 font-medium md:truncate whitespace-normal break-words" title={entry.name}>{entry.name}</p>
                   <p className="text-[11px] text-cyan-400 font-semibold mt-0.5">{entry.value} Responden</p>
                 </div>
               </div>

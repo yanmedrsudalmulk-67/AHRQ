@@ -421,7 +421,7 @@ export default function Dashboard({
               
               <div 
                 onClick={() => setShowRespondentsModal(true)}
-                className="cursor-pointer p-5 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]"
+                className="cursor-pointer p-5 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]"
               >
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Responden</span>
@@ -437,7 +437,7 @@ export default function Dashboard({
                 <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-cyan-500 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_10px_rgba(6,182,212,0.5)]" />
               </div>
 
-              <div className="p-5 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]">
+              <div className="p-5 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unit Kerja Terdata</span>
                   <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg border border-indigo-500/20 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-all">
@@ -452,7 +452,7 @@ export default function Dashboard({
                 <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-indigo-500 to-purple-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300 shadow-[0_0_10px_rgba(99,102,241,0.5)]" />
               </div>
 
-              <div className="p-5 bg-gradient-to-br from-white/[0.04] to-white/[0.01] backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-white/[0.06] transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]">
+              <div className="p-5 bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all duration-300 relative overflow-hidden group shadow-[inset_1px_1px_0_rgba(255,255,255,0.05)]">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Respon Positif</span>
                   <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/30 transition-all">
