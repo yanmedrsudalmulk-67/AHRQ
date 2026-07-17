@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  BarChart, Bar, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, ReferenceLine, LabelList 
+  BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LabelList 
 } from 'recharts';
 import { 
   BarChart2, ShieldAlert, Award, TrendingUp, Info, Activity,
@@ -248,7 +248,6 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
   // Use actualDataYears to default to a year that actually has data
   const [tahun1, setTahun1] = useState<string>(actualDataYears[0] || currentYear);
   const [tahun2, setTahun2] = useState<string>(actualDataYears[1] || actualDataYears[0] || currentYear);
-  const [chartType, setChartType] = useState<'Bar' | 'Line'>('Bar');
 
   const masterBenchmarkData = useMemo(() => {
     const mb = surveys.find(s => s.id === 'MASTER_BENCHMARK');
@@ -441,23 +440,6 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
     return null;
   };
 
-  const CustomLineTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-xl text-xs space-y-2 min-w-[200px]">
-          <p className="font-bold text-slate-200 border-b border-slate-800 pb-2">{label}</p>
-          {payload.map((p: any, i: number) => (
-            <div key={i} className="flex justify-between items-center" style={{ color: p.color }}>
-              <span className="font-semibold">{p.name}:</span>
-              <strong className="text-sm">{p.value.toFixed(2)}%</strong>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
-
   if (actualSurveys.length === 0) {
     return (
       <div className="p-12 bg-white/[0.07] border border-white/10 rounded-[24px] shadow-sm text-center space-y-4 max-w-xl mx-auto my-12 backdrop-blur-sm">
@@ -520,135 +502,111 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
 
       <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm">
         <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
-          {chartType === 'Bar' ? <BarChart2 className="w-5 h-5 text-emerald-400" /> : <TrendingUp className="w-5 h-5 text-cyan-400" />}
+          <BarChart2 className="w-5 h-5 text-emerald-400" />
           Hasil Perbandingan Pengukuran Komposit Untuk {rsName}
         </h3>
         <div className="w-full text-xs font-medium">
-          {chartType === 'Bar' ? (
-            <div className="overflow-x-auto w-full">
-              <table className="w-full text-left text-sm border-collapse min-w-[800px]">
-                <thead>
-                  <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                    <th className="p-3 w-10 text-center align-bottom">No.</th>
-                    <th className="p-3 w-64 align-bottom">Komponen Budaya<br/>Keselamatan Pasien</th>
-                    <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
-                    <th className="p-3 w-40 text-center border-l border-white/10">
-                      <div>Rata-rata RS Percontohan<br/>(% Respons Positif)</div>
-                      <div className="flex justify-between mt-2 pt-2 border-t border-white/5 text-emerald-400">
-                        <span className="w-1/2 text-center">MIN</span>
-                        <span className="w-1/2 text-center border-l border-white/5">MAX</span>
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {combinedData.map((row, i) => {
-                    const getBarColor = (val: number) => {
-                      if (val >= 85) return 'bg-blue-500';
-                      if (val >= 70) return 'bg-emerald-500';
-                      if (val >= 50) return 'bg-yellow-500';
-                      return 'bg-red-500';
-                    };
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-sm border-collapse min-w-[800px]">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  <th className="p-3 w-10 text-center align-bottom">No.</th>
+                  <th className="p-3 w-64 align-bottom">Komponen Budaya<br/>Keselamatan Pasien</th>
+                  <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
+                  <th className="p-3 w-40 text-center border-l border-white/10">
+                    <div>Rata-rata RS Percontohan<br/>(% Respons Positif)</div>
+                    <div className="flex justify-between mt-2 pt-2 border-t border-t-white/5 text-emerald-400">
+                      <span className="w-1/2 text-center">MIN</span>
+                      <span className="w-1/2 text-center border-l border-white/5">MAX</span>
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {combinedData.map((row, i) => {
+                  const getBarColor = (val: number) => {
+                    if (val >= 85) return 'bg-blue-500';
+                    if (val >= 70) return 'bg-emerald-500';
+                    if (val >= 50) return 'bg-yellow-500';
+                    return 'bg-red-500';
+                  };
 
-                    return (
-                      <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
-                        <td className="p-3 text-center font-bold text-slate-500 align-top pt-5">{i + 1}.</td>
-                        <td className="p-3 font-semibold text-slate-200 text-xs align-top pt-5 pr-4 leading-relaxed">{row.dimensiSingkat}</td>
-                        <td className="p-3 align-middle py-4">
-                          {mode === 'Tunggal' ? (
+                  return (
+                    <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="p-3 text-center font-bold text-slate-500 align-top pt-5">{i + 1}.</td>
+                      <td className="p-3 font-semibold text-slate-200 text-xs align-top pt-5 pr-4 leading-relaxed">{row.dimensiSingkat}</td>
+                      <td className="p-3 align-middle py-4">
+                        {mode === 'Tunggal' ? (
+                          <div className="flex items-center gap-3 w-full">
+                            <div className="flex-1 bg-slate-800/50 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                              <motion.div 
+                                initial={{ scaleX: 0 }}
+                                animate={{ scaleX: 1 }}
+                                transition={{ duration: 0.8, ease: "easeOut" }}
+                                style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
+                                className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                              </motion.div>
+                            </div>
+                            <span className="text-sm font-bold text-slate-200 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
+                          </div>
+                        ) : (
+                          <div className="space-y-2 w-full pt-1">
+                            {/* Bar Tahun 1 */}
                             <div className="flex items-center gap-3 w-full">
-                              <div className="flex-1 bg-slate-800/50 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                              <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun1}</span>
+                              <div className="flex-1 bg-slate-800/50 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
                                 <motion.div 
                                   initial={{ scaleX: 0 }}
                                   animate={{ scaleX: 1 }}
                                   transition={{ duration: 0.8, ease: "easeOut" }}
-                                  style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
-                                  className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                  style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
+                                  className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all transform-gpu opacity-70 will-change-transform`}
                                 >
                                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                 </motion.div>
                               </div>
-                              <span className="text-sm font-bold text-slate-200 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
+                              <span className="text-xs font-bold text-slate-400 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
                             </div>
-                          ) : (
-                            <div className="space-y-2 w-full pt-1">
-                              {/* Bar Tahun 1 */}
-                              <div className="flex items-center gap-3 w-full">
-                                <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun1}</span>
-                                <div className="flex-1 bg-slate-800/50 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
-                                  <motion.div 
-                                    initial={{ scaleX: 0 }}
-                                    animate={{ scaleX: 1 }}
-                                    transition={{ duration: 0.8, ease: "easeOut" }}
-                                    style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
-                                    className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all transform-gpu opacity-70 will-change-transform`}
-                                  >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                  </motion.div>
-                                </div>
-                                <span className="text-xs font-bold text-slate-400 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
+                            {/* Bar Tahun 2 */}
+                            <div className="flex items-center gap-3 w-full">
+                              <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun2}</span>
+                              <div className="flex-1 bg-slate-800/50 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                                <motion.div 
+                                  initial={{ scaleX: 0 }}
+                                  animate={{ scaleX: 1 }}
+                                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                  style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
+                                  className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                >
+                                  <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                </motion.div>
                               </div>
-                              {/* Bar Tahun 2 */}
-                              <div className="flex items-center gap-3 w-full">
-                                <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun2}</span>
-                                <div className="flex-1 bg-slate-800/50 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
-                                  <motion.div 
-                                    initial={{ scaleX: 0 }}
-                                    animate={{ scaleX: 1 }}
-                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
-                                    style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
-                                    className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
-                                  >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                  </motion.div>
-                                </div>
-                                <span className="text-sm font-bold text-slate-200 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
-                              </div>
+                              <span className="text-sm font-bold text-slate-200 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
                             </div>
-                          )}
-                        </td>
-                        <td className="p-0 border-l border-white/10 text-center font-bold text-slate-300 text-sm align-middle bg-slate-900/20">
-                          <div className="flex h-full items-center justify-center min-h-[60px]">
-                            <span className="w-1/2 py-2">{row.d1.benchmarkMin}%</span>
-                            <span className="w-1/2 py-2 border-l border-white/5">{row.d1.benchmarkMax}%</span>
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              
-              <div className="mt-6 flex flex-wrap gap-4 items-center justify-center text-[11px] font-medium text-slate-400 bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500 shadow-md"></div> &lt;50% (Perlu Perbaikan)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-md"></div> 50-69% (Cukup)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-md"></div> 70-84% (Baik)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-md"></div> &ge;85% (Sangat Baik)</div>
-              </div>
+                        )}
+                      </td>
+                      <td className="p-0 border-l border-white/10 text-center font-bold text-slate-300 text-sm align-middle bg-slate-900/20">
+                        <div className="flex h-full items-center justify-center min-h-[60px]">
+                          <span className="w-1/2 py-2">{row.d1.benchmarkMin}%</span>
+                          <span className="w-1/2 py-2 border-l border-white/5">{row.d1.benchmarkMax}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            
+            <div className="mt-6 flex flex-wrap gap-4 items-center justify-center text-[11px] font-medium text-slate-400 bg-slate-900/50 p-4 rounded-xl border border-white/5">
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500 shadow-md"></div> &lt;50% (Perlu Perbaikan)</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-md"></div> 50-69% (Cukup)</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-md"></div> 70-84% (Baik)</div>
+              <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-md"></div> &ge;85% (Sangat Baik)</div>
             </div>
-          ) : (
-            <div className="h-[500px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={combinedData} margin={{ top: 20, right: 30, left: 10, bottom: 60 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="dimensiSingkat" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 10 }} interval={0} angle={-30} textAnchor="end" />
-                  <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(val) => `${val}%`} />
-                  <RechartsTooltip content={<CustomLineTooltip />} />
-                  <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#94a3b8' }} />
-                  {mode === 'Tunggal' ? (
-                    <Line type="monotone" dataKey="Capaian" stroke="#34d399" strokeWidth={3} dot={{ r: 6, fill: '#34d399', strokeWidth: 2, stroke: '#0f172a' }} activeDot={{ r: 8 }} />
-                  ) : (
-                    <>
-                      <Line type="monotone" dataKey="Tahun 1" stroke="#34d399" strokeWidth={3} dot={{ r: 5, fill: '#34d399' }} activeDot={{ r: 7 }} />
-                      <Line type="monotone" dataKey="Tahun 2" stroke="#38bdf8" strokeWidth={3} dot={{ r: 5, fill: '#38bdf8' }} activeDot={{ r: 7 }} />
-                    </>
-                  )}
-                  <ReferenceLine y={50} stroke="#f87171" strokeDasharray="4 4" />
-                  <ReferenceLine y={75} stroke="#34d399" strokeDasharray="4 4" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+          </div>
         </div>
       </div>
 

@@ -168,9 +168,10 @@ export default function Dashboard({
   };
 
   // Filter surveys: Admin sees all, RS sees only their own
+  const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_');
   const filteredSurveys = role === 'admin' 
-    ? surveys 
-    : surveys.filter(s => s.namaRs.toLowerCase() === namaRs.toLowerCase());
+    ? validSurveys 
+    : validSurveys.filter(s => s.namaRs.toLowerCase() === namaRs.toLowerCase());
 
   // Statistics calculations
   const totalRespondents = filteredSurveys.reduce((acc, curr) => acc + curr.jumlahResponden, 0);
@@ -478,6 +479,7 @@ export default function Dashboard({
         {activeTab === 'input' && (
           <InputDataTab 
             currentRsName={namaRs} 
+            identifier={identifier}
             onSaveSurvey={handleSaveSurvey} 
           />
         )}

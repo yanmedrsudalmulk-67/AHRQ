@@ -26,10 +26,14 @@ import {
   ArrowRight,
   X,
   RotateCcw,
-  BookOpen
+  BookOpen,
+  Share2,
+  Copy,
+  Link as LinkIcon,
+  ExternalLink
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { isSupabaseConnected } from '../lib/supabase';
+import { isSupabaseConnected, getSupabaseClient } from '../lib/supabase';
 
 interface RippleButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag' | 'style'> {
   isSelected?: boolean;
@@ -121,6 +125,8 @@ interface SurveyData {
 
 interface InputDataTabProps {
   currentRsName: string;
+  identifier: string;
+  isPublic?: boolean;
   onSaveSurvey: (survey: SurveyData) => Promise<any> | void;
 }
 
@@ -260,14 +266,208 @@ const getFeedbackCategory = (val: number | undefined, isReversed: boolean = fals
   }
 };
 
-export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataTabProps) {
+export function getPublicBaseUrl() {
+  if (typeof window === 'undefined') return '';
+  const origin = window.location.origin;
+  if (origin.includes('ais-dev-')) {
+    return origin.replace('ais-dev-', 'ais-pre-');
+  }
+  return origin;
+}
+
+export default function InputDataTab({ currentRsName, identifier, isPublic, onSaveSurvey }: InputDataTabProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const [step, setStep] = useState(0); // 0: Identitas, 1-8: Bagian A-H, 9: Review, 10: Success
+  const [showLinkModal, setShowLinkModal] = useState(false);
+  const [surveyLinkConfig, setSurveyLinkConfig] = useState<any>(null);
+  const [isLoadingLink, setIsLoadingLink] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  // States for advanced configurations
+  const [customDomain, setCustomDomain] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [maxRespondents, setMaxRespondents] = useState('');
+  const [preventDuplicate, setPreventDuplicate] = useState(true);
+
+  // Sync state when config loads
+  useEffect(() => {
+    if (surveyLinkConfig) {
+      setCustomDomain(surveyLinkConfig.customDomain || '');
+      setExpiryDate(surveyLinkConfig.expiryDate || '');
+      setMaxRespondents(surveyLinkConfig.maxRespondents || '');
+      setPreventDuplicate(surveyLinkConfig.preventDuplicate !== false);
+    }
+  }, [surveyLinkConfig]);
+
   const [responderName, setResponderName] = useState('');
+
+  const parseDimensiScores = (scores: any) => {
+    if (typeof scores === 'string') {
+      try {
+        return JSON.parse(scores);
+      } catch (e) {
+        console.error("Gagal parse dimensi_scores string", e);
+        return {};
+      }
+    }
+    return scores || {};
+  };
+
+  const loadSurveyLink = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    setIsLoadingLink(true);
+    try {
+      const { data, error } = await supabase
+        .from('ahrq_surveys')
+        .select('*')
+        .eq('nama_rs', '_LINK_CONFIG_')
+        .eq('unit_kerja', identifier);
+      
+      if (!error && data && data.length > 0) {
+        const latest = data[0];
+        const scores = parseDimensiScores(latest.dimensi_scores);
+        setSurveyLinkConfig({
+          token: scores.token || latest.tanggal_input,
+          isActive: latest.jumlah_responden === 1,
+          createdAt: scores.createdAt || latest.created_at || new Date().toISOString(),
+          respondentCount: scores.respondentCount || 0,
+          expiryDate: scores.expiryDate || '',
+          maxRespondents: scores.maxRespondents || '',
+          preventDuplicate: scores.preventDuplicate !== false,
+          customDomain: scores.customDomain || ''
+        });
+      } else {
+        setSurveyLinkConfig(null);
+      }
+    } catch (e) {
+      console.error('Error loading survey link config', e);
+    } finally {
+      setIsLoadingLink(false);
+    }
+  };
+
+  const generateSurveyLink = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    setIsLoadingLink(true);
+    try {
+      const token = Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
+      
+      // Delete existing configs to avoid cluttering/duplicate errors
+      const { data: existing } = await supabase
+        .from('ahrq_surveys')
+        .select('id')
+        .eq('nama_rs', '_LINK_CONFIG_')
+        .eq('unit_kerja', identifier);
+
+      if (existing && existing.length > 0) {
+        const idsToDelete = existing.map((x: any) => x.id);
+        await supabase
+          .from('ahrq_surveys')
+          .delete()
+          .in('id', idsToDelete);
+      }
+
+      const todayDate = new Date().toISOString().split('T')[0]; // valid date YYYY-MM-DD
+      const newConfig = {
+        id: `LINK_CONFIG_${token}`,
+        nama_rs: '_LINK_CONFIG_',
+        unit_kerja: identifier,
+        tanggal_input: todayDate,
+        jumlah_responden: 1, // active
+        dimensi_scores: {
+          token: token,
+          rsName: currentRsName,
+          createdAt: new Date().toISOString(),
+          respondentCount: 0,
+          expiryDate: '',
+          maxRespondents: '',
+          preventDuplicate: true,
+          customDomain: ''
+        }
+      };
+
+      await supabase
+        .from('ahrq_surveys')
+        .insert([newConfig]);
+      
+      setSurveyLinkConfig({
+        token: token,
+        isActive: true,
+        createdAt: newConfig.dimensi_scores.createdAt,
+        respondentCount: 0,
+        expiryDate: '',
+        maxRespondents: '',
+        preventDuplicate: true,
+        customDomain: ''
+      });
+    } catch (e) {
+      console.error('Error generating link', e);
+    } finally {
+      setIsLoadingLink(false);
+    }
+  };
+
+  const updateSurveyLinkConfig = async (fieldsToUpdate: any) => {
+    if (!surveyLinkConfig) return;
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    setIsLoadingLink(true);
+    try {
+      const mergedConfig = { ...surveyLinkConfig, ...fieldsToUpdate };
+      const todayDate = new Date().toISOString().split('T')[0];
+      
+      const dbRow = {
+        id: `LINK_CONFIG_${mergedConfig.token}`,
+        nama_rs: '_LINK_CONFIG_',
+        unit_kerja: identifier,
+        tanggal_input: todayDate,
+        jumlah_responden: mergedConfig.isActive ? 1 : 0,
+        dimensi_scores: {
+          token: mergedConfig.token,
+          rsName: currentRsName,
+          createdAt: mergedConfig.createdAt,
+          respondentCount: mergedConfig.respondentCount,
+          expiryDate: mergedConfig.expiryDate || '',
+          maxRespondents: mergedConfig.maxRespondents || '',
+          preventDuplicate: mergedConfig.preventDuplicate !== false,
+          customDomain: mergedConfig.customDomain || ''
+        }
+      };
+
+      const { error } = await supabase
+        .from('ahrq_surveys')
+        .upsert([dbRow]);
+
+      if (!error) {
+        setSurveyLinkConfig(mergedConfig);
+      } else {
+        console.error("Gagal melakukan update config link", error);
+        alert("Gagal menyimpan pengaturan link.");
+      }
+    } catch (e) {
+      console.error("Kesalahan saat mengupdate link config", e);
+    } finally {
+      setIsLoadingLink(false);
+    }
+  };
+
+  const toggleSurveyLinkStatus = async () => {
+    if (!surveyLinkConfig) return;
+    await updateSurveyLinkConfig({ isActive: !surveyLinkConfig.isActive });
+  };
+
+  useEffect(() => {
+    if (showLinkModal && !surveyLinkConfig) {
+      loadSurveyLink();
+    }
+  }, [showLinkModal]);
+
   const [posisiStaf, setPosisiStaf] = useState('');
   const [unitKerja, setUnitKerja] = useState('');
   
@@ -719,6 +919,15 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
               </motion.div>
             )}
           </AnimatePresence>
+          {!isPublic && (
+            <button
+              onClick={() => setShowLinkModal(true)}
+              className="flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all"
+            >
+              <Share2 className="w-4 h-4" />
+              Bagikan Link
+            </button>
+          )}
         </div>
       </header>
 
@@ -2164,6 +2373,211 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
         document.body
       )}
 
+      {showLinkModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#020918]/80 backdrop-blur-sm overflow-y-auto">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }} 
+            animate={{ opacity: 1, scale: 1 }} 
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-[#0c1a36] border border-[#00244d] p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-5 my-8"
+          >
+            <div className="flex justify-between items-center border-b border-white/10 pb-3">
+              <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-emerald-400" /> Bagikan Link Survei
+              </h2>
+              <button onClick={() => setShowLinkModal(false)} className="text-slate-400 hover:text-slate-200">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            {isLoadingLink ? (
+              <div className="flex justify-center p-8">
+                <div className="w-8 h-8 border-2 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin"></div>
+              </div>
+            ) : !surveyLinkConfig ? (
+              <div className="text-center space-y-4">
+                <p className="text-sm text-slate-300">Belum ada link survei publik yang dibuat untuk rumah sakit ini.</p>
+                <button
+                  onClick={generateSurveyLink}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all w-full"
+                >
+                  Buat Link Survei Baru
+                </button>
+              </div>
+            ) : (() => {
+              const computedBaseUrl = surveyLinkConfig.customDomain 
+                ? (surveyLinkConfig.customDomain.endsWith('/') ? surveyLinkConfig.customDomain.slice(0, -1) : surveyLinkConfig.customDomain)
+                : getPublicBaseUrl();
+              const computedLink = `${computedBaseUrl}/survey/${surveyLinkConfig.token}`;
+
+              return (
+                <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+                  <div className="bg-[#020918]/60 border border-slate-700/80 p-4 rounded-xl space-y-3">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tautan Publik Survei</label>
+                    <div className="flex items-center gap-2">
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={computedLink} 
+                        className="bg-[#0c1a36] border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-400 font-mono w-full outline-none"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(computedLink);
+                          setIsCopied(true);
+                          setTimeout(() => setIsCopied(false), 2000);
+                        }}
+                        className="flex-1 bg-[#0c1a36]/80 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 border border-slate-700/50"
+                      >
+                        {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        {isCopied ? 'Tersalin' : 'Salin Link'}
+                      </button>
+                      <a 
+                        href={`/survey/${surveyLinkConfig.token}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2"
+                      >
+                        <ExternalLink className="w-4 h-4" /> Buka Link
+                      </a>
+                    </div>
+                    
+                    <div className="pt-2 border-t border-white/5 flex flex-col items-center gap-1.5">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kirim Langsung</span>
+                      <div className="flex justify-center gap-3">
+                        <a 
+                          href={`https://wa.me/?text=Mohon%20kesediaannya%20mengisi%20Survei%20Budaya%20Keselamatan%20Pasien%20untuk%20RS%20kami%3A%20${encodeURIComponent(computedLink)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-all shadow-md text-xs font-bold"
+                          title="Share via WhatsApp"
+                        >
+                          WA
+                        </a>
+                        <a 
+                          href={`https://t.me/share/url?url=${encodeURIComponent(computedLink)}&text=Mohon%20kesediaannya%20mengisi%20Survei%20Budaya%20Keselamatan%20Pasien`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-all shadow-md text-xs font-bold"
+                          title="Share via Telegram"
+                        >
+                          TG
+                        </a>
+                        <a 
+                          href={`mailto:?subject=Survei Budaya Keselamatan Pasien&body=Mohon kesediaannya mengisi Survei Budaya Keselamatan Pasien untuk RS kami:%0D%0A${encodeURIComponent(computedLink)}`}
+                          className="w-9 h-9 bg-slate-600 hover:bg-slate-500 text-white rounded-full flex items-center justify-center transition-all shadow-md text-xs font-bold"
+                          title="Share via Email"
+                        >
+                          ✉
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ADVANCED CONFIGURATION PANEL */}
+                  <div className="bg-[#020918]/40 border border-slate-800 p-4 rounded-xl space-y-3.5">
+                    <h4 className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider border-b border-white/5 pb-1.5">Pengaturan Keamanan & Link</h4>
+                    
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Domain / Base URL Kustom (Opsional)</label>
+                      <input 
+                        type="text" 
+                        placeholder="https://survei-rsanda.com" 
+                        value={customDomain}
+                        onChange={(e) => setCustomDomain(e.target.value)}
+                        className="w-full bg-[#0c1a36] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500/50"
+                      />
+                      <span className="text-[9px] text-slate-500 leading-tight block">Tulis domain Anda apabila aplikasi dideploy secara mandiri di luar AI Studio.</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Masa Berlaku</label>
+                        <input 
+                          type="date" 
+                          value={expiryDate}
+                          onChange={(e) => setExpiryDate(e.target.value)}
+                          className="w-full bg-[#0c1a36] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500/50"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Maks. Responden</label>
+                        <input 
+                          type="number" 
+                          placeholder="Tanpa Batas" 
+                          value={maxRespondents}
+                          onChange={(e) => setMaxRespondents(e.target.value)}
+                          className="w-full bg-[#0c1a36] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500/50"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <label className="text-[11px] font-bold text-slate-300 cursor-pointer select-none" htmlFor="prevent-dup-toggle">
+                        Batasi 1 Pengisian per Perangkat
+                      </label>
+                      <input 
+                        id="prevent-dup-toggle"
+                        type="checkbox" 
+                        checked={preventDuplicate}
+                        onChange={(e) => setPreventDuplicate(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-700 text-emerald-600 bg-slate-900 focus:ring-emerald-500 cursor-pointer"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        updateSurveyLinkConfig({ customDomain, expiryDate, maxRespondents, preventDuplicate });
+                        alert("Pengaturan tautan survei berhasil disimpan!");
+                      }}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-600/10"
+                    >
+                      Simpan Pengaturan
+                    </button>
+                  </div>
+                  
+                  <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-800">
+                    <span className="text-sm text-slate-300 font-medium">Status Link</span>
+                    <button 
+                      onClick={toggleSurveyLinkStatus}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${surveyLinkConfig.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}`}
+                    >
+                      {surveyLinkConfig.isActive ? 'Aktif' : 'Tidak Aktif'}
+                    </button>
+                  </div>
+                  
+                  <div className="p-3 bg-slate-900/50 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
+                    <div className="flex justify-between">
+                      <span>Tanggal Dibuat:</span>
+                      <span className="text-slate-300">{new Date(surveyLinkConfig.createdAt).toLocaleDateString('id-ID')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Jumlah Responden via Link:</span>
+                      <span className="text-emerald-400 font-bold">{surveyLinkConfig.respondentCount} orang</span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t border-white/10">
+                    <button 
+                      onClick={() => {
+                        if (confirm('Link lama akan dinonaktifkan secara permanen dan tidak dapat digunakan lagi. Lanjutkan?')) {
+                          generateSurveyLink();
+                        }
+                      }}
+                      className="w-full text-xs text-rose-400 hover:text-rose-300 font-semibold text-center py-2 transition-colors"
+                    >
+                      Buat Ulang (Regenerate) Link
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+          </motion.div>
+        </div>,
+        document.body
+      )}
     </div>
   );
 }
