@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Save, 
   Sparkles, 
@@ -260,6 +261,11 @@ const getFeedbackCategory = (val: number | undefined, isReversed: boolean = fals
 };
 
 export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataTabProps) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const [step, setStep] = useState(0); // 0: Identitas, 1-8: Bagian A-H, 9: Review, 10: Success
   const [responderName, setResponderName] = useState('');
   const [posisiStaf, setPosisiStaf] = useState('');
@@ -690,7 +696,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
     <div id="survey-main-wrapper" className="bg-transparent text-slate-200 min-h-screen rounded-3xl border border-[#00244d]/30 overflow-hidden shadow-xl flex flex-col font-sans">
       
       {/* 1. STICKY HEADER */}
-      <header id="survey-sticky-header" className="sticky top-0 bg-[#0c1a36]/75 backdrop-blur-md border-b border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-20 shadow-sm">
+      <header id="survey-sticky-header" className="sticky top-0 bg-[#0c1a36]/75 backdrop-blur-sm border-b border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-20 shadow-sm">
         <div className="flex items-center gap-4">
           <div>
             <h1 className="text-lg md:text-xl font-bold text-slate-100 leading-tight">Formulir Survei Budaya Keselamatan Pasien</h1>
@@ -717,7 +723,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
       </header>
 
       {/* 2. ELEGANT HORIZONTAL PROGRESS BAR */}
-      <div id="survey-horizontal-progress" className="bg-[#0c1a36]/60 backdrop-blur-md border-b border-[#00244d]/40 px-6 md:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div id="survey-horizontal-progress" className="bg-[#0c1a36]/60 backdrop-blur-sm border-b border-[#00244d]/40 px-6 md:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4">
         <div className="flex items-center gap-3">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Progres Pengisian Kuesioner</span>
           <span className="text-xs font-extrabold text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{progressPercent}%</span>
@@ -725,7 +731,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
         </div>
         <div className="w-full sm:w-80 bg-[#020918]/55 h-2 rounded-full overflow-hidden relative">
           <div 
-            className={`bg-gradient-to-r ${getProgressGradient()} h-full rounded-full transition-all duration-500`} 
+            className={`bg-gradient-to-r ${getProgressGradient()} h-full rounded-full transition-all transform-gpu duration-500`} 
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -747,7 +753,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
             >
               {/* Header card for the current section */}
               {step > 0 && step < 9 && (
-                <div className="bg-[#0c1a36]/70 backdrop-blur-md rounded-3xl border border-[#00244d]/40 p-8 shadow-sm space-y-3 relative overflow-hidden">
+                <div className="bg-[#0c1a36]/70 backdrop-blur-sm rounded-3xl border border-[#00244d]/40 p-8 shadow-sm space-y-3 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400" />
                   <span className="inline-flex items-center px-3 py-1 bg-emerald-500/10 text-emerald-700 text-xs font-extrabold rounded-full tracking-wide">
                     {SECTIONS[step].label}
@@ -761,7 +767,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
               {step === 0 && (
                 <div className="space-y-6">
                   {/* PETUNJUK CARD (PREMIUM & MODERN) */}
-                  <div className="bg-[#0c1a36]/40 backdrop-blur-xl rounded-3xl border border-[#00244d]/30 p-6 md:p-8 shadow-2xl relative overflow-hidden space-y-6">
+                  <div className="bg-[#0c1a36]/40 backdrop-blur-sm rounded-3xl border border-[#00244d]/30 p-6 md:p-8 shadow-2xl relative overflow-hidden space-y-6">
                     <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/80 via-teal-500/80 to-cyan-500/80 animate-pulse" />
                     
                     <div className="flex items-center gap-3">
@@ -781,14 +787,14 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     {/* DEFINITION BOX (OUTLINED, PREMIUM GLOW) */}
                     <div className="border border-[#00244d]/30 bg-[#020918]/60 rounded-2xl p-5 md:p-6 space-y-4 shadow-inner relative">
                       <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-md" />
                         <p className="text-xs text-slate-300 leading-relaxed font-light">
                           <span className="text-emerald-400 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Keselamatan pasien"`}</span> didefinisikan sebagai penghindaran and pencegahan cedera pasien atau kejadian yang tidak diinginkan yang diakibatkan oleh proses pemberian layanan kesehatan.
                         </p>
                       </div>
 
                       <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-md" />
                         <p className="text-xs text-slate-300 leading-relaxed font-light">
                           <span className="text-emerald-400 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Kejadian keselamatan pasien"`}</span> didefinisikan sebagai segala jenis kesalahan, kekeliruan, atau insiden yang berhubungan dengan perawatan kesehatan, terlepas dari apakah hal tersebut mengakibatkan cedera pada pasien atau tidak.
                         </p>
@@ -798,9 +804,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                   {/* IDENTIFIKASI PROFIL RESPONDEN */}
                   <div
-                    className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 ${
+                    className={`backdrop-blur-sm rounded-3xl border p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
                       posisiStaf && unitKerja 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
                         : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
@@ -819,8 +825,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             <Users className="w-4 h-4 text-emerald-500" /> Posisi Staf Anda di Rumah Sakit
                           </label>
                           <button
+                            type="button"
                             onClick={() => setIsPosisiModalOpen(true)}
-                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-md"
+                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-sm"
                           >
                             <span className={posisiStaf ? 'text-slate-100' : 'text-slate-400'}>{posisiStaf || 'Pilih Posisi Anda'}</span>
                             <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -832,8 +839,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                             <MapPin className="w-4 h-4 text-emerald-500" /> Unit / Area Kerja Utama Anda
                           </label>
                           <button
+                            type="button"
                             onClick={() => setIsUnitModalOpen(true)}
-                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-md"
+                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-sm"
                           >
                             <span className={unitKerja ? 'text-slate-100' : 'text-slate-400'}>{unitKerja || 'Pilih Unit / Area Kerja'}</span>
                             <ChevronRight className="w-4 h-4 text-slate-400" />
@@ -847,7 +855,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         type="button"
                         onClick={() => setStep(1)}
                         disabled={!posisiStaf || !unitKerja}
-                        className={`px-6 py-3.5 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all ${
+                        className={`px-6 py-3.5 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu ${
                           posisiStaf && unitKerja 
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 cursor-pointer' 
                             : 'bg-[#020918]/40 text-slate-500 cursor-not-allowed border border-[#00244d]/20'
@@ -870,13 +878,13 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`A-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -886,7 +894,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
@@ -945,7 +953,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('A', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? opt.value === 9
                                       ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
@@ -987,13 +995,13 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`B-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -1003,7 +1011,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
@@ -1052,7 +1060,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('B', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? opt.value === 9
                                       ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
@@ -1094,13 +1102,13 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`C-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -1110,7 +1118,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
@@ -1159,7 +1167,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('C', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? opt.value === 9
                                       ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
@@ -1201,13 +1209,13 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     return (
                       <div
                         ref={(el) => { questionRefs.current[`D-1`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -1217,7 +1225,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
@@ -1264,7 +1272,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectD(1, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? opt.value === 9
                                       ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
@@ -1301,13 +1309,13 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     return (
                       <div
                         ref={(el) => { questionRefs.current[`D-2`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -1317,7 +1325,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
@@ -1364,7 +1372,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectD(2, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? opt.value === 9
                                       ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
@@ -1401,11 +1409,11 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     return (
                       <div
                         ref={(el) => { questionRefs.current[`D-3`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -1414,7 +1422,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               'bg-slate-800/50 text-slate-400 border border-slate-700/30'
@@ -1454,7 +1462,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectD3(choice)}
-                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? choiceCategory === 'positive'
                                       ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
@@ -1487,13 +1495,13 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     return (
                       <div
                         ref={(el) => { questionRefs.current[`E-1`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -1503,7 +1511,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
@@ -1556,7 +1564,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectE(item.val)}
-                                className={`p-6 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex flex-col justify-center items-center gap-3 ${
+                                className={`p-6 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex flex-col justify-center items-center gap-3 ${
                                   isSelected 
                                     ? optCategory === 'positive'
                                       ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
@@ -1594,13 +1602,13 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`F-${st.id}`] = el; }}
-                        className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 relative overflow-hidden ${
+                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                           category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-[0_0_20px_rgba(16,185,129,0.15)] ring-1 ring-emerald-500/10'
+                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
                             : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500/10'
+                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
                             : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-[0_0_20px_rgba(239,68,68,0.15)] ring-1 ring-rose-500/10'
+                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
                             : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                         }`}
                       >
@@ -1610,7 +1618,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all duration-300 ${
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
                               category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
                               category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
                               category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
@@ -1659,7 +1667,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('F', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? opt.value === 9
                                       ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
@@ -1697,9 +1705,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                   {/* G1 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-1`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
+                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[1] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
                         : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
@@ -1715,7 +1723,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                           isSelected={ansG[1] === opt}
                           shakeOnHover={true}
                           onClick={() => handleSelectG(1, opt)}
-                          className={`p-4 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
+                          className={`p-4 rounded-2xl border text-center transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[1] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
                               : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
@@ -1730,9 +1738,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                   {/* G2 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-2`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
+                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[2] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
                         : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
@@ -1748,7 +1756,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                           isSelected={ansG[2] === opt}
                           shakeOnHover={true}
                           onClick={() => handleSelectG(2, opt)}
-                          className={`p-4 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
+                          className={`p-4 rounded-2xl border text-center transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[2] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
                               : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
@@ -1763,9 +1771,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                   {/* G3 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-3`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
+                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[3] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
                         : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
@@ -1781,7 +1789,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                           isSelected={ansG[3] === opt}
                           shakeOnHover={true}
                           onClick={() => handleSelectG(3, opt)}
-                          className={`p-4 rounded-2xl border text-center transition-all cursor-pointer font-bold text-xs ${
+                          className={`p-4 rounded-2xl border text-center transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[3] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
                               : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
@@ -1796,9 +1804,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                   {/* G4 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-4`] = el; }}
-                    className={`backdrop-blur-xl rounded-3xl border p-6 md:p-8 shadow-2xl transition-all duration-300 space-y-6 ${
+                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[4] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
                         : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                     }`}
                   >
@@ -1817,7 +1825,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                           isSelected={ansG[4] === opt}
                           shakeOnHover={true}
                           onClick={() => handleSelectG(4, opt)}
-                          className={`p-5 rounded-2xl border text-left transition-all cursor-pointer font-bold text-xs ${
+                          className={`p-5 rounded-2xl border text-left transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[4] === opt 
                               ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
                               : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
@@ -1835,9 +1843,9 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
               {step === 8 && (
                 <div
                   ref={(el) => { questionRefs.current[`H-1`] = el; }}
-                  className={`backdrop-blur-xl rounded-3xl border p-8 shadow-2xl transition-all duration-300 space-y-6 ${
+                  className={`backdrop-blur-sm rounded-3xl border p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
                     komentar.trim() 
-                      ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-[0_0_25px_rgba(16,185,129,0.25)] ring-1 ring-emerald-500/20' 
+                      ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
                       : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
                   }`}
                 >
@@ -1859,7 +1867,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                       triggerAutoSave({ komentar: e.target.value });
                     }}
                     placeholder="Tulis ulasan, hambatan, atau ide perbaikan konstruktif Anda di sini secara rinci..."
-                    className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-2xl p-4 text-sm focus:border-emerald-500 focus:bg-[#0c1a36]/50 backdrop-blur-md focus:ring-1 focus:ring-emerald-500 transition-all outline-none leading-relaxed"
+                    className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-2xl p-4 text-sm focus:border-emerald-500 focus:bg-[#0c1a36]/50 backdrop-blur-sm focus:ring-1 focus:ring-emerald-500 transition-all transform-gpu outline-none leading-relaxed"
                   />
 
                   <div className="p-4 bg-emerald-500/10/50 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
@@ -1873,7 +1881,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
               {/* STEP 9: REVIEW SECTION */}
               {step === 9 && (
-                <div className="bg-[#0c1a36]/40 backdrop-blur-xl rounded-3xl border border-[#00244d]/30 p-8 shadow-2xl space-y-8">
+                <div className="bg-[#0c1a36]/40 backdrop-blur-sm rounded-3xl border border-[#00244d]/30 p-8 shadow-2xl space-y-8">
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-emerald-400 tracking-wider">KOMPILASI</span>
                     <h2 className="text-2xl font-bold text-slate-100">Review Sebelum Kirim Kuesioner</h2>
@@ -1903,7 +1911,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                     <button
                       type="button"
                       onClick={() => setShowConfirmModal(true)}
-                      className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/15 transition-all flex items-center justify-center gap-2"
+                      className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/15 transition-all transform-gpu flex items-center justify-center gap-2"
                     >
                       <Save className="w-4 h-4" /> Kirim Jawaban Survei
                     </button>
@@ -1913,7 +1921,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
               {/* STEP 10: SUCCESS SCREEN */}
               {step === 10 && (
-                <div className="bg-[#0c1a36]/40 backdrop-blur-xl rounded-3xl border border-[#00244d]/30 p-12 text-center shadow-2xl space-y-6 max-w-xl mx-auto my-6">
+                <div className="bg-[#0c1a36]/40 backdrop-blur-sm rounded-3xl border border-[#00244d]/30 p-12 text-center shadow-2xl space-y-6 max-w-xl mx-auto my-6">
                   <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner animate-bounce">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
@@ -1952,7 +1960,7 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
                         setKomentar('');
                         setStep(0);
                       }}
-                      className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all shadow-md shadow-emerald-600/10"
+                      className="px-6 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all transform-gpu shadow-md shadow-emerald-600/10"
                     >
                       Input Survei Baru
                     </button>
@@ -1967,14 +1975,14 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
 
       {/* 3. STICKY FOOTER NAVIGATION */}
       {step > 0 && step < 10 && (
-      <footer id="survey-sticky-footer" className="sticky bottom-0 bg-[#0c1a36]/75 backdrop-blur-md border-t border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-10 shadow-lg">
+      <footer id="survey-sticky-footer" className="sticky bottom-0 bg-[#0c1a36]/75 backdrop-blur-sm border-t border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-10 shadow-lg">
         <button
           onClick={() => step > 0 && setStep(step - 1)}
           disabled={step === 0 || step === 10}
-          className={`px-5 py-3 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-5 py-3 rounded-xl text-xs font-bold transition-all transform-gpu flex items-center gap-1.5 ${
             step === 0 || step === 10
               ? 'text-slate-300 bg-slate-950/50 border border-slate-100 cursor-not-allowed'
-              : 'bg-[#0c1a36]/50 backdrop-blur-md border border-[#00244d]/40 text-slate-300 hover:bg-[#020918]/50'
+              : 'bg-[#0c1a36]/50 backdrop-blur-sm border border-[#00244d]/40 text-slate-300 hover:bg-[#020918]/50'
           }`}
         >
           <ChevronLeft className="w-4 h-4" /> Sebelumnya
@@ -1984,14 +1992,14 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
           <button
             onClick={handleNextStep}
             disabled={step === 10}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-md shadow-emerald-600/10"
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all transform-gpu flex items-center gap-1.5 shadow-md shadow-emerald-600/10"
           >
             Berikutnya <ChevronRight className="w-4 h-4" />
           </button>
         ) : step === 9 ? (
           <button
             onClick={() => setShowConfirmModal(true)}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all flex items-center gap-1.5 shadow-lg shadow-emerald-600/10"
+            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs transition-all transform-gpu flex items-center gap-1.5 shadow-lg shadow-emerald-600/10"
           >
             Kirim Kuesioner <Check className="w-4 h-4" />
           </button>
@@ -2002,131 +2010,159 @@ export default function InputDataTab({ currentRsName, onSaveSurvey }: InputDataT
       )}
 
       {/* FULLSCREEN MODALS FOR DROPDOWNS */}
-      <AnimatePresence>
-        {isPosisiModalOpen && (
-          <div className="fixed inset-0 bg-[#0B101E]/60 backdrop-blur-xl flex flex-col z-[100] animate-fade-in">
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
-              <div className="flex justify-between items-center sticky top-0 bg-[#0B101E]/80 backdrop-blur-xl p-4 -mx-6 -mt-6 mb-6 border-b border-slate-800/50 z-10">
-                <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><Users className="w-5 h-5 text-emerald-400"/> Pilih Posisi Staf</h3>
-                <button onClick={() => setIsPosisiModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="space-y-6">
-                {Object.entries(STAFF_POSITIONS).map(([group, list]) => (
-                  <div key={group} className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{group}</h4>
-                    <div className="space-y-2">
-                      {list.map(pos => (
-                        <button
-                          key={pos.value}
-                          onClick={() => {
-                            setPosisiStaf(pos.label);
-                            triggerAutoSave({ posisiStaf: pos.label });
-                            setIsPosisiModalOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
-                            posisiStaf === pos.label 
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                              : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
-                          }`}
-                        >
-                          {pos.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {isUnitModalOpen && (
-          <div className="fixed inset-0 bg-[#0B101E]/60 backdrop-blur-xl flex flex-col z-[100] animate-fade-in">
-            <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
-              <div className="flex justify-between items-center sticky top-0 bg-[#0B101E]/80 backdrop-blur-xl p-4 -mx-6 -mt-6 mb-6 border-b border-slate-800/50 z-10">
-                <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-400"/> Pilih Unit / Area Kerja</h3>
-                <button onClick={() => setIsUnitModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white"><X className="w-5 h-5" /></button>
-              </div>
-              <div className="space-y-6">
-                {Object.entries(WORK_UNITS).map(([group, list]) => (
-                  <div key={group} className="space-y-2">
-                    <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{group}</h4>
-                    <div className="space-y-2">
-                      {list.map(u => (
-                        <button
-                          key={u.value}
-                          onClick={() => {
-                            setUnitKerja(u.label);
-                            triggerAutoSave({ unitKerja: u.label });
-                            setIsUnitModalOpen(false);
-                          }}
-                          className={`w-full text-left px-4 py-3 rounded-xl transition-all ${
-                            unitKerja === u.label 
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' 
-                              : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
-                          }`}
-                        >
-                          {u.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* 4. CONFIRMATION DIALOG MODAL */}
-      <AnimatePresence>
-        {showConfirmModal && (
-          <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isPosisiModalOpen && (
             <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-slate-900/50 backdrop-blur-md rounded-3xl p-8 max-w-md w-full border border-slate-800/50 shadow-2xl space-y-6"
+              key="posisi-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-[#0B101E] backdrop-blur-md flex flex-col z-[9999]"
             >
-              <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl flex items-center justify-center shadow-inner">
-                <CheckCircle2 className="w-8 h-8" />
-              </div>
-
-              <div className="space-y-2">
-                <h3 className="text-xl font-bold text-slate-100">Kirim Kuesioner Anda?</h3>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Apakah Anda yakin seluruh jawaban sudah benar? Seluruh data yang Anda masukkan akan disinkronisasikan langsung demi kalkulasi komposit budaya keselamatan RS.
-                </p>
-              </div>
-
-              <div className="flex gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 py-3 bg-slate-800/50 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all"
-                >
-                  Kembali Periksa
-                </button>
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={handleFinalSubmit}
-                  className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/15 transition-all flex items-center justify-center gap-1.5"
-                >
-                  {isSubmitting ? (
-                    <span>Mengirim...</span>
-                  ) : (
-                    <>
-                      <span>Ya, Kirim</span>
-                      <Check className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
+                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-6 border-b border-slate-800/50 z-10 max-w-4xl mx-auto w-full">
+                  <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><Users className="w-5 h-5 text-emerald-400"/> Pilih Posisi Staf</h3>
+                  <button type="button" onClick={() => setIsPosisiModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="space-y-6 max-w-4xl mx-auto w-full">
+                  {Object.entries(STAFF_POSITIONS).map(([group, list]) => (
+                    <div key={group} className="space-y-2">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{group}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {list.map(pos => (
+                          <button
+                            type="button"
+                            key={pos.value}
+                            onClick={() => {
+                              setPosisiStaf(pos.label);
+                              triggerAutoSave({ posisiStaf: pos.label });
+                              setIsPosisiModalOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
+                              posisiStaf === pos.label 
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
+                                : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
+                            }`}
+                          >
+                            {pos.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isUnitModalOpen && (
+            <motion.div
+              key="unit-modal"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="fixed inset-0 bg-[#0B101E] backdrop-blur-md flex flex-col z-[9999]"
+            >
+              <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
+                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-6 border-b border-slate-800/50 z-10 max-w-4xl mx-auto w-full">
+                  <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-400"/> Pilih Unit / Area Kerja</h3>
+                  <button type="button" onClick={() => setIsUnitModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+                </div>
+                <div className="space-y-6 max-w-4xl mx-auto w-full">
+                  {Object.entries(WORK_UNITS).map(([group, list]) => (
+                    <div key={group} className="space-y-2">
+                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{group}</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {list.map(u => (
+                          <button
+                            type="button"
+                            key={u.value}
+                            onClick={() => {
+                              setUnitKerja(u.label);
+                              triggerAutoSave({ unitKerja: u.label });
+                              setIsUnitModalOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
+                              unitKerja === u.label 
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
+                                : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
+                            }`}
+                          >
+                            {u.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+
+      {/* 4. CONFIRMATION DIALOG MODAL */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {showConfirmModal && (
+            <div className="fixed inset-0 bg-[#0B101E]/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+              <motion.div
+                key="confirm-modal-content"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6"
+              >
+                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl flex items-center justify-center shadow-inner">
+                  <CheckCircle2 className="w-8 h-8" />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-xl font-bold text-slate-100">Kirim Kuesioner Anda?</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Apakah Anda yakin seluruh jawaban sudah benar? Seluruh data yang Anda masukkan akan disinkronisasikan langsung demi kalkulasi komposit budaya keselamatan RS.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmModal(false)}
+                    className="flex-1 py-3 bg-slate-800/50 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all transform-gpu cursor-pointer"
+                  >
+                    Kembali Periksa
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={handleFinalSubmit}
+                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-emerald-600/15 transition-all transform-gpu flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <span>Mengirim...</span>
+                    ) : (
+                      <>
+                        <span>Ya, Kirim</span>
+                        <Check className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
     </div>
   );

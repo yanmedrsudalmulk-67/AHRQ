@@ -653,7 +653,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#121826]/90 backdrop-blur-[64px] p-6 rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)]">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#121826]/90 backdrop-blur-sm p-6 rounded-2xl border border-white/[0.08] shadow-md">
         <div>
           <h2 className="text-[18px] md:text-[20px] font-semibold flex items-center gap-2 text-[#F8FAFC]">
             <Settings className="w-5 h-5 text-indigo-400" /> Pengaturan Sistem
@@ -670,7 +670,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
         {/* Toast notification component */}
         {toast.show && (
-          <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-xl border text-xs flex items-center gap-2 shadow-2xl transition-all duration-300 animate-fadeIn ${
+          <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-xl border text-xs flex items-center gap-2 shadow-2xl transition-all transform-gpu duration-300 animate-fadeIn ${
             toast.type === 'success' 
               ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
               : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
@@ -682,7 +682,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Identitas Rumah Sakit */}
-        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+        <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
           <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
             <h3 className="text-[16px] font-semibold text-[#F8FAFC] flex items-center gap-1.5">
               <Building2 className="w-4 h-4 text-indigo-400" /> Profil Fasyankes
@@ -695,7 +695,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                   setIsEditing(true);
                   setShowChangePassword(false);
                 }}
-                className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
               >
                 <Edit className="w-3.5 h-3.5" /> Perbarui Profil
               </button>
@@ -777,7 +777,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                   <button
                     type="button"
                     onClick={() => setShowChangePassword(true)}
-                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 border border-white/10 hover:border-white/20 text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 border border-white/10 hover:border-white/20 text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer"
                   >
                     <Lock className="w-3.5 h-3.5 text-cyan-400" /> Ubah Password Akun
                   </button>
@@ -814,7 +814,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                           required
                           value={oldPassword}
                           onChange={e => setOldPassword(e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all outline-none pr-10"
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
                         />
                         <button
                           type="button"
@@ -834,7 +834,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                           required
                           value={newPassword}
                           onChange={e => setNewPassword(e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all outline-none pr-10"
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
                         />
                         <button
                           type="button"
@@ -854,7 +854,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                           required
                           value={confirmPassword}
                           onChange={e => setConfirmPassword(e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all outline-none pr-10"
+                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
                         />
                         <button
                           type="button"
@@ -875,14 +875,14 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                           setNewPassword('');
                           setConfirmPassword('');
                         }}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-[11px] font-semibold transition-all cursor-pointer"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-[11px] font-semibold transition-all transform-gpu cursor-pointer"
                       >
                         Batal
                       </button>
                       <button
                         type="submit"
                         disabled={isSavingProfile}
-                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all cursor-pointer"
+                        className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-[11px] font-semibold flex items-center gap-1 transition-all transform-gpu cursor-pointer"
                       >
                         {isSavingProfile ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                         Simpan Password
@@ -907,7 +907,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     required
                     value={tempName}
                     onChange={e => setTempName(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: RSUD AL-MULK"
                   />
                 </div>
@@ -921,7 +921,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     required
                     value={alamatRs}
                     onChange={e => setAlamatRs(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Jl. Merdeka No. 10..."
                   />
                 </div>
@@ -933,7 +933,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                       type="text"
                       value={provinsi}
                       onChange={e => setProvinsi(e.target.value)}
-                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                       placeholder="Contoh: Jawa Barat"
                     />
                   </div>
@@ -944,7 +944,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                       type="text"
                       value={kotaKab}
                       onChange={e => setKotaKab(e.target.value)}
-                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                       placeholder="Contoh: Bandung"
                     />
                   </div>
@@ -956,7 +956,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     type="text"
                     value={kodePos}
                     onChange={e => setKodePos(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: 40123"
                   />
                 </div>
@@ -974,7 +974,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     required
                     value={emailRs}
                     onChange={e => setEmailRs(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="email@rumahsakit.com"
                   />
                 </div>
@@ -987,7 +987,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     type="tel"
                     value={noTelepon}
                     onChange={e => setNoTelepon(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: 021123456"
                   />
                 </div>
@@ -1001,7 +1001,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     required
                     value={noWhatsapp}
                     onChange={e => setNoWhatsapp(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: 08123456789"
                   />
                 </div>
@@ -1020,7 +1020,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     disabled={role === 'rs'}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                   {role === 'rs' && <p className="text-[10px] text-slate-500">Username akun portal rumah sakit hanya dapat diubah oleh Admin Utama.</p>}
                 </div>
@@ -1050,14 +1050,14 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                       resetFetch();
                     }
                   }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl text-xs font-semibold transition-all cursor-pointer"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl text-xs font-semibold transition-all transform-gpu cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingProfile}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-[0_4px_12px_rgba(79,70,229,0.3)] transition-all cursor-pointer"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-md transition-all transform-gpu cursor-pointer"
                 >
                   {isSavingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
                   {isSavingProfile ? 'Menyimpan...' : 'Simpan Perubahan'}
@@ -1069,7 +1069,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
         {/* Wallpaper Konfigurasi */}
         {role === 'admin' && (
-          <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+          <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
             <div>
               <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
                 <ImageIcon className="w-4 h-4 text-cyan-400" /> Wallpaper Latar Belakang
@@ -1081,9 +1081,9 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           <div className="flex bg-slate-900/60 p-1 rounded-xl border border-white/[0.08]">
             <button
               onClick={() => setActiveSubTab('upload')}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeSubTab === 'upload' 
-                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  ? 'bg-slate-800 text-white shadow-md' 
                   : 'text-white/50 hover:text-white'
               }`}
             >
@@ -1091,9 +1091,9 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
             </button>
             <button
               onClick={() => setActiveSubTab('url')}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeSubTab === 'url' 
-                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  ? 'bg-slate-800 text-white shadow-md' 
                   : 'text-white/50 hover:text-white'
               }`}
             >
@@ -1115,7 +1115,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[160px] ${
+              className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all transform-gpu flex flex-col items-center justify-center min-h-[160px] ${
                 isDragging 
                   ? 'border-indigo-500 bg-indigo-500/5' 
                   : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/10'
@@ -1160,7 +1160,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     placeholder="https://contoh.com/wallpaper.jpg"
                     value={wallpaperUrlInput}
                     onChange={e => setWallpaperUrlInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200 font-mono text-xs"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200 font-mono text-xs"
                   />
                   <LinkIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 </div>
@@ -1173,7 +1173,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   type="submit"
                   disabled={isUploading || !wallpaperUrlInput.trim()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu"
                 >
                   {isUploading ? (
                     <>
@@ -1207,7 +1207,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   onClick={handleClearWallpaper}
                   disabled={isUploading}
-                  className="text-red-400 hover:text-red-300 transition-all text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 cursor-pointer"
+                  className="text-red-400 hover:text-red-300 transition-all transform-gpu text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Hapus Wallpaper
                 </button>
@@ -1251,7 +1251,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
         {/* Logo AHRQ Konfigurasi */}
         {role === 'admin' && (
-        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+        <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
           <div>
             <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
               <UploadCloud className="w-4 h-4 text-cyan-400 animate-pulse" /> Logo Instansi / AHRQ
@@ -1263,9 +1263,9 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           <div className="flex bg-slate-900/60 p-1 rounded-xl border border-white/[0.08]">
             <button
               onClick={() => setActiveLogoSubTab('upload')}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeLogoSubTab === 'upload' 
-                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  ? 'bg-slate-800 text-white shadow-md' 
                   : 'text-white/50 hover:text-white'
               }`}
             >
@@ -1273,9 +1273,9 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
             </button>
             <button
               onClick={() => setActiveLogoSubTab('url')}
-              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all ${
+              className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeLogoSubTab === 'url' 
-                  ? 'bg-slate-800 text-white shadow-[0_2px_8px_rgba(0,0,0,0.2)]' 
+                  ? 'bg-slate-800 text-white shadow-md' 
                   : 'text-white/50 hover:text-white'
               }`}
             >
@@ -1297,7 +1297,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               onDragLeave={handleLogoDragLeave}
               onDrop={handleLogoDrop}
               onClick={() => logoFileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all flex flex-col items-center justify-center min-h-[160px] ${
+              className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all transform-gpu flex flex-col items-center justify-center min-h-[160px] ${
                 isLogoDragging 
                   ? 'border-indigo-500 bg-indigo-500/5' 
                   : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/10'
@@ -1342,7 +1342,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     placeholder="https://contoh.com/logo.png"
                     value={logoUrlInput}
                     onChange={e => setLogoUrlInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200 font-mono text-xs"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200 font-mono text-xs"
                   />
                   <LinkIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
                 </div>
@@ -1355,7 +1355,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   type="submit"
                   disabled={isUploadingLogo || !logoUrlInput.trim()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu"
                 >
                   {isUploadingLogo ? (
                     <>
@@ -1381,7 +1381,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   onClick={handleClearLogo}
                   disabled={isUploadingLogo}
-                  className="text-red-400 hover:text-red-300 transition-all text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 cursor-pointer"
+                  className="text-red-400 hover:text-red-300 transition-all transform-gpu text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Hapus Logo
                 </button>
@@ -1414,7 +1414,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
       {/* Benchmark Konfigurasi */}
       {role === 'admin' && (
-        <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+        <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/[0.08] pb-3">
             <div>
               <h3 className="text-[16px] font-semibold text-[#F8FAFC] flex items-center gap-1.5">
@@ -1426,7 +1426,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               type="button"
               onClick={handleSaveBenchmark}
               disabled={isSavingBenchmark}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all shadow-[0_4px_12px_rgba(16,185,129,0.3)] shrink-0"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu shadow-md shrink-0"
             >
               {isSavingBenchmark ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
               {isSavingBenchmark ? 'Menyimpan...' : 'Simpan Benchmark'}
@@ -1478,7 +1478,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
       {/* Supabase Database Integration Settings */}
       {role === 'admin' && (
-      <div className="bg-[#121826]/90 backdrop-blur-[64px] rounded-2xl border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] p-6 space-y-6">
+      <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
         <div>
           <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
             <Database className="w-4 h-4 text-emerald-400" /> Integrasi Database Supabase Cloud
@@ -1518,7 +1518,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               type="button"
               onClick={handleTestConnection}
               disabled={isTestingConn}
-              className="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 disabled:opacity-50 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700/60 flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 disabled:opacity-50 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700/60 flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
             >
               {isTestingConn ? (
                 <>
@@ -1535,7 +1535,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               type="button"
               onClick={handleSyncData}
               disabled={isSyncing || !hasSupabase}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-500/15 transition-all cursor-pointer"
+              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-indigo-500/15 transition-all transform-gpu cursor-pointer"
             >
               {isSyncing ? (
                 <>
@@ -1599,7 +1599,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           <button
             type="button"
             onClick={() => setShowSqlSchema(!showSqlSchema)}
-            className="w-full px-4 py-3 bg-slate-950/60 hover:bg-slate-950 flex items-center justify-between text-xs font-semibold text-slate-300 transition-all outline-none cursor-pointer"
+            className="w-full px-4 py-3 bg-slate-950/60 hover:bg-slate-950 flex items-center justify-between text-xs font-semibold text-slate-300 transition-all transform-gpu outline-none cursor-pointer"
           >
             <span className="flex items-center gap-2">
               <Terminal className="w-4 h-4 text-cyan-400" />
@@ -1709,7 +1709,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="absolute top-3 right-3 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white hover:bg-slate-850 flex items-center gap-1 transition-all cursor-pointer"
+                  className="absolute top-3 right-3 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white hover:bg-slate-850 flex items-center gap-1 transition-all transform-gpu cursor-pointer"
                 >
                   {copiedSql ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-indigo-400" />}
                   {copiedSql ? 'Disalin!' : 'Salin SQL'}

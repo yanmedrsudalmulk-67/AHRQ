@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
         <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-10" />
         <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -z-10" />
 
-        <div className="w-full max-w-xl bg-slate-900/80 backdrop-blur-md rounded-3xl border border-emerald-500/30 shadow-2xl p-10 text-center space-y-6">
+        <div className="w-full max-w-xl bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-emerald-500/30 shadow-2xl p-10 text-center space-y-6">
           <div className="mx-auto w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center text-emerald-400">
             <CheckCircle2 className="w-12 h-12" />
           </div>
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
 
           <button
             onClick={onBack}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-all cursor-pointer shadow-lg shadow-indigo-500/20"
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-all transform-gpu cursor-pointer shadow-lg shadow-indigo-500/20"
           >
             Kembali ke Login Portal
           </button>
@@ -166,12 +166,12 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
       <button
         onClick={onBack}
         disabled={loading}
-        className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2 text-sm font-semibold transition-all cursor-pointer disabled:opacity-50"
+        className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2 text-sm font-semibold transition-all transform-gpu cursor-pointer disabled:opacity-50"
       >
         <ArrowLeft className="w-4 h-4" /> Kembali ke Login
       </button>
 
-      <div className="w-full max-w-3xl bg-slate-900/60 backdrop-blur-md rounded-3xl border border-slate-800/80 shadow-2xl p-8 my-8">
+      <div className="w-full max-w-3xl bg-slate-900/60 backdrop-blur-sm rounded-3xl border border-slate-800/80 shadow-2xl p-8 my-8">
         <div className="text-center space-y-2 mb-8">
           <div className="mx-auto w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-4">
             <UserPlus className="w-6 h-6" />
@@ -211,7 +211,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                     <button
                       type="button"
                       onClick={handleCopySql}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-lg transition-all cursor-pointer text-[10px]"
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-lg transition-all transform-gpu cursor-pointer text-[10px]"
                     >
                       {copied ? (
                         <>
@@ -260,7 +260,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: RSUD Al-Mulk"
                   value={namaRs}
                   onChange={e => setNamaRs(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
 
@@ -271,7 +271,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: RS320401"
                   value={kodeRs}
                   onChange={e => setKodeRs(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
             </div>
@@ -284,7 +284,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                 placeholder="cth: Jl. Pramuka No. 12, Kota Bengkulu"
                 value={alamatRs}
                 onChange={e => setAlamatRs(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
               />
             </div>
 
@@ -297,7 +297,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: Bengkulu"
                   value={provinsi}
                   onChange={e => setProvinsi(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
 
@@ -309,7 +309,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: Kota Bengkulu"
                   value={kotaKab}
                   onChange={e => setKotaKab(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
             </div>
@@ -330,7 +330,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: dr. Ahmad Fauzi"
                   value={penanggungJawab}
                   onChange={e => setPenanggungJawab(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
 
@@ -342,7 +342,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: Kepala Bidang Pelayanan Medik"
                   value={jabatan}
                   onChange={e => setJabatan(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
             </div>
@@ -356,7 +356,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: 081234567890"
                   value={noWhatsapp}
                   onChange={e => setNoWhatsapp(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
 
@@ -368,7 +368,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="cth: info@rsudalmulk.com"
                   value={emailRs}
                   onChange={e => setEmailRs(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
             </div>
@@ -388,7 +388,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                 placeholder="cth: rsudalmulk (digunakan untuk login)"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
               />
             </div>
 
@@ -401,7 +401,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="Minimal 6 karakter, huruf & angka"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
 
@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                   placeholder="Ulangi password"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                 />
               </div>
             </div>
@@ -422,7 +422,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 transition-all transform-gpu cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? (
               <span className="flex items-center gap-2">

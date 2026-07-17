@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -20,7 +20,70 @@ interface GrafikTabProps {
 
 const queryClient = new QueryClient();
 
+function extractYear(tanggalStr?: string): string {
+  if (!tanggalStr) return new Date().getFullYear().toString();
+  
+  // Try finding a 4-digit number that starts with 20 or 19 (e.g., 2026, 2025)
+  const match = tanggalStr.match(/\b(20\d{2}|19\d{2})\b/);
+  if (match) return match[1];
+
+  // Fallback 1: split by spaces and check the last element
+  const partsBySpace = tanggalStr.trim().split(/\s+/);
+  const lastPart = partsBySpace[partsBySpace.length - 1];
+  if (lastPart && !isNaN(Number(lastPart)) && lastPart.length === 4) {
+    return lastPart;
+  }
+
+  // Fallback 2: split by dash
+  const partsByDash = tanggalStr.split('-');
+  if (partsByDash[0] && !isNaN(Number(partsByDash[0])) && partsByDash[0].length === 4) {
+    return partsByDash[0];
+  }
+
+  return new Date().getFullYear().toString();
+}
+
+function hashString(str: string): string {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(36);
+}
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 const fetchAI = async (prompt: string) => {
+  const cacheKey = `ai_analysis_${hashString(prompt)}`;
+  
+  if (typeof window !== 'undefined') {
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        console.log('Using cached AI analysis for key:', cacheKey);
+        return JSON.parse(cached);
+      }
+    } catch (e) {
+      console.warn('Error reading from localStorage cache:', e);
+    }
+  }
+
   const res = await fetch('/api/gemini/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -28,7 +91,22 @@ const fetchAI = async (prompt: string) => {
   });
   if (!res.ok) throw new Error('AI Fetch failed');
   const data = await res.json();
-  return data.text as string;
+  const text = data.text as string;
+
+  if (typeof window !== 'undefined') {
+    try {
+      const keys = Object.keys(localStorage);
+      const aiKeys = keys.filter(k => k.startsWith('ai_analysis_'));
+      if (aiKeys.length > 30) {
+        aiKeys.slice(0, 10).forEach(k => localStorage.removeItem(k));
+      }
+      localStorage.setItem(cacheKey, JSON.stringify(text));
+    } catch (e) {
+      console.warn('Error saving to localStorage cache:', e);
+    }
+  }
+
+  return text;
 };
 
 function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan', tahun1: string, tahun2: string) {
@@ -146,7 +224,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
     const years = new Set<string>();
     actualSurveys.forEach(s => {
       if (s.tanggalInput) {
-        const y = s.tanggalInput.split('-')[0];
+        const y = extractYear(s.tanggalInput);
         if (y) years.add(y);
       }
     });
@@ -177,8 +255,8 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
     return mb ? (mb.dimensiScores as any) : undefined;
   }, [surveys]);
 
-  const dataTahun1 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1)), masterBenchmarkData), [actualSurveys, tahun1, masterBenchmarkData]);
-  const dataTahun2 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun2)), masterBenchmarkData), [actualSurveys, tahun2, masterBenchmarkData]);
+  const dataTahun1 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun1), masterBenchmarkData), [actualSurveys, tahun1, masterBenchmarkData]);
+  const dataTahun2 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun2), masterBenchmarkData), [actualSurveys, tahun2, masterBenchmarkData]);
 
   const combinedData = useMemo(() => {
     return dataTahun1.map((d1, i) => {
@@ -229,22 +307,64 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
     return text;
   }, [combinedData, mode, tahun1, tahun2]);
 
+  const debouncedAiPrompt = useDebounce(aiPrompt, 1500);
+
   const { data: aiResponse, isLoading: aiLoading, isError: aiIsError } = useQuery({
-    queryKey: ['ai-analysis', aiPrompt],
-    queryFn: () => fetchAI(aiPrompt!),
-    enabled: !!aiPrompt,
+    queryKey: ['ai-analysis', debouncedAiPrompt],
+    queryFn: () => fetchAI(debouncedAiPrompt!),
+    enabled: !!debouncedAiPrompt,
     staleTime: Infinity,
     retry: false,
   });
+
+  const isDebouncing = aiPrompt !== debouncedAiPrompt && !!aiPrompt;
+  const isCurrentlyLoading = aiLoading || isDebouncing;
+
+  const parsedAiReport = useMemo(() => {
+    if (!aiResponse) return null;
+    
+    // Split by the recommendation header
+    const parts = aiResponse.split(/###\s*Rekomendasi\s*Peningkatan/i);
+    let analysis = parts[0] || '';
+    let recommendationsText = parts[1] || '';
+    
+    // Clean up analysis heading
+    analysis = analysis.replace(/###\s*Analisis/i, '').trim();
+    
+    // Extract list items from recommendations text (lines starting with * or - or numbers)
+    const recs: string[] = [];
+    const lines = recommendationsText.split('\n');
+    for (let line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
+        const cleaned = trimmed.replace(/^[\*\-\s]+/, '').trim();
+        if (cleaned) recs.push(cleaned);
+      } else if (/^\d+\./.test(trimmed)) {
+        const cleaned = trimmed.replace(/^\d+\.\s*/, '').trim();
+        if (cleaned) recs.push(cleaned);
+      } else if (trimmed.length > 10) {
+        // If it's a longer line and not empty, we can also add it
+        recs.push(trimmed);
+      }
+    }
+    
+    return {
+      analisis: analysis,
+      rekomendasi: recs.length > 0 ? recs : null
+    };
+  }, [aiResponse]);
 
   const localReport = useMemo(() => {
     return generateAHRQReport(combinedData, mode, tahun1, tahun2);
   }, [combinedData, mode, tahun1, tahun2]);
 
   const e1Stats = useMemo(() => {
-    let targetSurveys = actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1));
+    let targetSurveys = actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun1);
     if (mode === 'Perbandingan') {
-      targetSurveys = actualSurveys.filter(s => s.tanggalInput?.startsWith(tahun1) || s.tanggalInput?.startsWith(tahun2));
+      targetSurveys = actualSurveys.filter(s => {
+        const y = extractYear(s.tanggalInput);
+        return y === tahun1 || y === tahun2;
+      });
     }
     
     let totalValid = 0;
@@ -340,7 +460,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
 
   if (actualSurveys.length === 0) {
     return (
-      <div className="p-12 bg-white/[0.07] border border-white/10 rounded-[24px] shadow-sm text-center space-y-4 max-w-xl mx-auto my-12 backdrop-blur-xl">
+      <div className="p-12 bg-white/[0.07] border border-white/10 rounded-[24px] shadow-sm text-center space-y-4 max-w-xl mx-auto my-12 backdrop-blur-sm">
         <BarChart2 className="w-12 h-12 text-slate-500 mx-auto animate-pulse" />
         <h3 className="text-lg font-bold text-slate-200">Belum Ada Data Survei</h3>
         <p className="text-sm text-slate-400 leading-relaxed">
@@ -352,7 +472,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
 
   return (
 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6 pb-20 p-6 -m-6 rounded-[24px]">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-xl">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm">
         <div>
           <h1 className="text-2xl font-extrabold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">Analisa Grafik Budaya Keselamatan Pasien</h1>
           <p className="text-sm text-slate-400 mt-1">Visualisasi capaian seluruh dimensi Survei Budaya Keselamatan Pasien AHRQ SOPS Version 2.0.</p>
@@ -365,7 +485,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
         </div>
       </div>
 
-      <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-xl flex flex-col md:flex-row gap-6 items-start md:items-center justify-between relative overflow-hidden">
+      <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm flex flex-col md:flex-row gap-6 items-start md:items-center relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
         <div className="flex flex-wrap items-center gap-6">
           <div className="space-y-2">
@@ -373,8 +493,8 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
               <ListFilter className="w-3 h-3 text-emerald-400" /> Mode Analisis
             </label>
             <div className="flex items-center gap-2 bg-slate-950/50 p-1 rounded-xl border border-white/10">
-              <button onClick={() => setMode('Tunggal')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${mode === 'Tunggal' ? 'bg-white/10 text-emerald-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Periode Tunggal</button>
-              <button onClick={() => setMode('Perbandingan')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${mode === 'Perbandingan' ? 'bg-white/10 text-cyan-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Perbandingan Periode</button>
+              <button onClick={() => setMode('Tunggal')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform-gpu ${mode === 'Tunggal' ? 'bg-white/10 text-emerald-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Periode Tunggal</button>
+              <button onClick={() => setMode('Perbandingan')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform-gpu ${mode === 'Perbandingan' ? 'bg-white/10 text-cyan-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Perbandingan Periode</button>
             </div>
           </div>
           <div className="space-y-2">
@@ -396,18 +516,9 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
             </div>
           )}
         </div>
-        <div className="space-y-2">
-          <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-            <BarChart2 className="w-3 h-3 text-slate-500" /> Jenis Grafik
-          </label>
-          <div className="flex items-center gap-2 bg-slate-950/50 p-1 rounded-xl border border-white/10">
-            <button onClick={() => setChartType('Bar')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${chartType === 'Bar' ? 'bg-white/10 text-slate-200 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}><BarChart2 className="w-4 h-4" /> Bar</button>
-            <button onClick={() => setChartType('Line')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${chartType === 'Line' ? 'bg-white/10 text-slate-200 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}><TrendingUp className="w-4 h-4" /> Line</button>
-          </div>
-        </div>
       </div>
 
-      <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-xl">
+      <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm">
         <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
           {chartType === 'Bar' ? <BarChart2 className="w-5 h-5 text-emerald-400" /> : <TrendingUp className="w-5 h-5 text-cyan-400" />}
           Hasil Perbandingan Pengukuran Komposit Untuk {rsName}
@@ -448,10 +559,11 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                             <div className="flex items-center gap-3 w-full">
                               <div className="flex-1 bg-slate-800/50 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
                                 <motion.div 
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${row.Capaian}%` }}
-                                  transition={{ duration: 1, ease: "easeOut" }}
-                                  className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all`}
+                                  initial={{ scaleX: 0 }}
+                                  animate={{ scaleX: 1 }}
+                                  transition={{ duration: 0.8, ease: "easeOut" }}
+                                  style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
+                                  className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
                                 >
                                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                 </motion.div>
@@ -465,10 +577,11 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                                 <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun1}</span>
                                 <div className="flex-1 bg-slate-800/50 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
                                   <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${row['Tahun 1']}%` }}
-                                    transition={{ duration: 1, ease: "easeOut" }}
-                                    className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all opacity-70`}
+                                    initial={{ scaleX: 0 }}
+                                    animate={{ scaleX: 1 }}
+                                    transition={{ duration: 0.8, ease: "easeOut" }}
+                                    style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
+                                    className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all transform-gpu opacity-70 will-change-transform`}
                                   >
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                   </motion.div>
@@ -480,10 +593,11 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                                 <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun2}</span>
                                 <div className="flex-1 bg-slate-800/50 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
                                   <motion.div 
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${row['Tahun 2']}%` }}
-                                    transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
-                                    className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all`}
+                                    initial={{ scaleX: 0 }}
+                                    animate={{ scaleX: 1 }}
+                                    transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                    style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
+                                    className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
                                   >
                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                   </motion.div>
@@ -506,10 +620,10 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
               </table>
               
               <div className="mt-6 flex flex-wrap gap-4 items-center justify-center text-[11px] font-medium text-slate-400 bg-slate-900/50 p-4 rounded-xl border border-white/5">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></div> &lt;50% (Perlu Perbaikan)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.5)]"></div> 50-69% (Cukup)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></div> 70-84% (Baik)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div> &ge;85% (Sangat Baik)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500 shadow-md"></div> &lt;50% (Perlu Perbaikan)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-md"></div> 50-69% (Cukup)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-md"></div> 70-84% (Baik)</div>
+                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-md"></div> &ge;85% (Sangat Baik)</div>
               </div>
             </div>
           ) : (
@@ -542,7 +656,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-xl relative overflow-hidden"
+        className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
         <h3 className="text-lg font-bold text-slate-200 mb-1 flex items-center gap-2">
@@ -559,13 +673,13 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
               <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(val) => `${val}%`} />
               <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }} />
-              <Bar dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
+              <Bar isAnimationActive={false} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
                 <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#34d399" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-rs-${index}`} fill="#10b981" />
                 ))}
               </Bar>
-              <Bar dataKey="Data Pembanding" fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
+              <Bar isAnimationActive={false} dataKey="Data Pembanding" fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
                 <LabelList dataKey="Data Pembanding" position="top" formatter={(val: number) => `${val}%`} fill="#94a3b8" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-bp-${index}`} fill="#64748b" />
@@ -577,31 +691,33 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-xl relative overflow-hidden group">
+        <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl -z-10 -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
           <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
             <BrainCircuit className="w-6 h-6 text-cyan-400" /> Analisis Otomatis
           </h3>
           <div className="prose prose-sm prose-invert max-w-none text-slate-300 text-xs">
             <div className="space-y-4">
-              {aiResponse ? (
+              {parsedAiReport?.analisis ? (
                 <div dangerouslySetInnerHTML={{ 
-                  __html: aiResponse
-                    .replace(/### Analisis/g, '')
-                    .replace(/### Rekomendasi Peningkatan/g, '')
-                    .replace(/\n\n/g, '<br/><br/>') 
-                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100">$1</strong>')
-                    .replace(/\* (.*?)(?=<br|$)/g, '<li class="ml-4 list-disc text-slate-300">$1</li>')
+                  __html: parsedAiReport.analisis
+                    .replace(/\n\n/g, '<br/><br/>')
+                    .replace(/\n/g, '<br/>') 
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-bold">$1</strong>')
                 }} className="leading-relaxed space-y-2" />
               ) : (
                 <div dangerouslySetInnerHTML={{ __html: localReport.analisis }} className="leading-relaxed space-y-2" />
               )}
 
-              {aiLoading && (
+              {isCurrentlyLoading && (
                 <div className="text-[10px] text-cyan-400 bg-cyan-950/30 px-3 py-2.5 rounded-xl border border-cyan-500/20 flex items-center justify-between gap-1.5 no-print animate-pulse">
                   <div className="flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                    <span>Sedang mengoptimalkan analisis mendalam dengan Google Gemini AI...</span>
+                    <span>
+                      {isDebouncing 
+                        ? "Menstabilkan data perubahan sebelum memulai analisis baru..." 
+                        : "Sedang mengoptimalkan analisis mendalam dengan Google Gemini AI..."}
+                    </span>
                   </div>
                   <svg className="animate-spin h-3.5 w-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -610,7 +726,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                 </div>
               )}
 
-              {aiIsError && !aiLoading && (
+              {aiIsError && !isCurrentlyLoading && (
                 <div className="text-[10px] text-amber-400 bg-amber-950/20 px-3 py-2 rounded-xl border border-amber-500/10 flex items-center gap-1.5 no-print">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                   Sistem beralih ke Analisis Standar AHRQ SOPS 2.0 Lokal karena server AI sedang padat/sibuk.
@@ -620,7 +736,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
           </div>
         </div>
 
-        <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-xl relative overflow-hidden group">
+        <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -z-10 -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
           <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
             <Lightbulb className="w-6 h-6 text-emerald-400" /> Rekomendasi Peningkatan
@@ -629,19 +745,19 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
             <div className="space-y-4 text-xs">
               <p className="font-semibold text-slate-200 flex items-center justify-between gap-2">
                 <span>Berdasarkan hasil kuesioner budaya keselamatan pasien RS Anda (AHRQ SOPS 2.0), berikut rekomendasi tindak lanjut strategis:</span>
-                {aiLoading && (
+                {isCurrentlyLoading && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
                     <svg className="animate-spin h-3 w-3 text-emerald-400" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Sinkronisasi AI...
+                    {isDebouncing ? "Menyiapkan..." : "Sinkronisasi AI..."}
                   </span>
                 )}
               </p>
               <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
                 <ul className="space-y-3 text-slate-300 list-none m-0 p-0">
-                  {localReport.rekomendasi.map((rec, idx) => (
+                  {((parsedAiReport?.rekomendasi || localReport.rekomendasi) as string[]).map((rec, idx) => (
                     <li key={idx} className="flex gap-2.5">
                       <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
                       <span className="leading-relaxed" dangerouslySetInnerHTML={{ 

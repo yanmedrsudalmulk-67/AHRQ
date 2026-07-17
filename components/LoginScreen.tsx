@@ -125,12 +125,12 @@ export default function LoginScreen({
       {/* Back button */}
       <button
         onClick={onBack}
-        className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2 text-sm font-semibold transition-all cursor-pointer"
+        className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2 text-sm font-semibold transition-all transform-gpu cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" /> Kembali
       </button>
 
-      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-md rounded-3xl border border-slate-800/80 shadow-2xl p-8">
+      <div className="w-full max-w-md bg-slate-900/60 backdrop-blur-sm rounded-3xl border border-slate-800/80 shadow-2xl p-8">
         <div className="text-center space-y-4 mb-8">
           <div className="mx-auto p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0 w-16 h-16">
             {activeLogo ? (
@@ -150,7 +150,7 @@ export default function LoginScreen({
         <div className="flex bg-slate-950 p-1.5 rounded-xl border border-slate-800/80 mb-6">
           <button
             onClick={() => { setActiveTab('rs'); setError(''); }}
-            className={`flex-1 py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`flex-1 py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer ${
               activeTab === 'rs' 
                 ? 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/25' 
                 : 'text-slate-400 hover:text-slate-200'
@@ -160,7 +160,7 @@ export default function LoginScreen({
           </button>
           <button
             onClick={() => { setActiveTab('admin'); setError(''); }}
-            className={`flex-1 py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer ${
+            className={`flex-1 py-2.5 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer ${
               activeTab === 'admin' 
                 ? 'bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 text-white font-bold shadow-lg shadow-indigo-500/25' 
                 : 'text-slate-400 hover:text-slate-200'
@@ -187,7 +187,7 @@ export default function LoginScreen({
                 placeholder="Masukan Username"
                 value={rsUsername}
                 onChange={e => setRsUsername(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
               />
             </div>
 
@@ -200,7 +200,7 @@ export default function LoginScreen({
                   placeholder="Masukkan Password"
                   value={rsPassword}
                   onChange={e => setRsPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200 pr-12"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200 pr-12"
                 />
                 <button
                   type="button"
@@ -214,7 +214,7 @@ export default function LoginScreen({
 
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-extrabold rounded-xl text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/45 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-extrabold rounded-xl text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/45 transition-all transform-gpu cursor-pointer flex items-center justify-center gap-2"
             >
               <LogIn className="w-4 h-4" /> Masuk ke Portal RS
             </button>
@@ -242,7 +242,7 @@ export default function LoginScreen({
                 placeholder="Masukan Username"
                 value={adminUsername}
                 onChange={e => setAdminUsername(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
               />
             </div>
 
@@ -255,7 +255,7 @@ export default function LoginScreen({
                   placeholder="••••••"
                   value={adminPassword}
                   onChange={e => setAdminPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200 pr-12"
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200 pr-12"
                 />
                 <button
                   type="button"
@@ -269,7 +269,7 @@ export default function LoginScreen({
 
             <button
               type="submit"
-              className="w-full py-3 bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-extrabold rounded-xl text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/45 transition-all cursor-pointer flex items-center justify-center gap-2"
+              className="w-full py-3 bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-extrabold rounded-xl text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/45 transition-all transform-gpu cursor-pointer flex items-center justify-center gap-2"
             >
               <LogIn className="w-4 h-4" /> Masuk Admin Utama
             </button>

@@ -198,7 +198,7 @@ export default function DimensiDetailModal({ dimensiId, onClose, surveys, rsName
   }, [data.posPercent, data.neuPercent, data.negPercent, dimInfo]);
 
   return (
-    <div className="fixed inset-0 bg-[#0B101E]/80 backdrop-blur-md flex items-center justify-center p-4 z-[999] animate-fade-in overflow-hidden">
+    <div className="fixed inset-0 bg-[#0B101E]/80 backdrop-blur-sm flex items-center justify-center p-4 z-[999] animate-fade-in overflow-hidden">
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -221,7 +221,7 @@ export default function DimensiDetailModal({ dimensiId, onClose, surveys, rsName
           </div>
           <button 
             onClick={onClose}
-            className="p-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl transition-all"
+            className="p-2 bg-slate-900 border border-slate-800 hover:bg-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl transition-all transform-gpu"
           >
             <X className="w-5 h-5" />
           </button>
@@ -275,7 +275,7 @@ export default function DimensiDetailModal({ dimensiId, onClose, surveys, rsName
             
             <div className="space-y-6">
               {data.chartData.map((q, idx) => (
-                <div key={idx} className="p-5 bg-slate-950 border border-slate-800 rounded-xl">
+                <div key={q.name} className="p-5 bg-slate-950 border border-slate-800 rounded-xl">
                   <div className="flex gap-4">
                     <div className="flex-none w-12 h-12 bg-indigo-500/10 rounded-xl flex items-center justify-center font-bold text-indigo-400 border border-indigo-500/20">
                       {q.name}
@@ -447,7 +447,7 @@ export default function DimensiDetailModal({ dimensiId, onClose, surveys, rsName
                   <button 
                     disabled={currentPage === 1}
                     onClick={() => setCurrentPage(prev => prev - 1)}
-                    className="p-1.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white disabled:opacity-50 transition-all"
+                    className="p-1.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white disabled:opacity-50 transition-all transform-gpu"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
@@ -455,7 +455,7 @@ export default function DimensiDetailModal({ dimensiId, onClose, surveys, rsName
                   <button 
                     disabled={currentPage === totalPages}
                     onClick={() => setCurrentPage(prev => prev + 1)}
-                    className="p-1.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white disabled:opacity-50 transition-all"
+                    className="p-1.5 bg-slate-900 border border-slate-800 text-slate-400 rounded-lg hover:bg-slate-800 hover:text-white disabled:opacity-50 transition-all transform-gpu"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>

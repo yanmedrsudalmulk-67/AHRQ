@@ -55,14 +55,14 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       className="min-h-screen lg:h-screen lg:max-h-screen bg-transparent text-slate-100 flex flex-col justify-between p-4 md:p-6 lg:p-8 relative overflow-x-hidden overflow-y-auto lg:overflow-hidden font-sans select-none"
     >
       {/* Intense futuristic ambient neon glows */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-500/10 blur-[130px] pointer-events-none -z-10 animate-pulse" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none -z-10" />
-      <div className="absolute top-[35%] left-[30%] w-[30%] h-[30%] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none -z-10" />
+      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-500/10 blur-[130px] pointer-events-none -z-10 animate-pulse transform-gpu will-change-[transform,opacity]" />
+      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none -z-10 transform-gpu will-change-transform" />
+      <div className="absolute top-[35%] left-[30%] w-[30%] h-[30%] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none -z-10 transform-gpu will-change-transform" />
       
       {/* 1. Header (Translucent Glass Bar) */}
       <header 
         id="welcome-header" 
-        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-slate-900/50 backdrop-blur-md rounded-2xl border border-slate-800/60"
+        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800/60"
       >
         <div className="flex items-center gap-3">
           <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0 w-12 h-12">
@@ -82,13 +82,13 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         {/* Real-time Date and Clock Widget (Premium & Futuristic) */}
         <div className="flex items-center gap-2 md:gap-3">
           {/* Date pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] backdrop-blur-md border border-white/[0.06] shadow-inner text-slate-300">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] shadow-inner text-slate-300">
             <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
             <span className="text-[11px] font-medium tracking-wide">{dateString || 'Memuat...'}</span>
           </div>
 
           {/* Clock pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/30 to-indigo-950/30 backdrop-blur-md border border-cyan-500/25 shadow-[0_0_15px_rgba(6,182,212,0.12)] text-cyan-300 font-mono">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/30 to-indigo-950/30 backdrop-blur-sm border border-cyan-500/25 shadow-md text-cyan-300 font-mono">
             <Clock className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" />
             <span className="text-xs font-bold tracking-wider">{timeString || '--:--:-- WIB'}</span>
           </div>
@@ -136,10 +136,11 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
           >
             <button
               onClick={onEnter}
-              className="group px-8 py-4 bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/45 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer text-sm tracking-wide"
+              className="group px-8 py-4 bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/45 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu duration-300 cursor-pointer text-sm tracking-wide"
             >
               MULAI SURVEI
               <motion.div
+                className="transform-gpu will-change-transform"
                 animate={{ x: [0, 5, 0] }}
                 transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
               >

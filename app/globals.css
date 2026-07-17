@@ -52,7 +52,7 @@
       0 0 4px rgba(59,130,246,0.5),
       0 0 8px rgba(99,102,241,0.35),
       0 0 12px rgba(139,92,246,0.25);
-    animation: scrollbarPulse 4s ease-in-out infinite;
+    
   }
 
   ::-webkit-scrollbar-thumb:hover {
@@ -83,3 +83,37 @@
       0 0 16px rgba(139,92,246,0.4);
   }
 }
+
+/* High Refresh Rate (144Hz/120fps) Performance & Responsiveness Optimizations */
+.gpu-accelerated {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Force hardware acceleration for all interactive elements and layout wrappers */
+main, video, canvas, select, button, .recharts-wrapper {
+  transform: translate3d(0,0,0) !important;
+  backface-visibility: hidden !important;
+  perspective: 1000px !important;
+}
+
+/* Smooth out scrolling rendering for high-frequency displays */
+html, body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Minimize heavy paint/repaint effects on high-refresh hover events */
+.transition-transform {
+  will-change: transform;
+}
+
+/* Enable content-visibility to skip rendering of off-screen components */
+.content-visibility-auto {
+  content-visibility: auto;
+  contain-intrinsic-size: 100px 500px;
+}
+

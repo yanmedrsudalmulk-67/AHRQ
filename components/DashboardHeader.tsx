@@ -96,7 +96,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'morning',
         text: 'Selamat Pagi', 
         iconType: 'sunrise',
-        badgeClass: 'border-emerald-500/20 shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_15px_rgba(16,185,129,0.15)]',
+        badgeClass: 'border-emerald-500/20 shadow-md',
         gradId: 'sunrise-grad'
       };
     } else if (hour >= 11 && hour < 15) {
@@ -104,7 +104,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'noon',
         text: 'Selamat Siang', 
         iconType: 'sun',
-        badgeClass: 'border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_15px_rgba(14,165,233,0.15)]',
+        badgeClass: 'border-white/[0.08] shadow-md',
         gradId: 'sun-grad'
       };
     } else if (hour >= 15 && hour < 18) {
@@ -112,7 +112,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'afternoon',
         text: 'Selamat Sore', 
         iconType: 'sunset',
-        badgeClass: 'border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_15px_rgba(249,115,22,0.1)]',
+        badgeClass: 'border-white/[0.08] shadow-md',
         gradId: 'sunset-grad'
       };
     } else {
@@ -120,7 +120,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'night',
         text: 'Selamat Malam', 
         iconType: 'moon',
-        badgeClass: 'border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.35),0_0_15px_rgba(99,102,241,0.15)]',
+        badgeClass: 'border-white/[0.08] shadow-md',
         gradId: 'moon-grad'
       };
     }
@@ -200,7 +200,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[32px] bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_32px_rgba(0,0,0,0.30)] flex flex-col lg:flex-row justify-between items-start gap-8"
+      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[32px] bg-[#121826]/90 backdrop-blur-sm border border-white/[0.08] shadow-md flex flex-col lg:flex-row justify-between items-start gap-8"
     >
       {/* Decorative premium radial glow & gradient elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-[100px] pointer-events-none -z-10" />
@@ -223,7 +223,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
             backgroundSize: "100% 200%",
             backgroundImage: "linear-gradient(to bottom, #22d3ee, #6366f1, #a855f7, #6366f1, #22d3ee)"
           }}
-          className="w-1 md:w-1.5 rounded-full shadow-[0_0_15px_rgba(99,102,241,0.5)] shrink-0" 
+          className="w-1 md:w-1.5 rounded-full shadow-md shrink-0" 
         />
         
         <div className="space-y-4 min-w-0 w-full">
@@ -258,7 +258,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
               variants={namaRsVariants}
               className="text-[28px] md:text-[48px] font-extrabold text-white tracking-tight leading-tight md:leading-none break-words whitespace-normal"
             >
-              Hai, Sobat <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(99,102,241,0.25)] font-extrabold">{displayHospital}</span>
+              Hai, Sobat <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-md font-extrabold">{displayHospital}</span>
             </motion.h2>
           </div>
 

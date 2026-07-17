@@ -169,7 +169,7 @@ const CustomChartTooltip = ({ active, payload }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-slate-950/90 border border-white/10 rounded-xl p-3 shadow-xl backdrop-blur-md">
+      <div className="bg-slate-950/90 border border-white/10 rounded-xl p-3 shadow-xl backdrop-blur-sm">
         <p className="text-xs font-bold text-slate-100">{data.name}</p>
         <p className="text-[11px] font-semibold text-emerald-400 mt-1">
           {data.value} Responden ({data.percentage}%)
@@ -529,7 +529,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
 
   return (
     <div className="space-y-8">
-      <div id="ahrq-table-card" className="relative bg-white/[0.05] border border-white/20 rounded-[32px] shadow-2xl shadow-black/50 backdrop-blur-3xl p-6 overflow-hidden md:p-8 space-y-6 group">
+      <div id="ahrq-table-card" className="relative bg-white/[0.05] border border-white/20 rounded-[32px] shadow-2xl shadow-black/50 backdrop-blur-sm p-6 overflow-hidden md:p-8 space-y-6 group">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl -z-10 group-hover:bg-teal-500/30 transition-colors duration-700"></div>
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/20 transition-colors duration-700"></div>
         
@@ -544,7 +544,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
         </div>
 
         {/* 4. MAIN DATA TABLE */}
-        <div className="overflow-x-auto rounded-2xl border border-[#00244d]/50 bg-[#020918]/90 backdrop-blur-[64px] shadow-[0_8px_24px_rgba(0,0,0,0.30)]">
+        <div className="overflow-x-auto rounded-2xl border border-[#00244d]/50 bg-[#020918]/90 backdrop-blur-sm shadow-md">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="bg-gradient-to-r from-[#00244d] via-[#0c1a36] to-[#020918] border-b border-[#00244d]/40 text-white/95 font-bold uppercase tracking-wider divide-x divide-[#00244d]/20">
@@ -577,14 +577,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   const globalIdx = idx + 1;
                   
                   const scoreColor = dim.percentage >= 75 
-                     ? 'text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)]' 
-                     : (dim.percentage >= 50 ? 'text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]' : 'text-red-400 drop-shadow-[0_0_8px_rgba(239,68,68,0.3)]');
+                     ? 'text-emerald-400 drop-shadow-md' 
+                     : (dim.percentage >= 50 ? 'text-amber-400 drop-shadow-md' : 'text-rose-400 drop-shadow-md');
 
                   return (
                     <tr 
                       key={dim.id} 
                       onClick={() => setSelectedDimensi(dim.id)}
-                      className="hover:bg-[#00244d]/50 transition-all cursor-pointer group divide-x divide-[#00244d]/20"
+                      className="hover:bg-[#00244d]/50 transition-all transform-gpu cursor-pointer group divide-x divide-[#00244d]/20"
                     >
                       <td className="p-4 text-center font-bold font-mono hover:text-blue-400 transition-colors text-base text-[#f3f5f8]">
                         {globalIdx}
@@ -650,7 +650,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
       </div>
 
       {/* Respondent Profile Dashboard Section */}
-      <div id="ahrq-respondent-profile-card" className="relative bg-[#121826]/90 backdrop-blur-[64px] border border-white/[0.08] shadow-[0_8px_24px_rgba(0,0,0,0.30),0_0_12px_rgba(0,180,255,0.08)] rounded-[32px] p-6 md:p-8 space-y-8 overflow-hidden group">
+      <div id="ahrq-respondent-profile-card" className="relative bg-[#121826]/90 backdrop-blur-sm border border-white/[0.08] shadow-md p-6 md:p-8 space-y-8 overflow-hidden group">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -z-10 group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -z-10 group-hover:bg-purple-500/20 transition-colors duration-700"></div>
         
@@ -692,7 +692,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-md hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -709,6 +709,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
+                        isAnimationActive={false}
                         data={rsChartData}
                         cx="50%"
                         cy="50%"
@@ -755,7 +756,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-md hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -771,6 +772,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
+                        isAnimationActive={false}
                         data={unitChartData}
                         cx="50%"
                         cy="50%"
@@ -814,7 +816,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.15 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-md hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -830,6 +832,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
+                        isAnimationActive={false}
                         data={directChartData}
                         cx="50%"
                         cy="50%"
@@ -873,7 +876,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-md hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -889,6 +892,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
+                        isAnimationActive={false}
                         data={jobChartData}
                         cx="50%"
                         cy="50%"
@@ -932,7 +936,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.25 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-md hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -948,6 +952,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
+                        isAnimationActive={false}
                         data={hoursChartData}
                         cx="50%"
                         cy="50%"
@@ -991,7 +996,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-md hover:border-indigo-500/20 hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between"
+              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -1007,6 +1012,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
+                        isAnimationActive={false}
                         data={professionChartData}
                         cx="50%"
                         cy="50%"

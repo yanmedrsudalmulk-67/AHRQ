@@ -356,9 +356,9 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
     <div className="space-y-6 md:space-y-8 animate-in fade-in zoom-in duration-500 pb-12">
       {/* Premium Header */}
       <div className="relative p-6 md:p-8 rounded-[24px] md:rounded-[32px] overflow-hidden group">
-        <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-3xl border border-indigo-500/20 rounded-[24px] md:rounded-[32px] -z-10 shadow-[0_8px_32px_rgba(99,102,241,0.15)]"></div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/30 transition-all duration-700"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-cyan-500/20 transition-all duration-700"></div>
+        <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm border border-indigo-500/20 rounded-[24px] md:rounded-[32px] -z-10 shadow-md"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/30 transition-all transform-gpu duration-700"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-cyan-500/20 transition-all transform-gpu duration-700"></div>
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-2">
@@ -371,7 +371,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           </div>
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-indigo-300 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] text-sm font-semibold whitespace-nowrap print:hidden shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-indigo-300 hover:text-white transition-all transform-gpu shadow-md text-sm font-semibold whitespace-nowrap print:hidden shrink-0"
           >
             <Printer className="w-4 h-4" /> Cetak PDF
           </button>
@@ -403,7 +403,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
       </div>
 
       {/* Dynamic Filters */}
-      <div className="bg-[#0f172a]/60 backdrop-blur-xl border border-white/10 p-5 rounded-2xl flex flex-col md:flex-row md:flex-wrap gap-4 md:items-center print:hidden shadow-[0_4px_15px_rgba(0,0,0,0.2)]">
+      <div className="bg-[#0f172a]/60 backdrop-blur-sm border border-white/10 p-5 rounded-2xl flex flex-col md:flex-row md:flex-wrap gap-4 md:items-center print:hidden shadow-md">
         <div className="flex items-center gap-2 md:mr-4 shrink-0">
           <Filter className="w-5 h-5 text-indigo-400" />
           <span className="text-sm font-semibold text-white/80">Filter Data:</span>
@@ -413,7 +413,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           <select 
             value={selectedTahun}
             onChange={(e) => setSelectedTahun(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer w-full md:w-auto"
+            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto"
           >
             {tahunOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -424,7 +424,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           <select 
             value={selectedUnit}
             onChange={(e) => setSelectedUnit(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
+            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
           >
             {unitOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -435,7 +435,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           <select 
             value={selectedProfesi}
             onChange={(e) => setSelectedProfesi(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
+            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
           >
             {profesiOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
@@ -465,11 +465,11 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: index * 0.05 }}
               key={dimId} 
-              className="bg-[#121826]/80 backdrop-blur-xl border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-[0_8px_24px_rgba(0,0,0,0.2)]"
+              className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md"
             >
               {/* Card Header */}
               <div className="p-5 md:p-6 bg-white/[0.03] border-b border-white/5 relative flex items-center gap-4">
-                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-cyan-400 to-indigo-500 shadow-[0_0_10px_rgba(99,102,241,0.5)]"></div>
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-cyan-400 to-indigo-500 shadow-md"></div>
                 <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center shrink-0">
                   <span className="text-lg md:text-xl font-black text-indigo-300">{index + 1}</span>
                 </div>
@@ -513,28 +513,28 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                       {/* Stacked Bar */}
                       <div className="flex-1 w-full h-8 flex rounded-xl overflow-hidden bg-slate-900 border border-white/5 relative group cursor-crosshair">
                         <div 
-                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 flex items-center justify-center transition-all duration-1000 ease-out group-hover:brightness-110"
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 flex items-center justify-center transition-all transform-gpu duration-1000 ease-out group-hover:brightness-110"
                           style={{ width: `${stat.posPercent}%` }}
                           title={`Positif: ${stat.posPercent}%`}
                         >
                           {stat.posPercent > 8 && <CountUp value={stat.posPercent} className="text-[10px] font-extrabold text-emerald-950" />}
                         </div>
                         <div 
-                          className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 flex items-center justify-center transition-all duration-1000 ease-out group-hover:brightness-110"
+                          className="h-full bg-gradient-to-r from-yellow-500 to-yellow-400 flex items-center justify-center transition-all transform-gpu duration-1000 ease-out group-hover:brightness-110"
                           style={{ width: `${stat.neuPercent}%` }}
                           title={`Netral: ${stat.neuPercent}%`}
                         >
                           {stat.neuPercent > 8 && <CountUp value={stat.neuPercent} className="text-[10px] font-extrabold text-yellow-950" />}
                         </div>
                         <div 
-                          className="h-full bg-gradient-to-r from-rose-500 to-rose-400 flex items-center justify-center transition-all duration-1000 ease-out group-hover:brightness-110"
+                          className="h-full bg-gradient-to-r from-rose-500 to-rose-400 flex items-center justify-center transition-all transform-gpu duration-1000 ease-out group-hover:brightness-110"
                           style={{ width: `${stat.negPercent}%` }}
                           title={`Negatif: ${stat.negPercent}%`}
                         >
                           {stat.negPercent > 8 && <CountUp value={stat.negPercent} className="text-[10px] font-extrabold text-rose-950" />}
                         </div>
                         <div 
-                          className="h-full bg-gradient-to-r from-slate-600 to-slate-500 flex items-center justify-center transition-all duration-1000 ease-out group-hover:brightness-110"
+                          className="h-full bg-gradient-to-r from-slate-600 to-slate-500 flex items-center justify-center transition-all transform-gpu duration-1000 ease-out group-hover:brightness-110"
                           style={{ width: `${stat.missingPercent}%` }}
                           title={`Tidak Menjawab / Tidak Tahu: ${stat.missingPercent}%`}
                         >
@@ -586,7 +586,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="bg-[#121826]/80 backdrop-blur-xl border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 md:p-8 space-y-6 mt-8 md:mt-12"
+        className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md p-6 md:p-8 space-y-6 mt-8 md:mt-12"
       >
         <div className="space-y-3 border-b border-white/5 pb-5">
           <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN KOMPOSIT</span>
@@ -618,25 +618,25 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           {/* Legend */}
           <div className="flex flex-wrap items-center justify-start lg:justify-end gap-x-4 gap-y-2 text-[10px] md:text-xs">
             <div className="flex items-center gap-2 bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-md"></span>
               <span className="text-emerald-400 font-bold">Kekuatan (≥ 75%)</span>
             </div>
             <div className="flex items-center gap-2 bg-yellow-500/5 px-2.5 py-1.5 rounded-lg border border-yellow-500/10">
-              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-md"></span>
               <span className="text-yellow-400 font-bold">Sedang (50% - 74%)</span>
             </div>
             <div className="flex items-center gap-2 bg-rose-500/5 px-2.5 py-1.5 rounded-lg border border-rose-500/10">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-md"></span>
               <span className="text-rose-400 font-bold">Prioritas (&lt; 50%)</span>
             </div>
           </div>
         </div>
 
         {/* Responsive Table Wrapper with Horizontal Scroll */}
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/60 backdrop-blur-xl relative max-h-[650px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/60 backdrop-blur-sm relative max-h-[650px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
           <table className="w-full border-collapse text-left text-xs text-slate-300">
             <thead>
-              <tr className="border-b-2 border-white/15 bg-slate-900/90 sticky top-0 z-30 backdrop-blur-md text-[11px] font-bold uppercase tracking-wider text-white">
+              <tr className="border-b-2 border-white/15 bg-slate-900/90 sticky top-0 z-30 backdrop-blur-sm text-[11px] font-bold uppercase tracking-wider text-white">
                 <th className="py-4 px-4 text-center w-12 border-r border-white/10 shadow-sm">No</th>
                 <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm">Komposit Budaya Keselamatan</th>
                 <th className="py-4 px-4 text-center min-w-[150px] border-r border-white/10 shadow-sm">Dataset</th>
@@ -667,7 +667,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 return (
                   <Fragment key={dimId}>
                     {/* Row 1: Rumah Sakit Anda */}
-                    <tr className="hover:bg-white/[0.01] transition-all border-b border-white/5">
+                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu border-b border-white/5">
                       <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-400 border-r border-white/10 bg-slate-900/40">
                         {idx + 1}
                       </td>
@@ -687,7 +687,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                       {uniquePositions.map((pos, posIdx) => {
                         const { percentage } = getPositionStats(dimId, pos);
                         return (
-                          <td key={pos} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                          <td key={`pos-rs-${dimId}-${pos}`} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                             {percentage !== null ? (
                               <span className={getCellColorClass(percentage)}>
                                 {percentage.toFixed(1)}%
@@ -701,7 +701,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                     </tr>
 
                     {/* Row 2: Rumah Sakit Percontohan (Pilot Hospital) */}
-                    <tr className="hover:bg-white/[0.01] transition-all bg-slate-900/20">
+                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu bg-slate-900/20">
                       <td className="py-3 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
                         RS Percontohan
                       </td>
@@ -709,7 +709,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                         -
                       </td>
                       {uniquePositions.map((pos, posIdx) => (
-                        <td key={pos} className={`py-3 px-5 text-center border-r border-white/10 ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                        <td key={`pos-pilot-${dimId}-${pos}`} className={`py-3 px-5 text-center border-r border-white/10 ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                           <div className="flex flex-col items-center justify-center">
                             <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
                             <span className="text-[9px] text-emerald-400/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
@@ -723,7 +723,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
               {/* Rata-rata Seluruh Komposit Rows */}
               {/* Row 1: Rumah Sakit Anda Average */}
-              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all">
+              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all transform-gpu">
                 <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10">
                   ★
                 </td>
@@ -743,7 +743,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 {uniquePositions.map((pos, posIdx) => {
                   const avgVal = getAverageCompositeForPosition(pos);
                   return (
-                    <td key={pos} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`pos-avg-rs-${pos}`} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                       {avgVal !== null ? (
                         <span className={getCellColorClass(avgVal)}>
                           {avgVal.toFixed(1)}%
@@ -757,7 +757,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               </tr>
 
               {/* Row 2: Rumah Sakit Percontohan Average */}
-              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all">
+              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all transform-gpu">
                 <td className="py-4 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
                   RS Percontohan
                 </td>
@@ -767,7 +767,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 {uniquePositions.map((pos, posIdx) => {
                   const avgB = getAverageBenchmark();
                   return (
-                    <td key={pos} className={`py-4 px-5 text-center border-r border-white/10 font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`pos-avg-pilot-${pos}`} className={`py-4 px-5 text-center border-r border-white/10 font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                       <span className={getCellColorClass(avgB)}>
                         {avgB.toFixed(1)}%
                       </span>
@@ -786,7 +786,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="bg-[#121826]/80 backdrop-blur-xl border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6 md:p-8 space-y-6 mt-8 md:mt-12"
+        className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md p-6 md:p-8 space-y-6 mt-8 md:mt-12"
       >
         <div className="space-y-3 border-b border-white/5 pb-5">
           <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN KOMPOSIT</span>
@@ -817,14 +817,14 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           
           {/* Legend */}
           <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3 lg:col-span-1">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.5)]"></div><span className="text-[10px] font-bold text-emerald-400">&ge; 75%</span></div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.5)]"></div><span className="text-[10px] font-bold text-yellow-400">50-74%</span></div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20"><div className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.5)]"></div><span className="text-[10px] font-bold text-rose-400">&lt; 50%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md"></div><span className="text-[10px] font-bold text-emerald-400">&ge; 75%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-md"></div><span className="text-[10px] font-bold text-yellow-400">50-74%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20"><div className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-md"></div><span className="text-[10px] font-bold text-rose-400">&lt; 50%</span></div>
           </div>
         </div>
 
         {/* The Scrollable Table Container */}
-        <div className="overflow-x-auto rounded-[16px] border border-white/10 shadow-2xl bg-slate-900/50 backdrop-blur-md relative custom-scrollbar pb-2">
+        <div className="overflow-x-auto rounded-[16px] border border-white/10 shadow-2xl bg-slate-900/50 backdrop-blur-sm relative custom-scrollbar pb-2">
           <table className="w-full text-left text-xs md:text-sm border-collapse">
             <thead className="bg-[#0f172a] text-slate-300 uppercase tracking-wider font-semibold border-b-2 border-indigo-500/30 sticky top-0 z-20">
               <tr>
@@ -854,7 +854,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 return (
                   <Fragment key={`unit-comp-${dimId}`}>
                     {/* Row 1: Rumah Sakit Anda */}
-                    <tr className="hover:bg-white/[0.01] transition-all border-b border-white/5">
+                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu border-b border-white/5">
                       <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-400 border-r border-white/10 bg-slate-900/40 sticky left-0 z-10">
                         {idx + 1}
                       </td>
@@ -873,7 +873,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                       {uniqueUnits.map((unit, unitIdx) => {
                         const { percentage } = getUnitStats(dimId, unit);
                         return (
-                          <td key={unit} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                          <td key={`unit-rs-${dimId}-${unit}`} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                             {percentage !== null ? (
                               <span className={getCellColorClass(percentage)}>
                                 {percentage.toFixed(1)}%
@@ -887,7 +887,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                     </tr>
                     
                     {/* Row 2: Rumah Sakit Percontohan (Pilot Hospital) */}
-                    <tr className="hover:bg-white/[0.01] transition-all bg-slate-900/20">
+                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu bg-slate-900/20">
                       <td className="py-3 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
                         RS Percontohan
                       </td>
@@ -895,7 +895,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                         -
                       </td>
                       {uniqueUnits.map((unit, unitIdx) => (
-                        <td key={unit} className={`py-3 px-5 text-center border-r border-white/10 ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                        <td key={`unit-pilot-${dimId}-${unit}`} className={`py-3 px-5 text-center border-r border-white/10 ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                           <div className="flex flex-col items-center justify-center">
                             <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
                             <span className="text-[9px] text-emerald-400/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
@@ -909,7 +909,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
               {/* Rata-rata Seluruh Komposit Rows */}
               {/* Row 1: Rumah Sakit Anda Average */}
-              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all">
+              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all transform-gpu">
                 <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10 sticky left-0 z-10">
                   ★
                 </td>
@@ -928,7 +928,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 {uniqueUnits.map((unit, unitIdx) => {
                   const avgVal = getAverageCompositeForUnit(unit);
                   return (
-                    <td key={unit} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`unit-avg-rs-${unit}`} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                       {avgVal !== null ? (
                         <span className={getCellColorClass(avgVal)}>
                           {avgVal.toFixed(1)}%
@@ -942,7 +942,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               </tr>
               
               {/* Row 2: Rumah Sakit Percontohan Average */}
-              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all">
+              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all transform-gpu">
                 <td className="py-4 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
                   RS Percontohan
                 </td>
@@ -952,7 +952,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 {uniqueUnits.map((unit, unitIdx) => {
                   const avgB = getAverageBenchmark();
                   return (
-                    <td key={unit} className={`py-4 px-5 text-center border-r border-white/10 font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`unit-avg-pilot-${unit}`} className={`py-4 px-5 text-center border-r border-white/10 font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                       <span className={getCellColorClass(avgB)}>
                         {avgB.toFixed(1)}%
                       </span>

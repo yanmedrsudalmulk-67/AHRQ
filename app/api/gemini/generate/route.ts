@@ -17,49 +17,55 @@ export async function POST(req: NextRequest) {
   try {
     const { prompt, model } = await req.json();
     
-    let attempts = 3;
+    const requestedModel = model || "gemini-3.5-flash";
+    const modelsToTry = [requestedModel];
+    if (requestedModel !== "gemini-3.1-flash-lite") {
+      modelsToTry.push("gemini-3.1-flash-lite");
+    }
+    
     let lastError: any = null;
     let response = null;
     
-    for (let i = 0; i < attempts; i++) {
-      try {
-        response = await ai.models.generateContent({
-          model: model || "gemini-3.5-flash",
-          contents: prompt,
-        });
-        if (response && response.text) {
-          return NextResponse.json({ text: response.text });
+    for (const targetModel of modelsToTry) {
+      // Try 1 time for the first model, and 2 times for the fallback model
+      const attempts = targetModel === "gemini-3.1-flash-lite" ? 2 : 1;
+      
+      for (let i = 0; i < attempts; i++) {
+        try {
+          console.log(`Attempting content generation with model: ${targetModel} (attempt ${i + 1}/${attempts})`);
+          response = await ai.models.generateContent({
+            model: targetModel,
+            contents: prompt,
+          });
+          if (response && response.text) {
+            console.log(`Successfully generated content with model: ${targetModel}`);
+            return NextResponse.json({ text: response.text });
+          }
+        } catch (err: any) {
+          lastError = err;
+          console.warn(`Gemini attempt ${i + 1} with model ${targetModel} failed:`, err);
+          
+          const errStatus = err.status || (err.error?.code) || 0;
+          const errMsg = err.message || "";
+          
+          // If it's a model not found error (404), do not retry the same model
+          if (errStatus === 404 || errMsg.includes("not found") || errMsg.includes("NOT_FOUND")) {
+            break;
+          }
+          
+          if (i < attempts - 1) {
+            await delay(1000 * (i + 1)); // Delay before retry
+          }
         }
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`Gemini attempt ${i + 1} failed:`, err);
-        
-        // If it's a 503 (service unavailable) or 429 (rate limit), wait and retry
-        const errStatus = err.status || (err.error?.code) || 0;
-        const errMsg = err.message || "";
-        
-        if (
-          errStatus === 503 || 
-          errStatus === 429 || 
-          errMsg.includes("503") || 
-          errMsg.includes("429") ||
-          errMsg.includes("high demand") || 
-          errMsg.includes("temporary") ||
-          errMsg.includes("UNAVAILABLE")
-        ) {
-          await delay(1200 * (i + 1)); // Linear backoff
-          continue;
-        }
-        break; // Non-retryable error, fail fast
       }
     }
     
-    throw lastError || new Error("Failed to generate content after multiple retries");
+    throw lastError || new Error("Failed to generate content with any model");
   } catch (error: any) {
     console.error("Gemini API Error:", error);
     return NextResponse.json(
       { error: "Failed to generate content: " + error.message },
-      { status: 503 } // Return 503 indicating temporary unavailability
+      { status: 503 }
     );
   }
 }

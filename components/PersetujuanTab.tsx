@@ -208,7 +208,7 @@ NOTIFY pgrst, reload_schema;`;
                   <button
                     type="button"
                     onClick={handleCopySql}
-                    className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-lg transition-all cursor-pointer text-[10px]"
+                    className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-lg transition-all transform-gpu cursor-pointer text-[10px]"
                   >
                     {copied ? (
                       <>
@@ -241,7 +241,7 @@ NOTIFY pgrst, reload_schema;`;
       )}
 
       {/* Main Table Card */}
-      <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+      <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
         <div className="p-6 border-b border-white/5 flex items-center justify-between">
           <h3 className="font-bold text-sm text-slate-200 uppercase tracking-wider">Daftar Permohonan Registrasi</h3>
           <span className="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full font-semibold font-mono">Total: {accounts.length}</span>
@@ -358,7 +358,7 @@ NOTIFY pgrst, reload_schema;`;
       </div>
 
       {/* Section 2: Email Sending Log History */}
-      <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl p-6 space-y-4">
+      <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl p-6 space-y-4">
         <div className="border-b border-white/5 pb-3">
           <h3 className="font-bold text-sm text-slate-200 uppercase tracking-wider flex items-center gap-2">
             <Mail className="w-4 h-4 text-cyan-400" />
@@ -407,7 +407,7 @@ NOTIFY pgrst, reload_schema;`;
 
       {/* MODAL 1: Detail Akun Rumah Sakit (12 Fields) */}
       {isDetailOpen && selectedAccount && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl my-8">
             <div className="bg-gradient-to-r from-indigo-900/40 to-slate-900/40 p-6 border-b border-slate-800 flex justify-between items-center">
               <h3 className="font-bold text-lg text-white flex items-center gap-2">
@@ -602,7 +602,7 @@ NOTIFY pgrst, reload_schema;`;
 
       {/* MODAL 2: Dialog Alasan Penolakan */}
       {isRejectOpen && selectedAccount && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center">
               <h3 className="font-bold text-white text-base">Alasan Penolakan Akun</h3>
@@ -628,7 +628,7 @@ NOTIFY pgrst, reload_schema;`;
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
                     placeholder="cth: Mohon lampirkan data penanggung jawab yang sah, atau verifikasi nomor email resmi RS Anda."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none text-slate-200"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
                   />
                 </div>
               </div>
@@ -656,7 +656,7 @@ NOTIFY pgrst, reload_schema;`;
 
       {/* MODAL 3: Konfirmasi Persetujuan */}
       {accountToApprove && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
             <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-indigo-950/20">
               <h3 className="font-bold text-white text-base flex items-center gap-2">
