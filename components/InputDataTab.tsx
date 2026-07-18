@@ -36,6 +36,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConnected, getSupabaseClient } from '../lib/supabase';
 import { getMasterPosisi, PosisiStaff, getMasterUnit, UnitKerja } from '../lib/db';
+import { mutate } from 'swr';
 
 interface RippleButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag' | 'style'> {
   isSelected?: boolean;
@@ -128,6 +129,7 @@ interface SurveyData {
 interface InputDataTabProps {
   currentRsName: string;
   identifier: string;
+  hospitalId?: string;
   isPublic?: boolean;
   onSaveSurvey: (survey: SurveyData) => Promise<any> | void;
 }
@@ -229,6 +231,61 @@ const getFeedbackCategory = (val: number | undefined, isReversed: boolean = fals
   }
 };
 
+const getCardBgClass = (category: string) => {
+  if (category === 'positive') {
+    return 'bg-white border-emerald-200 shadow-md ring-1 ring-emerald-500/10 text-slate-800';
+  }
+  if (category === 'neutral') {
+    return 'bg-white border-amber-200 shadow-md ring-1 ring-amber-500/10 text-slate-800';
+  }
+  if (category === 'negative') {
+    return 'bg-white border-rose-200 shadow-md ring-1 ring-rose-500/10 text-slate-800';
+  }
+  return 'bg-white border-slate-200 shadow-sm hover:border-slate-300 text-slate-800';
+};
+
+const getBadgeClass = (category: string) => {
+  if (category === 'positive') return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+  if (category === 'neutral') return 'bg-amber-50 text-amber-700 border border-amber-200';
+  if (category === 'negative') return 'bg-rose-50 text-rose-700 border border-rose-200';
+  return 'bg-slate-50 text-slate-500 border border-slate-200';
+};
+
+const getDoneBadgeClass = (hasAnswer: boolean) => {
+  if (hasAnswer) {
+    return 'text-emerald-600 flex items-center gap-1 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200';
+  }
+  return 'text-rose-600 flex items-center gap-1 bg-rose-50 px-2 py-1 rounded-lg border border-rose-200';
+};
+
+const getLikertButtonClass = (isSelected: boolean, hasAnswer: boolean, optVal: number, optCategory: string) => {
+  if (isSelected) {
+    if (optVal === 9) {
+      return 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold';
+    }
+    if (optCategory === 'positive') {
+      return 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold';
+    }
+    if (optCategory === 'neutral') {
+      return 'bg-amber-500 border-amber-400 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold';
+    }
+    if (optCategory === 'negative') {
+      return 'bg-rose-500 border-rose-400 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold';
+    }
+    return 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold';
+  }
+  
+  if (hasAnswer) {
+    return 'border-slate-100 bg-slate-50/50 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-300';
+  }
+  
+  if (optVal === 9) {
+    return 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300 hover:bg-slate-100/50';
+  }
+  
+  return 'border-slate-200 bg-slate-50 text-slate-600 hover:border-emerald-400 hover:bg-emerald-50/30';
+};
+
 export function getPublicBaseUrl() {
   if (typeof window === 'undefined') return '';
   const origin = window.location.origin;
@@ -238,7 +295,7 @@ export function getPublicBaseUrl() {
   return origin;
 }
 
-export default function InputDataTab({ currentRsName, identifier, isPublic, onSaveSurvey }: InputDataTabProps) {
+export default function InputDataTab({ currentRsName, identifier, hospitalId, isPublic, onSaveSurvey }: InputDataTabProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -359,8 +416,16 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
           expiryDate: '',
           maxRespondents: '',
           preventDuplicate: true,
-          customDomain: ''
-        }
+          customDomain: '',
+          hospital_id: hospitalId || identifier,
+          user_id: identifier,
+          created_by: identifier,
+          hospital_name: currentRsName
+        },
+        hospital_id: hospitalId || identifier,
+        user_id: identifier,
+        created_by: identifier,
+        hospital_name: currentRsName
       };
 
       await supabase
@@ -407,8 +472,16 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
           expiryDate: mergedConfig.expiryDate || '',
           maxRespondents: mergedConfig.maxRespondents || '',
           preventDuplicate: mergedConfig.preventDuplicate !== false,
-          customDomain: mergedConfig.customDomain || ''
-        }
+          customDomain: mergedConfig.customDomain || '',
+          hospital_id: hospitalId || identifier,
+          user_id: identifier,
+          created_by: identifier,
+          hospital_name: currentRsName
+        },
+        hospital_id: hospitalId || identifier,
+        user_id: identifier,
+        created_by: identifier,
+        hospital_name: currentRsName
       };
 
       const { error } = await supabase
@@ -859,6 +932,11 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
 
     try {
       await onSaveSurvey(finalSurvey);
+      try {
+        await mutate('ahrq_surveys');
+      } catch (mutateErr) {
+        console.warn("SWR mutation failed after survey submission:", mutateErr);
+      }
       setIsSubmitting(false);
       setShowConfirmModal(false);
       setStep(10); // Success step
@@ -877,6 +955,76 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
     }
   };
 
+  // Light Theme Premium Style Helper Functions
+  const getCardBgClass = (category: string) => {
+    switch (category) {
+      case 'positive':
+        return 'bg-white/95 backdrop-blur-md border-emerald-500/30 shadow-[0_12px_30px_-5px_rgba(16,185,129,0.06)]';
+      case 'neutral':
+        return 'bg-white/95 backdrop-blur-md border-amber-500/30 shadow-[0_12px_30px_-5px_rgba(245,158,11,0.06)]';
+      case 'negative':
+        return 'bg-white/95 backdrop-blur-md border-rose-500/30 shadow-[0_12px_30px_-5px_rgba(239,68,68,0.06)]';
+      default:
+        return 'bg-white/95 backdrop-blur-md border-slate-200 shadow-[0_10px_25px_-6px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.06)] hover:border-slate-300';
+    }
+  };
+
+  const getBadgeClass = (category: string) => {
+    switch (category) {
+      case 'positive':
+        return 'bg-emerald-50 text-emerald-600 border border-emerald-200/60';
+      case 'neutral':
+        return 'bg-amber-50 text-amber-600 border border-amber-200/60';
+      case 'negative':
+        return 'bg-rose-50 text-rose-600 border border-rose-200/60';
+      default:
+        return 'bg-slate-50 text-slate-500 border border-slate-200';
+    }
+  };
+
+  const getDoneBadgeClass = (isDone: boolean) => {
+    if (isDone) {
+      return (
+        <span className="text-emerald-600 flex items-center gap-1 bg-emerald-50/85 px-2.5 py-1.5 rounded-xl border border-emerald-200/60 text-[10px] font-bold">
+          <Check className="w-3.5 h-3.5" /> Selesai
+        </span>
+      );
+    }
+    return (
+      <span className="text-red-500 flex items-center gap-1 bg-red-50/85 px-2.5 py-1.5 rounded-xl border border-red-200/60 text-[10px] font-bold">
+        <AlertCircle className="w-3.5 h-3.5" /> Belum Dijawab
+      </span>
+    );
+  };
+
+  const getLikertButtonClass = (isSelected: boolean, hasAnswer: boolean, value: number, optCategory: string) => {
+    if (isSelected) {
+      if (value === 9) {
+        return 'bg-slate-600 border-slate-600 text-white shadow-md shadow-slate-500/20 font-bold scale-[1.02]';
+      }
+      if (optCategory === 'positive') {
+        return 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-500/20 font-bold scale-[1.02]';
+      }
+      if (optCategory === 'neutral') {
+        return 'bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-500/20 font-bold scale-[1.02]';
+      }
+      if (optCategory === 'negative') {
+        return 'bg-rose-600 border-rose-600 text-white shadow-md shadow-rose-500/20 font-bold scale-[1.02]';
+      }
+      return 'bg-emerald-600 border-emerald-600 text-white font-bold scale-[1.02]';
+    }
+
+    if (hasAnswer) {
+      return 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-300 hover:bg-slate-50';
+    }
+
+    if (value === 9) {
+      return 'border-slate-200 bg-slate-50/60 text-slate-500 hover:border-slate-300 hover:bg-slate-100/50';
+    }
+
+    return 'border-slate-200 bg-slate-50/60 text-slate-600 hover:border-emerald-500/30 hover:bg-emerald-50/20';
+  };
+
   // Verification helper for highlight border
   const isQuestionUnanswered = (section: string, id: number) => {
     if (section === 'A') return !ansA[id];
@@ -887,13 +1035,13 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
   };
 
   return (
-    <div id="survey-main-wrapper" className="bg-transparent text-slate-200 min-h-screen rounded-3xl border border-[#00244d]/30 overflow-hidden shadow-xl flex flex-col font-sans">
+    <div id="survey-main-wrapper" className="bg-transparent text-slate-800 min-h-screen rounded-3xl border border-slate-200/80 overflow-hidden shadow-xl flex flex-col font-sans">
       
       {/* 1 & 2. PREMIUM STICKY HEADER & PROGRESS */}
       <div className="sticky top-0 z-30 p-4 md:p-6 pb-2">
         <header 
           id="survey-sticky-header" 
-          className="bg-[#0c1a36]/80 backdrop-blur-xl border border-indigo-500/20 shadow-[0_8px_30px_rgba(59,130,246,0.12)] rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
+          className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
         >
           {/* Subtle gradient background effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 pointer-events-none" />
@@ -901,10 +1049,10 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
           {/* Top section: Title and Actions */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
             <div className="space-y-1">
-              <h1 className="text-xl md:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-100 to-indigo-100 leading-tight">
+              <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">
                 Kuesioner Survei Budaya Keselamatan Pasien
               </h1>
-              <p className="text-[11px] md:text-xs text-indigo-300/70 font-semibold tracking-wider uppercase">
+              <p className="text-[11px] md:text-xs text-slate-500 font-semibold tracking-wider uppercase">
                 AHRQ Hospital Survey on Patient Safety Culture Version 2.0
               </p>
             </div>
@@ -916,7 +1064,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.1)]"
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.05)]"
                   >
                     <Check className="w-3.5 h-3.5" />
                     <span>Tersimpan</span>
@@ -926,7 +1074,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
               {!isPublic && (
                 <button
                   onClick={() => setShowLinkModal(true)}
-                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                  className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(99,102,241,0.05)]"
                 >
                   <Share2 className="w-4 h-4" />
                   Bagikan Link
@@ -938,22 +1086,22 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
           {/* Bottom section: Progress Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between w-full relative z-10 pt-2 gap-3 md:gap-6">
             <div className="shrink-0">
-              <h3 className="text-[10px] md:text-xs font-bold text-indigo-300/80 uppercase tracking-widest">
+              <h3 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">
                 Progres Pengisian Kuesioner
               </h3>
             </div>
             
             <div className="flex items-center gap-3 flex-1 w-full">
-              <span className="text-xs font-bold text-indigo-200 tabular-nums shrink-0">
+              <span className="text-xs font-bold text-slate-600 tabular-nums shrink-0">
                 {answeredCount}/{totalQuestions}
               </span>
-              <div className="flex-1 bg-[#020918]/60 h-3.5 rounded-full overflow-hidden relative shadow-inner border border-white/10">
+              <div className="flex-1 bg-slate-100 h-3.5 rounded-full overflow-hidden relative shadow-inner border border-slate-200/50">
                 <div 
-                  className="bg-gradient-to-r from-blue-500 via-indigo-400 to-cyan-400 h-full rounded-full transition-all transform-gpu duration-500 ease-out shadow-[0_0_12px_rgba(34,211,238,0.6)]" 
+                  className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 h-full rounded-full transition-all transform-gpu duration-500 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]" 
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="text-sm font-extrabold text-cyan-400 w-10 text-right shrink-0 tabular-nums">
+              <span className="text-sm font-extrabold text-indigo-600 w-10 text-right shrink-0 tabular-nums">
                 {progressPercent}%
               </span>
             </div>
@@ -977,12 +1125,12 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
             >
               {/* Header card for the current section */}
               {step > 0 && step < 9 && (
-                <div className="bg-[#0c1a36]/70 backdrop-blur-sm rounded-3xl border border-[#00244d]/40 p-8 shadow-sm space-y-3 relative overflow-hidden">
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-3 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400" />
-                  <span className="inline-flex items-center px-3 py-1 bg-emerald-500/10 text-emerald-700 text-xs font-extrabold rounded-full tracking-wide">
+                  <span className="inline-flex items-center px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-extrabold rounded-full tracking-wide">
                     {SECTIONS[step].label}
                   </span>
-                  <h2 className="text-2xl font-bold text-slate-100">{SECTIONS[step].title}</h2>
+                  <h2 className="text-2xl font-bold text-slate-800">{SECTIONS[step].title}</h2>
                   <p className="text-sm text-slate-400 leading-relaxed font-light">{SECTIONS[step].desc}</p>
                 </div>
               )}
@@ -991,36 +1139,36 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
               {step === 0 && (
                 <div className="space-y-6">
                   {/* PETUNJUK CARD (PREMIUM & MODERN) */}
-                  <div className="bg-[#0c1a36]/40 backdrop-blur-sm rounded-3xl border border-[#00244d]/30 p-6 md:p-8 shadow-2xl relative overflow-hidden space-y-6">
-                    <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500/80 via-teal-500/80 to-cyan-500/80 animate-pulse" />
+                  <div className="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-sm relative overflow-hidden space-y-6">
+                    <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
                     
                     <div className="flex items-center gap-3">
-                      <div className="p-2.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl shadow-inner">
+                      <div className="p-2.5 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl shadow-sm">
                         <BookOpen className="w-5 h-5" />
                       </div>
                       <div>
-                        <span className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase font-mono">INFORMASI SURVEI</span>
-                        <h2 className="text-xl font-bold text-slate-100">Petunjuk Pengisian</h2>
+                        <span className="text-[10px] font-bold text-emerald-600 tracking-widest uppercase font-mono">INFORMASI SURVEI</span>
+                        <h2 className="text-xl font-bold text-slate-800">Petunjuk Pengisian</h2>
                       </div>
                     </div>
 
-                    <p className="text-sm text-slate-300 leading-relaxed font-normal">
-                      Survei ini meminta pendapat Anda tentang masalah keselamatan pasien, kesalahan medis, dan pelaporan kejadian di rumah sakit Anda dan akan memakan waktu sekitar 10-15 menit untuk menyelesaikannya. Jika ada pertanyaan yang tidak berlaku untuk Anda atau rumah sakit Anda atau Anda tidak tahu jawabannya, silakan pilih <span className="text-emerald-400 font-semibold">{`"Tidak Berlaku atau Tidak Tahu."`}</span>
+                    <p className="text-sm text-slate-600 leading-relaxed font-normal">
+                      Survei ini meminta pendapat Anda tentang masalah keselamatan pasien, kesalahan medis, dan pelaporan kejadian di rumah sakit Anda dan akan memakan waktu sekitar 10-15 menit untuk menyelesaikannya. Jika ada pertanyaan yang tidak berlaku untuk Anda atau rumah sakit Anda atau Anda tidak tahu jawabannya, silakan pilih <span className="text-emerald-600 font-semibold">{`"Tidak Berlaku atau Tidak Tahu."`}</span>
                     </p>
 
                     {/* DEFINITION BOX (OUTLINED, PREMIUM GLOW) */}
-                    <div className="border border-[#00244d]/30 bg-[#020918]/60 rounded-2xl p-5 md:p-6 space-y-4 shadow-inner relative">
+                    <div className="border border-slate-100 bg-slate-50/50 rounded-2xl p-5 md:p-6 space-y-4 shadow-inner relative">
                       <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-md" />
-                        <p className="text-xs text-slate-300 leading-relaxed font-light">
-                          <span className="text-emerald-400 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Keselamatan pasien"`}</span> didefinisikan sebagai penghindaran and pencegahan cedera pasien atau kejadian yang tidak diinginkan yang diakibatkan oleh proses pemberian layanan kesehatan.
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0 shadow-sm" />
+                        <p className="text-xs text-slate-600 leading-relaxed font-light">
+                          <span className="text-emerald-600 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Keselamatan pasien"`}</span> didefinisikan sebagai penghindaran and pencegahan cedera pasien atau kejadian yang tidak diinginkan yang diakibatkan oleh proses pemberian layanan kesehatan.
                         </p>
                       </div>
 
                       <div className="flex items-start gap-3">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-2 shrink-0 shadow-md" />
-                        <p className="text-xs text-slate-300 leading-relaxed font-light">
-                          <span className="text-emerald-400 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Kejadian keselamatan pasien"`}</span> didefinisikan sebagai segala jenis kesalahan, kekeliruan, atau insiden yang berhubungan dengan perawatan kesehatan, terlepas dari apakah hal tersebut mengakibatkan cedera pada pasien atau tidak.
+                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-2 shrink-0 shadow-sm" />
+                        <p className="text-xs text-slate-600 leading-relaxed font-light">
+                          <span className="text-emerald-600 font-bold underline decoration-emerald-500/30 underline-offset-4">{`"Kejadian keselamatan pasien"`}</span> didefinisikan sebagai segala jenis kesalahan, kekeliruan, atau insiden yang berhubungan dengan perawatan kesehatan, terlepas dari apakah hal tersebut mengakibatkan cedera pada pasien atau tidak.
                         </p>
                       </div>
                     </div>
@@ -1028,35 +1176,35 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
 
                   {/* IDENTIFIKASI PROFIL RESPONDEN */}
                   <div
-                    className={`backdrop-blur-sm rounded-3xl border p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
                       posisiStaf && unitKerja 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
+                        ? 'bg-white border-emerald-300 ring-1 ring-emerald-500/10' 
+                        : 'bg-white border-slate-200 hover:border-slate-300'
                     }`}
                   >
                     <div className="space-y-2">
-                      <span className="text-xs font-bold text-emerald-400 tracking-wider font-mono">STEP 1</span>
-                      <h2 className="text-2xl font-bold text-slate-100">Identifikasi Profil Responden</h2>
-                      <p className="text-xs text-slate-400">Silakan masukkan identitas opsional Anda sebelum melangkah ke lembar kuesioner utama AHRQ.</p>
+                      <span className="text-xs font-bold text-emerald-600 tracking-wider font-mono">STEP 1</span>
+                      <h2 className="text-2xl font-bold text-slate-800">Identifikasi Profil Responden</h2>
+                      <p className="text-xs text-slate-500">Silakan masukkan identitas opsional Anda sebelum melangkah ke lembar kuesioner utama AHRQ.</p>
                     </div>
 
-                    <hr className="border-[#00244d]/30" />
+                    <hr className="border-slate-100" />
 
                     <div className="space-y-4">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                            <Users className="w-4 h-4 text-emerald-500" /> Posisi Staf Anda di Rumah Sakit
+                          <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                            <Users className="w-4 h-4 text-emerald-600" /> Posisi Staf Anda di Rumah Sakit
                           </label>
                           <button
                             type="button"
                             onClick={() => setIsPosisiModalOpen(true)}
-                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-sm"
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-slate-100/50"
                           >
-                            <span className={posisiStaf ? 'text-slate-100' : 'text-slate-400'}>
+                            <span className={posisiStaf ? 'text-slate-800' : 'text-slate-400'}>
                               {posisiStaf === 'Lainnya' && customPosisiStaf ? customPosisiStaf : (posisiStaf || 'Pilih Posisi Anda')}
                             </span>
-                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                            <ChevronRight className="w-4 h-4 text-slate-500" />
                           </button>
                           
                           <AnimatePresence>
@@ -1075,7 +1223,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                                     triggerAutoSave({ customPosisiStaf: e.target.value });
                                   }}
                                   placeholder="Ketik nama jabatan Anda di sini..."
-                                  className="w-full bg-[#0c1a36]/60 border border-emerald-500/30 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:bg-[#0c1a36] transition-all"
+                                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white transition-all"
                                 />
                               </motion.div>
                             )}
@@ -1083,18 +1231,18 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                         </div>
 
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4 text-emerald-500" /> Unit / Area Kerja Utama Anda
+                          <label className="text-xs font-bold text-slate-500 flex items-center gap-1.5">
+                            <MapPin className="w-4 h-4 text-emerald-600" /> Unit / Area Kerja Utama Anda
                           </label>
                           <button
                             type="button"
                             onClick={() => setIsUnitModalOpen(true)}
-                            className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-sm"
+                            className="w-full bg-slate-50/50 border border-slate-200 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-slate-100/50"
                           >
-                            <span className={unitKerja ? 'text-slate-100' : 'text-slate-400'}>
+                            <span className={unitKerja ? 'text-slate-800' : 'text-slate-400'}>
                               {unitKerja === 'Lainnya' && customUnitKerja ? customUnitKerja : (unitKerja || 'Pilih Unit / Area Kerja')}
                             </span>
-                            <ChevronRight className="w-4 h-4 text-slate-400" />
+                            <ChevronRight className="w-4 h-4 text-slate-500" />
                           </button>
                           
                           <AnimatePresence>
@@ -1113,7 +1261,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                                     triggerAutoSave({ customUnitKerja: e.target.value });
                                   }}
                                   placeholder="Ketik nama unit kerja Anda di sini..."
-                                  className="w-full bg-[#0c1a36]/60 border border-emerald-500/30 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:bg-[#0c1a36] transition-all"
+                                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm text-slate-800 outline-none focus:border-indigo-500 focus:bg-white transition-all"
                                 />
                               </motion.div>
                             )}
@@ -1130,7 +1278,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                         className={`px-6 py-3.5 font-bold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu ${
                           posisiStaf && unitKerja 
                             ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 cursor-pointer' 
-                            : 'bg-[#020918]/40 text-slate-500 cursor-not-allowed border border-[#00244d]/20'
+                            : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
                         }`}
                       >
                         Mulai Pengisian Kuesioner <ArrowRight className="w-4 h-4" />
@@ -1150,37 +1298,24 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`A-${st.id}`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
                         {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>{st.code}</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>{st.code}</span>
                             
                             {/* Hover tooltip for dimension */}
                             <div className="relative group">
-                              <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-500/20/50 cursor-pointer">
+                              <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200 cursor-pointer">
                                 {DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama || 'Dimensi'}
                               </span>
                               
                               {/* Tooltip text bubble */}
-                              <div className="absolute bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-900 text-white text-[11px] rounded-xl shadow-xl z-50 leading-relaxed">
+                              <div className="absolute bottom-full mb-2 hidden group-hover:block w-64 p-3 bg-slate-800 text-slate-100 text-[11px] rounded-xl shadow-lg z-50 leading-relaxed">
                                 <span className="font-bold block mb-1">{DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama}</span>
                                 {DIMENSI_AHRQ.find(d => d.id === st.dim)?.desc}
                               </div>
@@ -1190,30 +1325,26 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {/* Response Quality Indicator */}
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Respon Positif
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Respon Netral
                               </span>
                             )}
                             {category === 'negative' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Respon Negatif
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-base md:text-lg font-bold text-slate-200 leading-relaxed">{st.text}</p>
+                        <p className="text-base md:text-lg font-bold text-slate-800 leading-relaxed">{st.text}</p>
 
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {LIKERT_OPTIONS.map((opt) => {
@@ -1225,23 +1356,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('A', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
-                                  isSelected 
-                                    ? opt.value === 9
-                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
-                                      : optCategory === 'positive'
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                        : optCategory === 'neutral'
-                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
-                                        : optCategory === 'negative'
-                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
-                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
-                                    : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : opt.value === 9
-                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
-                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                                }`}
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${getLikertButtonClass(isSelected, ans !== undefined, opt.value, optCategory)}`}
                               >
                                 <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
                                   {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -1267,29 +1382,16 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`B-${st.id}`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
                         {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>{st.code}</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-500/20/50">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>{st.code}</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">
                               {DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama || 'Dimensi'}
                             </span>
                           </div>
@@ -1297,30 +1399,26 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {/* Response Quality Indicator */}
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Respon Positif
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Respon Netral
                               </span>
                             )}
                             {category === 'negative' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Respon Negatif
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-base md:text-lg font-bold text-slate-200 leading-relaxed">{st.text}</p>
+                        <p className="text-base md:text-lg font-bold text-slate-800 leading-relaxed">{st.text}</p>
 
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {LIKERT_OPTIONS.map((opt) => {
@@ -1332,23 +1430,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('B', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
-                                  isSelected 
-                                    ? opt.value === 9
-                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
-                                      : optCategory === 'positive'
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                        : optCategory === 'neutral'
-                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
-                                        : optCategory === 'negative'
-                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
-                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
-                                    : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : opt.value === 9
-                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
-                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                                }`}
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${getLikertButtonClass(isSelected, ans !== undefined, opt.value, optCategory)}`}
                               >
                                 <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
                                   {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -1374,29 +1456,16 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`C-${st.id}`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
                         {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>{st.code}</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-500/20/50">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>{st.code}</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">
                               {DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama || 'Dimensi'}
                             </span>
                           </div>
@@ -1404,30 +1473,26 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {/* Response Quality Indicator */}
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Respon Positif
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Respon Netral
                               </span>
                             )}
                             {category === 'negative' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Respon Negatif
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-base md:text-lg font-bold text-slate-200 leading-relaxed">{st.text}</p>
+                        <p className="text-base md:text-lg font-bold text-slate-800 leading-relaxed">{st.text}</p>
 
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {FREQUENCY_OPTIONS.map((opt) => {
@@ -1439,23 +1504,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('C', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
-                                  isSelected 
-                                    ? opt.value === 9
-                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
-                                      : optCategory === 'positive'
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                        : optCategory === 'neutral'
-                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
-                                        : optCategory === 'negative'
-                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
-                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
-                                    : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : opt.value === 9
-                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
-                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                                }`}
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${getLikertButtonClass(isSelected, ans !== undefined, opt.value, optCategory)}`}
                               >
                                 <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
                                   {isSelected && <Check className="w-3.5 h-3.5" />}

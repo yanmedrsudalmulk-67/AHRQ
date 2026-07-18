@@ -125,45 +125,45 @@ NOTIFY pgrst, reload_schema;`;
     <div className="space-y-8 font-sans">
       
       {/* Header section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/5 pb-5">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-5">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center gap-2">
-            <ShieldCheck className="w-7 h-7 text-indigo-400" />
+          <h2 className="text-2xl font-bold tracking-tight text-slate-800 flex items-center gap-2">
+            <ShieldCheck className="w-7 h-7 text-indigo-600" />
             Persetujuan Akun Rumah Sakit
           </h2>
-          <p className="text-xs text-slate-400 mt-1">Verifikasi pendaftaran fasyankes baru, aktifkan akun, dan kirimkan email notifikasi</p>
+          <p className="text-xs text-slate-500 mt-1">Verifikasi pendaftaran fasyankes baru, aktifkan akun, dan kirimkan email notifikasi</p>
         </div>
       </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <div className="p-5 bg-yellow-500/5 rounded-2xl border border-yellow-500/20 flex items-center gap-4 shadow-xl">
-          <div className="p-3 bg-yellow-500/10 text-yellow-400 rounded-xl">
+        <div className="p-5 bg-white rounded-2xl border border-yellow-200 flex items-center gap-4 shadow-md">
+          <div className="p-3 bg-yellow-50 text-yellow-600 rounded-xl">
             <Clock className="w-6 h-6 animate-pulse" />
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Menunggu Persetujuan</span>
-            <span className="text-2xl font-extrabold text-yellow-400 mt-0.5 block">{totalPending} RS</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Menunggu Persetujuan</span>
+            <span className="text-2xl font-extrabold text-yellow-600 mt-0.5 block">{totalPending} RS</span>
           </div>
         </div>
 
-        <div className="p-5 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 flex items-center gap-4 shadow-xl">
-          <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
+        <div className="p-5 bg-white rounded-2xl border border-emerald-200 flex items-center gap-4 shadow-md">
+          <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
             <CheckCircle className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Akun Aktif</span>
-            <span className="text-2xl font-extrabold text-emerald-400 mt-0.5 block">{totalActive} RS</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Akun Aktif</span>
+            <span className="text-2xl font-extrabold text-emerald-600 mt-0.5 block">{totalActive} RS</span>
           </div>
         </div>
 
-        <div className="p-5 bg-red-500/5 rounded-2xl border border-red-500/20 flex items-center gap-4 shadow-xl">
-          <div className="p-3 bg-red-500/10 text-red-400 rounded-xl">
+        <div className="p-5 bg-white rounded-2xl border border-red-200 flex items-center gap-4 shadow-md">
+          <div className="p-3 bg-red-50 text-red-600 rounded-xl">
             <XCircle className="w-6 h-6" />
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">Pendaftaran Ditolak</span>
-            <span className="text-2xl font-extrabold text-red-400 mt-0.5 block">{totalRejected} RS</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500 block">Pendaftaran Ditolak</span>
+            <span className="text-2xl font-extrabold text-red-600 mt-0.5 block">{totalRejected} RS</span>
           </div>
         </div>
       </div>
@@ -178,7 +178,7 @@ NOTIFY pgrst, reload_schema;`;
 
       {errorMsg && (
         <div className="space-y-4">
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 text-sm font-medium flex items-center gap-2">
+          <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm font-medium flex items-center gap-2">
             <AlertCircle className="w-5 h-5 shrink-0" />
             {errorMsg}
           </div>
@@ -189,21 +189,21 @@ NOTIFY pgrst, reload_schema;`;
             errorMsg.toLowerCase().includes('relation') || 
             errorMsg.toLowerCase().includes('email_notifications') ||
             errorMsg.toLowerCase().includes('does not exist')) && (
-            <div className="p-5 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl space-y-4 text-left">
+            <div className="p-5 bg-indigo-50 border border-indigo-200 rounded-2xl space-y-4 text-left">
               <div className="flex items-start gap-3">
-                <div className="p-2 bg-indigo-500/20 text-indigo-300 rounded-lg shrink-0">
+                <div className="p-2 bg-indigo-100 text-indigo-700 rounded-lg shrink-0">
                   <Database className="w-5 h-5" />
                 </div>
                 <div className="space-y-1">
-                  <h4 className="text-sm font-bold text-white">Diperlukan Update Skema Database Supabase</h4>
-                  <p className="text-xs text-slate-300 leading-relaxed">
+                  <h4 className="text-sm font-bold text-slate-800">Diperlukan Update Skema Database Supabase</h4>
+                  <p className="text-xs text-slate-600 leading-relaxed">
                     Sistem mendeteksi bahwa database Supabase Anda belum memiliki kolom baru untuk persetujuan akun & notifikasi email. Silakan jalankan kueri SQL di bawah ini untuk memperbarui database Anda secara instan:
                   </p>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between items-center text-[11px] text-slate-400 font-semibold px-1">
+                <div className="flex justify-between items-center text-[11px] text-slate-500 font-semibold px-1">
                   <span>MIGRASI SQL (Salin & Jalankan di Supabase SQL Editor):</span>
                   <button
                     type="button"
@@ -222,18 +222,18 @@ NOTIFY pgrst, reload_schema;`;
                   </button>
                 </div>
 
-                <pre className="p-3 bg-black/60 rounded-xl border border-slate-800 text-[10px] font-mono text-indigo-300 overflow-x-auto max-h-40 leading-relaxed select-all">
+                <pre className="p-3 bg-slate-900 rounded-xl border border-slate-850 text-[10px] font-mono text-indigo-200 overflow-x-auto max-h-40 leading-relaxed select-all">
                   {sqlMigration}
                 </pre>
               </div>
 
-              <div className="p-3 bg-slate-950/50 rounded-xl border border-slate-800 text-[11px] text-slate-300 space-y-1.5 leading-relaxed">
-                <p className="font-bold text-white">🛠️ Langkah Mudah Update Database:</p>
+              <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
+                <p className="font-bold text-slate-800">🛠️ Langkah Mudah Update Database:</p>
                 <p>1. Masuk ke dashboard <strong>Supabase</strong> Anda.</p>
                 <p>2. Pilih proyek Anda, lalu klik menu <strong>SQL Editor</strong> di bilah sisi kiri.</p>
                 <p>3. Klik <strong>New Query</strong>, tempel (paste) kode SQL yang disalin di atas.</p>
                 <p>4. Klik tombol <strong>Run</strong> (atau tekan Ctrl+Enter / Cmd+Enter).</p>
-                <p className="text-emerald-400 font-medium">✓ Selesai! Setelah itu, silakan klik ulang tombol persetujuan atau penolakan akun.</p>
+                <p className="text-emerald-700 font-medium">✓ Selesai! Setelah itu, silakan klik ulang tombol persetujuan atau penolakan akun.</p>
               </div>
             </div>
           )}
@@ -241,21 +241,21 @@ NOTIFY pgrst, reload_schema;`;
       )}
 
       {/* Main Table Card */}
-      <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
-        <div className="p-6 border-b border-white/5 flex items-center justify-between">
-          <h3 className="font-bold text-sm text-slate-200 uppercase tracking-wider">Daftar Permohonan Registrasi</h3>
-          <span className="text-xs bg-slate-800 text-slate-300 px-2.5 py-1 rounded-full font-semibold font-mono">Total: {accounts.length}</span>
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-md overflow-hidden">
+        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+          <h3 className="font-bold text-sm text-slate-700 uppercase tracking-wider">Daftar Permohonan Registrasi</h3>
+          <span className="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold font-mono">Total: {accounts.length}</span>
         </div>
 
         <div className="overflow-x-auto">
           {accounts.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 space-y-2">
+            <div className="p-12 text-center text-slate-400 space-y-2">
               <Building2 className="w-12 h-12 mx-auto opacity-30" />
               <p className="text-sm">Belum ada data pendaftaran akun rumah sakit di database.</p>
             </div>
           ) : (
-            <table className="w-full border-collapse text-left text-xs text-slate-300 divide-y divide-white/5">
-              <thead className="bg-slate-950/60 text-slate-400 font-bold uppercase tracking-wider text-[11px]">
+            <table className="w-full border-collapse text-left text-xs text-slate-700 divide-y divide-slate-100">
+              <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider text-[11px] border-b border-slate-200">
                 <tr>
                   <th className="p-4 text-center w-12">No</th>
                   <th className="p-4">Nama RS / Wilayah</th>
@@ -266,47 +266,47 @@ NOTIFY pgrst, reload_schema;`;
                   <th className="p-4 text-center">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-100">
                 {accounts.map((acc, index) => (
-                  <tr key={acc.id} className="hover:bg-white/[0.02] transition-colors group">
+                  <tr key={acc.id} className="hover:bg-slate-50/60 transition-colors group">
                     <td className="p-4 text-center font-bold text-slate-400 font-mono">{index + 1}</td>
                     <td className="p-4">
-                      <div className="font-bold text-sm text-white group-hover:text-indigo-300 transition-colors">{acc.namaRs}</div>
-                      <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3 h-3 text-slate-500" />
+                      <div className="font-bold text-sm text-slate-800 group-hover:text-indigo-600 transition-colors">{acc.namaRs}</div>
+                      <div className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                        <MapPin className="w-3 h-3 text-slate-400" />
                         {acc.kotaKab || '-'}, {acc.provinsi || '-'}
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="flex items-center gap-1.5 text-slate-200">
+                      <div className="flex items-center gap-1.5 text-slate-700">
                         <Mail className="w-3.5 h-3.5 text-slate-400" />
                         {acc.emailRs || '-'}
                       </div>
-                      <div className="flex items-center gap-1.5 text-slate-400 text-[10px] mt-0.5">
-                        <Phone className="w-3.5 h-3.5 text-slate-500" />
+                      <div className="flex items-center gap-1.5 text-slate-500 text-[10px] mt-0.5">
+                        <Phone className="w-3.5 h-3.5 text-slate-400" />
                         {acc.noWhatsapp || '-'}
                       </div>
                     </td>
                     <td className="p-4">
-                      <div className="font-medium text-slate-200">{acc.penanggungJawab || '-'}</div>
-                      <div className="text-[10px] text-indigo-400 mt-0.5">{acc.jabatan || '-'}</div>
+                      <div className="font-medium text-slate-700">{acc.penanggungJawab || '-'}</div>
+                      <div className="text-[10px] text-indigo-600 mt-0.5">{acc.jabatan || '-'}</div>
                     </td>
-                    <td className="p-4 text-center font-mono text-slate-400">
+                    <td className="p-4 text-center font-mono text-slate-500">
                       {acc.created_at ? new Date(acc.created_at).toLocaleDateString('id-ID') : '-'}
                     </td>
                     <td className="p-4 text-center">
                       {acc.status === 'Pending' && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-yellow-500/10 text-yellow-400 rounded-full font-bold text-[10px]">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-yellow-50 text-yellow-600 rounded-full font-bold text-[10px] border border-yellow-200">
                           <Clock className="w-3 h-3 animate-spin" style={{ animationDuration: '3s' }} /> Pending
                         </span>
                       )}
                       {acc.status === 'Active' && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-bold text-[10px]">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-600 rounded-full font-bold text-[10px] border border-emerald-200">
                           <CheckCircle className="w-3 h-3" /> Aktif
                         </span>
                       )}
                       {acc.status === 'Rejected' && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-500/10 text-red-400 rounded-full font-bold text-[10px]">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-red-50 text-red-600 rounded-full font-bold text-[10px] border border-red-200">
                           <XCircle className="w-3 h-3" /> Ditolak
                         </span>
                       )}
@@ -319,7 +319,7 @@ NOTIFY pgrst, reload_schema;`;
                             setIsDetailOpen(true);
                           }}
                           title="Lihat Detail"
-                          className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition-colors cursor-pointer"
+                          className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-lg transition-colors cursor-pointer border border-slate-200"
                         >
                           <Eye className="w-3.5 h-3.5" />
                         </button>
@@ -358,45 +358,45 @@ NOTIFY pgrst, reload_schema;`;
       </div>
 
       {/* Section 2: Email Sending Log History */}
-      <div className="bg-gradient-to-b from-white/[0.04] to-white/[0.01] backdrop-blur-sm rounded-2xl border border-white/10 shadow-2xl p-6 space-y-4">
-        <div className="border-b border-white/5 pb-3">
-          <h3 className="font-bold text-sm text-slate-200 uppercase tracking-wider flex items-center gap-2">
-            <Mail className="w-4 h-4 text-cyan-400" />
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-md p-6 space-y-4">
+        <div className="border-b border-slate-100 pb-3">
+          <h3 className="font-bold text-sm text-slate-800 uppercase tracking-wider flex items-center gap-2">
+            <Mail className="w-4 h-4 text-indigo-600" />
             Riwayat Pengiriman Email & Notifikasi (Database Logs)
           </h3>
-          <p className="text-[11px] text-slate-400 mt-1">
+          <p className="text-[11px] text-slate-500 mt-1">
             Log real-time yang memverifikasi bahwa sistem otomatis mengirimkan email notifikasi pendaftaran ke Administrator Utama (<strong>yanmedrsudalmulk@gmail.com</strong>) dan email aktivasi/penolakan ke Rumah Sakit.
           </p>
         </div>
 
         <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
           {emailLogs.length === 0 ? (
-            <p className="text-xs text-slate-500 italic text-center py-6">Belum ada email yang dikirim oleh sistem.</p>
+            <p className="text-xs text-slate-400 italic text-center py-6">Belum ada email yang dikirim oleh sistem.</p>
           ) : (
             emailLogs.map((log) => (
               <div 
                 key={log.id} 
                 className={`p-4 rounded-xl border text-xs leading-relaxed space-y-2 ${
                   log.type === 'admin_notification' 
-                    ? 'bg-yellow-500/5 border-yellow-500/10' 
+                    ? 'bg-yellow-50 border-yellow-100 text-yellow-800' 
                     : log.type === 'approval' 
-                      ? 'bg-emerald-500/5 border-emerald-500/10' 
-                      : 'bg-red-500/5 border-red-500/10'
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
+                      : 'bg-red-50 border-red-100 text-red-800'
                 }`}
               >
                 <div className="flex justify-between items-start">
                   <div className="space-y-0.5">
-                    <p className="font-bold text-white text-sm">{log.subject}</p>
-                    <p className="text-[10px] text-slate-400">
-                      <strong>Kepada:</strong> <span className="text-indigo-300">{log.to_email}</span> • 
-                      <strong> Tipe:</strong> <span className="uppercase text-cyan-400 font-mono font-bold text-[9px] ml-1">{log.type}</span>
+                    <p className="font-bold text-slate-800 text-sm">{log.subject}</p>
+                    <p className="text-[10px] text-slate-500">
+                      <strong>Kepada:</strong> <span className="text-indigo-600">{log.to_email}</span> • 
+                      <strong> Tipe:</strong> <span className="uppercase text-slate-700 font-mono font-bold text-[9px] ml-1">{log.type}</span>
                     </p>
                   </div>
                   <span className="text-[10px] text-slate-500 font-mono">
                     {log.created_at ? new Date(log.created_at).toLocaleTimeString('id-ID') : '-'}
                   </span>
                 </div>
-                <div className="bg-black/40 p-3 rounded-lg border border-white/5 font-mono text-[11px] text-slate-300 whitespace-pre-wrap leading-normal">
+                <div className="bg-white p-3 rounded-lg border border-slate-200 font-mono text-[11px] text-slate-700 whitespace-pre-wrap leading-normal">
                   {log.body}
                 </div>
               </div>
@@ -407,16 +407,16 @@ NOTIFY pgrst, reload_schema;`;
 
       {/* MODAL 1: Detail Akun Rumah Sakit (12 Fields) */}
       {isDetailOpen && selectedAccount && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl my-8">
-            <div className="bg-gradient-to-r from-indigo-900/40 to-slate-900/40 p-6 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="font-bold text-lg text-white flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-indigo-400" />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl my-8">
+            <div className="bg-slate-50 p-6 border-b border-slate-200 flex justify-between items-center">
+              <h3 className="font-bold text-lg text-slate-800 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-indigo-600" />
                 Detail Registrasi Akun Rumah Sakit
               </h3>
               <button 
                 onClick={() => { setIsDetailOpen(false); setSelectedAccount(null); }}
-                className="text-slate-400 hover:text-white transition-colors cursor-pointer"
+                className="text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -425,21 +425,21 @@ NOTIFY pgrst, reload_schema;`;
             <div className="p-6 space-y-6 max-h-[70dvh] overflow-y-auto">
               
               {/* Status Section */}
-              <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex justify-between items-center">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Status Permohonan</span>
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 flex justify-between items-center">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status Permohonan</span>
                 <div>
                   {selectedAccount.status === 'Pending' && (
-                    <span className="px-3 py-1 bg-yellow-500/10 text-yellow-400 rounded-full font-bold text-xs flex items-center gap-1.5">
+                    <span className="px-3 py-1 bg-yellow-50 text-yellow-600 rounded-full font-bold text-xs flex items-center gap-1.5 border border-yellow-200">
                       <Clock className="w-3.5 h-3.5 animate-spin" /> Menunggu Persetujuan
                     </span>
                   )}
                   {selectedAccount.status === 'Active' && (
-                    <span className="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full font-bold text-xs flex items-center gap-1.5">
+                    <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full font-bold text-xs flex items-center gap-1.5 border border-emerald-200">
                       <CheckCircle className="w-3.5 h-3.5" /> Aktif / Disetujui
                     </span>
                   )}
                   {selectedAccount.status === 'Rejected' && (
-                    <span className="px-3 py-1 bg-red-500/10 text-red-400 rounded-full font-bold text-xs flex items-center gap-1.5">
+                    <span className="px-3 py-1 bg-red-50 text-red-600 rounded-full font-bold text-xs flex items-center gap-1.5 border border-red-200">
                       <XCircle className="w-3.5 h-3.5" /> Ditolak
                     </span>
                   )}
@@ -448,58 +448,58 @@ NOTIFY pgrst, reload_schema;`;
 
               {/* Grid 1: Identitas Fasyankes */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase text-indigo-400 tracking-wider flex items-center gap-1 border-b border-slate-800 pb-1">
+                <h4 className="text-xs font-bold uppercase text-indigo-600 tracking-wider flex items-center gap-1 border-b border-slate-200 pb-1">
                   <MapPin className="w-3.5 h-3.5" /> 1. Identitas Fasyankes
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1">
-                    <span className="text-slate-500">Nama Rumah Sakit:</span>
-                    <p className="font-bold text-sm text-white">{selectedAccount.namaRs}</p>
+                    <span className="text-slate-400">Nama Rumah Sakit:</span>
+                    <p className="font-bold text-sm text-slate-800">{selectedAccount.namaRs}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Kode Fasyankes (RS):</span>
-                    <p className="font-bold text-sm text-white">{selectedAccount.kodeRs || '-'}</p>
+                    <span className="text-slate-400">Kode Fasyankes (RS):</span>
+                    <p className="font-bold text-sm text-slate-800">{selectedAccount.kodeRs || '-'}</p>
                   </div>
                   <div className="col-span-1 sm:col-span-2 space-y-1">
-                    <span className="text-slate-500">Alamat Lengkap:</span>
-                    <p className="font-medium text-slate-200">{selectedAccount.alamatRs}</p>
+                    <span className="text-slate-400">Alamat Lengkap:</span>
+                    <p className="font-medium text-slate-700">{selectedAccount.alamatRs}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Provinsi:</span>
-                    <p className="font-bold text-slate-200">{selectedAccount.provinsi || '-'}</p>
+                    <span className="text-slate-400">Provinsi:</span>
+                    <p className="font-bold text-slate-700">{selectedAccount.provinsi || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Kota / Kabupaten:</span>
-                    <p className="font-bold text-slate-200">{selectedAccount.kotaKab || '-'}</p>
+                    <span className="text-slate-400">Kota / Kabupaten:</span>
+                    <p className="font-bold text-slate-700">{selectedAccount.kotaKab || '-'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Grid 2: Penanggung Jawab */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase text-indigo-400 tracking-wider flex items-center gap-1 border-b border-slate-800 pb-1">
+                <h4 className="text-xs font-bold uppercase text-indigo-600 tracking-wider flex items-center gap-1 border-b border-slate-200 pb-1">
                   <User className="w-3.5 h-3.5" /> 2. Penanggung Jawab & Kontak resmi
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1">
-                    <span className="text-slate-500">Nama Penanggung Jawab:</span>
-                    <p className="font-bold text-sm text-white">{selectedAccount.penanggungJawab || '-'}</p>
+                    <span className="text-slate-400">Nama Penanggung Jawab:</span>
+                    <p className="font-bold text-sm text-slate-800">{selectedAccount.penanggungJawab || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Jabatan:</span>
-                    <p className="font-bold text-slate-200">{selectedAccount.jabatan || '-'}</p>
+                    <span className="text-slate-400">Jabatan:</span>
+                    <p className="font-bold text-slate-700">{selectedAccount.jabatan || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Nomor WhatsApp:</span>
-                    <p className="font-bold text-slate-200 flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="text-slate-400">Nomor WhatsApp:</span>
+                    <p className="font-bold text-slate-700 flex items-center gap-1">
+                      <Phone className="w-3.5 h-3.5 text-slate-400" />
                       {selectedAccount.noWhatsapp || '-'}
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Email Resmi RS:</span>
-                    <p className="font-bold text-slate-200 flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="text-slate-400">Email Resmi RS:</span>
+                    <p className="font-bold text-slate-700 flex items-center gap-1">
+                      <Mail className="w-3.5 h-3.5 text-slate-400" />
                       {selectedAccount.emailRs || '-'}
                     </p>
                   </div>
@@ -508,22 +508,22 @@ NOTIFY pgrst, reload_schema;`;
 
               {/* Grid 3: Akun Kredensial */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase text-indigo-400 tracking-wider flex items-center gap-1 border-b border-slate-800 pb-1">
+                <h4 className="text-xs font-bold uppercase text-indigo-600 tracking-wider flex items-center gap-1 border-b border-slate-200 pb-1">
                   <ShieldCheck className="w-3.5 h-3.5" /> 3. Kredensial Akun Portal
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                   <div className="space-y-1">
-                    <span className="text-slate-500">Username Login:</span>
-                    <p className="font-bold text-sm text-white">{selectedAccount.username}</p>
+                    <span className="text-slate-400">Username Login:</span>
+                    <p className="font-bold text-sm text-slate-800">{selectedAccount.username}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Password:</span>
-                    <p className="font-bold text-slate-500">•••••••• (Hashed Securely)</p>
+                    <span className="text-slate-400">Password:</span>
+                    <p className="font-bold text-slate-400">•••••••• (Hashed Securely)</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-slate-500">Tanggal Registrasi:</span>
-                    <p className="font-medium text-slate-200 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                    <span className="text-slate-400">Tanggal Registrasi:</span>
+                    <p className="font-medium text-slate-700 flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
                       {selectedAccount.created_at ? new Date(selectedAccount.created_at).toLocaleString('id-ID') : '-'}
                     </p>
                   </div>
@@ -532,27 +532,27 @@ NOTIFY pgrst, reload_schema;`;
 
               {/* Approval/Rejection details (if approved or rejected) */}
               {(selectedAccount.approvedBy || selectedAccount.rejectionReason) && (
-                <div className="space-y-3 p-4 bg-slate-950/60 rounded-2xl border border-slate-800 text-xs">
-                  <h4 className="text-xs font-bold uppercase text-slate-300 tracking-wider border-b border-slate-800 pb-1">
+                <div className="space-y-3 p-4 bg-slate-50 rounded-2xl border border-slate-200 text-xs">
+                  <h4 className="text-xs font-bold uppercase text-slate-500 tracking-wider border-b border-slate-200 pb-1">
                     ⚙️ Riwayat Keputusan Admin
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
                     {selectedAccount.approvedBy && (
                       <div className="space-y-1">
-                        <span className="text-slate-500">Diproses Oleh:</span>
-                        <p className="font-bold text-slate-200">{selectedAccount.approvedBy}</p>
+                        <span className="text-slate-400">Diproses Oleh:</span>
+                        <p className="font-bold text-slate-700">{selectedAccount.approvedBy}</p>
                       </div>
                     )}
                     {selectedAccount.approvalDate && (
                       <div className="space-y-1">
-                        <span className="text-slate-500">Waktu Keputusan:</span>
-                        <p className="font-medium text-slate-300">{new Date(selectedAccount.approvalDate).toLocaleString('id-ID')}</p>
+                        <span className="text-slate-400">Waktu Keputusan:</span>
+                        <p className="font-medium text-slate-600">{new Date(selectedAccount.approvalDate).toLocaleString('id-ID')}</p>
                       </div>
                     )}
                     {selectedAccount.rejectionReason && (
                       <div className="col-span-1 sm:col-span-2 space-y-1">
-                        <span className="text-red-400 font-semibold">Alasan Penolakan:</span>
-                        <p className="p-2.5 bg-red-500/5 border border-red-500/10 rounded-lg text-red-300 leading-normal">
+                        <span className="text-red-600 font-semibold">Alasan Penolakan:</span>
+                        <p className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-red-800 leading-normal">
                           {selectedAccount.rejectionReason}
                         </p>
                       </div>
@@ -563,10 +563,10 @@ NOTIFY pgrst, reload_schema;`;
 
             </div>
 
-            <div className="p-6 bg-slate-950/40 border-t border-slate-800/80 flex justify-end gap-3">
+            <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
               <button
                 onClick={() => { setIsDetailOpen(false); setSelectedAccount(null); }}
-                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
               >
                 Tutup Detail
               </button>
@@ -602,13 +602,13 @@ NOTIFY pgrst, reload_schema;`;
 
       {/* MODAL 2: Dialog Alasan Penolakan */}
       {isRejectOpen && selectedAccount && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center">
-              <h3 className="font-bold text-white text-base">Alasan Penolakan Akun</h3>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-slate-200 flex justify-between items-center">
+              <h3 className="font-bold text-slate-800 text-base">Alasan Penolakan Akun</h3>
               <button 
                 onClick={() => { setIsRejectOpen(false); setRejectReason(''); setSelectedAccount(null); }}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-slate-500 hover:text-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -616,28 +616,28 @@ NOTIFY pgrst, reload_schema;`;
 
             <form onSubmit={handleRejectSubmit}>
               <div className="p-6 space-y-4">
-                <div className="p-3 bg-red-500/5 border border-red-500/10 rounded-xl text-xs text-red-300 leading-normal">
+                <div className="p-3 bg-red-50 border border-red-100 rounded-xl text-xs text-red-800 leading-normal">
                   <p>Anda menolak pendaftaran akun untuk <strong>{selectedAccount.namaRs}</strong>. Rumah Sakit akan otomatis menerima notifikasi email mengenai status ini.</p>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-slate-300">Tuliskan Alasan Penolakan <span className="text-red-400">*</span></label>
+                  <label className="text-xs font-semibold text-slate-700">Tuliskan Alasan Penolakan <span className="text-red-600">*</span></label>
                   <textarea
                     required
                     rows={4}
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
                     placeholder="cth: Mohon lampirkan data penanggung jawab yang sah, atau verifikasi nomor email resmi RS Anda."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                    className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-800"
                   />
                 </div>
               </div>
 
-              <div className="p-6 bg-slate-950/40 border-t border-slate-800/80 flex justify-end gap-3">
+              <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => { setIsRejectOpen(false); setRejectReason(''); setSelectedAccount(null); }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
@@ -656,31 +656,31 @@ NOTIFY pgrst, reload_schema;`;
 
       {/* MODAL 3: Konfirmasi Persetujuan */}
       {accountToApprove && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-indigo-950/20">
-              <h3 className="font-bold text-white text-base flex items-center gap-2">
-                <CheckCircle className="w-5 h-5 text-emerald-400" /> Konfirmasi
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white border border-slate-200 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
+            <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-indigo-50">
+              <h3 className="font-bold text-slate-800 text-base flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-650" /> Konfirmasi
               </h3>
               <button 
                 onClick={() => setAccountToApprove(null)}
-                className="text-slate-400 hover:text-white cursor-pointer"
+                className="text-slate-500 hover:text-slate-800 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
             
-            <div className="p-6 text-sm text-slate-300 leading-relaxed text-center">
-              Apakah Anda yakin ingin menyetujui pendaftaran akun untuk <strong className="text-white">{accountToApprove.namaRs}</strong>?
+            <div className="p-6 text-sm text-slate-600 leading-relaxed text-center">
+              Apakah Anda yakin ingin menyetujui pendaftaran akun untuk <strong className="text-slate-800">{accountToApprove.namaRs}</strong>?
               <br/><br/>
               Akun ini akan langsung diaktifkan dan sistem akan mengirimkan email notifikasi persetujuan kepada rumah sakit.
             </div>
 
-            <div className="p-6 bg-slate-950/40 border-t border-slate-800/80 flex justify-center gap-3">
+            <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-center gap-3">
               <button
                 type="button"
                 onClick={() => setAccountToApprove(null)}
-                className="px-6 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer w-full"
+                className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-colors cursor-pointer w-full"
               >
                 Batal
               </button>

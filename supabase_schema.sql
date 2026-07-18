@@ -9,7 +9,11 @@ CREATE TABLE IF NOT EXISTS public.ahrq_surveys (
     jumlah_responden INTEGER NOT NULL DEFAULT 0,
     tanggal_input DATE NOT NULL,
     dimensi_scores JSONB NOT NULL DEFAULT '{}'::jsonb,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    hospital_id TEXT,
+    user_id TEXT,
+    created_by TEXT,
+    hospital_name TEXT
 );
 
 -- Allow reading and writing for authenticated/anon users (Configure RLS appropriately for production)
@@ -76,7 +80,11 @@ CREATE TABLE IF NOT EXISTS public.survey_submissions (
     skor_c NUMERIC,
     skor_d NUMERIC,
     skor_f NUMERIC,
-    skor_keseluruhan NUMERIC
+    skor_keseluruhan NUMERIC,
+    hospital_id TEXT,
+    user_id TEXT,
+    created_by TEXT,
+    hospital_name TEXT
 );
 
 ALTER TABLE public.survey_submissions ENABLE ROW LEVEL SECURITY;
@@ -128,7 +136,7 @@ CREATE POLICY "Enable delete access for all users" ON public.email_notifications
 
 -- =========================================================================
 -- DATABASE MIGRATION SCRIPT (For existing databases)
--- Run these queries if you already have the hospital_accounts table
+-- Run these queries if you already have the tables
 -- =========================================================================
 -- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS kode_rs TEXT;
 -- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS provinsi TEXT;
@@ -143,4 +151,15 @@ CREATE POLICY "Enable delete access for all users" ON public.email_notifications
 -- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS rejection_reason TEXT;
 -- ALTER TABLE public.hospital_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
 -- ALTER TABLE public.hospital_accounts ALTER COLUMN kode_rs DROP NOT NULL;
+
+-- Multi-Tenant Isolation Columns:
+-- ALTER TABLE public.ahrq_surveys ADD COLUMN IF NOT EXISTS hospital_id TEXT;
+-- ALTER TABLE public.ahrq_surveys ADD COLUMN IF NOT EXISTS user_id TEXT;
+-- ALTER TABLE public.ahrq_surveys ADD COLUMN IF NOT EXISTS created_by TEXT;
+-- ALTER TABLE public.ahrq_surveys ADD COLUMN IF NOT EXISTS hospital_name TEXT;
+
+-- ALTER TABLE public.survey_submissions ADD COLUMN IF NOT EXISTS hospital_id TEXT;
+-- ALTER TABLE public.survey_submissions ADD COLUMN IF NOT EXISTS user_id TEXT;
+-- ALTER TABLE public.survey_submissions ADD COLUMN IF NOT EXISTS created_by TEXT;
+-- ALTER TABLE public.survey_submissions ADD COLUMN IF NOT EXISTS hospital_name TEXT;
 

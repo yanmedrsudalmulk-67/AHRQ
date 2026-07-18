@@ -12,6 +12,7 @@ export default function Home() {
   const [screen, setScreen] = useState<'welcome' | 'login' | 'register' | 'dashboard'>('welcome');
   const [role, setRole] = useState<'rs' | 'admin'>('rs');
   const [identifier, setIdentifier] = useState('');
+  const [hospitalId, setHospitalId] = useState('');
   const [namaRs, setNamaRs] = useState('');
   const [wallpaper, setWallpaper] = useState<WallpaperData | null>(null);
   const [activeLogo, setActiveLogo] = useState<LogoData | null>(null);
@@ -35,9 +36,10 @@ export default function Home() {
     loadPreferences();
   }, []);
 
-  const handleLoginSuccess = (userRole: 'rs' | 'admin', userId: string, rsName: string) => {
+  const handleLoginSuccess = (userRole: 'rs' | 'admin', userId: string, rsName: string, idHospital?: string) => {
     setRole(userRole);
     setIdentifier(userId);
+    setHospitalId(idHospital || '');
     setNamaRs(rsName);
     setScreen('dashboard');
   };
@@ -113,6 +115,7 @@ export default function Home() {
         <Dashboard
           role={role}
           identifier={identifier}
+          hospitalId={hospitalId}
           namaRs={namaRs}
           onLogout={handleLogout}
           onUpdateRsName={handleUpdateRsName}

@@ -7,7 +7,7 @@ export interface SurveyData {
   unitKerja: string;
   jumlahResponden: number;
   tanggalInput: string;
-  dimensiScores: { [key: string]: number };
+  dimensiScores: { [key: string]: any };
 }
 
 export interface HospitalAccount {
@@ -166,20 +166,58 @@ export function calculateOverallScore(submission: Partial<SurveySubmission>): nu
 }
 
 // 1. Fetch all surveys (strictly from Supabase, no localStorage)
-export async function getSurveys(): Promise<SurveyData[]> {
+export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const { data, error } = await supabase
-        .from('ahrq_surveys')
-        .select('*')
-        .order('created_at', { ascending: false });
+      if (hospitalId && hospitalId !== 'admin') {
+        try {
+          const { data, error } = await supabase
+            .from('ahrq_surveys')
+            .select('*')
+            .or(`hospital_id.eq.${hospitalId},user_id.eq.${hospitalId},created_by.eq.${hospitalId},dimensi_scores->>username.eq.${hospitalId},dimensi_scores->>hospital_id.eq.${hospitalId},dimensi_scores->>user_id.eq.${hospitalId}`)
+            .order('created_at', { ascending: false });
 
-      if (!error && data) {
-        return data.map(mapToSurveyData);
-      }
-      if (error && error.code !== 'PGRST125' && error.code !== 'PGRST116') {
-        console.warn("Supabase ahrq_surveys query failed:", error);
+          if (!error && data) {
+            return data.map(mapToSurveyData);
+          }
+          if (error) {
+            const isColError = error.code === '42703' || 
+                               error.message?.includes('column') || 
+                               error.message?.includes('does not exist') ||
+                               error.message?.includes('schema cache');
+            if (isColError) {
+              throw error;
+            }
+            if (error.code !== 'PGRST125' && error.code !== 'PGRST116') {
+              console.warn("Supabase ahrq_surveys query failed:", error);
+            }
+          }
+        } catch (innerErr) {
+          // Fallback query using only JSONB dimensi_scores keys and unit_kerja (always safe, won't cause 42703)
+          const { data, error } = await supabase
+            .from('ahrq_surveys')
+            .select('*')
+            .or(`dimensi_scores->>username.eq.${hospitalId},dimensi_scores->>hospital_id.eq.${hospitalId},dimensi_scores->>user_id.eq.${hospitalId},unit_kerja.eq.${hospitalId}`)
+            .order('created_at', { ascending: false });
+
+          if (!error && data) {
+            return data.map(mapToSurveyData);
+          }
+          console.error("Fallback query failed:", error);
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('ahrq_surveys')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          return data.map(mapToSurveyData);
+        }
+        if (error && error.code !== 'PGRST125' && error.code !== 'PGRST116') {
+          console.warn("Supabase ahrq_surveys query failed:", error);
+        }
       }
     } catch (e) {
       console.error("Supabase ahrq_surveys exception:", e);
@@ -190,29 +228,68 @@ export async function getSurveys(): Promise<SurveyData[]> {
 }
 
 // 2. Save a survey to Supabase directly (no localStorage)
-export async function saveSurvey(survey: SurveyData): Promise<SurveyData> {
+export async function saveSurvey(
+  survey: SurveyData,
+  hospitalId?: string,
+  userId?: string,
+  createdBy?: string,
+  hospitalName?: string
+): Promise<SurveyData> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const dbRow = {
+      const dbRow: any = {
         id: survey.id,
         nama_rs: survey.namaRs,
         unit_kerja: survey.unitKerja,
         jumlah_responden: survey.jumlahResponden,
         tanggal_input: survey.tanggalInput,
-        dimensi_scores: survey.dimensiScores
+        dimensi_scores: {
+          ...survey.dimensiScores,
+          hospital_id: hospitalId || survey.dimensiScores?.hospital_id,
+          user_id: userId || survey.dimensiScores?.user_id || survey.dimensiScores?.username,
+          created_by: createdBy || survey.dimensiScores?.created_by || survey.dimensiScores?.username,
+          hospital_name: hospitalName || survey.dimensiScores?.hospital_name || survey.namaRs
+        },
+        hospital_id: hospitalId || null,
+        user_id: userId || null,
+        created_by: createdBy || null,
+        hospital_name: hospitalName || null
       };
 
-      const { data, error } = await supabase
-        .from('ahrq_surveys')
-        .insert([dbRow])
-        .select();
+      let attempts = 0;
+      const maxAttempts = 3;
+      const insertRow = { ...dbRow };
 
-      if (!error && data && data.length > 0) {
-        return mapToSurveyData(data[0]);
-      }
-      if (error) {
-        throw new Error(`Gagal menyimpan survei ke database Supabase: ${error.message}`);
+      while (attempts < maxAttempts) {
+        attempts++;
+        try {
+          const { data, error } = await supabase
+            .from('ahrq_surveys')
+            .insert([insertRow])
+            .select();
+
+          if (!error && data && data.length > 0) {
+            return mapToSurveyData(data[0]);
+          }
+          if (error) {
+            throw error;
+          }
+        } catch (error: any) {
+          console.warn(`saveSurvey attempt ${attempts} failed:`, error);
+          const isColError = error.code === '42703' || 
+                             error.message?.includes('column') || 
+                             error.message?.includes('does not exist') ||
+                             error.message?.includes('schema cache');
+          if (isColError && attempts < maxAttempts) {
+            delete insertRow.hospital_id;
+            delete insertRow.user_id;
+            delete insertRow.created_by;
+            delete insertRow.hospital_name;
+            continue;
+          }
+          throw new Error(`Gagal menyimpan survei ke database Supabase: ${error.message}`);
+        }
       }
     } catch (e: any) {
       console.error("Supabase insert ahrq_surveys exception:", e);
@@ -653,19 +730,53 @@ Silakan masuk ke Dashboard Admin Utama untuk menyetujui atau menolak permohonan 
 }
 
 // Keep existing SurveySubmission helpers for backward compatibility with deleted/unused components
-export async function getSubmissions(): Promise<SurveySubmission[]> {
+export async function getSubmissions(hospitalId?: string): Promise<SurveySubmission[]> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const { data, error } = await supabase
-        .from('survey_submissions')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (!error && data) {
-        return data as SurveySubmission[];
-      }
-      if (error) {
-        console.error("Gagal mengambil submissions dari Supabase:", error);
+      if (hospitalId && hospitalId !== 'admin') {
+        try {
+          const { data, error } = await supabase
+            .from('survey_submissions')
+            .select('*')
+            .or(`hospital_id.eq.${hospitalId},user_id.eq.${hospitalId},created_by.eq.${hospitalId},rs_id.eq.${hospitalId}`)
+            .order('created_at', { ascending: false });
+
+          if (!error && data) {
+            return data as SurveySubmission[];
+          }
+          if (error) {
+            const isColError = error.code === '42703' || 
+                               error.message?.includes('column') || 
+                               error.message?.includes('does not exist') ||
+                               error.message?.includes('schema cache');
+            if (isColError) {
+              throw error;
+            }
+            console.error("Gagal mengambil submissions dari Supabase:", error);
+          }
+        } catch (innerErr) {
+          // Fallback to only rs_id (always exists)
+          const { data, error } = await supabase
+            .from('survey_submissions')
+            .select('*')
+            .eq('rs_id', hospitalId)
+            .order('created_at', { ascending: false });
+
+          if (!error && data) {
+            return data as SurveySubmission[];
+          }
+          console.error("Fallback getSubmissions query failed:", error);
+        }
+      } else {
+        const { data, error } = await supabase
+          .from('survey_submissions')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          return data as SurveySubmission[];
+        }
       }
     } catch (e) {
       console.error(e);
@@ -690,7 +801,32 @@ export async function saveSubmission(submission: Omit<SurveySubmission, 'id' | '
   };
   const score_keseluruhan = calculateOverallScore(tempSub);
 
-  const newSubmission: SurveySubmission = {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("Koneksi Supabase belum terkonfigurasi.");
+
+  let hospital_id = submission.rs_id;
+  let user_id = submission.rs_id;
+  let created_by = submission.rs_id;
+  let hospital_name = submission.nama_rs;
+
+  try {
+    const { data: hospital } = await supabase
+      .from('hospital_accounts')
+      .select('id, username, nama_rs')
+      .ilike('username', submission.rs_id)
+      .limit(1);
+      
+    if (hospital && hospital.length > 0) {
+      hospital_id = hospital[0].id;
+      user_id = hospital[0].id;
+      created_by = hospital[0].username;
+      hospital_name = hospital[0].nama_rs;
+    }
+  } catch (lookupErr) {
+    console.warn("Gagal melakukan lookup hospital_accounts untuk multi-tenant submission:", lookupErr);
+  }
+
+  const newSubmission: any = {
     ...submission,
     id: `sub-${Date.now()}`,
     created_at: new Date().toISOString(),
@@ -699,28 +835,53 @@ export async function saveSubmission(submission: Omit<SurveySubmission, 'id' | '
     skor_c: score_c,
     skor_d: score_d,
     skor_f: score_f,
-    skor_keseluruhan: score_keseluruhan
+    skor_keseluruhan: score_keseluruhan,
+    hospital_id,
+    user_id,
+    created_by,
+    hospital_name
   };
 
-  const supabase = getSupabaseClient();
-  if (supabase) {
-    try {
-      const { data, error } = await supabase
-        .from('survey_submissions')
-        .insert([newSubmission])
-        .select();
-      if (!error && data && data.length > 0) {
-        return data[0] as SurveySubmission;
-      }
-      if (error) {
+  try {
+    let attempts = 0;
+    const maxAttempts = 3;
+    const insertRow = { ...newSubmission };
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        const { data, error } = await supabase
+          .from('survey_submissions')
+          .insert([insertRow])
+          .select();
+        if (!error && data && data.length > 0) {
+          return data[0] as SurveySubmission;
+        }
+        if (error) {
+          throw error;
+        }
+      } catch (error: any) {
+        console.warn(`saveSubmission attempt ${attempts} failed:`, error);
+        const isColError = error.code === '42703' || 
+                           error.message?.includes('column') || 
+                           error.message?.includes('does not exist') ||
+                           error.message?.includes('schema cache');
+        if (isColError && attempts < maxAttempts) {
+          delete insertRow.hospital_id;
+          delete insertRow.user_id;
+          delete insertRow.created_by;
+          delete insertRow.hospital_name;
+          continue;
+        }
         throw new Error(`Gagal menyimpan pengisian survei ke Supabase: ${error.message}`);
       }
-    } catch (e: any) {
-      console.error(e);
-      throw new Error(e.message || "Gagal menyimpan pengisian survei.");
     }
+  } catch (e: any) {
+    console.error(e);
+    throw new Error(e.message || "Gagal menyimpan pengisian survei.");
   }
-  throw new Error("Koneksi database Supabase tidak aktif.");
+
+  throw new Error("Gagal menyimpan pengisian survei setelah beberapa percobaan.");
 }
 
 export async function syncAllLocalDataToSupabase(): Promise<{

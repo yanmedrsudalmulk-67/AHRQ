@@ -469,7 +469,7 @@ export default function GrafikTab({ surveys }: GrafikTabProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white/80 backdrop-blur-md border border-slate-200 p-6 rounded-[24px] shadow-lg shadow-blue-500/5 relative overflow-hidden"
+        className="bg-white/90 backdrop-blur-md border border-slate-200/80 p-6 md:p-8 rounded-[24px] shadow-[0_20px_50px_rgba(15,23,42,0.15)] hover:shadow-[0_25px_60px_rgba(15,23,42,0.22)] transition-all duration-300 relative overflow-hidden"
       >
         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
         <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
@@ -481,18 +481,23 @@ export default function GrafikTab({ surveys }: GrafikTabProps) {
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={e1Stats} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+              <defs>
+                <filter id="shadow-raised" x="-10%" y="-15%" width="125%" height="135%">
+                  <feDropShadow dx="2" dy="5" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.25" />
+                </filter>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.7} />
               <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }} />
               <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
               <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-              <Bar isAnimationActive={false} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
+              <Bar isAnimationActive={false} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                 <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-rs-${index}`} fill="#10b981" />
                 ))}
               </Bar>
-              <Bar isAnimationActive={false} dataKey="Data Pembanding" fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
+              <Bar isAnimationActive={false} dataKey="Data Pembanding" fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                 <LabelList dataKey="Data Pembanding" position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-bp-${index}`} fill="#64748b" />

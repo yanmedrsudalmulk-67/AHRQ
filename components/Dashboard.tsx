@@ -39,12 +39,13 @@ interface SurveyData {
   unitKerja: string;
   jumlahResponden: number;
   tanggalInput: string;
-  dimensiScores: { [key: string]: number };
+  dimensiScores: { [key: string]: any };
 }
 
 interface DashboardProps {
   role: 'rs' | 'admin';
   identifier: string;
+  hospitalId?: string;
   namaRs: string;
   onLogout: () => void;
   onUpdateRsName: (newName: string) => void;
@@ -57,6 +58,7 @@ interface DashboardProps {
 export default function Dashboard({ 
   role, 
   identifier, 
+  hospitalId,
   namaRs, 
   onLogout, 
   onUpdateRsName,
@@ -93,9 +95,13 @@ export default function Dashboard({
   }, [notification]);
 
   // SWR for real-time survey synchronization with background polling
-  const { data: surveys = [], mutate, isLoading: surveysLoading } = useSWR('ahrq_surveys', getSurveys, {
-    refreshInterval: 3000
-  });
+  const { data: surveys = [], mutate, isLoading: surveysLoading } = useSWR(
+    role === 'admin' ? 'ahrq_surveys_all' : ['ahrq_surveys', hospitalId || identifier],
+    () => getSurveys(role === 'admin' ? undefined : (hospitalId || identifier)),
+    {
+      refreshInterval: 3000
+    }
+  );
 
   // SWR for real-time hospital accounts with background polling (only for admin)
   const { data: accounts = [], mutate: mutateAccounts, isLoading: accountsLoading } = useSWR(
@@ -108,7 +114,15 @@ export default function Dashboard({
 
   const handleSaveSurvey = async (newSurvey: SurveyData) => {
     try {
-      const saved = await saveSurvey(newSurvey);
+      const surveyWithUser = {
+        ...newSurvey,
+        dimensiScores: {
+          ...newSurvey.dimensiScores,
+          username: identifier,
+          hospital_id: hospitalId || identifier
+        }
+      };
+      const saved = await saveSurvey(surveyWithUser, hospitalId || identifier, identifier, identifier, namaRs);
       mutate();
     } catch (e) {
       console.error("Gagal menyimpan data survei:", e);
@@ -162,7 +176,13 @@ export default function Dashboard({
   const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
   const filteredSurveys = role === 'admin' 
     ? validSurveys 
-    : validSurveys.filter(s => s.namaRs.toLowerCase() === namaRs.toLowerCase());
+    : validSurveys.filter(s => {
+        const surveyUser = (s.dimensiScores as any)?.username;
+        if (surveyUser) {
+          return surveyUser.toLowerCase() === identifier.toLowerCase();
+        }
+        return s.namaRs.toLowerCase() === namaRs.toLowerCase();
+      });
 
   // Statistics calculations
   const totalRespondents = filteredSurveys.reduce((acc, curr) => acc + curr.jumlahResponden, 0);
@@ -431,7 +451,7 @@ export default function Dashboard({
               
               <div 
                 onClick={() => setShowRespondentsModal(true)}
-                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-white/60 space-y-4 shadow-lg shadow-teal-500/5 hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
+                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-slate-200/80 space-y-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] hover:border-teal-500/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
               >
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Total Responden</span>
@@ -449,7 +469,7 @@ export default function Dashboard({
 
               <div 
                 onClick={() => setShowUnitsModal(true)}
-                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-white/60 space-y-4 shadow-lg shadow-teal-500/5 hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
+                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-slate-200/80 space-y-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] hover:border-blue-500/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
               >
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Unit / Area Kerja Terdata</span>
@@ -465,25 +485,25 @@ export default function Dashboard({
                 <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-blue-400 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
-              <div className="p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-white/60 space-y-4 shadow-lg shadow-teal-500/5 hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group">
+              <div className="p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-slate-200/80 space-y-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] hover:border-orange-500 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group">
                 <div className="flex justify-between items-center">
                   <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Rata-Rata Respon Positif</span>
-                  <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg border border-emerald-200/30 group-hover:bg-emerald-500/20 transition-all transform-gpu">
+                  <div className="p-2 bg-orange-500/10 text-orange-600 rounded-lg border border-orange-200/30 group-hover:bg-orange-500/20 transition-all transform-gpu">
                     <TrendingUp className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[40px] font-sans font-extrabold text-teal-600 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{overallScorePercent}%</h3>
-                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Kategori: <strong className="text-emerald-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong></p>
+                  <h3 className="text-[40px] font-sans font-extrabold text-orange-600 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{overallScorePercent}%</h3>
+                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Kategori: <strong className="text-orange-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong></p>
                 </div>
                 {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-emerald-400 to-teal-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-orange-400 to-amber-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
             </div>
 
             {/* Tabel Hasil Survei AHRQ 10 Dimensi */}
-            <DashboardTable role={role} namaRs={namaRs} />
+            <DashboardTable role={role} namaRs={namaRs} identifier={identifier} hospitalId={hospitalId} />
 
           </div>
         )}
@@ -492,6 +512,7 @@ export default function Dashboard({
           <InputDataTab 
             currentRsName={namaRs} 
             identifier={identifier}
+            hospitalId={hospitalId}
             onSaveSurvey={handleSaveSurvey} 
           />
         )}

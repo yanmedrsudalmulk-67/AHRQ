@@ -88,6 +88,10 @@ export default function PublicSurveyPage() {
         setConfig({
           rsName: parsedScores.rsName || 'Rumah Sakit',
           identifier: data.unit_kerja,
+          hospitalId: data.hospital_id || parsedScores.hospital_id || data.unit_kerja,
+          userId: data.user_id || parsedScores.user_id || data.unit_kerja,
+          createdBy: data.created_by || parsedScores.created_by || data.unit_kerja,
+          hospitalName: data.hospital_name || parsedScores.hospital_name || parsedScores.rsName || 'Rumah Sakit'
         });
 
         // Load logo
@@ -110,18 +114,51 @@ export default function PublicSurveyPage() {
     if (!supabase) throw new Error("Supabase tidak terhubung");
 
     // We add it to the DB with the target hospital's name
-    const dbRow = {
+    const dbRow: any = {
       id: survey.id,
       nama_rs: config.rsName,
       unit_kerja: survey.unitKerja,
       jumlah_responden: survey.jumlahResponden,
       tanggal_input: survey.tanggalInput ? survey.tanggalInput.split('T')[0] : new Date().toISOString().split('T')[0],
-      dimensi_scores: survey.dimensiScores
+      dimensi_scores: {
+        ...survey.dimensiScores,
+        username: config.identifier,
+        hospital_id: config.hospitalId,
+        user_id: config.userId,
+        created_by: config.createdBy,
+        hospital_name: config.hospitalName
+      },
+      hospital_id: config.hospitalId,
+      user_id: config.userId,
+      created_by: config.createdBy,
+      hospital_name: config.hospitalName
     };
 
-    const { error } = await supabase.from('ahrq_surveys').insert([dbRow]);
-    if (error) {
-      throw new Error(error.message);
+    let attempts = 0;
+    const maxAttempts = 3;
+    const insertRow = { ...dbRow };
+
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        const { error } = await supabase.from('ahrq_surveys').insert([insertRow]);
+        if (!error) break;
+        throw error;
+      } catch (error: any) {
+        console.warn(`Public saveSurvey attempt ${attempts} failed:`, error);
+        const isColError = error.code === '42703' || 
+                           error.message?.includes('column') || 
+                           error.message?.includes('does not exist') ||
+                           error.message?.includes('schema cache');
+        if (isColError && attempts < maxAttempts) {
+          delete insertRow.hospital_id;
+          delete insertRow.user_id;
+          delete insertRow.created_by;
+          delete insertRow.hospital_name;
+          continue;
+        }
+        throw new Error(`Gagal menyimpan pengisian survei: ${error.message}`);
+      }
     }
     
     // Increment respondent count on the link config silently

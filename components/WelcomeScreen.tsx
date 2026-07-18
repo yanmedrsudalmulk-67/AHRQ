@@ -154,9 +154,9 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         id="welcome-footer" 
         className="max-w-7xl mx-auto w-full py-4 border-t border-slate-200 text-center flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 px-6"
       >
-        <p>© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
+        <p className="text-[#e7eef8]">© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
         <div className="flex gap-4 font-mono font-bold text-slate-400">
-          <span className="hover:text-teal-600 transition-colors">STANDAR AKREDITASI KEMENKES</span>
+          <span className="text-[#45556c] hover:text-teal-600 transition-colors">STANDAR AKREDITASI KEMENKES</span>
         </div>
       </footer>
 

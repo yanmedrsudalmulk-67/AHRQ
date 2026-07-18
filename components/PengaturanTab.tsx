@@ -656,17 +656,17 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
   return (
     <div className="space-y-6">
       {/* Title */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#121826]/90 backdrop-blur-sm p-6 rounded-2xl border border-white/[0.08] shadow-md">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/85 backdrop-blur-md p-6 rounded-2xl border border-slate-200/80 shadow-lg shadow-blue-500/5">
         <div>
-          <h2 className="text-[18px] md:text-[20px] font-semibold flex items-center gap-2 text-[#F8FAFC]">
-            <Settings className="w-5 h-5 text-indigo-400" /> Pengaturan Sistem
+          <h2 className="text-[18px] md:text-[20px] font-semibold flex items-center gap-2 text-slate-800">
+            <Settings className="w-5 h-5 text-indigo-600" /> Pengaturan Sistem
           </h2>
-          <p className="text-[14px] text-white/75 mt-1">Kelola profil fasyankes dan pengaturan sistem untuk mendukung pengelolaan Survei Budaya Keselamatan Pasien yang terintegrasi, aman, dan profesional</p>
+          <p className="text-[14px] text-slate-500 mt-1">Kelola profil fasyankes dan pengaturan sistem untuk mendukung pengelolaan Survei Budaya Keselamatan Pasien yang terintegrasi, aman, dan profesional</p>
         </div>
       </div>
 
       {isSaved && (
-        <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold rounded-xl flex items-center gap-2 animate-pulse">
+        <div className="p-4 bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 text-xs font-semibold rounded-xl flex items-center gap-2 animate-pulse">
           <Save className="w-4 h-4" /> Pengaturan profil fasyankes berhasil diperbarui!
         </div>
       )}
@@ -675,8 +675,8 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         {toast.show && (
           <div className={`fixed bottom-5 right-5 z-50 p-4 rounded-xl border text-xs flex items-center gap-2 shadow-2xl transition-all transform-gpu duration-300 animate-fadeIn ${
             toast.type === 'success' 
-              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-400' 
-              : 'bg-rose-500/15 border-rose-500/30 text-rose-400'
+              ? 'bg-emerald-500/15 border-emerald-500/30 text-emerald-600' 
+              : 'bg-rose-500/15 border-rose-500/30 text-rose-600'
           }`}>
             <AlertCircle className="w-4 h-4" />
             <span className="font-semibold">{toast.message}</span>
@@ -684,13 +684,13 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         )}
 
       {/* Sub Navigation Tabs */}
-      <div className="flex border-b border-white/[0.08] gap-2 pb-px overflow-x-auto">
+      <div className="flex border-b border-slate-200 gap-2 pb-px overflow-x-auto">
         <button
           onClick={() => setActiveSettingsSection('profil')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
             activeSettingsSection === 'profil'
-              ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5'
-              : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.02]'
+              ? 'text-indigo-600 border-indigo-600 bg-indigo-50'
+              : 'text-slate-500 border-transparent hover:text-slate-850 hover:bg-slate-100'
           }`}
         >
           <Settings className="w-4 h-4" />
@@ -700,8 +700,8 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           onClick={() => setActiveSettingsSection('posisi')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
             activeSettingsSection === 'posisi'
-              ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5'
-              : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.02]'
+              ? 'text-indigo-600 border-indigo-600 bg-indigo-50'
+              : 'text-slate-500 border-transparent hover:text-slate-850 hover:bg-slate-100'
           }`}
         >
           <Users className="w-4 h-4" />
@@ -709,10 +709,10 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         </button>
         <button
           onClick={() => setActiveSettingsSection('unit')}
-          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
+          className={`flex-1 sm:flex-initial flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
             activeSettingsSection === 'unit'
-              ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5'
-              : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.02]'
+              ? 'text-indigo-600 border-indigo-600 bg-indigo-50'
+              : 'text-slate-500 border-transparent hover:text-slate-850 hover:bg-slate-100'
           }`}
         >
           <Building2 className="w-4 h-4" />
@@ -724,10 +724,10 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         <>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Identitas Rumah Sakit */}
-        <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
-          <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
-            <h3 className="text-[16px] font-semibold text-[#F8FAFC] flex items-center gap-1.5">
-              <Building2 className="w-4 h-4 text-indigo-400" /> Profil Fasyankes
+        <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
+          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+            <h3 className="text-[16px] font-semibold text-slate-800 flex items-center gap-1.5">
+              <Building2 className="w-4 h-4 text-indigo-600" /> Profil Fasyankes
             </h3>
             
             {!isEditing && (
@@ -737,7 +737,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                   setIsEditing(true);
                   setShowChangePassword(false);
                 }}
-                className="px-3 py-1.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
+                className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100/80 border border-indigo-200 text-indigo-600 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
               >
                 <Edit className="w-3.5 h-3.5" /> Perbarui Profil
               </button>
@@ -746,69 +746,69 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
           {isFetchingProfile ? (
             <div className="flex flex-col items-center justify-center py-12 space-y-3">
-              <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
-              <p className="text-xs text-slate-400">Memuat profil fasyankes...</p>
+              <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+              <p className="text-xs text-slate-500">Memuat profil fasyankes...</p>
             </div>
           ) : !isEditing ? (
             /* ================= READ ONLY MODE ================= */
             <div className="space-y-6">
               {/* Bagian 1: Informasi Fasyankes */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-indigo-400 tracking-wider uppercase">Informasi Rumah Sakit</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/40 border border-white/[0.04] p-4 rounded-xl">
+                <h4 className="text-xs font-bold text-indigo-600 tracking-wider uppercase">Informasi Rumah Sakit</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-100 p-4 rounded-xl">
                   <div className="col-span-1 sm:col-span-2 space-y-1">
-                    <span className="text-[11px] text-slate-400">Nama Rumah Sakit / Instansi</span>
-                    <p className="text-sm font-semibold text-white">{tempName || '-'}</p>
+                    <span className="text-[11px] text-slate-500">Nama Rumah Sakit / Instansi</span>
+                    <p className="text-sm font-semibold text-slate-800">{tempName || '-'}</p>
                   </div>
                   <div className="col-span-1 sm:col-span-2 space-y-1">
-                    <span className="text-[11px] text-slate-400 font-medium">Alamat Lengkap</span>
-                    <p className="text-xs text-slate-200 leading-relaxed">{alamatRs || '-'}</p>
+                    <span className="text-[11px] text-slate-500 font-medium">Alamat Lengkap</span>
+                    <p className="text-xs text-slate-600 leading-relaxed">{alamatRs || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[11px] text-slate-400">Provinsi</span>
-                    <p className="text-xs font-medium text-slate-200">{provinsi || '-'}</p>
+                    <span className="text-[11px] text-slate-500">Provinsi</span>
+                    <p className="text-xs font-medium text-slate-700">{provinsi || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[11px] text-slate-400">Kota / Kabupaten</span>
-                    <p className="text-xs font-medium text-slate-200">{kotaKab || '-'}</p>
+                    <span className="text-[11px] text-slate-500">Kota / Kabupaten</span>
+                    <p className="text-xs font-medium text-slate-700">{kotaKab || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[11px] text-slate-400">Kode Pos</span>
-                    <p className="text-xs font-mono text-slate-200">{kodePos || '-'}</p>
+                    <span className="text-[11px] text-slate-500">Kode Pos</span>
+                    <p className="text-xs font-mono text-slate-700">{kodePos || '-'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Bagian 2: Informasi Kontak */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-emerald-400 tracking-wider uppercase">Informasi Kontak</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/40 border border-white/[0.04] p-4 rounded-xl">
+                <h4 className="text-xs font-bold text-emerald-600 tracking-wider uppercase">Informasi Kontak</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-100 p-4 rounded-xl">
                   <div className="space-y-1">
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Mail className="w-3 h-3 text-emerald-400/80" /> Email</span>
-                    <p className="text-xs font-medium text-slate-200">{emailRs || '-'}</p>
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1"><Mail className="w-3 h-3 text-emerald-600" /> Email</span>
+                    <p className="text-xs font-medium text-slate-700">{emailRs || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-400/80" /> No. Telepon</span>
-                    <p className="text-xs font-medium text-slate-200">{noTelepon || '-'}</p>
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-600" /> No. Telepon</span>
+                    <p className="text-xs font-medium text-slate-700">{noTelepon || '-'}</p>
                   </div>
                   <div className="col-span-1 sm:col-span-2 space-y-1">
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-400/80" /> No. WhatsApp</span>
-                    <p className="text-xs font-medium text-slate-200">{noWhatsapp || '-'}</p>
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1"><Phone className="w-3 h-3 text-emerald-600" /> No. WhatsApp</span>
+                    <p className="text-xs font-medium text-slate-700">{noWhatsapp || '-'}</p>
                   </div>
                 </div>
               </div>
 
               {/* Bagian 3: Informasi Kredensial Akun */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold text-cyan-400 tracking-wider uppercase">Kredensial Akun</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-900/40 border border-white/[0.04] p-4 rounded-xl">
+                <h4 className="text-xs font-bold text-cyan-600 tracking-wider uppercase">Kredensial Akun</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 border border-slate-100 p-4 rounded-xl">
                   <div className="space-y-1">
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><User className="w-3 h-3 text-cyan-400/80" /> Username</span>
-                    <p className="text-xs font-semibold text-slate-200 font-mono">{username || '-'}</p>
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1"><User className="w-3 h-3 text-cyan-600" /> Username</span>
+                    <p className="text-xs font-semibold text-slate-700 font-mono">{username || '-'}</p>
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[11px] text-slate-400 flex items-center gap-1"><Lock className="w-3 h-3 text-cyan-400/80" /> Password</span>
-                    <p className="text-xs text-slate-400 tracking-widest font-bold">••••••••</p>
+                    <span className="text-[11px] text-slate-500 flex items-center gap-1"><Lock className="w-3 h-3 text-cyan-600" /> Password</span>
+                    <p className="text-xs text-slate-500 tracking-widest font-bold">••••••••</p>
                   </div>
                 </div>
               </div>
@@ -819,18 +819,18 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                   <button
                     type="button"
                     onClick={() => setShowChangePassword(true)}
-                    className="w-full py-2.5 bg-slate-900 hover:bg-slate-850 border border-white/10 hover:border-white/20 text-slate-300 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer"
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer"
                   >
-                    <Lock className="w-3.5 h-3.5 text-cyan-400" /> Ubah Password Akun
+                    <Lock className="w-3.5 h-3.5 text-cyan-650" /> Ubah Password Akun
                   </button>
                 </div>
               )}
 
               {/* Ubah Password Form */}
               {showChangePassword && (
-                <form onSubmit={handleUpdatePassword} className="border border-cyan-500/30 bg-cyan-500/5 p-4 rounded-xl space-y-4 animate-fadeIn">
-                  <div className="flex justify-between items-center border-b border-white/[0.05] pb-2">
-                    <h5 className="text-xs font-bold text-cyan-400 flex items-center gap-1.5">
+                <form onSubmit={handleUpdatePassword} className="border border-cyan-200 bg-cyan-50/50 p-4 rounded-xl space-y-4 animate-fadeIn">
+                  <div className="flex justify-between items-center border-b border-slate-200 pb-2">
+                    <h5 className="text-xs font-bold text-cyan-600 flex items-center gap-1.5">
                       <Lock className="w-3.5 h-3.5" /> Formulir Ubah Password
                     </h5>
                     <button
@@ -841,7 +841,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                         setNewPassword('');
                         setConfirmPassword('');
                       }}
-                      className="text-slate-400 hover:text-white"
+                      className="text-slate-500 hover:text-slate-800"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -849,19 +849,19 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
                   <div className="space-y-3">
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300 font-medium">Password Lama</label>
+                      <label className="text-[11px] text-slate-600 font-medium">Password Lama</label>
                       <div className="relative">
                         <input
                           type={showOldPassword ? 'text' : 'password'}
                           required
                           value={oldPassword}
                           onChange={e => setOldPassword(e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
                         />
                         <button
                           type="button"
                           onClick={() => setShowOldPassword(!showOldPassword)}
-                          className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                         >
                           {showOldPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -869,19 +869,19 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300 font-medium">Password Baru (Min. 8 Karakter)</label>
+                      <label className="text-[11px] text-slate-600 font-medium">Password Baru (Min. 8 Karakter)</label>
                       <div className="relative">
                         <input
                           type={showNewPassword ? 'text' : 'password'}
                           required
                           value={newPassword}
                           onChange={e => setNewPassword(e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
                         />
                         <button
                           type="button"
                           onClick={() => setShowNewPassword(!showNewPassword)}
-                          className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                         >
                           {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -889,19 +889,19 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     </div>
 
                     <div className="space-y-1">
-                      <label className="text-[11px] text-slate-300 font-medium">Konfirmasi Password Baru</label>
+                      <label className="text-[11px] text-slate-600 font-medium">Konfirmasi Password Baru</label>
                       <div className="relative">
                         <input
                           type={showConfirmPassword ? 'text' : 'password'}
                           required
                           value={confirmPassword}
                           onChange={e => setConfirmPassword(e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-800 focus:border-cyan-500 transition-all transform-gpu outline-none pr-10"
                         />
                         <button
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                          className="absolute right-3 top-2.5 text-slate-500 hover:text-slate-300"
+                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
                         >
                           {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                         </button>
@@ -917,7 +917,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                           setNewPassword('');
                           setConfirmPassword('');
                         }}
-                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg text-[11px] font-semibold transition-all transform-gpu cursor-pointer"
+                        className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[11px] font-semibold transition-all transform-gpu cursor-pointer"
                       >
                         Batal
                       </button>
@@ -937,124 +937,124 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           ) : (
             /* ================= EDIT MODE ================= */
             <form onSubmit={handleSaveProfile} className="space-y-4">
-              <div className="space-y-3 bg-slate-900/20 border border-white/[0.03] p-4 rounded-xl space-y-4">
-                <h4 className="text-xs font-bold text-indigo-400 tracking-wider uppercase border-b border-white/[0.05] pb-1">Ubah Informasi Rumah Sakit</h4>
+              <div className="space-y-3 bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-indigo-600 tracking-wider uppercase border-b border-slate-200 pb-1">Ubah Informasi Rumah Sakit</h4>
                 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <Building2 className="w-3.5 h-3.5 text-indigo-400/80" /> Nama Rumah Sakit / Instansi <span className="text-rose-500">*</span>
+                  <label className="text-xs text-slate-600 font-semibold flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-indigo-600" /> Nama Rumah Sakit / Instansi <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={tempName}
                     onChange={e => setTempName(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: RSUD AL-MULK"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-indigo-400/80" /> Alamat Lengkap <span className="text-rose-500">*</span>
+                  <label className="text-xs text-slate-600 font-semibold flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-indigo-600" /> Alamat Lengkap <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
                     required
                     value={alamatRs}
                     onChange={e => setAlamatRs(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Jl. Merdeka No. 10..."
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <label className="text-xs text-slate-300 font-semibold">Provinsi</label>
+                    <label className="text-xs text-slate-600 font-semibold">Provinsi</label>
                     <input
                       type="text"
                       value={provinsi}
                       onChange={e => setProvinsi(e.target.value)}
-                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                       placeholder="Contoh: Jawa Barat"
                     />
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs text-slate-300 font-semibold">Kota / Kabupaten</label>
+                    <label className="text-xs text-slate-600 font-semibold">Kota / Kabupaten</label>
                     <input
                       type="text"
                       value={kotaKab}
                       onChange={e => setKotaKab(e.target.value)}
-                      className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                       placeholder="Contoh: Bandung"
                     />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300 font-semibold">Kode Pos</label>
+                  <label className="text-xs text-slate-600 font-semibold">Kode Pos</label>
                   <input
                     type="text"
                     value={kodePos}
                     onChange={e => setKodePos(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: 40123"
                   />
                 </div>
               </div>
 
-              <div className="space-y-3 bg-slate-900/20 border border-white/[0.03] p-4 rounded-xl space-y-4">
-                <h4 className="text-xs font-bold text-emerald-400 tracking-wider uppercase border-b border-white/[0.05] pb-1">Ubah Informasi Kontak</h4>
+              <div className="space-y-3 bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-emerald-600 tracking-wider uppercase border-b border-slate-200 pb-1">Ubah Informasi Kontak</h4>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <Mail className="w-3.5 h-3.5 text-emerald-400/80" /> Email <span className="text-rose-500">*</span>
+                  <label className="text-xs text-slate-600 font-semibold flex items-center gap-1">
+                    <Mail className="w-3.5 h-3.5 text-emerald-600" /> Email <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="email"
                     required
                     value={emailRs}
                     onChange={e => setEmailRs(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="email@rumahsakit.com"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-emerald-400/80" /> Nomor Telepon
+                  <label className="text-xs text-slate-600 font-semibold flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" /> Nomor Telepon
                   </label>
                   <input
                     type="tel"
                     value={noTelepon}
                     onChange={e => setNoTelepon(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: 021123456"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <Phone className="w-3.5 h-3.5 text-emerald-400/80" /> Nomor WhatsApp <span className="text-rose-500">*</span>
+                  <label className="text-xs text-slate-600 font-semibold flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-emerald-600" /> Nomor WhatsApp <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="tel"
                     required
                     value={noWhatsapp}
                     onChange={e => setNoWhatsapp(e.target.value)}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none"
                     placeholder="Contoh: 08123456789"
                   />
                 </div>
               </div>
 
-              <div className="space-y-3 bg-slate-900/20 border border-white/[0.03] p-4 rounded-xl space-y-4">
-                <h4 className="text-xs font-bold text-cyan-400 tracking-wider uppercase border-b border-white/[0.05] pb-1">Ubah Kredensial Akun</h4>
+              <div className="space-y-3 bg-slate-50 border border-slate-100 p-4 rounded-xl space-y-4">
+                <h4 className="text-xs font-bold text-cyan-600 tracking-wider uppercase border-b border-slate-200 pb-1">Ubah Kredensial Akun</h4>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs text-slate-300 font-semibold flex items-center gap-1">
-                    <User className="w-3.5 h-3.5 text-cyan-400/80" /> Username <span className="text-rose-500">*</span>
+                  <label className="text-xs text-slate-600 font-semibold flex items-center gap-1">
+                    <User className="w-3.5 h-3.5 text-cyan-600" /> Username <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -1062,7 +1062,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     disabled={role === 'rs'}
-                    className="w-full bg-slate-950 border border-white/10 rounded-xl px-4 py-2.5 text-xs text-white focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs text-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                   {role === 'rs' && <p className="text-[10px] text-slate-500">Username akun portal rumah sakit hanya dapat diubah oleh Admin Utama.</p>}
                 </div>
@@ -1092,7 +1092,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                       resetFetch();
                     }
                   }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-xl text-xs font-semibold transition-all transform-gpu cursor-pointer"
+                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all transform-gpu cursor-pointer"
                 >
                   Batal
                 </button>
@@ -1111,22 +1111,22 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
         {/* Wallpaper Konfigurasi */}
         {role === 'admin' && (
-          <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
+          <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
             <div>
-              <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
-                <ImageIcon className="w-4 h-4 text-cyan-400" /> Wallpaper Latar Belakang
+              <h3 className="text-[16px] font-semibold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-1.5">
+                <ImageIcon className="w-4 h-4 text-cyan-600" /> Wallpaper Latar Belakang
               </h3>
-            <p className="text-[12px] text-white/50 mt-1">Ubah latar belakang halaman utama, login, dan landing page.</p>
+            <p className="text-[12px] text-slate-500 mt-1">Ubah latar belakang halaman utama, login, dan landing page.</p>
           </div>
 
           {/* Sub-tab Selection */}
-          <div className="flex bg-slate-900/60 p-1 rounded-xl border border-white/[0.08]">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50">
             <button
               onClick={() => setActiveSubTab('upload')}
               className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeSubTab === 'upload' 
-                  ? 'bg-slate-800 text-white shadow-md' 
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-white text-slate-800 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Unggah Berkas
@@ -1135,8 +1135,8 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               onClick={() => setActiveSubTab('url')}
               className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeSubTab === 'url' 
-                  ? 'bg-slate-800 text-white shadow-md' 
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-white text-slate-800 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Gunakan Tautan/URL
@@ -1144,7 +1144,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           </div>
 
           {uploadError && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl flex items-start gap-2">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{uploadError}</span>
             </div>
@@ -1159,8 +1159,8 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               onClick={() => fileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all transform-gpu flex flex-col items-center justify-center min-h-[160px] ${
                 isDragging 
-                  ? 'border-indigo-500 bg-indigo-500/5' 
-                  : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/10'
+                  ? 'border-indigo-500 bg-indigo-50' 
+                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
               }`}
             >
               <input
@@ -1173,18 +1173,18 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               
               {isUploading ? (
                 <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
-                  <p className="text-xs text-slate-300 font-medium">Sedang memproses dan menyinkronkan ke Supabase...</p>
+                  <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                  <p className="text-xs text-slate-600 font-medium">Sedang memproses dan menyinkronkan ke Supabase...</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="p-3 bg-slate-950 rounded-xl inline-block border border-slate-800">
-                    <UploadCloud className="w-6 h-6 text-indigo-400" />
+                  <div className="p-3 bg-slate-50 rounded-xl inline-block border border-slate-100">
+                    <UploadCloud className="w-6 h-6 text-indigo-600" />
                   </div>
-                  <h4 className="text-xs font-semibold text-slate-200">
-                    Tarik & Letakkan berkas di sini, atau <span className="text-indigo-400 underline">pilih berkas</span>
+                  <h4 className="text-xs font-semibold text-slate-700">
+                    Tarik & Letakkan berkas di sini, atau <span className="text-indigo-600 underline">pilih berkas</span>
                   </h4>
-                  <p className="text-[10px] text-slate-500 max-w-xs mx-auto">
+                  <p className="text-[10px] text-slate-400 max-w-xs mx-auto">
                     Mendukung gambar kustom (PNG, JPG, JPEG) hingga maks. 15MB atau video (MP4/WebM) hingga maks. 15MB.
                   </p>
                 </div>
@@ -1194,7 +1194,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
             /* Paste URL Tab */
             <form onSubmit={handleUrlSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300">Tautan / URL Gambar Latar Belakang</label>
+                <label className="text-xs font-semibold text-slate-600">Tautan / URL Gambar Latar Belakang</label>
                 <div className="relative">
                   <input
                     type="url"
@@ -1202,9 +1202,9 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     placeholder="https://contoh.com/wallpaper.jpg"
                     value={wallpaperUrlInput}
                     onChange={e => setWallpaperUrlInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200 font-mono text-xs"
+                    className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-700 font-mono text-xs"
                   />
-                  <LinkIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <LinkIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 </div>
                 <p className="text-[10px] text-slate-400">
                   Masukkan tautan URL langsung ke gambar (PNG/JPG). Video latar belakang tidak lagi menggunakan tautan URL dan wajib diunggah secara langsung pada tab &quot;Unggah Berkas&quot; dengan batasan maksimal 15MB.
@@ -1215,7 +1215,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   type="submit"
                   disabled={isUploading || !wallpaperUrlInput.trim()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
                 >
                   {isUploading ? (
                     <>
@@ -1233,30 +1233,30 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
           {/* Active Wallpaper Preview & Management */}
           {activeWallpaper && (
-            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-950/50 space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-800/80 pb-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                   {activeWallpaper.type === 'video' ? (
                     <>
-                      <VideoIcon className="w-3.5 h-3.5 text-cyan-400" /> Video Aktif
+                      <VideoIcon className="w-3.5 h-3.5 text-cyan-600" /> Video Aktif
                     </>
                   ) : (
                     <>
-                      <ImageIcon className="w-3.5 h-3.5 text-indigo-400" /> Gambar Aktif
+                      <ImageIcon className="w-3.5 h-3.5 text-indigo-600" /> Gambar Aktif
                     </>
                   )}
                 </span>
                 <button
                   onClick={handleClearWallpaper}
                   disabled={isUploading}
-                  className="text-red-400 hover:text-red-300 transition-all transform-gpu text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 cursor-pointer"
+                  className="text-red-600 hover:text-red-500 transition-all transform-gpu text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Hapus Wallpaper
                 </button>
               </div>
 
               {/* Live Thumbnail Preview */}
-              <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center">
+              <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center">
                 {activeWallpaper.type === 'video' ? (
                   <video
                     src={activeWallpaper.url}
@@ -1275,17 +1275,17 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     className="w-full h-full object-cover"
                   />
                 )}
-                <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800 text-[9px] font-mono text-slate-300 max-w-[200px] truncate">
+                <div className="absolute bottom-2 left-2 bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-800 text-[9px] font-mono text-slate-200 max-w-[200px] truncate">
                   {activeWallpaper.url}
                 </div>
               </div>
             </div>
           )}
 
-          <div className="p-3.5 bg-slate-950/40 rounded-xl border border-slate-800/60 text-[10.5px] text-slate-400 flex gap-2">
-            <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-[10.5px] text-slate-500 flex gap-2">
+            <HelpCircle className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
             <p>
-              Wallpaper kustom secara otomatis disinkronkan ke tabel <code className="text-indigo-400 font-mono">app_settings</code> dan media berkas disimpan ke dalam bucket <code className="text-indigo-400 font-mono">wallpapers</code> di Supabase Anda, serta disimpan di peramban secara otomatis sebagai cadangan instan.
+              Wallpaper kustom secara otomatis disinkronkan ke tabel <code className="text-indigo-600 font-mono font-bold">app_settings</code> dan media berkas disimpan ke dalam bucket <code className="text-indigo-600 font-mono font-bold">wallpapers</code> di Supabase Anda, serta disimpan di peramban secara otomatis sebagai cadangan instan.
             </p>
           </div>
         </div>
@@ -1293,22 +1293,22 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
         {/* Logo AHRQ Konfigurasi */}
         {role === 'admin' && (
-        <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
+        <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
           <div>
-            <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
-              <UploadCloud className="w-4 h-4 text-cyan-400 animate-pulse" /> Logo Instansi / AHRQ
+            <h3 className="text-[16px] font-semibold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-1.5">
+              <UploadCloud className="w-4 h-4 text-cyan-600 animate-pulse" /> Logo Instansi / AHRQ
             </h3>
-            <p className="text-[12px] text-white/50 mt-1">Ubah logo lambang instansi yang tampil di Side Bar dan Hero Section halaman utama.</p>
+            <p className="text-[12px] text-slate-500 mt-1">Ubah logo lambang instansi yang tampil di Side Bar dan Hero Section halaman utama.</p>
           </div>
 
           {/* Sub-tab Selection */}
-          <div className="flex bg-slate-900/60 p-1 rounded-xl border border-white/[0.08]">
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200/50">
             <button
               onClick={() => setActiveLogoSubTab('upload')}
               className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeLogoSubTab === 'upload' 
-                  ? 'bg-slate-800 text-white shadow-md' 
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-white text-slate-800 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Unggah Berkas
@@ -1317,8 +1317,8 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               onClick={() => setActiveLogoSubTab('url')}
               className={`flex-1 py-2 text-[12px] font-semibold rounded-lg transition-all transform-gpu ${
                 activeLogoSubTab === 'url' 
-                  ? 'bg-slate-800 text-white shadow-md' 
-                  : 'text-white/50 hover:text-white'
+                  ? 'bg-white text-slate-800 shadow-sm' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               Gunakan Tautan/URL
@@ -1326,7 +1326,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           </div>
 
           {logoUploadError && (
-            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl flex items-start gap-2">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{logoUploadError}</span>
             </div>
@@ -1341,8 +1341,8 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               onClick={() => logoFileInputRef.current?.click()}
               className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all transform-gpu flex flex-col items-center justify-center min-h-[160px] ${
                 isLogoDragging 
-                  ? 'border-indigo-500 bg-indigo-500/5' 
-                  : 'border-slate-800 hover:border-slate-700 hover:bg-slate-900/10'
+                  ? 'border-indigo-500 bg-indigo-50' 
+                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50/50'
               }`}
             >
               <input
@@ -1355,18 +1355,18 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               
               {isUploadingLogo ? (
                 <div className="flex flex-col items-center gap-3">
-                  <Loader2 className="w-8 h-8 text-indigo-400 animate-spin" />
-                  <p className="text-xs text-slate-300 font-medium">Sedang memproses dan menyinkronkan ke Supabase...</p>
+                  <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+                  <p className="text-xs text-slate-600 font-medium">Sedang memproses dan menyinkronkan ke Supabase...</p>
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="p-3 bg-slate-950 rounded-xl inline-block border border-slate-800">
-                    <UploadCloud className="w-6 h-6 text-indigo-400" />
+                  <div className="p-3 bg-slate-50 rounded-xl inline-block border border-slate-100">
+                    <UploadCloud className="w-6 h-6 text-indigo-600" />
                   </div>
-                  <h4 className="text-xs font-semibold text-slate-200">
-                    Tarik & Letakkan logo di sini, atau <span className="text-indigo-400 underline">pilih berkas</span>
+                  <h4 className="text-xs font-semibold text-slate-700">
+                    Tarik & Letakkan logo di sini, atau <span className="text-indigo-600 underline">pilih berkas</span>
                   </h4>
-                  <p className="text-[10px] text-slate-500 max-w-xs mx-auto">
+                  <p className="text-[10px] text-slate-400 max-w-xs mx-auto">
                     Mendukung format gambar (PNG, JPG, JPEG, SVG) hingga maks. 5MB.
                   </p>
                 </div>
@@ -1376,7 +1376,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
             /* Paste URL Tab */
             <form onSubmit={handleLogoUrlSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-xs font-semibold text-slate-300">Tautan / URL Logo Baru</label>
+                <label className="text-xs font-semibold text-slate-600">Tautan / URL Logo Baru</label>
                 <div className="relative">
                   <input
                     type="url"
@@ -1384,9 +1384,9 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                     placeholder="https://contoh.com/logo.png"
                     value={logoUrlInput}
                     onChange={e => setLogoUrlInput(e.target.value)}
-                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-10 pr-4 py-3 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200 font-mono text-xs"
+                    className="w-full bg-white border border-slate-200 rounded-xl pl-10 pr-4 py-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-700 font-mono text-xs"
                   />
-                  <LinkIcon className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
+                  <LinkIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 </div>
                 <p className="text-[10px] text-slate-400">
                   Masukkan tautan URL langsung ke gambar logo instansi Anda (PNG/JPG/SVG).
@@ -1397,7 +1397,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   type="submit"
                   disabled={isUploadingLogo || !logoUrlInput.trim()}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
                 >
                   {isUploadingLogo ? (
                     <>
@@ -1415,39 +1415,39 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
           {/* Active Logo Preview & Management */}
           {activeLogo && (
-            <div className="border border-slate-800 rounded-2xl p-4 bg-slate-950/50 space-y-3">
-              <div className="flex justify-between items-center border-b border-slate-800/80 pb-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                  <ImageIcon className="w-3.5 h-3.5 text-indigo-400" /> Logo Aktif
+            <div className="border border-slate-200 rounded-2xl p-4 bg-slate-50 space-y-3">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-2">
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                  <ImageIcon className="w-3.5 h-3.5 text-indigo-600" /> Logo Aktif
                 </span>
                 <button
                   onClick={handleClearLogo}
                   disabled={isUploadingLogo}
-                  className="text-red-400 hover:text-red-300 transition-all transform-gpu text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-500/10 hover:bg-red-500/15 border border-red-500/20 cursor-pointer"
+                  className="text-red-600 hover:text-red-500 transition-all transform-gpu text-xs flex items-center gap-1 px-2.5 py-1 rounded-lg bg-red-50 hover:bg-red-100 border border-red-200 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Hapus Logo
                 </button>
               </div>
 
               {/* Live Thumbnail Preview */}
-              <div className="relative p-4 rounded-xl overflow-hidden bg-slate-900 border border-slate-800 flex items-center justify-center min-h-[100px]">
+              <div className="relative p-4 rounded-xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center min-h-[100px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={activeLogo.url}
                   alt="Logo preview"
                   className="max-h-[80px] w-auto object-contain"
                 />
-                <div className="absolute bottom-2 left-2 bg-slate-950/80 px-2 py-1 rounded-lg border border-slate-800 text-[9px] font-mono text-slate-300 max-w-[200px] truncate">
+                <div className="absolute bottom-2 left-2 bg-slate-900/80 px-2 py-1 rounded-lg border border-slate-800 text-[9px] font-mono text-slate-200 max-w-[200px] truncate">
                   {activeLogo.url}
                 </div>
               </div>
             </div>
           )}
 
-          <div className="p-3.5 bg-slate-950/40 rounded-xl border border-slate-800/60 text-[10.5px] text-slate-400 flex gap-2">
-            <HelpCircle className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
+          <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-100 text-[10.5px] text-slate-500 flex gap-2">
+            <HelpCircle className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
             <p>
-              Logo kustom secara otomatis disinkronkan ke tabel <code className="text-indigo-400 font-mono">app_settings</code> dan media berkas disimpan ke dalam bucket <code className="text-indigo-400 font-mono">logos</code> di Supabase Anda, serta disimpan di peramban secara otomatis sebagai cadangan instan.
+              Logo kustom secara otomatis disinkronkan ke tabel <code className="text-indigo-600 font-mono font-bold">app_settings</code> dan media berkas disimpan ke dalam bucket <code className="text-indigo-600 font-mono font-bold">logos</code> di Supabase Anda, serta disimpan di peramban secara otomatis sebagai cadangan instan.
             </p>
           </div>
         </div>
@@ -1456,47 +1456,47 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
       {/* Benchmark Konfigurasi */}
       {role === 'admin' && (
-        <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/[0.08] pb-3">
+        <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
             <div>
-              <h3 className="text-[16px] font-semibold text-[#F8FAFC] flex items-center gap-1.5">
-                <BarChart2 className="w-4 h-4 text-emerald-400" /> Kelola Master Benchmark
+              <h3 className="text-[16px] font-semibold text-slate-800 flex items-center gap-1.5">
+                <BarChart2 className="w-4 h-4 text-emerald-600" /> Kelola Master Benchmark
               </h3>
-              <p className="text-[12px] text-white/50 mt-1">Atur nilai referensi rata-rata rumah sakit percontohan untuk setiap dimensi. Nilai ini akan tampil pada Grafik Capaian Dimensi.</p>
+              <p className="text-[12px] text-slate-500 mt-1">Atur nilai referensi rata-rata rumah sakit percontohan untuk setiap dimensi. Nilai ini akan tampil pada Grafik Capaian Dimensi.</p>
             </div>
             <button
               type="button"
               onClick={handleSaveBenchmark}
               disabled={isSavingBenchmark}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu shadow-md shrink-0"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu shadow-md shrink-0 cursor-pointer"
             >
               {isSavingBenchmark ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
               {isSavingBenchmark ? 'Menyimpan...' : 'Simpan Benchmark'}
             </button>
           </div>
 
-          <div className="overflow-x-auto border border-white/5 rounded-xl bg-slate-900/30">
+          <div className="overflow-x-auto border border-slate-100 rounded-xl bg-slate-50">
             <table className="w-full text-left text-[11px]">
-              <thead className="bg-slate-950/60 border-b border-white/10 text-slate-400 uppercase tracking-wider font-semibold">
+              <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase tracking-wider font-semibold">
                 <tr>
                   <th className="p-3 w-8 text-center">No</th>
                   <th className="p-3">Dimensi Budaya Keselamatan Pasien</th>
-                  <th className="p-3 w-28 text-center text-emerald-400">Min (%)</th>
-                  <th className="p-3 w-28 text-center text-cyan-400">Max (%)</th>
+                  <th className="p-3 w-28 text-center text-emerald-600">Min (%)</th>
+                  <th className="p-3 w-28 text-center text-cyan-650">Max (%)</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-slate-300">
+              <tbody className="divide-y divide-slate-100 text-slate-700">
                 {Object.keys(DIMENSI_INFO).map((k, i) => (
-                  <tr key={k} className="hover:bg-white/[0.02] transition-colors">
-                    <td className="p-3 text-center text-slate-500 font-bold">{i + 1}</td>
-                    <td className="p-3 font-medium text-slate-200">{DIMENSI_INFO[k].nama}</td>
+                  <tr key={k} className="hover:bg-slate-100/50 transition-colors">
+                    <td className="p-3 text-center text-slate-400 font-bold">{i + 1}</td>
+                    <td className="p-3 font-medium text-slate-800">{DIMENSI_INFO[k].nama}</td>
                     <td className="p-3">
                       <div className="relative">
                         <input
                           type="number"
                           value={benchmarks[k]?.min ?? ''}
                           onChange={e => handleBenchmarkChange(k, 'min', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-center text-emerald-400 font-mono focus:border-emerald-500 outline-none transition-colors"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-emerald-600 font-mono focus:border-emerald-500 outline-none transition-colors"
                         />
                       </div>
                     </td>
@@ -1506,7 +1506,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                           type="number"
                           value={benchmarks[k]?.max ?? ''}
                           onChange={e => handleBenchmarkChange(k, 'max', e.target.value)}
-                          className="w-full bg-slate-950 border border-white/10 rounded-lg px-2 py-1.5 text-center text-cyan-400 font-mono focus:border-cyan-500 outline-none transition-colors"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-cyan-600 font-mono focus:border-cyan-500 outline-none transition-colors"
                         />
                       </div>
                     </td>
@@ -1520,12 +1520,12 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
       {/* Supabase Database Integration Settings */}
       {role === 'admin' && (
-      <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
+      <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
         <div>
-          <h3 className="text-[16px] font-semibold text-[#F8FAFC] border-b border-white/[0.08] pb-3 flex items-center gap-1.5">
-            <Database className="w-4 h-4 text-emerald-400" /> Integrasi Database Supabase Cloud
+          <h3 className="text-[16px] font-semibold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-1.5">
+            <Database className="w-4 h-4 text-emerald-600" /> Integrasi Database Supabase Cloud
           </h3>
-          <p className="text-[12px] text-white/50 mt-1">
+          <p className="text-[12px] text-slate-500 mt-1">
             Gunakan database cloud Supabase untuk mengaktifkan sinkronisasi real-time instan dan penyimpanan permanen bagi seluruh unit kerja fasyankes Anda.
           </p>
         </div>
@@ -1533,23 +1533,23 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         {/* Database Connection Status Block */}
         <div className={`p-5 rounded-2xl border text-xs flex flex-col md:flex-row md:items-center justify-between gap-4 ${
           hasSupabase 
-            ? 'bg-emerald-950/20 border-emerald-500/20 text-emerald-300' 
-            : 'bg-amber-950/20 border-amber-500/20 text-amber-300'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+            : 'bg-amber-50 border-amber-200 text-amber-800'
         }`}>
           <div className="flex items-start gap-3">
             {hasSupabase ? (
-              <Wifi className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+              <Wifi className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
             ) : (
-              <WifiOff className="w-5 h-5 shrink-0 text-amber-400 mt-0.5" />
+              <WifiOff className="w-5 h-5 shrink-0 text-amber-600 mt-0.5" />
             )}
             <div className="space-y-1">
               <span className="font-bold text-sm">
                 Status: {hasSupabase ? 'Koneksi Cloud Aktif' : 'Berjalan Secara Lokal (Luring)'}
               </span>
-              <p className="text-slate-400 text-[11px] leading-relaxed max-w-xl">
+              <p className="text-slate-600 text-[11px] leading-relaxed max-w-xl">
                 {hasSupabase 
                   ? 'Aplikasi terhubung dengan aman ke database cloud Supabase melalui variabel lingkungan sistem. Seluruh data kuesioner, akun RS, dan wallpaper akan disinkronkan secara otomatis.' 
-                  : 'Aplikasi saat ini menyimpan semua data secara lokal pada peramban web Anda. Untuk mengaktifkan sinkronisasi database cloud otomatis, atur variabel lingkungan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY di server.'
+                  : 'Aplikasi saat ini menyimpan semua data secara lokal pada peramban web Anda. Untuk mengaktifkan sinkronisasi database cloud otomatis, atur variabel lingkungan NEXT_PUBLIC_SUPABASE_URL AND NEXT_PUBLIC_SUPABASE_ANON_KEY di server.'
                 }
               </p>
             </div>
@@ -1560,15 +1560,15 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               type="button"
               onClick={handleTestConnection}
               disabled={isTestingConn}
-              className="px-4 py-2.5 bg-slate-850 hover:bg-slate-800 disabled:opacity-50 text-slate-200 font-semibold rounded-xl text-xs border border-slate-700/60 flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 font-semibold rounded-xl text-xs border border-slate-200 flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
             >
               {isTestingConn ? (
                 <>
-                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-400" /> Menguji...
+                  <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" /> Menguji...
                 </>
               ) : (
                 <>
-                  <RefreshCw className="w-3.5 h-3.5 text-indigo-400" /> Uji Koneksi Database
+                  <RefreshCw className="w-3.5 h-3.5 text-indigo-600" /> Uji Koneksi Database
                 </>
               )}
             </button>
@@ -1596,18 +1596,18 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         {connResult && (
           <div className={`p-4 rounded-xl border text-xs flex items-start gap-3 animate-fadeIn ${
             connResult.success 
-              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-              : 'bg-red-500/10 border-red-500/30 text-red-400'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+              : 'bg-red-50 border-red-200 text-red-750'
           }`}>
             {connResult.success ? <Wifi className="w-4 h-4 shrink-0 mt-0.5" /> : <WifiOff className="w-4 h-4 shrink-0 mt-0.5" />}
             <div className="space-y-1">
               <span className="font-bold">{connResult.success ? 'Koneksi Berhasil' : 'Koneksi Gagal'}</span>
-              <p className="opacity-90 leading-relaxed">{connResult.message}</p>
+              <p className="opacity-95 leading-relaxed">{connResult.message}</p>
               {connResult.tableMissing && (
                 <button
                   type="button"
                   onClick={() => setShowSqlSchema(true)}
-                  className="mt-2 text-[10px] font-bold underline text-indigo-300 hover:text-indigo-200 block text-left cursor-pointer"
+                  className="mt-2 text-[10px] font-bold underline text-indigo-600 hover:text-indigo-800 block text-left cursor-pointer"
                 >
                   Tampilkan Script Pembuatan Tabel (SQL Schema)
                 </button>
@@ -1620,31 +1620,31 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         {syncResult && (
           <div className={`p-4 rounded-xl border text-xs flex items-start gap-3 animate-fadeIn ${
             syncResult.success 
-              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400' 
-              : 'bg-amber-500/10 border-amber-500/30 text-amber-400'
+              ? 'bg-indigo-50 border-indigo-200 text-indigo-800' 
+              : 'bg-amber-50 border-amber-200 text-amber-800'
           }`}>
             <Check className="w-4 h-4 shrink-0 mt-0.5" />
             <div className="space-y-1">
               <span className="font-bold">{syncResult.success ? 'Sinkronisasi Selesai' : 'Peringatan Sinkronisasi'}</span>
-              <p className="opacity-90 leading-relaxed">{syncResult.message}</p>
-              <div className="flex gap-4 pt-1 text-[11px] font-semibold text-slate-300">
-                <span>📊 Survei Disalin: <strong className="text-emerald-400 font-mono">{syncResult.surveysSynced}</strong></span>
-                <span>🔐 Akun RS Disalin: <strong className="text-emerald-400 font-mono">{syncResult.accountsSynced}</strong></span>
-                <span>🖼️ Wallpaper: <strong className="text-emerald-400 font-mono">{syncResult.wallpaperSynced ? 'Disinkronkan' : 'Sesuai'}</strong></span>
+              <p className="opacity-95 leading-relaxed">{syncResult.message}</p>
+              <div className="flex gap-4 pt-1 text-[11px] font-semibold text-slate-700">
+                <span>📊 Survei Disalin: <strong className="text-emerald-600 font-mono">{syncResult.surveysSynced}</strong></span>
+                <span>🔐 Akun RS Disalin: <strong className="text-emerald-600 font-mono">{syncResult.accountsSynced}</strong></span>
+                <span>🖼️ Wallpaper: <strong className="text-emerald-600 font-mono">{syncResult.wallpaperSynced ? 'Disinkronkan' : 'Sesuai'}</strong></span>
               </div>
             </div>
           </div>
         )}
 
         {/* SQL Schema collapsible section */}
-        <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/40">
+        <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50">
           <button
             type="button"
             onClick={() => setShowSqlSchema(!showSqlSchema)}
-            className="w-full px-4 py-3 bg-slate-950/60 hover:bg-slate-950 flex items-center justify-between text-xs font-semibold text-slate-300 transition-all transform-gpu outline-none cursor-pointer"
+            className="w-full px-4 py-3 bg-slate-100 hover:bg-slate-200/80 flex items-center justify-between text-xs font-semibold text-slate-700 transition-all transform-gpu outline-none cursor-pointer"
           >
             <span className="flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-cyan-400" />
+              <Terminal className="w-4 h-4 text-cyan-600" />
               Tampilkan Script SQL Schema Pembuatan Tabel (Supabase)
             </span>
             <span className="text-[10px] text-slate-500 font-mono">
@@ -1653,16 +1653,16 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           </button>
 
           {showSqlSchema && (
-            <div className="p-4 border-t border-slate-800 space-y-3 bg-slate-950 text-[11px] text-slate-300">
-              <p className="text-slate-400 leading-relaxed">
+            <div className="p-4 border-t border-slate-200 space-y-3 bg-slate-50 text-[11px] text-slate-600">
+              <p className="text-slate-500 leading-relaxed">
                 Salin kode di bawah ini, buka panel <strong>SQL Editor</strong> di dashboard Supabase Anda, buat kueri baru (<strong>New Query</strong>), tempel kodenya, dan klik <strong>Run</strong>. Ini akan secara otomatis membuat seluruh tabel, mengaktifkan keamanan baris (RLS), dan membuat bucket penyimpanan wallpaper kustom.
               </p>
 
               <div className="relative">
-                <pre className="p-4 bg-slate-900 border border-slate-850 rounded-xl text-[10px] font-mono overflow-x-auto text-slate-300 max-h-64 ">
+                <pre className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-[10px] font-mono overflow-x-auto text-slate-200 max-h-64 ">
                   {`-- SCRIPT SQL SCHEMA UNTUK SUPABASE SQL EDITOR --
 -- Jalankan kode ini di tab "SQL Editor" pada dashboard Supabase Anda --
-
+ 
 -- 1. Tabel Kuesioner AHRQ
 CREATE TABLE IF NOT EXISTS ahrq_surveys (
   id TEXT PRIMARY KEY,
@@ -1751,7 +1751,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                 <button
                   type="button"
                   onClick={handleCopySql}
-                  className="absolute top-3 right-3 px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white hover:bg-slate-850 flex items-center gap-1 transition-all transform-gpu cursor-pointer"
+                  className="absolute top-3 right-3 px-3 py-1.5 bg-slate-950 border border-slate-850 rounded-lg text-[10px] font-bold text-slate-300 hover:text-white hover:bg-slate-850 flex items-center gap-1 transition-all transform-gpu cursor-pointer"
                 >
                   {copiedSql ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3 text-indigo-400" />}
                   {copiedSql ? 'Disalin!' : 'Salin SQL'}

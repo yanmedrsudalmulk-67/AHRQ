@@ -8,7 +8,7 @@ import { LogoData } from '../lib/logo';
 
 interface LoginScreenProps {
   onBack: () => void;
-  onLoginSuccess: (role: 'rs' | 'admin', identifier: string, name: string) => void;
+  onLoginSuccess: (role: 'rs' | 'admin', identifier: string, name: string, hospitalId?: string) => void;
   onGoToRegister: () => void;
   registeredHospitals: Array<{ username: string; kodeRs: string; namaRs: string }>;
   activeLogo?: LogoData | null;
@@ -94,7 +94,7 @@ export default function LoginScreen({
       }
 
       // Proceed on Active status
-      onLoginSuccess('rs', found.username, found.namaRs);
+      onLoginSuccess('rs', found.username, found.namaRs, found.id);
     } catch (err) {
       console.error("Login error:", err);
       setError('Terjadi kesalahan koneksi saat login.');

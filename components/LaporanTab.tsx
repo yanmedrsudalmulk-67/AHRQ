@@ -465,53 +465,53 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               viewport={{ once: true, margin: "-50px" }}
               transition={{ duration: 0.5, delay: index * 0.05 }}
               key={dimId} 
-              className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md"
+              className="bg-white/85 backdrop-blur-md border border-slate-200/80 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-lg shadow-blue-500/5"
             >
               {/* Card Header */}
-              <div className="p-5 md:p-6 bg-white/[0.03] border-b border-white/5 relative flex items-center gap-4">
+              <div className="p-5 md:p-6 bg-slate-50/50 border-b border-slate-100 relative flex items-center gap-4">
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-cyan-400 to-indigo-500 shadow-md"></div>
-                <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-500/20 border border-indigo-500/30 rounded-xl flex items-center justify-center shrink-0">
-                  <span className="text-lg md:text-xl font-black text-indigo-300">{index + 1}</span>
+                <div className="w-10 h-10 md:w-12 md:h-12 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-center shrink-0">
+                  <span className="text-lg md:text-xl font-black text-indigo-600">{index + 1}</span>
                 </div>
                 <div>
-                  <h2 className="text-lg md:text-xl font-bold text-white tracking-tight">{dimInfo.nama}</h2>
-                  <p className="text-xs md:text-sm text-white/50 mt-1">{dimInfo.deskripsi}</p>
+                  <h2 className="text-lg md:text-xl font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h2>
+                  <p className="text-xs md:text-sm text-slate-500 mt-1">{dimInfo.deskripsi}</p>
                 </div>
               </div>
 
               {/* Questions List */}
               <div className="p-5 md:p-6 space-y-6">
                 {/* Legend */}
-                <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6 pb-6 border-b border-white/5">
+                <div className="flex flex-wrap items-center gap-4 md:gap-6 mb-6 pb-6 border-b border-slate-100">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-sm bg-emerald-500"></div>
-                    <span className="text-xs font-semibold text-slate-300">Positif</span>
+                    <span className="text-xs font-semibold text-slate-600">Positif</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-sm bg-yellow-500"></div>
-                    <span className="text-xs font-semibold text-slate-300">Netral</span>
+                    <span className="text-xs font-semibold text-slate-600">Netral</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-sm bg-rose-500"></div>
-                    <span className="text-xs font-semibold text-slate-300">Negatif</span>
+                    <span className="text-xs font-semibold text-slate-600">Negatif</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-sm bg-slate-500"></div>
-                    <span className="text-xs font-semibold text-slate-300">Tidak Menjawab / Tidak Tahu</span>
+                    <span className="text-xs font-semibold text-slate-600">Tidak Menjawab / Tidak Tahu</span>
                   </div>
                 </div>
                 {qStats.map(({ q, stat }, qIdx) => (
                   <div key={q.id} className="flex flex-col xl:flex-row gap-4 xl:items-center">
                     {/* Question Text */}
                     <div className="xl:w-2/5 shrink-0 flex gap-3">
-                      <span className="text-sm font-bold text-indigo-300 pt-0.5">{q.code}{q.isReversed && !q.code.endsWith('R') ? 'R' : ''} &mdash;</span>
-                      <p className="text-sm font-medium text-slate-200 leading-relaxed">{q.text}</p>
+                      <span className="text-sm font-bold text-indigo-600 pt-0.5">{q.code}{q.isReversed && !q.code.endsWith('R') ? 'R' : ''} &mdash;</span>
+                      <p className="text-sm font-medium text-slate-700 leading-relaxed">{q.text}</p>
                     </div>
 
                     {/* Chart Container */}
                     <div className="flex-1 flex flex-col md:flex-row items-start md:items-center gap-4">
                       {/* Stacked Bar */}
-                      <div className="flex-1 w-full h-8 flex rounded-xl overflow-hidden bg-slate-900 border border-white/5 relative group cursor-crosshair">
+                      <div className="flex-1 w-full h-8 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 relative group cursor-crosshair">
                         <div 
                           className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 flex items-center justify-center transition-all transform-gpu duration-1000 ease-out group-hover:brightness-110"
                           style={{ width: `${stat.posPercent}%` }}
@@ -545,7 +545,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                       {/* Missing info on the right */}
                       <div className="w-full md:w-32 shrink-0 flex items-center md:justify-end gap-2 text-xs">
                         <div className="w-2 h-2 rounded-full bg-slate-500"></div>
-                        <span className="text-slate-400">Tidak Menjawab / Tidak Tahu <CountUp value={stat.missingPercent} className="font-bold text-white" /></span>
+                        <span className="text-slate-500">Tidak Menjawab / Tidak Tahu <CountUp value={stat.missingPercent} className="font-bold text-slate-700" /></span>
                       </div>
                     </div>
                   </div>
@@ -553,11 +553,11 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               </div>
 
               {/* Summary Card for Dimension */}
-              <div className="bg-black/20 p-5 border-t border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div className="bg-slate-50/80 p-5 border-t border-slate-150 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <p className="text-[11px] text-white/40 uppercase tracking-wider font-semibold">Respon Positif Dimensi</p>
+                  <p className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">Respon Positif Dimensi</p>
                   <div className="flex items-center gap-3 mt-1">
-                    <CountUp value={avgPosPercent} className="text-2xl font-black text-white" />
+                    <CountUp value={avgPosPercent} className="text-2xl font-black text-slate-800" />
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${status.bg} ${status.color} ${status.border}`}>
                       {status.label}
                     </span>
@@ -586,76 +586,76 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md p-6 md:p-8 space-y-6 mt-8 md:mt-12"
+        className="bg-white/85 backdrop-blur-md border border-slate-200/80 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-lg shadow-blue-500/5 p-6 md:p-8 space-y-6 mt-8 md:mt-12"
       >
-        <div className="space-y-3 border-b border-white/5 pb-5">
-          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
-          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <Users className="w-6 h-6 text-indigo-400" />
+        <div className="space-y-3 border-b border-slate-100 pb-5">
+          <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
+            <Users className="w-6 h-6 text-indigo-600" />
             Perbandingan Rata-rata Persentase Respon Positif Dimensi Berdasarkan Posisi Staf
           </h2>
-          <p className="text-xs md:text-sm text-slate-400 font-medium">
+          <p className="text-xs md:text-sm text-slate-500 font-medium">
             Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
           </p>
         </div>
 
         {/* Dynamic Metadata Badges & Legend */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-slate-950/40 p-5 rounded-2xl border border-white/5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-slate-50/80 p-5 rounded-2xl border border-slate-200/60">
           {/* Metadata Badges */}
           <div className="lg:col-span-2 flex flex-wrap gap-3">
-            <div className="px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span className="text-xs font-semibold text-slate-300">Total Responden RS Anda:</span>
-              <span className="text-sm font-black text-white">{filteredSurveys.length} Staf</span>
+            <div className="px-4 py-2.5 bg-cyan-50/80 border border-cyan-200/60 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
+              <span className="text-xs font-semibold text-slate-600">Total Responden RS Anda:</span>
+              <span className="text-sm font-black text-slate-800">{filteredSurveys.length} Staf</span>
             </div>
-            <div className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-              <span className="text-xs font-semibold text-slate-300">Total Responden RS Percontohan (Pilot):</span>
-              <span className="text-sm font-black text-white">100+ RS</span>
+            <div className="px-4 py-2.5 bg-emerald-50/80 border border-emerald-200/60 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span className="text-xs font-semibold text-slate-600">Total Responden RS Percontohan (Pilot):</span>
+              <span className="text-sm font-black text-slate-800">100+ RS</span>
             </div>
           </div>
 
           {/* Legend */}
           <div className="flex flex-wrap items-center justify-start lg:justify-end gap-x-4 gap-y-2 text-[10px] md:text-xs">
-            <div className="flex items-center gap-2 bg-emerald-500/5 px-2.5 py-1.5 rounded-lg border border-emerald-500/10">
+            <div className="flex items-center gap-2 bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-emerald-200/60">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-md"></span>
-              <span className="text-emerald-400 font-bold">Kekuatan (≥ 75%)</span>
+              <span className="text-emerald-700 font-bold">Kekuatan (≥ 75%)</span>
             </div>
-            <div className="flex items-center gap-2 bg-yellow-500/5 px-2.5 py-1.5 rounded-lg border border-yellow-500/10">
+            <div className="flex items-center gap-2 bg-yellow-50 px-2.5 py-1.5 rounded-lg border border-yellow-200/60">
               <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-md"></span>
-              <span className="text-yellow-400 font-bold">Sedang (50% - 74%)</span>
+              <span className="text-yellow-700 font-bold">Sedang (50% - 74%)</span>
             </div>
-            <div className="flex items-center gap-2 bg-rose-500/5 px-2.5 py-1.5 rounded-lg border border-rose-500/10">
+            <div className="flex items-center gap-2 bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-200/60">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-md"></span>
-              <span className="text-rose-400 font-bold">Prioritas (&lt; 50%)</span>
+              <span className="text-rose-700 font-bold">Prioritas (&lt; 50%)</span>
             </div>
           </div>
         </div>
 
         {/* Responsive Table Wrapper with Horizontal Scroll */}
-        <div className="overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/60 backdrop-blur-sm relative max-h-[650px] scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-          <table className="w-full border-collapse text-left text-xs text-slate-300">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white/50 relative max-h-[650px] scrollbar-thin scrollbar-thumb-slate-200 scrollbar-track-transparent">
+          <table className="w-full border-collapse text-left text-xs text-slate-600">
             <thead>
-              <tr className="border-b-2 border-white/15 bg-slate-900/90 sticky top-0 z-30 backdrop-blur-sm text-[11px] font-bold uppercase tracking-wider text-white">
-                <th className="py-4 px-4 text-center w-12 border-r border-white/10 shadow-sm">No</th>
-                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm">Dimensi Budaya Keselamatan</th>
-                <th className="py-4 px-4 text-center min-w-[150px] border-r border-white/10 shadow-sm">Dataset</th>
-                <th className="py-4 px-4 text-center min-w-[120px] border-r border-white/10 shadow-sm">Total Responden</th>
+              <tr className="border-b-2 border-slate-200 bg-slate-50 sticky top-0 z-30 text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                <th className="py-4 px-4 text-center w-12 border-r border-slate-200/80 shadow-sm">No</th>
+                <th className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 shadow-sm">Dimensi Budaya Keselamatan</th>
+                <th className="py-4 px-4 text-center min-w-[150px] border-r border-slate-200/80 shadow-sm">Dataset</th>
+                <th className="py-4 px-4 text-center min-w-[120px] border-r border-slate-200/80 shadow-sm">Total Responden</th>
                 {uniquePositions.map(pos => {
                   // Count active respondents for each position to make column header extremely informative
                   const count = filteredSurveys.filter(s => (s.dimensiScores as any)?._rawAnswers?.posisiStaf === pos).length;
                   return (
-                    <th key={pos} className="py-4 px-5 min-w-[190px] text-center border-r border-white/10 last:border-r-0 font-black text-indigo-300">
+                    <th key={pos} className="py-4 px-5 min-w-[190px] text-center border-r border-slate-200/80 last:border-r-0 font-black text-indigo-600">
                       <div className="flex flex-col items-center">
                         <span>{pos}</span>
-                        <span className="text-[10px] text-indigo-400/80 font-mono tracking-normal normal-case mt-0.5">(N = {count})</span>
+                        <span className="text-[10px] text-indigo-500/80 font-mono tracking-normal normal-case mt-0.5">(N = {count})</span>
                       </div>
                     </th>
                   );
                 })}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-slate-100 bg-white/30 text-slate-600">
               {DIMENSION_ORDER.map((dimId, idx) => {
                 const dimInfo = DIMENSI_INFO[dimId];
                 
@@ -667,33 +667,33 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 return (
                   <Fragment key={dimId}>
                     {/* Row 1: Rumah Sakit Anda */}
-                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu border-b border-white/5">
-                      <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-400 border-r border-white/10 bg-slate-900/40">
+                    <tr className="hover:bg-slate-50/50 transition-all transform-gpu border-b border-slate-100">
+                      <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-600 border-r border-slate-200/80 bg-slate-50/80">
                         {idx + 1}
                       </td>
-                      <td rowSpan={2} className="py-5 px-5 font-bold text-slate-100 border-r border-white/10 bg-slate-900/40">
+                      <td rowSpan={2} className="py-5 px-5 font-bold text-slate-800 border-r border-slate-200/80 bg-slate-50/80">
                         <div className="space-y-1.5 max-w-[320px]">
-                          <div className="text-white text-xs md:text-sm tracking-tight leading-snug">{dimInfo.nama}</div>
-                          <div className="text-[10px] text-slate-400 font-normal leading-relaxed">{dimInfo.deskripsi}</div>
+                          <div className="text-slate-800 text-xs md:text-sm tracking-tight leading-snug">{dimInfo.nama}</div>
+                          <div className="text-[10px] text-slate-500 font-normal leading-relaxed">{dimInfo.deskripsi}</div>
                         </div>
                       </td>
 
-                      <td className="py-3 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                      <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">
                         RS Anda
                       </td>
-                      <td className="py-3 px-4 text-center font-extrabold text-slate-200 border-r border-white/10 bg-cyan-500/[0.02]">
+                      <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">
                         {filteredSurveys.length}
                       </td>
                       {uniquePositions.map((pos, posIdx) => {
                         const { percentage } = getPositionStats(dimId, pos);
                         return (
-                          <td key={`pos-rs-${dimId}-${pos}`} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                          <td key={`pos-rs-${dimId}-${pos}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                             {percentage !== null ? (
                               <span className={getCellColorClass(percentage)}>
                                 {percentage.toFixed(1)}%
                               </span>
                             ) : (
-                              <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                              <span className="text-slate-400 font-medium italic text-[11px]">Tidak Ada Data</span>
                             )}
                           </td>
                         );
@@ -701,18 +701,18 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                     </tr>
 
                     {/* Row 2: Rumah Sakit Percontohan (Pilot Hospital) */}
-                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu bg-slate-900/20">
-                      <td className="py-3 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+                    <tr className="hover:bg-slate-50/30 transition-all transform-gpu bg-slate-50/10">
+                      <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">
                         RS Percontohan
                       </td>
-                      <td className="py-3 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                      <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">
                         -
                       </td>
                       {uniquePositions.map((pos, posIdx) => (
-                        <td key={`pos-pilot-${dimId}-${pos}`} className={`py-3 px-5 text-center border-r border-white/10 ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                        <td key={`pos-pilot-${dimId}-${pos}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                           <div className="flex flex-col items-center justify-center">
                             <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
-                            <span className="text-[9px] text-emerald-400/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                            <span className="text-[9px] text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
                           </div>
                         </td>
                       ))}
@@ -723,33 +723,33 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
               {/* Rata-rata Seluruh Dimensi Rows */}
               {/* Row 1: Rumah Sakit Anda Average */}
-              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all transform-gpu">
-                <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10">
+              <tr className="bg-indigo-50/40 border-t-2 border-indigo-200/80 hover:bg-indigo-50/50 transition-all transform-gpu">
+                <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-600 border-r border-slate-200/80 bg-indigo-50/60">
                   ★
                 </td>
-                <td rowSpan={2} className="py-5 px-5 font-black text-white border-r border-white/10 bg-indigo-950/10">
+                <td rowSpan={2} className="py-5 px-5 font-black text-slate-800 border-r border-slate-200/80 bg-indigo-50/60">
                   <div className="space-y-1">
-                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
-                    <p className="text-[10px] text-slate-400 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
+                    <div className="text-indigo-700 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
+                    <p className="text-[10px] text-slate-500 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
                   </div>
                 </td>
 
-                <td className="py-4 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">
                   RS Anda
                 </td>
-                <td className="py-4 px-4 text-center font-black text-slate-100 border-r border-white/10 bg-cyan-500/[0.02]">
+                <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">
                   {filteredSurveys.length}
                 </td>
                 {uniquePositions.map((pos, posIdx) => {
                   const avgVal = getAverageCompositeForPosition(pos);
                   return (
-                    <td key={`pos-avg-rs-${pos}`} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`pos-avg-rs-${pos}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                       {avgVal !== null ? (
                         <span className={getCellColorClass(avgVal)}>
                           {avgVal.toFixed(1)}%
                         </span>
                       ) : (
-                        <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                        <span className="text-slate-400 font-medium italic text-[11px]">Tidak Ada Data</span>
                       )}
                     </td>
                   );
@@ -757,17 +757,17 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               </tr>
 
               {/* Row 2: Rumah Sakit Percontohan Average */}
-              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all transform-gpu">
-                <td className="py-4 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+              <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all transform-gpu">
+                <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">
                   RS Percontohan
                 </td>
-                <td className="py-4 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">
                   -
                 </td>
                 {uniquePositions.map((pos, posIdx) => {
                   const avgB = getAverageBenchmark();
                   return (
-                    <td key={`pos-avg-pilot-${pos}`} className={`py-4 px-5 text-center border-r border-white/10 font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`pos-avg-pilot-${pos}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === uniquePositions.length - 1 ? 'last:border-r-0' : ''}`}>
                       <span className={getCellColorClass(avgB)}>
                         {avgB.toFixed(1)}%
                       </span>
@@ -786,66 +786,66 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.6 }}
-        className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md p-6 md:p-8 space-y-6 mt-8 md:mt-12"
+        className="bg-white/85 backdrop-blur-md border border-slate-200/80 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-lg shadow-blue-500/5 p-6 md:p-8 space-y-6 mt-8 md:mt-12"
       >
-        <div className="space-y-3 border-b border-white/5 pb-5">
-          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
-          <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <Building2 className="w-6 h-6 text-indigo-400" />
+        <div className="space-y-3 border-b border-slate-100 pb-5">
+          <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
+            <Building2 className="w-6 h-6 text-indigo-600" />
             Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
           </h2>
-          <p className="text-xs md:text-sm text-slate-400 font-medium">
+          <p className="text-xs md:text-sm text-slate-500 font-medium">
             Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
           </p>
         </div>
 
         {/* Dynamic Metadata Badges & Legend */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-slate-950/40 p-5 rounded-2xl border border-white/5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-center bg-slate-50/80 p-5 rounded-2xl border border-slate-200/60">
           {/* Metadata Badges */}
           <div className="lg:col-span-2 flex flex-wrap gap-3">
-            <div className="px-4 py-2.5 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              <span className="text-xs font-semibold text-slate-300">Total Responden RS Anda:</span>
-              <span className="text-sm font-black text-white">{filteredSurveys.length} Staf</span>
+            <div className="px-4 py-2.5 bg-cyan-50/80 border border-cyan-200/60 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-500 animate-pulse"></span>
+              <span className="text-xs font-semibold text-slate-600">Total Responden RS Anda:</span>
+              <span className="text-sm font-black text-slate-800">{filteredSurveys.length} Staf</span>
             </div>
-            <div className="px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-center gap-2.5 shadow-sm">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-              <span className="text-xs font-semibold text-slate-300">Total Unit Kerja:</span>
-              <span className="text-sm font-black text-white">{uniqueUnits.length} Unit</span>
+            <div className="px-4 py-2.5 bg-emerald-50/80 border border-emerald-200/60 rounded-xl flex items-center gap-2.5 shadow-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+              <span className="text-xs font-semibold text-slate-600">Total Unit Kerja:</span>
+              <span className="text-sm font-black text-slate-800">{uniqueUnits.length} Unit</span>
             </div>
           </div>
           
           {/* Legend */}
           <div className="flex flex-wrap items-center justify-start lg:justify-end gap-3 lg:col-span-1">
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"><div className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md"></div><span className="text-[10px] font-bold text-emerald-400">&ge; 75%</span></div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-500/10 border border-yellow-500/20"><div className="w-2.5 h-2.5 rounded-full bg-yellow-400 shadow-md"></div><span className="text-[10px] font-bold text-yellow-400">50-74%</span></div>
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20"><div className="w-2.5 h-2.5 rounded-full bg-rose-400 shadow-md"></div><span className="text-[10px] font-bold text-rose-400">&lt; 50%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200/60"><div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-md"></div><span className="text-[10px] font-bold text-emerald-700">&ge; 75%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-yellow-50 border border-yellow-200/60"><div className="w-2.5 h-2.5 rounded-full bg-yellow-500 shadow-md"></div><span className="text-[10px] font-bold text-yellow-700">50-74%</span></div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 border border-rose-200/60"><div className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-md"></div><span className="text-[10px] font-bold text-rose-700">&lt; 50%</span></div>
           </div>
         </div>
 
         {/* The Scrollable Table Container */}
-        <div className="overflow-x-auto rounded-[16px] border border-white/10 shadow-2xl bg-slate-900/50 backdrop-blur-sm relative custom-scrollbar pb-2">
+        <div className="overflow-x-auto rounded-[16px] border border-slate-200 shadow-2xl bg-white/50 relative custom-scrollbar pb-2">
           <table className="w-full text-left text-xs md:text-sm border-collapse">
-            <thead className="bg-[#0f172a] text-slate-300 uppercase tracking-wider font-semibold border-b-2 border-indigo-500/30 sticky top-0 z-20">
+            <thead className="bg-slate-50 text-slate-700 uppercase tracking-wider font-semibold border-b-2 border-slate-200 sticky top-0 z-20">
               <tr>
-                <th className="py-4 px-4 text-center w-12 border-r border-white/10 shadow-sm sticky left-0 z-30 bg-[#0f172a]">No</th>
-                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm sticky left-12 z-30 bg-[#0f172a]">Dimensi Budaya Keselamatan</th>
-                <th className="py-4 px-4 text-center min-w-[150px] border-r border-white/10 shadow-sm">Dataset</th>
-                <th className="py-4 px-4 text-center min-w-[120px] border-r border-white/10 shadow-sm">Total Responden</th>
+                <th className="py-4 px-4 text-center w-12 border-r border-slate-200/80 shadow-sm sticky left-0 z-30 bg-slate-50">No</th>
+                <th className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 shadow-sm sticky left-12 z-30 bg-slate-50">Dimensi Budaya Keselamatan</th>
+                <th className="py-4 px-4 text-center min-w-[150px] border-r border-slate-200/80 shadow-sm">Dataset</th>
+                <th className="py-4 px-4 text-center min-w-[120px] border-r border-slate-200/80 shadow-sm">Total Responden</th>
                 {uniqueUnits.map(unit => {
                   const count = filteredSurveys.filter(s => s.unitKerja === unit || (s.dimensiScores as any)?._rawAnswers?.unitKerja === unit).length;
                   return (
-                    <th key={unit} className="py-4 px-5 min-w-[190px] text-center border-r border-white/10 last:border-r-0 font-black text-indigo-300">
+                    <th key={unit} className="py-4 px-5 min-w-[190px] text-center border-r border-slate-200/80 last:border-r-0 font-black text-indigo-600">
                       <div className="flex flex-col items-center">
                         <span className="whitespace-normal break-words">{unit}</span>
-                        <span className="text-[10px] text-indigo-400/80 font-mono tracking-normal normal-case mt-0.5">(N = {count})</span>
+                        <span className="text-[10px] text-indigo-500/80 font-mono tracking-normal normal-case mt-0.5">(N = {count})</span>
                       </div>
                     </th>
                   );
                 })}
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5 bg-slate-950/20 text-slate-300">
+            <tbody className="divide-y divide-slate-100 bg-white/30 text-slate-600">
               {DIMENSION_ORDER.map((dimId, idx) => {
                 const bMin = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
                 const bMax = masterBenchmarkData && masterBenchmarkData[dimId] ? masterBenchmarkData[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
@@ -854,32 +854,32 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 return (
                   <Fragment key={`unit-comp-${dimId}`}>
                     {/* Row 1: Rumah Sakit Anda */}
-                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu border-b border-white/5">
-                      <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-400 border-r border-white/10 bg-slate-900/40 sticky left-0 z-10">
+                    <tr className="hover:bg-slate-50/50 transition-all transform-gpu border-b border-slate-100">
+                      <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-600 border-r border-slate-200/80 bg-slate-50/80 sticky left-0 z-10">
                         {idx + 1}
                       </td>
-                      <td rowSpan={2} className="py-5 px-5 font-bold text-white border-r border-white/10 bg-slate-900/40 sticky left-12 z-10 leading-snug">
+                      <td rowSpan={2} className="py-5 px-5 font-bold text-slate-800 border-r border-slate-200/80 bg-slate-50/80 sticky left-12 z-10 leading-snug">
                         <div className="space-y-1.5 max-w-[320px]">
                           <p>{DIMENSI_INFO[dimId].nama}</p>
-                          <p className="text-[10px] text-slate-400 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</p>
+                          <p className="text-[10px] text-slate-500 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</p>
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                      <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">
                         RS Anda
                       </td>
-                      <td className="py-3 px-4 text-center font-extrabold text-slate-200 border-r border-white/10 bg-cyan-500/[0.02]">
+                      <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">
                         {filteredSurveys.length}
                       </td>
                       {uniqueUnits.map((unit, unitIdx) => {
                         const { percentage } = getUnitStats(dimId, unit);
                         return (
-                          <td key={`unit-rs-${dimId}-${unit}`} className={`py-3 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                          <td key={`unit-rs-${dimId}-${unit}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                             {percentage !== null ? (
                               <span className={getCellColorClass(percentage)}>
                                 {percentage.toFixed(1)}%
                               </span>
                             ) : (
-                              <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                              <span className="text-slate-400 font-medium italic text-[11px]">Tidak Ada Data</span>
                             )}
                           </td>
                         );
@@ -887,18 +887,18 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                     </tr>
                     
                     {/* Row 2: Rumah Sakit Percontohan (Pilot Hospital) */}
-                    <tr className="hover:bg-white/[0.01] transition-all transform-gpu bg-slate-900/20">
-                      <td className="py-3 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+                    <tr className="hover:bg-slate-50/30 transition-all transform-gpu bg-slate-50/10">
+                      <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">
                         RS Percontohan
                       </td>
-                      <td className="py-3 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                      <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">
                         -
                       </td>
                       {uniqueUnits.map((unit, unitIdx) => (
-                        <td key={`unit-pilot-${dimId}-${unit}`} className={`py-3 px-5 text-center border-r border-white/10 ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                        <td key={`unit-pilot-${dimId}-${unit}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                           <div className="flex flex-col items-center justify-center">
                             <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
-                            <span className="text-[9px] text-emerald-400/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                            <span className="text-[9px] text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
                           </div>
                         </td>
                       ))}
@@ -909,32 +909,32 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
               {/* Rata-rata Seluruh Dimensi Rows */}
               {/* Row 1: Rumah Sakit Anda Average */}
-              <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all transform-gpu">
-                <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10 sticky left-0 z-10">
+              <tr className="bg-indigo-50/40 border-t-2 border-indigo-200/80 hover:bg-indigo-50/50 transition-all transform-gpu">
+                <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-600 border-r border-slate-200/80 bg-indigo-50/60 sticky left-0 z-10">
                   ★
                 </td>
-                <td rowSpan={2} className="py-5 px-5 font-black text-white border-r border-white/10 bg-indigo-950/10 sticky left-12 z-10">
+                <td rowSpan={2} className="py-5 px-5 font-black text-slate-800 border-r border-slate-200/80 bg-indigo-50/60 sticky left-12 z-10">
                   <div className="space-y-1">
-                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
-                    <p className="text-[10px] text-slate-400 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
+                    <div className="text-indigo-700 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
+                    <p className="text-[10px] text-slate-500 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
                   </div>
                 </td>
-                <td className="py-4 px-4 font-bold text-cyan-400 text-center border-r border-white/10 bg-cyan-500/[0.02]">
+                <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">
                   RS Anda
                 </td>
-                <td className="py-4 px-4 text-center font-black text-slate-100 border-r border-white/10 bg-cyan-500/[0.02]">
+                <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">
                   {filteredSurveys.length}
                 </td>
                 {uniqueUnits.map((unit, unitIdx) => {
                   const avgVal = getAverageCompositeForUnit(unit);
                   return (
-                    <td key={`unit-avg-rs-${unit}`} className={`py-4 px-5 text-center border-r border-white/10 bg-cyan-500/[0.02] font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`unit-avg-rs-${unit}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                       {avgVal !== null ? (
                         <span className={getCellColorClass(avgVal)}>
                           {avgVal.toFixed(1)}%
                         </span>
                       ) : (
-                        <span className="text-slate-500 font-medium italic text-[11px]">Tidak Ada Data</span>
+                        <span className="text-slate-400 font-medium italic text-[11px]">Tidak Ada Data</span>
                       )}
                     </td>
                   );
@@ -942,17 +942,17 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               </tr>
               
               {/* Row 2: Rumah Sakit Percontohan Average */}
-              <tr className="bg-indigo-950/20 hover:bg-white/[0.01] transition-all transform-gpu">
-                <td className="py-4 px-4 font-bold text-emerald-400 text-center border-r border-white/10">
+              <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all transform-gpu">
+                <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">
                   RS Percontohan
                 </td>
-                <td className="py-4 px-4 text-center text-slate-500 border-r border-white/10 font-bold">
+                <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">
                   -
                 </td>
                 {uniqueUnits.map((unit, unitIdx) => {
                   const avgB = getAverageBenchmark();
                   return (
-                    <td key={`unit-avg-pilot-${unit}`} className={`py-4 px-5 text-center border-r border-white/10 font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
+                    <td key={`unit-avg-pilot-${unit}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${unitIdx === uniqueUnits.length - 1 ? 'last:border-r-0' : ''}`}>
                       <span className={getCellColorClass(avgB)}>
                         {avgB.toFixed(1)}%
                       </span>

@@ -200,7 +200,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[22px] bg-white/80 backdrop-blur-md border border-white/60 shadow-lg shadow-teal-500/5 flex flex-col lg:flex-row justify-between items-start gap-8"
+      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[22px] bg-white/80 backdrop-blur-md border border-slate-200 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] flex flex-col lg:flex-row justify-between items-start gap-8"
     >
       {/* Decorative premium radial glow & gradient elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full filter blur-[100px] pointer-events-none -z-10" />
@@ -272,7 +272,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
             </motion.p>
             <motion.p 
               variants={deskripsiVariants}
-              className="text-[14px] md:text-[14px] text-slate-600 font-medium leading-[1.7]"
+              className="text-[13px] md:text-[13px] text-slate-600 font-medium leading-[1.7]"
             >
               {"\"Kelola survei, analisis hasil, dan tingkatkan budaya keselamatan pasien melalui dashboard analitik berbasis AHRQ SOPS Version 2.0.\""}
             </motion.p>

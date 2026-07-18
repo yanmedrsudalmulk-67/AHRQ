@@ -55,6 +55,8 @@ const getShortDimensionName = (kode: string, defaultName: string) => {
 interface DashboardTableProps {
   role: 'rs' | 'admin';
   namaRs: string;
+  identifier?: string;
+  hospitalId?: string;
 }
 
 const STAFF_GROUPS: { [key: string]: string[] } = {
@@ -305,11 +307,15 @@ const getProfExperienceAnalysis = (data: { name: string; value: number; percenta
   return `Distribusi lama kerja sesuai profesi didominasi oleh kelompok ${maxItem.name} sebesar ${maxItem.percentage}% (${maxItem.value} responden), mencerminkan kematangan tingkat keahlian dan kompetensi dalam pemberian asuhan keselamatan pasien.`;
 };
 
-export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
+export default function DashboardTable({ role, namaRs, identifier, hospitalId }: DashboardTableProps) {
   // SWR for automatic realtime data synchronization
-  const { data: surveys = [], error, mutate, isValidating } = useSWR('ahrq_surveys', getSurveys, {
-    refreshInterval: 3000
-  });
+  const { data: surveys = [], error, mutate, isValidating } = useSWR(
+    role === 'admin' ? 'ahrq_surveys_all' : ['ahrq_surveys', hospitalId || identifier],
+    () => getSurveys(role === 'admin' ? undefined : (hospitalId || identifier)),
+    {
+      refreshInterval: 3000
+    }
+  );
 
   // UI Interactive States
   const [searchQuery, setSearchQuery] = useState('');
@@ -395,7 +401,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
   const filteredSurveys = useMemo(() => {
     return surveys.filter(s => {
       // 1. Hospital Filter (Admin has option, RS locked)
-      if (role === 'rs' && s.namaRs.toLowerCase() !== namaRs.toLowerCase()) return false;
+      if (role === 'rs') {
+        const surveyUser = (s.dimensiScores as any)?.username;
+        if (surveyUser) {
+          if (surveyUser.toLowerCase() !== identifier?.toLowerCase()) return false;
+        } else {
+          if (s.namaRs.toLowerCase() !== namaRs.toLowerCase()) return false;
+        }
+      }
       if (role === 'admin' && filterHospital !== 'Semua Rumah Sakit' && s.namaRs !== filterHospital) return false;
 
       // 2. Unit Filter
@@ -430,7 +443,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
 
       return true;
     });
-  }, [surveys, role, namaRs, filterHospital, filterUnit, filterProfesi, filterJabatan, filterPeriod, filterTahun]);
+  }, [surveys, role, namaRs, identifier, filterHospital, filterUnit, filterProfesi, filterJabatan, filterPeriod, filterTahun]);
 
   // Calculate Positive Response Rates Compositely for each Dimension over all filtered surveys
   const calculatedDimensions = useMemo(() => {
@@ -659,7 +672,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
 
   return (
     <div className="space-y-8">
-      <div id="ahrq-table-card" className="relative bg-white/85 backdrop-blur-md border border-white/60 rounded-[22px] shadow-lg shadow-teal-500/5 p-6 overflow-hidden md:p-8 space-y-6 group">
+      <div id="ahrq-table-card" className="relative bg-white/85 backdrop-blur-md border border-slate-200 rounded-[22px] shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] p-6 overflow-hidden md:p-8 space-y-6 group">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -z-10 group-hover:bg-teal-500/15 transition-colors duration-700"></div>
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/10 transition-colors duration-700"></div>
         
@@ -677,7 +690,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider divide-x divide-slate-100">
+              <tr className="bg-[#f54900] text-white font-bold uppercase tracking-wider divide-x divide-orange-400/50">
                 <th className="p-4 text-center w-12 text-[12px]">No</th>
                 <th className="p-4 text-center text-[12px]">DIMENSI BUDAYA KESELAMATAN PASIEN</th>
                 <th className="p-4 text-center w-52 text-[12px]">Hasil Persentase (%)</th>
@@ -716,13 +729,13 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                       onClick={() => setSelectedDimensi(dim.id)}
                       className="hover:bg-slate-50/80 border-b border-slate-100 transition-colors cursor-pointer group divide-x divide-slate-100"
                     >
-                      <td className="p-4 text-center font-bold font-mono hover:text-teal-600 transition-colors text-base text-slate-400">
+                      <td className="p-4 text-center font-bold font-mono text-base text-slate-400">
                         {globalIdx}
                       </td>
                       <td className="p-4 text-left">
-                        <div className="group-hover:text-teal-600 transition-colors text-[14px] font-bold text-slate-800 flex items-center justify-between">
+                        <div className="text-[14px] font-bold text-slate-800 flex items-center justify-between">
                           <span>{dim.nama}</span>
-                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-teal-600" />
+                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
                         </div>
                       </td>
                       <td className="p-4 text-center">
@@ -787,7 +800,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="relative bg-white/85 backdrop-blur-md border border-white/60 rounded-[22px] shadow-lg shadow-teal-500/5 p-6 md:p-8 overflow-hidden group hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 flex flex-col justify-between min-h-[500px]"
+          className="relative bg-white/85 backdrop-blur-md border border-slate-200 rounded-[22px] shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] p-6 md:p-8 overflow-hidden group hover:border-teal-500/50 hover:bg-white transition-all transform-gpu duration-300 flex flex-col justify-between min-h-[500px]"
         >
           {/* Ambient Glows */}
           <div className="absolute -top-32 -right-32 w-80 h-80 bg-teal-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-teal-500/10 transition-colors duration-700"></div>
@@ -930,7 +943,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="relative bg-white/85 backdrop-blur-md border border-white/60 rounded-[22px] shadow-lg shadow-teal-500/5 p-6 md:p-8 overflow-hidden group hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 flex flex-col justify-between min-h-[500px]"
+          className="relative bg-white/85 backdrop-blur-md border border-slate-200 rounded-[22px] shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] p-6 md:p-8 overflow-hidden group hover:border-teal-500/50 hover:bg-white transition-all transform-gpu duration-300 flex flex-col justify-between min-h-[500px]"
         >
           {/* Ambient Glows */}
           <div className="absolute -top-32 -right-32 w-80 h-80 bg-teal-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-teal-500/10 transition-colors duration-700"></div>
@@ -997,7 +1010,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
       </div>
 
       {/* Respondent Profile Dashboard Section */}
-      <div id="ahrq-respondent-profile-card" className="relative bg-white/85 backdrop-blur-md border border-white/60 shadow-lg shadow-teal-500/5 p-6 md:p-8 space-y-8 overflow-hidden group rounded-[22px]">
+      <div id="ahrq-respondent-profile-card" className="relative bg-white/85 backdrop-blur-md border border-slate-200 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] p-6 md:p-8 space-y-8 overflow-hidden group rounded-[22px]">
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -z-10 group-hover:bg-teal-500/15 transition-colors duration-700"></div>
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/10 transition-colors duration-700"></div>
         
@@ -1040,7 +1053,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05 }}
-              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-200 p-5 rounded-[20px] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.08)] hover:border-teal-500/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -1104,7 +1117,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-200 p-5 rounded-[20px] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.08)] hover:border-teal-500/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -1164,7 +1177,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.15 }}
-              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-200 p-5 rounded-[20px] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.08)] hover:border-teal-500/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -1224,7 +1237,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-200 p-5 rounded-[20px] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.08)] hover:border-teal-500/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -1284,7 +1297,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.25 }}
-              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-200 p-5 rounded-[20px] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.08)] hover:border-teal-500/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
@@ -1344,7 +1357,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-200 p-5 rounded-[20px] shadow-[0_8px_20px_-3px_rgba(0,0,0,0.08)] hover:border-teal-500/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
