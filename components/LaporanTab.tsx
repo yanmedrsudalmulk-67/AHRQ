@@ -555,7 +555,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
               {/* Summary Card for Dimension */}
               <div className="bg-black/20 p-5 border-t border-white/5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                  <p className="text-[11px] text-white/40 uppercase tracking-wider font-semibold">Respon Positif Komposit</p>
+                  <p className="text-[11px] text-white/40 uppercase tracking-wider font-semibold">Respon Positif Dimensi</p>
                   <div className="flex items-center gap-3 mt-1">
                     <CountUp value={avgPosPercent} className="text-2xl font-black text-white" />
                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border ${status.bg} ${status.color} ${status.border}`}>
@@ -589,10 +589,10 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md p-6 md:p-8 space-y-6 mt-8 md:mt-12"
       >
         <div className="space-y-3 border-b border-white/5 pb-5">
-          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN KOMPOSIT</span>
+          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
           <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <Users className="w-6 h-6 text-indigo-400" />
-            Perbandingan Rata-rata Persentase Respon Positif Komposit Berdasarkan Posisi Staf
+            Perbandingan Rata-rata Persentase Respon Positif Dimensi Berdasarkan Posisi Staf
           </h2>
           <p className="text-xs md:text-sm text-slate-400 font-medium">
             Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
@@ -638,7 +638,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
             <thead>
               <tr className="border-b-2 border-white/15 bg-slate-900/90 sticky top-0 z-30 backdrop-blur-sm text-[11px] font-bold uppercase tracking-wider text-white">
                 <th className="py-4 px-4 text-center w-12 border-r border-white/10 shadow-sm">No</th>
-                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm">Komposit Budaya Keselamatan</th>
+                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm">Dimensi Budaya Keselamatan</th>
                 <th className="py-4 px-4 text-center min-w-[150px] border-r border-white/10 shadow-sm">Dataset</th>
                 <th className="py-4 px-4 text-center min-w-[120px] border-r border-white/10 shadow-sm">Total Responden</th>
                 {uniquePositions.map(pos => {
@@ -721,7 +721,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 );
               })}
 
-              {/* Rata-rata Seluruh Komposit Rows */}
+              {/* Rata-rata Seluruh Dimensi Rows */}
               {/* Row 1: Rumah Sakit Anda Average */}
               <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all transform-gpu">
                 <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10">
@@ -729,7 +729,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 </td>
                 <td rowSpan={2} className="py-5 px-5 font-black text-white border-r border-white/10 bg-indigo-950/10">
                   <div className="space-y-1">
-                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Komposit</div>
+                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
                     <p className="text-[10px] text-slate-400 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
                   </div>
                 </td>
@@ -789,10 +789,10 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         className="bg-[#121826]/80 backdrop-blur-sm border border-white/10 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-md p-6 md:p-8 space-y-6 mt-8 md:mt-12"
       >
         <div className="space-y-3 border-b border-white/5 pb-5">
-          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN KOMPOSIT</span>
+          <span className="text-xs font-bold text-cyan-400 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
           <h2 className="text-xl md:text-2xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <Building2 className="w-6 h-6 text-indigo-400" />
-            Perbandingan Rata-rata Respon Positif Komposit Budaya Keselamatan Pasien Berdasarkan Unit Kerja
+            Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
           </h2>
           <p className="text-xs md:text-sm text-slate-400 font-medium">
             Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
@@ -829,7 +829,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
             <thead className="bg-[#0f172a] text-slate-300 uppercase tracking-wider font-semibold border-b-2 border-indigo-500/30 sticky top-0 z-20">
               <tr>
                 <th className="py-4 px-4 text-center w-12 border-r border-white/10 shadow-sm sticky left-0 z-30 bg-[#0f172a]">No</th>
-                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm sticky left-12 z-30 bg-[#0f172a]">Komposit Budaya Keselamatan</th>
+                <th className="py-4 px-5 min-w-[280px] text-center border-r border-white/10 shadow-sm sticky left-12 z-30 bg-[#0f172a]">Dimensi Budaya Keselamatan</th>
                 <th className="py-4 px-4 text-center min-w-[150px] border-r border-white/10 shadow-sm">Dataset</th>
                 <th className="py-4 px-4 text-center min-w-[120px] border-r border-white/10 shadow-sm">Total Responden</th>
                 {uniqueUnits.map(unit => {
@@ -907,7 +907,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 );
               })}
 
-              {/* Rata-rata Seluruh Komposit Rows */}
+              {/* Rata-rata Seluruh Dimensi Rows */}
               {/* Row 1: Rumah Sakit Anda Average */}
               <tr className="bg-indigo-950/20 border-t-2 border-indigo-500/40 hover:bg-white/[0.01] transition-all transform-gpu">
                 <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-300 border-r border-white/10 bg-indigo-950/10 sticky left-0 z-10">
@@ -915,7 +915,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
                 </td>
                 <td rowSpan={2} className="py-5 px-5 font-black text-white border-r border-white/10 bg-indigo-950/10 sticky left-12 z-10">
                   <div className="space-y-1">
-                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Komposit</div>
+                    <div className="text-indigo-200 text-xs md:text-sm font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
                     <p className="text-[10px] text-slate-400 font-normal leading-normal">Hasil rata-rata persentase respon positif di seluruh 10 dimensi keselamatan pasien</p>
                   </div>
                 </td>

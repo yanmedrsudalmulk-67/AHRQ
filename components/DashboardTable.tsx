@@ -30,10 +30,27 @@ import {
   Award,
   MapPin
 } from 'lucide-react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
 import { getSurveys, SurveyData } from '../lib/db';
 import { computeDimensionScores, DIMENSI_INFO, DIMENSI_ITEMS } from '../lib/scoring';
 import DimensiDetailModal from './DimensiDetailModal';
+
+const SHORT_DIMENSION_NAMES: Record<string, string> = {
+  'D1': 'Kerjasama Tim',
+  'D2': 'Beban Kerja',
+  'D3': 'Pembelajaran Organisasi',
+  'D4': 'Respon Non-Punitif',
+  'D5': 'Supervisor',
+  'D6': 'Komunikasi Terbuka',
+  'D7': 'Komunikasi Kesalahan',
+  'D8': 'Pelaporan Insiden',
+  'D9': 'Dukungan Manajemen',
+  'D10': 'Serah Terima'
+};
+
+const getShortDimensionName = (kode: string, defaultName: string) => {
+  return SHORT_DIMENSION_NAMES[kode.toUpperCase()] || defaultName;
+};
 
 interface DashboardTableProps {
   role: 'rs' | 'admin';
@@ -175,6 +192,58 @@ const CustomChartTooltip = ({ active, payload }: any) => {
         <p className="text-[11px] font-semibold text-emerald-400 mt-1">
           {data.value} Responden ({data.percentage}%)
         </p>
+      </div>
+    );
+  }
+  return null;
+};
+
+const CustomRadarTooltip = ({ active, payload }: any) => {
+  if (active && payload && payload.length) {
+    const data = payload[0].payload;
+    
+    // Format status label and color
+    let statusLabel = 'Cukup';
+    let statusColor = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+    if (data.status === 'SANGAT_BAIK') {
+      statusLabel = 'Sangat Baik';
+      statusColor = 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+    } else if (data.status === 'PERLU_PRIORITAS') {
+      statusLabel = 'Perlu Prioritas';
+      statusColor = 'text-rose-400 bg-rose-400/10 border-rose-400/20';
+    } else if (data.status === 'PERLU_PENINGKATAN') {
+      statusLabel = 'Perlu Peningkatan';
+      statusColor = 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+    }
+
+    return (
+      <div className="bg-[#0b0f19]/95 backdrop-blur-md border border-white/10 rounded-2xl p-4 shadow-2xl max-w-xs transition-all duration-300">
+        <div className="flex items-start gap-2.5 mb-2.5">
+          <span className="flex-none px-2 py-0.5 bg-indigo-500/10 text-indigo-400 rounded-lg text-[11px] font-mono font-bold border border-indigo-500/20">
+            {data.kode}
+          </span>
+          <div className="space-y-0.5">
+            <h4 className="text-[12px] font-bold text-white leading-snug">{data.name}</h4>
+            <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-bold border ${statusColor}`}>
+              {statusLabel}
+            </span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 pt-2.5 border-t border-white/5">
+          <div>
+            <span className="block text-[9px] text-slate-400 uppercase font-bold tracking-wider">Capaian</span>
+            <span className="text-[14px] font-black bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+              {data.value.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+            </span>
+          </div>
+          <div>
+            <span className="block text-[9px] text-slate-400 uppercase font-bold tracking-wider">Responden</span>
+            <span className="text-[12px] font-bold text-slate-200">
+              {data.respondents} Orang
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -510,6 +579,52 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
       .sort((a, b) => b.value - a.value);
   }, [profileStats]);
 
+  const radarData = useMemo(() => {
+    return [...calculatedDimensions]
+      .sort((a, b) => {
+        const numA = parseInt(a.kode.replace(/\D/g, ''), 10);
+        const numB = parseInt(b.kode.replace(/\D/g, ''), 10);
+        return numA - numB;
+      })
+      .map(dim => ({
+        subject: getShortDimensionName(dim.kode, dim.nama),
+        value: Number(dim.percentage.toFixed(2)),
+        fullMark: 100,
+        name: dim.nama,
+        kode: dim.kode,
+        respondents: dim.respondentsCount,
+        status: dim.status
+      }));
+  }, [calculatedDimensions]);
+
+  const averageScore = useMemo(() => {
+    if (calculatedDimensions.length === 0) return 0;
+    const sum = calculatedDimensions.reduce((acc, dim) => acc + dim.percentage, 0);
+    return sum / calculatedDimensions.length;
+  }, [calculatedDimensions]);
+
+  const lowestDimensions = useMemo(() => {
+    if (calculatedDimensions.length === 0) return [];
+    const sorted = [...calculatedDimensions].sort((a, b) => a.percentage - b.percentage);
+    const minVal = sorted[0].percentage;
+    
+    // Absolute lowest dimensions sharing the minimum value
+    const absoluteLowest = sorted.filter(d => d.percentage === minVal);
+    if (absoluteLowest.length >= 3) {
+      return absoluteLowest;
+    }
+    
+    // Supplement with next lowest if needed, only those under 75%
+    const result = [...absoluteLowest];
+    for (const dim of sorted) {
+      if (!result.find(r => r.id === dim.id) && dim.percentage < 75) {
+        result.push(dim);
+        if (result.length >= 3) break;
+      }
+    }
+    return result;
+  }, [calculatedDimensions]);
+
   // Excel (CSV) Export Functionality
   const handleExportExcel = () => {
     const separator = ';';
@@ -564,7 +679,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
             <thead>
               <tr className="bg-gradient-to-r from-[#00244d] via-[#0c1a36] to-[#020918] border-b border-[#00244d]/40 text-white/95 font-bold uppercase tracking-wider divide-x divide-[#00244d]/20">
                 <th className="p-4 text-center w-12 text-[14px]">No</th>
-                <th className="p-4 text-center text-[14px]">KOMPOSIT BUDAYA KESELAMATAN PASIEN</th>
+                <th className="p-4 text-center text-[14px]">DIMENSI BUDAYA KESELAMATAN PASIEN</th>
                 <th className="p-4 text-center w-52 text-[14px]">Hasil Persentase (%)</th>
               </tr>
             </thead>
@@ -661,6 +776,223 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
             }
           }
         `}</style>
+
+      </div>
+
+      {/* 2 CARD BARU: Radar Capaian Dimensi & Nilai Rata-Rata */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* CARD 1: Radar Capaian Dimensi */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="relative bg-gradient-to-br from-[#0c1322]/95 via-[#141d30]/90 to-[#080e1b]/95 backdrop-blur-md border border-white/[0.08] rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-6 md:p-8 overflow-hidden group hover:border-white/15 transition-all duration-300 flex flex-col justify-between min-h-[500px]"
+        >
+          {/* Ambient Glows */}
+          <div className="absolute -top-32 -right-32 w-80 h-80 bg-blue-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-blue-500/15 transition-colors duration-700"></div>
+          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-purple-500/8 rounded-full blur-[80px] -z-10 group-hover:bg-purple-500/12 transition-colors duration-700"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/5 rounded-full blur-[60px] -z-10"></div>
+          
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="pb-4 border-b border-white/[0.08]">
+              <h3 className="text-lg font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent tracking-tight flex items-center gap-2.5">
+                <Activity className="w-5.5 h-5.5 text-blue-400 filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> Radar Capaian Dimensi
+              </h3>
+              <p className="text-[12px] text-slate-300/85 mt-1 leading-relaxed">
+                Visualisasi persentase respons positif untuk 10 Dimensi Budaya Keselamatan Pasien secara real-time.
+              </p>
+            </div>
+
+            {/* Radar Chart Visualizer */}
+            <div className="h-80 md:h-[350px] w-full flex items-center justify-center relative mt-4">
+              {filteredSurveys.length === 0 ? (
+                <div className="flex flex-col items-center justify-center gap-2 text-center p-6 text-slate-500">
+                  <AlertCircle className="w-8 h-8 opacity-60 animate-pulse" />
+                  <p className="text-xs font-semibold">Tidak ada data untuk ditampilkan</p>
+                </div>
+              ) : (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="68%" margin={{ top: 20, right: 35, bottom: 20, left: 35 }} data={radarData}>
+                    <defs>
+                      <linearGradient id="radarBluePurple" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#2563eb" stopOpacity={0.4} /> {/* Royal Blue */}
+                        <stop offset="50%" stopColor="#4f46e5" stopOpacity={0.3} /> {/* Indigo */}
+                        <stop offset="100%" stopColor="#9333ea" stopOpacity={0.5} /> {/* Violet */}
+                      </linearGradient>
+                      <linearGradient id="radarBorderGrad" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#06b6d4" /> {/* Cyan */}
+                        <stop offset="50%" stopColor="#3b82f6" /> {/* Electric Blue */}
+                        <stop offset="100%" stopColor="#a855f7" /> {/* Purple */}
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid stroke="#ffffff0d" gridType="polygon" />
+                    <PolarAngleAxis 
+                      dataKey="subject" 
+                      stroke="#ffffff60" 
+                      fontSize={10} 
+                      fontWeight="bold" 
+                      tick={({ payload, x, y, cx, cy, ...rest }: any) => {
+                        const radius = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+                        const cosVal = (x - cx) / (radius || 1);
+                        const sinVal = (y - cy) / (radius || 1);
+                        // Offset labels outward dynamically to prevent overlaps
+                        const offset = 12;
+                        const newX = cx + cosVal * (radius + offset);
+                        const newY = cy + sinVal * (radius + offset);
+                        
+                        let textAnchor = "middle";
+                        if (cosVal > 0.15) textAnchor = "start";
+                        else if (cosVal < -0.15) textAnchor = "end";
+                        
+                        const value = payload.value || "";
+                        const words = value.split(' ');
+                        
+                        if (words.length > 1) {
+                          const midIndex = Math.ceil(words.length / 2);
+                          const line1 = words.slice(0, midIndex).join(' ');
+                          const line2 = words.slice(midIndex).join(' ');
+                          
+                          return (
+                            <text
+                              {...rest}
+                              x={newX}
+                              y={newY}
+                              textAnchor={textAnchor}
+                              className="fill-slate-300 font-sans text-[10px] md:text-[10.5px] font-bold tracking-wide transition-all duration-300"
+                            >
+                              <tspan x={newX} dy="-5">{line1}</tspan>
+                              <tspan x={newX} dy="12">{line2}</tspan>
+                            </text>
+                          );
+                        }
+                        
+                        return (
+                          <text
+                            {...rest}
+                            x={newX}
+                            y={newY}
+                            textAnchor={textAnchor}
+                            className="fill-slate-300 font-sans text-[10px] md:text-[10.5px] font-bold tracking-wide transition-all duration-300"
+                          >
+                            {value}
+                          </text>
+                        );
+                      }}
+                    />
+                    <PolarRadiusAxis 
+                      angle={30} 
+                      domain={[0, 100]} 
+                      stroke="#ffffff15" 
+                      tickFormatter={(v) => `${v}%`}
+                      fontSize={8} 
+                      fontWeight="600"
+                      tickCount={6}
+                    />
+                    <Radar 
+                      name="Capaian (%)" 
+                      dataKey="value" 
+                      stroke="url(#radarBorderGrad)" 
+                      fill="url(#radarBluePurple)" 
+                      fillOpacity={0.7} 
+                      strokeWidth={2.5}
+                      isAnimationActive={true}
+                      animationDuration={1000}
+                      dot={{ 
+                        r: 3.5, 
+                        fill: '#06b6d4', 
+                        stroke: '#ffffff', 
+                        strokeWidth: 1.5, 
+                        className: "transition-all duration-300 hover:r-5 filter drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]"
+                      }}
+                      activeDot={{ 
+                        r: 6.5, 
+                        fill: '#ffffff', 
+                        stroke: '#06b6d4', 
+                        strokeWidth: 2, 
+                        className: "filter drop-shadow-[0_0_10px_rgba(6,182,212,1)]"
+                      }}
+                    />
+                    <RechartsTooltip content={<CustomRadarTooltip />} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
+
+          {/* Decorative Bottom Line Accent */}
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+        </motion.div>
+
+        {/* CARD 2: Nilai Rata-Rata Budaya Keselamatan Pasien */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="relative bg-gradient-to-br from-[#0c1322]/95 via-[#141d30]/90 to-[#080e1b]/95 backdrop-blur-md border border-white/[0.08] rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-6 md:p-8 overflow-hidden group hover:border-white/15 transition-all duration-300 flex flex-col justify-between min-h-[500px]"
+        >
+          {/* Ambient Glows */}
+          <div className="absolute -top-32 -right-32 w-80 h-80 bg-indigo-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/15 transition-colors duration-700"></div>
+          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-purple-500/8 rounded-full blur-[80px] -z-10 group-hover:bg-purple-500/12 transition-colors duration-700"></div>
+
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="pb-4 border-b border-white/[0.08]">
+              <h3 className="text-lg font-extrabold bg-gradient-to-r from-purple-400 via-indigo-300 to-blue-400 bg-clip-text text-transparent tracking-tight flex items-center gap-2.5">
+                <TrendingUp className="w-5.5 h-5.5 text-purple-400 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" /> Nilai Rata-Rata Budaya Keselamatan Pasien
+              </h3>
+              <p className="text-[12px] text-slate-300/85 mt-1 leading-relaxed">
+                Rata-rata persentase kumulatif respon positif di seluruh dimensi keselamatan fasyankes.
+              </p>
+            </div>
+
+            {/* Large Cumulative Average Display */}
+            <div className="flex flex-col items-center justify-center py-5 bg-slate-950/40 rounded-2xl border border-white/5 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-2 opacity-5">
+                <Award className="w-16 h-16 text-purple-400" />
+              </div>
+              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">
+                Skor Kumulatif
+              </span>
+              <span className="text-5xl md:text-6xl font-black font-sans text-white tracking-tight">
+                {averageScore.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+              </span>
+              <p className="text-[9px] text-slate-400 mt-2 text-center px-4">
+                Dihitung dari rata-rata seluruh persentase 10 dimensi budaya keselamatan fasyankes.
+              </p>
+            </div>
+
+            {/* Dynamic Analysis section */}
+            <div className="space-y-3">
+              <p className="text-[10px] text-justify font-medium text-slate-300 leading-relaxed">
+                Berdasarkan hasil pengukuran terhadap <strong className="text-cyan-400">10 Dimensi Budaya Keselamatan Pasien AHRQ SOPS 2.0</strong>, terdapat beberapa dimensi yang memerlukan perhatian khusus dan peningkatan berkelanjutan terutama pada area berikut:
+              </p>
+              
+              {lowestDimensions.length === 0 ? (
+                <div className="text-xs text-slate-400 italic bg-slate-900/40 p-3 rounded-xl border border-white/5 text-center">
+                  Belum ada data survei yang masuk untuk analisis dimensi terendah.
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
+                  {lowestDimensions.map((dim) => (
+                    <div key={dim.id} className="flex items-center justify-between p-2 px-3 rounded-xl bg-slate-900/50 border border-white/5 hover:border-blue-500/20 hover:bg-slate-900/80 transition-all duration-300">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-xs font-semibold text-slate-200 line-clamp-1">{dim.nama}</span>
+                      </div>
+                      <span className="text-xs font-bold text-rose-400 shrink-0 bg-rose-500/5 py-0.5 px-2 rounded-full border border-rose-500/10 font-mono">
+                        {dim.percentage.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Decorative Bottom Line Accent */}
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+        </motion.div>
 
       </div>
 
@@ -1067,45 +1399,6 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               </div>
             </motion.div>
           </div>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: 0.35 }}
-            className="mt-6 bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm"
-          >
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-cyan-400" /> Distribusi Responden Berdasarkan Unit Kerja
-              </h3>
-            </div>
-            
-            <div className="h-72 w-full pr-4">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={unitCountsChartData}
-                  layout="vertical"
-                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
-                  <XAxis type="number" stroke="#ffffff50" fontSize={10} tickFormatter={(val) => Math.floor(val).toString()} />
-                  <YAxis dataKey="name" type="category" width={150} stroke="#ffffff90" fontSize={11} />
-                  <RechartsTooltip 
-                    contentStyle={{ backgroundColor: '#0B101E', borderColor: '#1e293b', borderRadius: '12px', fontSize: '12px' }}
-                    itemStyle={{ color: '#e2e8f0' }}
-                    cursor={{fill: '#ffffff05'}}
-                  />
-                  <Bar dataKey="value" name="Responden" fill="#3b82f6" radius={[0, 4, 4, 0]}>
-                    {
-                      unitCountsChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                      ))
-                    }
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
           </div>
         )}
       </div>

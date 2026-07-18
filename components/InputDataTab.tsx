@@ -2168,7 +2168,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                       <div>
                         <h5 className="text-xs font-bold text-red-800">Ditemukan {unansweredCount} Isian Belum Lengkap</h5>
                         <p className="text-[10px] text-red-700 leading-normal mt-0.5">
-                          Sebaiknya isi seluruh pertanyaan kuesioner SOPS untuk memastikan kalkulasi dimensi komposit Anda orisinal dan valid sesuai standar Kemenkes.
+                          Sebaiknya isi seluruh pertanyaan kuesioner SOPS untuk memastikan kalkulasi dimensi budaya keselamatan Anda orisinal dan valid sesuai standar Kemenkes.
                         </p>
                       </div>
                     </div>
@@ -2470,7 +2470,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                 <div className="space-y-2">
                   <h3 className="text-xl font-bold text-slate-100">Kirim Kuesioner Anda?</h3>
                   <p className="text-xs text-slate-400 leading-relaxed">
-                    Apakah Anda yakin seluruh jawaban sudah benar? Seluruh data yang Anda masukkan akan disinkronisasikan langsung demi kalkulasi komposit budaya keselamatan RS.
+                    Apakah Anda yakin seluruh jawaban sudah benar? Seluruh data yang Anda masukkan akan disinkronisasikan langsung demi kalkulasi dimensi budaya keselamatan RS.
                   </p>
                 </div>
 

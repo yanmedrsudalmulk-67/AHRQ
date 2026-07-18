@@ -431,7 +431,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
             </div>
           </div>
           <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-blue-600 font-bold">
-            <span>Nilai Komposit:</span>
+            <span>Nilai Dimensi:</span>
             <span>{data.komposit.toFixed(2)}</span>
           </div>
         </div>
@@ -503,7 +503,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
       <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm">
         <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
           <BarChart2 className="w-5 h-5 text-emerald-400" />
-          Hasil Perbandingan Pengukuran Komposit Untuk {rsName}
+          Hasil Perbandingan Pengukuran Dimensi Untuk {rsName}
         </h3>
         <div className="w-full text-xs font-medium">
           <div className="overflow-x-auto w-full">

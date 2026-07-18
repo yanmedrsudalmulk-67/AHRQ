@@ -37,7 +37,9 @@ import { saveLogo, clearLogo, LogoData } from '../lib/logo';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
 import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile, HospitalAccount, getMasterBenchmark, saveMasterBenchmark } from '../lib/db';
 import { DIMENSI_INFO } from '../lib/scoring';
-import { BarChart2 } from 'lucide-react';
+import { BarChart2, Users } from 'lucide-react';
+import MasterPosisiTab from './MasterPosisiTab';
+import MasterUnitTab from './MasterUnitTab';
 
 interface PengaturanTabProps {
   role?: 'admin' | 'rs';
@@ -62,6 +64,7 @@ export default function PengaturanTab({
   activeLogo,
   onUpdateLogo
 }: PengaturanTabProps) {
+  const [activeSettingsSection, setActiveSettingsSection] = useState<'profil' | 'posisi' | 'unit'>('profil');
   // Benchmark state
   const [benchmarks, setBenchmarks] = useState<Record<string, { min: number, max: number }>>({});
   const [isSavingBenchmark, setIsSavingBenchmark] = useState(false);
@@ -680,7 +683,46 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           </div>
         )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Sub Navigation Tabs */}
+      <div className="flex border-b border-white/[0.08] gap-2 pb-px overflow-x-auto">
+        <button
+          onClick={() => setActiveSettingsSection('profil')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
+            activeSettingsSection === 'profil'
+              ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5'
+              : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.02]'
+          }`}
+        >
+          <Settings className="w-4 h-4" />
+          <span>Profil & Setelan</span>
+        </button>
+        <button
+          onClick={() => setActiveSettingsSection('posisi')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
+            activeSettingsSection === 'posisi'
+              ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5'
+              : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.02]'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Master Posisi Staf</span>
+        </button>
+        <button
+          onClick={() => setActiveSettingsSection('unit')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
+            activeSettingsSection === 'unit'
+              ? 'text-indigo-400 border-indigo-500 bg-indigo-500/5'
+              : 'text-slate-400 border-transparent hover:text-slate-200 hover:bg-white/[0.02]'
+          }`}
+        >
+          <Building2 className="w-4 h-4" />
+          <span>Master Unit Kerja</span>
+        </button>
+      </div>
+
+      {activeSettingsSection === 'profil' && (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Identitas Rumah Sakit */}
         <div className="bg-[#121826]/90 backdrop-blur-sm rounded-2xl border border-white/[0.08] shadow-md p-6 space-y-6">
           <div className="flex justify-between items-center border-b border-white/[0.08] pb-3">
@@ -1420,7 +1462,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
               <h3 className="text-[16px] font-semibold text-[#F8FAFC] flex items-center gap-1.5">
                 <BarChart2 className="w-4 h-4 text-emerald-400" /> Kelola Master Benchmark
               </h3>
-              <p className="text-[12px] text-white/50 mt-1">Atur nilai referensi rata-rata rumah sakit percontohan untuk setiap dimensi. Nilai ini akan tampil pada Grafik Capaian Komposit.</p>
+              <p className="text-[12px] text-white/50 mt-1">Atur nilai referensi rata-rata rumah sakit percontohan untuk setiap dimensi. Nilai ini akan tampil pada Grafik Capaian Dimensi.</p>
             </div>
             <button
               type="button"
@@ -1719,6 +1761,16 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           )}
         </div>
       </div>
+      )}
+        </>
+      )}
+
+      {activeSettingsSection === 'posisi' && (
+        <MasterPosisiTab rsName={namaRs} />
+      )}
+
+      {activeSettingsSection === 'unit' && (
+        <MasterUnitTab rsName={namaRs} />
       )}
     </div>
   );

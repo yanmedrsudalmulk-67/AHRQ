@@ -170,7 +170,7 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
         <div className="p-6 bg-[#121826]/90 backdrop-blur-sm border border-white/[0.08] shadow-md hover:border-white/15">
           <div className="mb-4">
             <h4 className="text-[16px] md:text-[18px] font-semibold tracking-[0.5px] text-[#F8FAFC]">Skor Budaya Keselamatan Pasien per Bagian (%)</h4>
-            <p className="text-[14px] text-white/75 leading-[1.6]">Rerata persentase tanggapan positif berdasarkan komposit kuesioner AHRQ 2.0</p>
+            <p className="text-[14px] text-white/75 leading-[1.6]">Rerata persentase tanggapan positif berdasarkan dimensi kuesioner AHRQ 2.0</p>
           </div>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">

@@ -210,7 +210,7 @@ export default function DimensiDetailModal({ dimensiId, onClose, surveys, rsName
           <div>
             <div className="flex items-center gap-3 mb-2">
               <span className="px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold font-mono rounded-lg">
-                KOMPOSIT {dimInfo.kode}
+                DIMENSI {dimInfo.kode}
               </span>
               <span className="text-xs text-slate-400 font-medium">Tahun: {years}</span>
               <span className="text-xs text-slate-400 font-medium border-l border-slate-700 pl-3">Responden: <strong className="text-slate-200">{totalRespondents}</strong></span>

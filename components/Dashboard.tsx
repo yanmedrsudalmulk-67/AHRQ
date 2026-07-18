@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
@@ -26,10 +26,8 @@ import InputDataTab from './InputDataTab';
 import GrafikTab from './GrafikTab';
 import LaporanTab from './LaporanTab';
 import PengaturanTab from './PengaturanTab';
-import MasterPosisiTab from './MasterPosisiTab';
-import MasterUnitTab from './MasterUnitTab';
-import DashboardTable from './DashboardTable';
 import PersetujuanTab from './PersetujuanTab';
+import DashboardTable from './DashboardTable';
 import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey } from '../lib/db';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
@@ -79,6 +77,7 @@ export default function Dashboard({
   }, [activeTab]);
 
   const [showRespondentsModal, setShowRespondentsModal] = useState(false);
+  const [showUnitsModal, setShowUnitsModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [surveyToDelete, setSurveyToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -121,22 +120,12 @@ export default function Dashboard({
   };
 
   const handleDeleteSurvey = (id: string) => {
-    if (role !== 'admin') {
-      setNotification({ text: "Anda tidak memiliki hak akses untuk menghapus data responden.", type: 'error' });
-      return;
-    }
     setSurveyToDelete(id);
     setShowDeleteConfirm(true);
   };
 
   const executeDeleteSurvey = async () => {
     if (!surveyToDelete) return;
-    if (role !== 'admin') {
-      setNotification({ text: "Anda tidak memiliki hak akses untuk menghapus data responden.", type: 'error' });
-      setShowDeleteConfirm(false);
-      setSurveyToDelete(null);
-      return;
-    }
 
     setIsDeleting(true);
     try {
@@ -177,7 +166,25 @@ export default function Dashboard({
 
   // Statistics calculations
   const totalRespondents = filteredSurveys.reduce((acc, curr) => acc + curr.jumlahResponden, 0);
-  const totalUnits = filteredSurveys.length;
+
+  // Grouped Unit summary data
+  const unitsSummary = useMemo(() => {
+    const summaryMap: Record<string, { latestDate: string; count: number }> = {};
+    filteredSurveys.forEach((survey) => {
+      const unit = survey.unitKerja || 'Instansi Umum';
+      if (!summaryMap[unit]) {
+        summaryMap[unit] = { latestDate: survey.tanggalInput, count: 0 };
+      }
+      summaryMap[unit].count += (survey.jumlahResponden || 1);
+    });
+    return Object.entries(summaryMap).map(([unit, data]) => ({
+      unit,
+      tanggalInput: data.latestDate,
+      jumlah: data.count,
+    }));
+  }, [filteredSurveys]);
+
+  const totalUnits = unitsSummary.length;
   
   // Overall average percentage response
   const scoreToPercent = (score: number): number => {
@@ -317,7 +324,7 @@ export default function Dashboard({
               }`}
             >
               <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
-              <span className="hidden md:block text-[14px] leading-none">Laporan Detail</span>
+              <span className="hidden md:block text-[14px] leading-none">Laporan Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
             </button>
 
@@ -330,37 +337,9 @@ export default function Dashboard({
               }`}
             >
               <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
-              <span className="hidden md:block text-[14px] leading-none">Pengaturan RS</span>
+              <span className="hidden md:block text-[14px] leading-none">Pengaturan</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
-            {role === 'rs' && (
-              <>
-                <button
-                  onClick={() => setActiveTab('master-posisi')}
-                  className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                    activeTab === 'master-posisi'
-                      ? 'text-white bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 shadow-lg shadow-emerald-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                      : 'text-slate-400 hover:text-emerald-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
-                  }`}
-                >
-                  <Users className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'master-posisi' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
-                  <span className="hidden md:block text-[14px] leading-none">Master Posisi Staf</span>
-                  <span className="md:hidden text-[10px] mt-1 tracking-wide">Posisi</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab('master-unit')}
-                  className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                    activeTab === 'master-unit'
-                      ? 'text-white bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 shadow-lg shadow-emerald-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                      : 'text-slate-400 hover:text-emerald-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
-                  }`}
-                >
-                  <Building2 className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'master-unit' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
-                  <span className="hidden md:block text-[14px] leading-none">Master Unit Kerja</span>
-                  <span className="md:hidden text-[10px] mt-1 tracking-wide">Unit</span>
-                </button>
-              </>
-            )}
 
             {role === 'admin' && (
               <button
@@ -462,22 +441,25 @@ export default function Dashboard({
                 </div>
                 <div>
                   <h3 className="text-[45px] italic font-extrabold text-white leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalRespondents}</h3>
-                  <p className="text-[10px] text-slate-500 mt-1">Staf fasyankes yang berpartisipasi</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Staf Fasyankes Yang Mengisi Survei</p>
                 </div>
                 {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
                 <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-cyan-500 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300 shadow-md" />
               </div>
 
-              <div className="p-5 bg-slate-900/60 backdrop-blur-sm rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all transform-gpu duration-300 relative overflow-hidden group shadow-md">
+              <div 
+                onClick={() => setShowUnitsModal(true)}
+                className="cursor-pointer p-5 bg-slate-900/60 backdrop-blur-sm rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all transform-gpu duration-300 relative overflow-hidden group shadow-md"
+              >
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unit Kerja Terdata</span>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unit / Area Kerja Terdata</span>
                   <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg border border-indigo-500/20 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-all transform-gpu">
                     <Building2 className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
                   <h3 className="text-[45px] italic font-extrabold text-white leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalUnits}</h3>
-                  <p className="text-[10px] text-slate-500 mt-1">IGD, ICU, Rawat Inap & Jalan</p>
+                  <p className="text-[10px] text-slate-500 mt-1">Total Unit / Area Kerja Yang Mengisi Survei</p>
                 </div>
                 {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
                 <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-indigo-500 to-purple-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300 shadow-md" />
@@ -536,14 +518,6 @@ export default function Dashboard({
           />
         )}
 
-        {activeTab === 'master-posisi' && role === 'rs' && (
-          <MasterPosisiTab rsName={namaRs} />
-        )}
-
-        {activeTab === 'master-unit' && role === 'rs' && (
-          <MasterUnitTab rsName={namaRs} />
-        )}
-
         {activeTab === 'persetujuan' && role === 'admin' && (
           <PersetujuanTab 
             accounts={accounts} 
@@ -594,7 +568,7 @@ export default function Dashboard({
                         <th className="px-6 py-4 font-semibold">Tanggal Input</th>
                         <th className="px-6 py-4 font-semibold">Posisi Staf</th>
                         <th className="px-6 py-4 font-semibold">Unit/Area Kerja</th>
-                        {role === 'admin' && <th className="px-6 py-4 font-semibold text-center">Aksi</th>}
+                        {(role === 'admin' || role === 'rs') && <th className="px-6 py-4 font-semibold text-center">Aksi</th>}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800/50">
@@ -607,11 +581,11 @@ export default function Dashboard({
                               <td className="px-6 py-4 whitespace-nowrap">{survey.tanggalInput}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{rawAnswers.posisiStaf || '-'}</td>
                               <td className="px-6 py-4 whitespace-nowrap">{survey.unitKerja || '-'}</td>
-                              {role === 'admin' && (
+                              {(role === 'admin' || role === 'rs') && (
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                   <button
                                     onClick={() => handleDeleteSurvey(survey.id)}
-                                    className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all transform-gpu group border border-rose-500/20 hover:border-transparent inline-flex items-center justify-center"
+                                    className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all transform-gpu group border border-rose-500/20 hover:border-transparent inline-flex items-center justify-center cursor-pointer"
                                     title="Hapus Responden"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -623,8 +597,91 @@ export default function Dashboard({
                         })
                       ) : (
                         <tr>
-                          <td colSpan={role === 'admin' ? 5 : 4} className="px-6 py-8 text-center text-slate-500">
+                          <td colSpan={(role === 'admin' || role === 'rs') ? 5 : 4} className="px-6 py-8 text-center text-slate-500">
                             Belum ada data responden.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Unit Kerja Terdata Modal */}
+        <AnimatePresence>
+          {showUnitsModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setShowUnitsModal(false)}
+                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+              />
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                className="relative w-full max-w-4xl bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              >
+                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-indigo-400" />
+                      Unit / Area Kerja Terdata
+                    </h2>
+                    <p className="text-sm text-slate-400 mt-1">Data jumlah responden berdasarkan unit atau area kerja fasyankes.</p>
+                  </div>
+                  <button
+                    onClick={() => setShowUnitsModal(false)}
+                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto p-0">
+                  <table className="w-full text-sm text-left text-slate-300">
+                    <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                      <tr>
+                        <th className="px-6 py-4 font-semibold">No</th>
+                        <th className="px-6 py-4 font-semibold">Tanggal Input</th>
+                        <th className="px-6 py-4 font-semibold">Unit / Area Kerja</th>
+                        <th className="px-6 py-4 font-semibold">Posisi Staf</th>
+                        <th className="px-6 py-4 font-semibold text-center">Jumlah</th>
+                        <th className="px-6 py-4 font-semibold text-center">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/50">
+                      {filteredSurveys.length > 0 ? (
+                        filteredSurveys.map((survey, index) => {
+                          const rawAnswers = (survey.dimensiScores as any)?._rawAnswers || {};
+                          return (
+                            <tr key={survey.id} className="hover:bg-slate-800/20 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{survey.tanggalInput}</td>
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-100">{survey.unitKerja || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap">{rawAnswers.posisiStaf || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">{survey.jumlahResponden || 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center">
+                                <button
+                                  onClick={() => handleDeleteSurvey(survey.id)}
+                                  className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all transform-gpu border border-rose-500/20 hover:border-transparent inline-flex items-center justify-center cursor-pointer"
+                                  title="Hapus Responden"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })
+                      ) : (
+                        <tr>
+                          <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                            Belum ada data kuesioner.
                           </td>
                         </tr>
                       )}
