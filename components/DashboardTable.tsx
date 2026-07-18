@@ -659,39 +659,39 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
 
   return (
     <div className="space-y-8">
-      <div id="ahrq-table-card" className="relative bg-white/[0.05] border border-white/20 rounded-[32px] shadow-2xl shadow-black/50 backdrop-blur-sm p-6 overflow-hidden md:p-8 space-y-6 group">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/20 rounded-full blur-3xl -z-10 group-hover:bg-teal-500/30 transition-colors duration-700"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/20 transition-colors duration-700"></div>
+      <div id="ahrq-table-card" className="relative bg-white/85 backdrop-blur-md border border-white/60 rounded-[22px] shadow-lg shadow-teal-500/5 p-6 overflow-hidden md:p-8 space-y-6 group">
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -z-10 group-hover:bg-teal-500/15 transition-colors duration-700"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/10 transition-colors duration-700"></div>
         
         {/* 1. HEADER SECTION with Emerald Gradient theme */}
-        <div className="flex flex-col items-center justify-center text-center gap-2 pb-6 border-b border-white/10">
-          <h2 className="text-xl md:text-2xl text-center font-extrabold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">
-            Hasil Survei Budaya Keselamatan Pasien
+        <div className="flex flex-col items-center justify-center text-center gap-2 pb-6 border-b border-slate-200">
+          <h2 className="text-xl md:text-2xl text-center font-extrabold text-slate-800 tracking-tight font-sans">
+            Hasil Persentase 10 Dimensi Budaya Keselamatan Pasien
           </h2>
-          <p className="text-xs text-[#eff3f9]">
+          <p className="text-xs text-slate-500 font-semibold font-sans">
             AHRQ Hospital Survey on Patient Safety Culture (SOPS) Version 2.0
           </p>
         </div>
 
         {/* 4. MAIN DATA TABLE */}
-        <div className="overflow-x-auto rounded-2xl border border-[#00244d]/50 bg-[#020918]/90 backdrop-blur-sm shadow-md">
+        <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-gradient-to-r from-[#00244d] via-[#0c1a36] to-[#020918] border-b border-[#00244d]/40 text-white/95 font-bold uppercase tracking-wider divide-x divide-[#00244d]/20">
-                <th className="p-4 text-center w-12 text-[14px]">No</th>
-                <th className="p-4 text-center text-[14px]">DIMENSI BUDAYA KESELAMATAN PASIEN</th>
-                <th className="p-4 text-center w-52 text-[14px]">Hasil Persentase (%)</th>
+              <tr className="bg-slate-50 border-b border-slate-200 text-slate-700 font-bold uppercase tracking-wider divide-x divide-slate-100">
+                <th className="p-4 text-center w-12 text-[12px]">No</th>
+                <th className="p-4 text-center text-[12px]">DIMENSI BUDAYA KESELAMATAN PASIEN</th>
+                <th className="p-4 text-center w-52 text-[12px]">Hasil Persentase (%)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#00244d]/20 bg-[#0c1a36]/80 text-slate-300">
+            <tbody className="divide-y divide-slate-100 bg-white text-slate-600">
               {filteredSurveys.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="p-12 text-center text-slate-400 font-light leading-relaxed">
+                  <td colSpan={3} className="p-12 text-center text-slate-500 font-medium leading-relaxed">
                     <div className="flex flex-col items-center justify-center gap-3">
-                      <AlertCircle className="w-8 h-8 text-slate-500 animate-pulse" />
-                      <p className="font-bold text-slate-200">Tidak Ada Data Survei yang Cocok</p>
+                      <AlertCircle className="w-8 h-8 text-slate-400 animate-pulse" />
+                      <p className="font-bold text-slate-800">Tidak Ada Data Survei yang Cocok</p>
                       <p className="text-[10px] text-slate-500 max-w-sm">
-                        Silakan sesuaikan kriteria filter di atas atau input data kuesioner baru pada tab <strong className="text-emerald-400">Input Data Survei</strong>.
+                        Silakan sesuaikan kriteria filter di atas atau input data kuesioner baru pada tab <strong className="text-teal-600">Input Data Survei</strong>.
                       </p>
                     </div>
                   </td>
@@ -707,22 +707,22 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   const globalIdx = idx + 1;
                   
                   const scoreColor = dim.percentage >= 75 
-                     ? 'text-emerald-400 drop-shadow-md' 
-                     : (dim.percentage >= 50 ? 'text-amber-400 drop-shadow-md' : 'text-rose-400 drop-shadow-md');
+                     ? 'text-emerald-600' 
+                     : (dim.percentage >= 50 ? 'text-amber-600' : 'text-rose-600');
 
                   return (
                     <tr 
                       key={dim.id} 
                       onClick={() => setSelectedDimensi(dim.id)}
-                      className="hover:bg-[#00244d]/50 transition-all transform-gpu cursor-pointer group divide-x divide-[#00244d]/20"
+                      className="hover:bg-slate-50/80 border-b border-slate-100 transition-colors cursor-pointer group divide-x divide-slate-100"
                     >
-                      <td className="p-4 text-center font-bold font-mono hover:text-blue-400 transition-colors text-base text-[#f3f5f8]">
+                      <td className="p-4 text-center font-bold font-mono hover:text-teal-600 transition-colors text-base text-slate-400">
                         {globalIdx}
                       </td>
                       <td className="p-4 text-left">
-                        <div className="hover:text-blue-400 transition-colors text-[14px] font-bold text-slate-200 flex items-center justify-between">
+                        <div className="group-hover:text-teal-600 transition-colors text-[14px] font-bold text-slate-800 flex items-center justify-between">
                           <span>{dim.nama}</span>
-                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-blue-400" />
+                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-teal-600" />
                         </div>
                       </td>
                       <td className="p-4 text-center">
@@ -787,20 +787,20 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="relative bg-gradient-to-br from-[#0c1322]/95 via-[#141d30]/90 to-[#080e1b]/95 backdrop-blur-md border border-white/[0.08] rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-6 md:p-8 overflow-hidden group hover:border-white/15 transition-all duration-300 flex flex-col justify-between min-h-[500px]"
+          className="relative bg-white/85 backdrop-blur-md border border-white/60 rounded-[22px] shadow-lg shadow-teal-500/5 p-6 md:p-8 overflow-hidden group hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 flex flex-col justify-between min-h-[500px]"
         >
           {/* Ambient Glows */}
-          <div className="absolute -top-32 -right-32 w-80 h-80 bg-blue-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-blue-500/15 transition-colors duration-700"></div>
-          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-purple-500/8 rounded-full blur-[80px] -z-10 group-hover:bg-purple-500/12 transition-colors duration-700"></div>
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-indigo-500/5 rounded-full blur-[60px] -z-10"></div>
+          <div className="absolute -top-32 -right-32 w-80 h-80 bg-teal-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-teal-500/10 transition-colors duration-700"></div>
+          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-emerald-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-emerald-500/8 transition-colors duration-700"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-teal-500/5 rounded-full blur-[60px] -z-10"></div>
           
           <div className="space-y-4">
             {/* Header */}
-            <div className="pb-4 border-b border-white/[0.08]">
-              <h3 className="text-lg font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent tracking-tight flex items-center gap-2.5">
-                <Activity className="w-5.5 h-5.5 text-blue-400 filter drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]" /> Radar Capaian Dimensi
+            <div className="pb-4 border-b border-slate-150">
+              <h3 className="text-lg font-extrabold text-slate-800 tracking-tight flex items-center gap-2.5">
+                <Activity className="w-5.5 h-5.5 text-teal-600 filter drop-shadow-[0_2px_4px_rgba(20,184,166,0.1)]" /> Radar Capaian Dimensi
               </h3>
-              <p className="text-[12px] text-slate-300/85 mt-1 leading-relaxed">
+              <p className="text-[12px] text-slate-500 mt-1 leading-relaxed font-semibold">
                 Visualisasi persentase respons positif untuk 10 Dimensi Budaya Keselamatan Pasien secara real-time.
               </p>
             </div>
@@ -808,7 +808,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
             {/* Radar Chart Visualizer */}
             <div className="h-80 md:h-[350px] w-full flex items-center justify-center relative mt-4">
               {filteredSurveys.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 text-center p-6 text-slate-500">
+                <div className="flex flex-col items-center justify-center gap-2 text-center p-6 text-slate-400">
                   <AlertCircle className="w-8 h-8 opacity-60 animate-pulse" />
                   <p className="text-xs font-semibold">Tidak ada data untuk ditampilkan</p>
                 </div>
@@ -817,20 +817,20 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   <RadarChart cx="50%" cy="50%" outerRadius="68%" margin={{ top: 20, right: 35, bottom: 20, left: 35 }} data={radarData}>
                     <defs>
                       <linearGradient id="radarBluePurple" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#2563eb" stopOpacity={0.4} /> {/* Royal Blue */}
-                        <stop offset="50%" stopColor="#4f46e5" stopOpacity={0.3} /> {/* Indigo */}
-                        <stop offset="100%" stopColor="#9333ea" stopOpacity={0.5} /> {/* Violet */}
+                        <stop offset="0%" stopColor="#14b8a6" stopOpacity={0.25} /> {/* Teal */}
+                        <stop offset="50%" stopColor="#0d9488" stopOpacity={0.2} /> {/* Teal dark */}
+                        <stop offset="100%" stopColor="#2dd4bf" stopOpacity={0.3} /> {/* Aquamarine */}
                       </linearGradient>
                       <linearGradient id="radarBorderGrad" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#06b6d4" /> {/* Cyan */}
-                        <stop offset="50%" stopColor="#3b82f6" /> {/* Electric Blue */}
-                        <stop offset="100%" stopColor="#a855f7" /> {/* Purple */}
+                        <stop offset="0%" stopColor="#0d9488" /> 
+                        <stop offset="50%" stopColor="#14b8a6" /> 
+                        <stop offset="100%" stopColor="#2dd4bf" /> 
                       </linearGradient>
                     </defs>
-                    <PolarGrid stroke="#ffffff0d" gridType="polygon" />
+                    <PolarGrid stroke="#e2e8f0" gridType="polygon" />
                     <PolarAngleAxis 
                       dataKey="subject" 
-                      stroke="#ffffff60" 
+                      stroke="#94a3b8" 
                       fontSize={10} 
                       fontWeight="bold" 
                       tick={({ payload, x, y, cx, cy, ...rest }: any) => {
@@ -850,22 +850,22 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                         const words = value.split(' ');
                         
                         if (words.length > 1) {
-                          const midIndex = Math.ceil(words.length / 2);
-                          const line1 = words.slice(0, midIndex).join(' ');
-                          const line2 = words.slice(midIndex).join(' ');
-                          
-                          return (
-                            <text
-                              {...rest}
-                              x={newX}
-                              y={newY}
-                              textAnchor={textAnchor}
-                              className="fill-slate-300 font-sans text-[10px] md:text-[10.5px] font-bold tracking-wide transition-all duration-300"
-                            >
-                              <tspan x={newX} dy="-5">{line1}</tspan>
-                              <tspan x={newX} dy="12">{line2}</tspan>
-                            </text>
-                          );
+                           const midIndex = Math.ceil(words.length / 2);
+                           const line1 = words.slice(0, midIndex).join(' ');
+                           const line2 = words.slice(midIndex).join(' ');
+                           
+                           return (
+                             <text
+                               {...rest}
+                               x={newX}
+                               y={newY}
+                               textAnchor={textAnchor}
+                               className="fill-slate-600 font-sans text-[10px] md:text-[10.5px] font-bold tracking-wide transition-all duration-300"
+                             >
+                               <tspan x={newX} dy="-5">{line1}</tspan>
+                               <tspan x={newX} dy="12">{line2}</tspan>
+                             </text>
+                           );
                         }
                         
                         return (
@@ -874,7 +874,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                             x={newX}
                             y={newY}
                             textAnchor={textAnchor}
-                            className="fill-slate-300 font-sans text-[10px] md:text-[10.5px] font-bold tracking-wide transition-all duration-300"
+                            className="fill-slate-600 font-sans text-[10px] md:text-[10.5px] font-bold tracking-wide transition-all duration-300"
                           >
                             {value}
                           </text>
@@ -884,7 +884,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                     <PolarRadiusAxis 
                       angle={30} 
                       domain={[0, 100]} 
-                      stroke="#ffffff15" 
+                      stroke="#e2e8f0" 
                       tickFormatter={(v) => `${v}%`}
                       fontSize={8} 
                       fontWeight="600"
@@ -901,17 +901,17 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                       animationDuration={1000}
                       dot={{ 
                         r: 3.5, 
-                        fill: '#06b6d4', 
+                        fill: '#14b8a6', 
                         stroke: '#ffffff', 
                         strokeWidth: 1.5, 
-                        className: "transition-all duration-300 hover:r-5 filter drop-shadow-[0_0_6px_rgba(6,182,212,0.8)]"
+                        className: "transition-all duration-300 hover:r-5 filter drop-shadow-[0_2px_4px_rgba(20,184,166,0.3)]"
                       }}
                       activeDot={{ 
                         r: 6.5, 
                         fill: '#ffffff', 
-                        stroke: '#06b6d4', 
+                        stroke: '#14b8a6', 
                         strokeWidth: 2, 
-                        className: "filter drop-shadow-[0_0_10px_rgba(6,182,212,1)]"
+                        className: "filter drop-shadow-[0_2px_6px_rgba(20,184,166,0.4)]"
                       }}
                     />
                     <RechartsTooltip content={<CustomRadarTooltip />} />
@@ -922,7 +922,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
           </div>
 
           {/* Decorative Bottom Line Accent */}
-          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-teal-400 to-teal-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
         </motion.div>
 
         {/* CARD 2: Nilai Rata-Rata Budaya Keselamatan Pasien */}
@@ -930,57 +930,57 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="relative bg-gradient-to-br from-[#0c1322]/95 via-[#141d30]/90 to-[#080e1b]/95 backdrop-blur-md border border-white/[0.08] rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.6)] p-6 md:p-8 overflow-hidden group hover:border-white/15 transition-all duration-300 flex flex-col justify-between min-h-[500px]"
+          className="relative bg-white/85 backdrop-blur-md border border-white/60 rounded-[22px] shadow-lg shadow-teal-500/5 p-6 md:p-8 overflow-hidden group hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 flex flex-col justify-between min-h-[500px]"
         >
           {/* Ambient Glows */}
-          <div className="absolute -top-32 -right-32 w-80 h-80 bg-indigo-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/15 transition-colors duration-700"></div>
-          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-purple-500/8 rounded-full blur-[80px] -z-10 group-hover:bg-purple-500/12 transition-colors duration-700"></div>
+          <div className="absolute -top-32 -right-32 w-80 h-80 bg-teal-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-teal-500/10 transition-colors duration-700"></div>
+          <div className="absolute -bottom-32 -left-32 w-80 h-80 bg-emerald-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-emerald-500/8 transition-colors duration-700"></div>
 
           <div className="space-y-6">
             {/* Header */}
-            <div className="pb-4 border-b border-white/[0.08]">
-              <h3 className="text-lg font-extrabold bg-gradient-to-r from-purple-400 via-indigo-300 to-blue-400 bg-clip-text text-transparent tracking-tight flex items-center gap-2.5">
-                <TrendingUp className="w-5.5 h-5.5 text-purple-400 filter drop-shadow-[0_0_8px_rgba(168,85,247,0.5)]" /> Nilai Rata-Rata Budaya Keselamatan Pasien
+            <div className="pb-4 border-b border-slate-150">
+              <h3 className="text-lg font-extrabold text-slate-800 tracking-tight flex items-center gap-2.5">
+                <TrendingUp className="w-5.5 h-5.5 text-teal-600 filter drop-shadow-[0_2px_4px_rgba(20,184,166,0.1)]" /> Nilai Rata-Rata Budaya Keselamatan Pasien
               </h3>
-              <p className="text-[12px] text-slate-300/85 mt-1 leading-relaxed">
+              <p className="text-[12px] text-slate-500 mt-1 leading-relaxed font-semibold">
                 Rata-rata persentase kumulatif respon positif di seluruh dimensi keselamatan fasyankes.
               </p>
             </div>
 
             {/* Large Cumulative Average Display */}
-            <div className="flex flex-col items-center justify-center py-5 bg-slate-950/40 rounded-2xl border border-white/5 relative overflow-hidden">
+            <div className="flex flex-col items-center justify-center py-6 bg-gradient-to-r from-teal-500 to-teal-600 rounded-[22px] relative overflow-hidden shadow-md">
               <div className="absolute top-0 right-0 p-2 opacity-5">
-                <Award className="w-16 h-16 text-purple-400" />
+                <Award className="w-16 h-16 text-white" />
               </div>
-              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider mb-1">
+              <span className="text-xs font-bold text-teal-100 uppercase tracking-wider mb-1 font-sans">
                 Skor Kumulatif
               </span>
-              <span className="text-5xl md:text-6xl font-black font-sans text-white tracking-tight">
+              <span className="text-5xl md:text-6xl font-sans font-extrabold text-white tracking-tight leading-none">
                 {averageScore.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
               </span>
-              <p className="text-[9px] text-slate-400 mt-2 text-center px-4">
+              <p className="text-[10px] text-teal-50 mt-2 text-center px-4 font-bold">
                 Dihitung dari rata-rata seluruh persentase 10 dimensi budaya keselamatan fasyankes.
               </p>
             </div>
 
             {/* Dynamic Analysis section */}
             <div className="space-y-3">
-              <p className="text-[10px] text-justify font-medium text-slate-300 leading-relaxed">
-                Berdasarkan hasil pengukuran terhadap <strong className="text-cyan-400">10 Dimensi Budaya Keselamatan Pasien AHRQ SOPS 2.0</strong>, terdapat beberapa dimensi yang memerlukan perhatian khusus dan peningkatan berkelanjutan terutama pada area berikut:
+              <p className="text-[10px] text-justify font-bold text-slate-500 leading-relaxed">
+                Berdasarkan hasil pengukuran terhadap <strong className="text-teal-600">10 Dimensi Budaya Keselamatan Pasien AHRQ SOPS 2.0</strong>, terdapat beberapa dimensi yang memerlukan perhatian khusus dan peningkatan berkelanjutan terutama pada area berikut:
               </p>
               
               {lowestDimensions.length === 0 ? (
-                <div className="text-xs text-slate-400 italic bg-slate-900/40 p-3 rounded-xl border border-white/5 text-center">
+                <div className="text-xs text-slate-400 italic bg-slate-50 p-3 rounded-xl border border-slate-150 text-center">
                   Belum ada data survei yang masuk untuk analisis dimensi terendah.
                 </div>
               ) : (
                 <div className="space-y-2 max-h-[140px] overflow-y-auto pr-1">
                   {lowestDimensions.map((dim) => (
-                    <div key={dim.id} className="flex items-center justify-between p-2 px-3 rounded-xl bg-slate-900/50 border border-white/5 hover:border-blue-500/20 hover:bg-slate-900/80 transition-all duration-300">
+                    <div key={dim.id} className="flex items-center justify-between p-2 px-3 rounded-xl bg-slate-50 border border-slate-150 hover:border-teal-200 hover:bg-teal-50/20 transition-all duration-300">
                       <div className="flex items-center gap-2.5">
-                        <span className="text-xs font-semibold text-slate-200 line-clamp-1">{dim.nama}</span>
+                        <span className="text-xs font-bold text-slate-700 line-clamp-1">{dim.nama}</span>
                       </div>
-                      <span className="text-xs font-bold text-rose-400 shrink-0 bg-rose-500/5 py-0.5 px-2 rounded-full border border-rose-500/10 font-mono">
+                      <span className="text-xs font-bold text-rose-600 shrink-0 bg-rose-50 py-0.5 px-2 rounded-full border border-rose-100 font-mono">
                         {dim.percentage.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
                       </span>
                     </div>
@@ -991,40 +991,40 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
           </div>
 
           {/* Decorative Bottom Line Accent */}
-          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-teal-400 to-teal-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
         </motion.div>
 
       </div>
 
       {/* Respondent Profile Dashboard Section */}
-      <div id="ahrq-respondent-profile-card" className="relative bg-[#121826]/90 backdrop-blur-sm border border-white/[0.08] shadow-md p-6 md:p-8 space-y-8 overflow-hidden group">
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl -z-10 group-hover:bg-indigo-500/30 transition-colors duration-700"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl -z-10 group-hover:bg-purple-500/20 transition-colors duration-700"></div>
+      <div id="ahrq-respondent-profile-card" className="relative bg-white/85 backdrop-blur-md border border-white/60 shadow-lg shadow-teal-500/5 p-6 md:p-8 space-y-8 overflow-hidden group rounded-[22px]">
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -z-10 group-hover:bg-teal-500/15 transition-colors duration-700"></div>
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/10 transition-colors duration-700"></div>
         
         {/* Header with gradient and badge */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-white/10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-200">
           <div className="space-y-1">
-            <h2 className="text-xl md:text-2xl font-extrabold bg-gradient-to-r from-blue-400 via-indigo-300 to-purple-400 bg-clip-text text-transparent tracking-tight flex items-center gap-2">
-              <Users className="w-6 h-6 text-indigo-400" /> Dashboard Profil Responden
+            <h2 className="text-xl md:text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
+              <Users className="w-6 h-6 text-teal-600" /> Dashboard Profil Responden
             </h2>
-            <p className="text-xs text-[#eff3f9]">
+            <p className="text-xs text-slate-500 font-semibold">
               Analisis demografi dan karakteristik responden pengisi kuesioner budaya keselamatan pasien secara dinamis.
             </p>
           </div>
           
-          <div className="flex items-center gap-2 px-4 py-2 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl">
-            <span className="w-2.5 h-2.5 rounded-full bg-indigo-400 animate-ping"></span>
-            <span className="text-[11px] font-bold text-indigo-300 uppercase tracking-wider">
+          <div className="flex items-center gap-2 px-4 py-2 bg-teal-500/10 border border-teal-500/20 rounded-2xl">
+            <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping"></span>
+            <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">
               {profileStats.total} Responden Terfilter
             </span>
           </div>
         </div>
 
         {profileStats.total === 0 ? (
-          <div className="p-12 text-center text-slate-400 font-light leading-relaxed">
+          <div className="p-12 text-center text-slate-500 font-light leading-relaxed">
             <div className="flex flex-col items-center justify-center gap-3">
-              <AlertCircle className="w-8 h-8 text-slate-500 animate-pulse" />
-              <p className="font-bold text-slate-200">Tidak Ada Data Responden</p>
+              <AlertCircle className="w-8 h-8 text-slate-400 animate-pulse" />
+              <p className="font-bold text-slate-800">Tidak Ada Data Responden</p>
               <p className="text-[10px] text-slate-500 max-w-sm">
                 Silakan sesuaikan kriteria filter atau input kuesioner baru untuk memperbarui grafik profil.
               </p>
@@ -1040,14 +1040,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.05 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-cyan-400" /> Lama Kerja di RS
+                  <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-teal-600" /> Lama Kerja di RS
                   </h3>
-                  <span className="px-2 py-0.5 bg-cyan-400/10 border border-cyan-400/20 rounded-full text-[10px] font-bold text-cyan-400">
+                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-600">
                     {profileStats.total} Responden
                   </span>
                 </div>
@@ -1076,25 +1076,25 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   
                   {/* Center info */}
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-lg font-extrabold text-slate-100">{profileStats.total}</span>
-                    <span className="text-[9px] text-slate-400 font-medium">Responden</span>
+                    <span className="text-lg font-extrabold text-slate-800">{profileStats.total}</span>
+                    <span className="text-[9px] text-slate-400 font-semibold">Responden</span>
                   </div>
                 </div>
 
                 {/* Legend list with counts and percentages */}
-                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-300 border-t border-white/5 pt-3">
+                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-600 border-t border-slate-200 pt-3">
                   {rsChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[idx % CHART_COLORS.length] }}></span>
-                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
-                      <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words font-semibold text-slate-500" title={item.name}>{item.name}:</span>
+                      <span className="font-bold text-slate-800 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* Dynamic Auto-Analysis */}
-              <div className="mt-4 p-3 bg-white/[0.03] border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+              <div className="mt-4 p-3 bg-white border border-slate-150 rounded-xl text-[11px] text-slate-500 leading-relaxed font-medium shadow-sm">
                 {getRsAnalysis(rsChartData, profileStats.total)}
               </div>
             </motion.div>
@@ -1104,14 +1104,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.1 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-blue-400" /> Lama Kerja di Unit
+                  <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-teal-600" /> Lama Kerja di Unit
                   </h3>
-                  <span className="px-2 py-0.5 bg-blue-400/10 border border-blue-400/20 rounded-full text-[10px] font-bold text-blue-400">
+                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-600">
                     {profileStats.total} Responden
                   </span>
                 </div>
@@ -1138,23 +1138,23 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   </ResponsiveContainer>
                   
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-lg font-extrabold text-slate-100">{profileStats.total}</span>
-                    <span className="text-[9px] text-slate-400 font-medium">Responden</span>
+                    <span className="text-lg font-extrabold text-slate-800">{profileStats.total}</span>
+                    <span className="text-[9px] text-slate-400 font-semibold">Responden</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-300 border-t border-white/5 pt-3">
+                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-600 border-t border-slate-200 pt-3">
                   {unitChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 1) % CHART_COLORS.length] }}></span>
-                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
-                      <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words font-semibold text-slate-500" title={item.name}>{item.name}:</span>
+                      <span className="font-bold text-slate-800 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-white/[0.03] border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+              <div className="mt-4 p-3 bg-white border border-slate-150 rounded-xl text-[11px] text-slate-500 leading-relaxed font-medium shadow-sm">
                 {getUnitAnalysis(unitChartData, profileStats.total)}
               </div>
             </motion.div>
@@ -1164,14 +1164,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.15 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <UserCheck className="w-4 h-4 text-emerald-400" /> Hubungan Langsung Pasien
+                  <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-teal-600" /> Hubungan Langsung Pasien
                   </h3>
-                  <span className="px-2 py-0.5 bg-emerald-400/10 border border-emerald-400/20 rounded-full text-[10px] font-bold text-emerald-400">
+                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-600">
                     {profileStats.total} Responden
                   </span>
                 </div>
@@ -1198,23 +1198,23 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   </ResponsiveContainer>
                   
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-lg font-extrabold text-slate-100">{profileStats.total}</span>
-                    <span className="text-[9px] text-slate-400 font-medium">Responden</span>
+                    <span className="text-lg font-extrabold text-slate-800">{profileStats.total}</span>
+                    <span className="text-[9px] text-slate-400 font-semibold">Responden</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-300 border-t border-white/5 pt-3">
+                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-600 border-t border-slate-200 pt-3">
                   {directChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.name === 'Ya' ? '#10B981' : '#F43F5E' }}></span>
-                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
-                      <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words font-semibold text-slate-500" title={item.name}>{item.name}:</span>
+                      <span className="font-bold text-slate-800 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-white/[0.03] border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+              <div className="mt-4 p-3 bg-white border border-slate-150 rounded-xl text-[11px] text-slate-500 leading-relaxed font-medium shadow-sm">
                 {getDirectAnalysis(directChartData, profileStats.total)}
               </div>
             </motion.div>
@@ -1224,14 +1224,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.2 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-purple-400" /> Posisi / Jabatan
+                  <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-teal-600" /> Posisi / Jabatan
                   </h3>
-                  <span className="px-2 py-0.5 bg-purple-400/10 border border-purple-400/20 rounded-full text-[10px] font-bold text-purple-400">
+                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-600">
                     {jobChartData.length} Jabatan
                   </span>
                 </div>
@@ -1258,23 +1258,23 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   </ResponsiveContainer>
                   
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-lg font-extrabold text-slate-100">{profileStats.total}</span>
-                    <span className="text-[9px] text-slate-400 font-medium">Responden</span>
+                    <span className="text-lg font-extrabold text-slate-800">{profileStats.total}</span>
+                    <span className="text-[9px] text-slate-400 font-semibold">Responden</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-300 border-t border-white/5 pt-3 max-h-24 overflow-y-auto">
+                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-600 border-t border-slate-200 pt-3 max-h-24 overflow-y-auto">
                   {jobChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 3) % CHART_COLORS.length] }}></span>
-                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
-                      <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words font-semibold text-slate-500" title={item.name}>{item.name}:</span>
+                      <span className="font-bold text-slate-800 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-white/[0.03] border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+              <div className="mt-4 p-3 bg-white border border-slate-150 rounded-xl text-[11px] text-slate-500 leading-relaxed font-medium shadow-sm">
                 {getPositionAnalysis(jobChartData, profileStats.total)}
               </div>
             </motion.div>
@@ -1284,14 +1284,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.25 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Activity className="w-4 h-4 text-amber-400" /> Jam Kerja per Minggu
+                  <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <Activity className="w-4 h-4 text-teal-600" /> Jam Kerja per Minggu
                   </h3>
-                  <span className="px-2 py-0.5 bg-amber-400/10 border border-amber-400/20 rounded-full text-[10px] font-bold text-amber-400">
+                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-600">
                     {profileStats.total} Responden
                   </span>
                 </div>
@@ -1318,23 +1318,23 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   </ResponsiveContainer>
                   
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-lg font-extrabold text-slate-100">{profileStats.total}</span>
-                    <span className="text-[9px] text-slate-400 font-medium">Responden</span>
+                    <span className="text-lg font-extrabold text-slate-800">{profileStats.total}</span>
+                    <span className="text-[9px] text-slate-400 font-semibold">Responden</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-300 border-t border-white/5 pt-3">
+                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-600 border-t border-slate-200 pt-3">
                   {hoursChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 4) % CHART_COLORS.length] }}></span>
-                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
-                      <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words font-semibold text-slate-500" title={item.name}>{item.name}:</span>
+                      <span className="font-bold text-slate-800 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-white/[0.03] border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+              <div className="mt-4 p-3 bg-white border border-slate-150 rounded-xl text-[11px] text-slate-500 leading-relaxed font-medium shadow-sm">
                 {getHoursAnalysis(hoursChartData, profileStats.total)}
               </div>
             </motion.div>
@@ -1344,14 +1344,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.3 }}
-              className="bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm hover:border-indigo-500/20 hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
+              className="bg-slate-50 border border-slate-150 p-5 rounded-[20px] shadow-sm hover:border-teal-200/50 hover:bg-white hover:-translate-y-1 transition-all transform-gpu duration-300 flex flex-col justify-between"
             >
               <div>
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-violet-400" /> Lama Kerja Sesuai Profesi
+                  <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-teal-600" /> Lama Kerja Sesuai Profesi
                   </h3>
-                  <span className="px-2 py-0.5 bg-violet-400/10 border border-violet-400/20 rounded-full text-[10px] font-bold text-violet-400">
+                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 rounded-full text-[10px] font-bold text-teal-600">
                     {profileStats.total} Responden
                   </span>
                 </div>
@@ -1378,23 +1378,23 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                   </ResponsiveContainer>
                   
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    <span className="text-lg font-extrabold text-slate-100">{profileStats.total}</span>
-                    <span className="text-[9px] text-slate-400 font-medium">Responden</span>
+                    <span className="text-lg font-extrabold text-slate-800">{profileStats.total}</span>
+                    <span className="text-[9px] text-slate-400 font-semibold">Responden</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-300 border-t border-white/5 pt-3">
+                <div className="grid grid-cols-2 gap-2 mt-4 text-[10px] text-slate-600 border-t border-slate-200 pt-3">
                   {professionChartData.map((item, idx) => (
                     <div key={item.name} className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[(idx + 5) % CHART_COLORS.length] }}></span>
-                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words" title={item.name}>{item.name}:</span>
-                      <span className="font-bold text-slate-100 ml-auto">{item.value} ({item.percentage}%)</span>
+                      <span className="md:truncate md:max-w-[80px] whitespace-normal break-words font-semibold text-slate-500" title={item.name}>{item.name}:</span>
+                      <span className="font-bold text-slate-800 ml-auto">{item.value} ({item.percentage}%)</span>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="mt-4 p-3 bg-white/[0.03] border border-white/5 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+              <div className="mt-4 p-3 bg-white border border-slate-150 rounded-xl text-[11px] text-slate-500 leading-relaxed font-medium shadow-sm">
                 {getProfExperienceAnalysis(professionChartData, profileStats.total)}
               </div>
             </motion.div>

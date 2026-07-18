@@ -52,17 +52,13 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
   return (
     <div 
       id="welcome-screen-container" 
-      className="min-h-screen lg:h-screen lg:max-h-screen bg-transparent text-slate-100 flex flex-col justify-between p-4 md:p-6 lg:p-8 relative overflow-x-hidden overflow-y-auto lg:overflow-hidden font-sans select-none"
+      className="min-h-screen lg:h-screen lg:max-h-screen bg-transparent text-slate-800 flex flex-col justify-between p-4 md:p-6 lg:p-8 relative overflow-x-hidden overflow-y-auto lg:overflow-hidden font-sans select-none"
     >
-      {/* Intense futuristic ambient neon glows */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-cyan-500/10 blur-[130px] pointer-events-none -z-10 animate-pulse transform-gpu will-change-[transform,opacity]" />
-      <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-indigo-500/10 blur-[130px] pointer-events-none -z-10 transform-gpu will-change-transform" />
-      <div className="absolute top-[35%] left-[30%] w-[30%] h-[30%] rounded-full bg-purple-500/5 blur-[120px] pointer-events-none -z-10 transform-gpu will-change-transform" />
       
-      {/* 1. Header (Translucent Glass Bar) */}
+      {/* 1. Header (Translucent Light Glass Bar) */}
       <header 
         id="welcome-header" 
-        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-slate-900/50 backdrop-blur-sm rounded-2xl border border-slate-800/60"
+        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-white/75 backdrop-blur-md rounded-2xl border border-white/60 shadow-lg shadow-teal-500/5"
       >
         <div className="flex items-center gap-3">
           <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0 w-12 h-12">
@@ -70,26 +66,26 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               // eslint-disable-next-line @next/next/no-img-element
               <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
             ) : (
-              <ShieldCheck className="w-8 h-8 animate-pulse" />
+              <ShieldCheck className="w-8 h-8" />
             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-extrabold tracking-wider text-sm text-slate-100 block font-sans whitespace-normal break-words">AHRQ SOPS v2.0</span>
-            <span className="text-[10px] text-cyan-400 font-mono tracking-wider font-bold block whitespace-normal break-words max-w-[150px] sm:max-w-none">Agency for Healthcare Research and Quality</span>
+            <span className="font-extrabold tracking-wider text-sm text-slate-800 block font-sans whitespace-normal break-words">AHRQ SOPS v2.0</span>
+            <span className="text-[10px] text-blue-600 font-mono tracking-wider font-bold block whitespace-normal break-words max-w-[150px] sm:max-w-none">Agency for Healthcare Research and Quality</span>
           </div>
         </div>
 
-        {/* Real-time Date and Clock Widget (Premium & Futuristic) */}
+        {/* Real-time Date and Clock Widget */}
         <div className="flex items-center gap-2 md:gap-3">
           {/* Date pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/[0.04] backdrop-blur-sm border border-white/[0.06] shadow-inner text-slate-300">
-            <Calendar className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-            <span className="text-[11px] font-medium tracking-wide">{dateString || 'Memuat...'}</span>
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 backdrop-blur-sm border border-slate-200/60 shadow-sm text-slate-600">
+            <Calendar className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+            <span className="text-[11px] font-semibold tracking-wide">{dateString || 'Memuat...'}</span>
           </div>
 
           {/* Clock pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-950/30 to-indigo-950/30 backdrop-blur-sm border border-cyan-500/25 shadow-md text-cyan-300 font-mono">
-            <Clock className="w-3.5 h-3.5 text-cyan-400 animate-pulse shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-50 to-teal-100/80 backdrop-blur-sm border border-teal-200/50 shadow-sm text-teal-700 font-mono">
+            <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0 animate-pulse" />
             <span className="text-xs font-bold tracking-wider">{timeString || '--:--:-- WIB'}</span>
           </div>
         </div>
@@ -109,10 +105,10 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-[36px] md:text-[51px] w-full md:w-[533px] font-black text-white tracking-tight leading-[1.1] font-sans text-left"
+              className="text-[36px] md:text-[56px] w-full md:w-[600px] font-black text-slate-900 tracking-tight leading-[1.1] font-sans text-left"
             >
               Sistem Survei <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600">
                 Budaya Keselamatan Pasien
               </span>
             </motion.h1>
@@ -121,7 +117,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-[#acbdd6] text-xs md:text-sm leading-relaxed w-full md:w-[514px] text-left md:text-justify font-light"
+              className="text-slate-600 text-xs md:text-[15px] leading-relaxed w-full md:w-[600px] text-left md:text-justify font-medium"
             >
               Platform digital untuk pelaksanaan, analisis, dan pelaporan Survei Budaya Keselamatan Pasien berbasis AHRQ SOPS Version 2.0 yang terintegrasi secara realtime guna mendukung peningkatan mutu pelayanan dan keselamatan pasien di rumah sakit
             </motion.p>
@@ -136,7 +132,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
           >
             <button
               onClick={onEnter}
-              className="group px-8 py-4 bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/45 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu duration-300 cursor-pointer text-sm tracking-wide"
+              className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu duration-300 cursor-pointer text-sm tracking-wide"
             >
               MULAI SURVEI
               <motion.div
@@ -153,14 +149,14 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
 
       </main>
 
-      {/* 3. Footer (Clean, Modern minimal signature) */}
+      {/* 3. Footer */}
       <footer 
         id="welcome-footer" 
-        className="max-w-7xl mx-auto w-full py-4 border-t border-slate-900/60 text-center flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 px-6"
+        className="max-w-7xl mx-auto w-full py-4 border-t border-slate-200 text-center flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 px-6"
       >
         <p>© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
-        <div className="flex gap-4 font-mono">
-          <span className="hover:text-slate-400 transition-colors">STANDAR AKREDITASI KEMENKES</span>
+        <div className="flex gap-4 font-mono font-bold text-slate-400">
+          <span className="hover:text-teal-600 transition-colors">STANDAR AKREDITASI KEMENKES</span>
         </div>
       </footer>
 

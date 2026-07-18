@@ -57,7 +57,7 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-transparent text-slate-100 relative overflow-hidden">
+    <main className="min-h-screen bg-transparent text-slate-800 relative overflow-hidden">
       {/* Background Wallpaper Layer */}
       {wallpaper ? (
         wallpaper.type === 'video' ? (
@@ -71,21 +71,21 @@ export default function Home() {
               preload="auto"
               className="w-full h-full object-cover"
             />
-            {/* Dark overlay to ensure contrast - 50% on welcome/hero screen, 70% elsewhere */}
-            <div className={`absolute inset-0 transition-all duration-500 ${screen === 'welcome' ? 'bg-slate-950/50' : 'bg-slate-950/70'}`} />
+            {/* Soft light overlay to ensure high contrast in light mode */}
+            <div className={`absolute inset-0 transition-all duration-500 ${screen === 'welcome' ? 'bg-transparent' : 'bg-slate-50/90'}`} />
           </div>
         ) : (
           <div 
             className="fixed inset-0 w-full h-full bg-cover bg-center -z-20 pointer-events-none"
             style={{ backgroundImage: `url("${wallpaper.url}")` }}
           >
-            {/* Dark overlay to ensure contrast - 50% on welcome/hero screen, 70% elsewhere */}
-            <div className={`absolute inset-0 transition-all duration-500 ${screen === 'welcome' ? 'bg-slate-950/50' : 'bg-slate-950/70'}`} />
+            {/* Soft light overlay to ensure high contrast in light mode */}
+            <div className={`absolute inset-0 transition-all duration-500 ${screen === 'welcome' ? 'bg-transparent' : 'bg-slate-50/90'}`} />
           </div>
         )
       ) : (
-        // Default futuristic space gradient background
-        <div className="fixed inset-0 w-full h-full bg-[#0B101E] bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-indigo-900/30 via-[#0B101E] to-[#170F24] -z-20 pointer-events-none" />
+        // Default premium light gradient background (Teal to Blue with white canvas)
+        <div className="fixed inset-0 w-full h-full bg-slate-50 bg-[radial-gradient(ellipse_at_top_left,_var(--tw-gradient-stops))] from-teal-50/70 via-slate-50/50 to-blue-50/60 -z-20 pointer-events-none" />
       )}
 
       {screen === 'welcome' && (

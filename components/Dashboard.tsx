@@ -212,12 +212,12 @@ export default function Dashboard({
     : 0; // fallback realistic default
 
   return (
-    <div className="h-[100dvh] md:h-screen w-full bg-slate-950/20 backdrop-blur-xs text-white flex flex-col md:flex-row font-sans overflow-hidden relative">
+    <div className="h-[100dvh] md:h-screen w-full bg-slate-50 text-slate-800 flex flex-col md:flex-row font-sans overflow-hidden relative">
       
       {/* Mobile Top Header (Sticky on Mobile) */}
-      <header className="md:hidden flex-none w-full z-40 bg-[#050B14]/95 backdrop-blur-sm border-b border-white/10 px-4 py-3 flex items-center justify-between shadow-md">
+      <header className="md:hidden flex-none w-full z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-xs">
         <div className="flex items-center gap-2.5">
-          <div className="p-0.5 bg-blue-600 text-white rounded-lg border border-blue-400 shadow-md flex items-center justify-center shrink-0 w-8 h-8">
+          <div className="p-0.5 bg-teal-500 text-white rounded-lg border border-teal-400 shadow-sm flex items-center justify-center shrink-0 w-8 h-8">
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
@@ -226,14 +226,14 @@ export default function Dashboard({
             )}
           </div>
           <div>
-            <span className="font-sans font-bold text-sm text-slate-100 tracking-tight">AHRQ SOPS v2.0</span>
-            <p className="text-[9px] text-cyan-500 font-mono tracking-wider font-semibold block">Agency for Healthcare Research and Quality</p>
+            <span className="font-sans font-bold text-sm text-slate-800 tracking-tight">AHRQ SOPS v2.0</span>
+            <p className="text-[9px] text-teal-600 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</p>
           </div>
         </div>
         {/* Optional Mobile Header Logout */}
         <button
           onClick={onLogout}
-          className="text-slate-400 hover:text-red-400 p-1 rounded-lg transition-colors border border-transparent hover:bg-white/5"
+          className="text-slate-500 hover:text-rose-600 p-1 rounded-lg transition-colors border border-transparent hover:bg-slate-100"
           aria-label="Logout"
         >
           <LogOut className="w-4 h-4" />
@@ -241,23 +241,23 @@ export default function Dashboard({
       </header>
 
       {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-      <aside className="w-full fixed bottom-0 left-0 z-50 md:relative md:w-64 bg-slate-950/90 md:bg-gradient-to-b md:from-[#00244d]/75 md:via-[#0c1a36]/80 md:to-[#020918]/80 backdrop-blur-sm border-t border-white/10 md:border-t-0 md:border-r md:border-white/10 md:pt-16 md:px-5 md:pb-5 flex flex-col justify-between shrink-0 no-print shadow-md md:shadow-2xl md:shadow-blue-950/40 md:h-full md:overflow-hidden pb-safe">
+      <aside className="w-full fixed bottom-0 left-0 z-50 md:relative md:w-64 bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 md:bg-gradient-to-b md:from-blue-800 md:to-indigo-950 text-white border-t border-blue-500/30 md:border-t-0 md:border-r md:border-blue-900/50 md:pt-12 md:px-5 md:pb-5 flex flex-col justify-between shrink-0 no-print shadow-2xl md:h-full md:overflow-hidden pb-safe">
         
         <div className="md:space-y-6 flex-1 flex flex-col justify-center md:justify-start">
           
           {/* Brand/Title - Hidden on Mobile */}
           <div className="hidden md:flex items-center gap-2.5 px-2">
-            <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0 w-12 h-12">
+            <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-md flex items-center justify-center shrink-0 w-12 h-12">
               {activeLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
               ) : (
-                <ShieldCheck className="w-8 h-8 animate-pulse" />
+                <ShieldCheck className="w-8 h-8" />
               )}
             </div>
             <div>
-              <span className="font-sans font-bold text-[15px] text-slate-100 tracking-tight">AHRQ SOPS v2.0</span>
-              <p className="text-[10px] text-cyan-500 font-mono tracking-wider font-semibold block">Agency for Healthcare Research and Quality</p>
+              <span className="font-sans font-extrabold text-[15px] text-white tracking-tight">AHRQ SOPS v2.0</span>
+              <p className="text-[10px] text-blue-200 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</p>
             </div>
           </div>
 
@@ -267,9 +267,9 @@ export default function Dashboard({
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
               style={{
                 backgroundSize: "200% 100%",
-                backgroundImage: "linear-gradient(to right, #22d3ee, #6366f1, #a855f7, #6366f1, #22d3ee)"
+                backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.4), rgba(255,255,255,0.1))"
               }}
-              className="h-px w-full rounded-full shadow-md" 
+              className="h-px w-full rounded-full shadow-xs" 
             />
           </div>
 
@@ -280,11 +280,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('dashboard')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'text-white bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'dashboard' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'dashboard' ? 'text-black' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[15px] leading-none">Dashboard</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Beranda</span>
             </button>
@@ -293,11 +293,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('input')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'input'
-                  ? 'text-white bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'input' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'input' ? 'text-black' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Input Data Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Survei</span>
             </button>
@@ -306,11 +306,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('grafik')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'grafik'
-                  ? 'text-white bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <BarChart2 className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'grafik' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+              <BarChart2 className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'grafik' ? 'text-black' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Analisis Grafik</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Grafik</span>
             </button>
@@ -319,11 +319,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('laporan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'laporan'
-                  ? 'text-white bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-black' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Laporan Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
             </button>
@@ -332,11 +332,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('pengaturan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'pengaturan'
-                  ? 'text-white bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                  : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-black' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Pengaturan</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
@@ -346,16 +346,16 @@ export default function Dashboard({
                 onClick={() => setActiveTab('persetujuan')}
                 className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
                   activeTab === 'persetujuan'
-                    ? 'text-white bg-gradient-to-r from-cyan-500 via-indigo-500 to-indigo-600 shadow-lg shadow-indigo-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
-                    : 'text-slate-400 hover:text-indigo-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                    ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                    : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
                 }`}
               >
-                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'persetujuan' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'persetujuan' ? 'text-black' : 'text-blue-200'}`} /> 
                 <span className="hidden md:block text-[14px] leading-none">Persetujuan Akun</span>
                 <span className="md:hidden text-[10px] mt-1 tracking-wide">Persetujuan</span>
                 
                 {pendingAccountsCount > 0 && (
-                  <span className="absolute top-1 right-2 md:top-2 md:right-3 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white  shadow-md">
+                  <span className="absolute top-1 right-2 md:top-2 md:right-3 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white shadow-md">
                     {pendingAccountsCount}
                   </span>
                 )}
@@ -370,16 +370,16 @@ export default function Dashboard({
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                   style={{
                     backgroundSize: "200% 100%",
-                    backgroundImage: "linear-gradient(to right, #22d3ee, #6366f1, #a855f7, #6366f1, #22d3ee)"
+                    backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.4), rgba(255,255,255,0.1))"
                   }}
-                  className="h-px w-full rounded-full shadow-md" 
+                  className="h-px w-full rounded-full shadow-xs" 
                 />
               </div>
               <button
                 onClick={onLogout}
-                className="w-full py-2.5 px-4 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl text-[14px] font-bold flex items-center gap-3 transition-all transform-gpu cursor-pointer"
+                className="w-full py-2.5 px-4 text-blue-200 hover:text-white hover:bg-white/10 rounded-xl text-[14px] font-bold flex items-center gap-3 transition-all transform-gpu cursor-pointer"
               >
-                <LogOut className="w-4 h-4" /> Log Out Akun
+                <LogOut className="w-4 h-4 text-blue-200" /> Log Out Akun
               </button>
             </div>
             
@@ -407,19 +407,19 @@ export default function Dashboard({
 
             {/* Quick alert for admin about pending registrations */}
             {role === 'admin' && pendingAccountsCount > 0 && (
-              <div className="p-4 bg-gradient-to-r from-yellow-500/10 to-amber-500/5 border border-yellow-500/20 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-lg">
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
                 <div className="flex items-center gap-3">
-                  <div className="p-2.5 bg-yellow-500/15 text-yellow-400 rounded-xl border border-yellow-500/20">
+                  <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl border border-amber-200">
                     <Clock className="w-5 h-5 animate-pulse" />
                   </div>
                   <div>
-                    <h4 className="font-bold text-sm text-white">Permohonan Registrasi RS Menunggu Persetujuan</h4>
-                    <p className="text-xs text-slate-400 mt-0.5">Terdapat <strong className="text-yellow-400">{pendingAccountsCount} fasyankes baru</strong> yang mendaftar dan menunggu verifikasi Anda.</p>
+                    <h4 className="font-bold text-sm text-slate-800">Permohonan Registrasi RS Menunggu Persetujuan</h4>
+                    <p className="text-xs text-slate-600 mt-0.5">Terdapat <strong className="text-amber-600">{pendingAccountsCount} fasyankes baru</strong> yang mendaftar dan menunggu verifikasi Anda.</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setActiveTab('persetujuan')}
-                  className="px-4 py-2 bg-yellow-500 text-slate-950 hover:bg-yellow-400 text-xs font-bold rounded-xl transition-all transform-gpu cursor-pointer shadow-md flex items-center gap-1.5 shrink-0"
+                  className="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white text-xs font-bold rounded-xl transition-all transform-gpu cursor-pointer shadow-sm flex items-center gap-1.5 shrink-0"
                 >
                   Buka Menu Persetujuan <ArrowRight className="w-3.5 h-3.5" />
                 </button>
@@ -431,53 +431,53 @@ export default function Dashboard({
               
               <div 
                 onClick={() => setShowRespondentsModal(true)}
-                className="cursor-pointer p-5 bg-slate-900/60 backdrop-blur-sm rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all transform-gpu duration-300 relative overflow-hidden group shadow-md"
+                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-white/60 space-y-4 shadow-lg shadow-teal-500/5 hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Responden</span>
-                  <div className="p-2 bg-cyan-500/10 text-cyan-400 rounded-lg border border-cyan-500/20 group-hover:bg-cyan-500/20 group-hover:border-cyan-500/30 transition-all transform-gpu">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Total Responden</span>
+                  <div className="p-2 bg-teal-500/10 text-teal-600 rounded-lg border border-teal-200/30 group-hover:bg-teal-500/20 transition-all transform-gpu">
                     <Users className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[45px] italic font-extrabold text-white leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalRespondents}</h3>
-                  <p className="text-[10px] text-slate-500 mt-1">Staf Fasyankes Yang Mengisi Survei</p>
+                  <h3 className="text-[40px] font-sans font-extrabold text-slate-800 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalRespondents}</h3>
+                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Staf Fasyankes Yang Mengisi Survei</p>
                 </div>
                 {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-cyan-500 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300 shadow-md" />
+                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-teal-400 to-teal-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
               <div 
                 onClick={() => setShowUnitsModal(true)}
-                className="cursor-pointer p-5 bg-slate-900/60 backdrop-blur-sm rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all transform-gpu duration-300 relative overflow-hidden group shadow-md"
+                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-white/60 space-y-4 shadow-lg shadow-teal-500/5 hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Unit / Area Kerja Terdata</span>
-                  <div className="p-2 bg-indigo-500/10 text-indigo-400 rounded-lg border border-indigo-500/20 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-all transform-gpu">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Unit / Area Kerja Terdata</span>
+                  <div className="p-2 bg-blue-500/10 text-blue-600 rounded-lg border border-blue-200/30 group-hover:bg-blue-500/20 transition-all transform-gpu">
                     <Building2 className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[45px] italic font-extrabold text-white leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalUnits}</h3>
-                  <p className="text-[10px] text-slate-500 mt-1">Total Unit / Area Kerja Yang Mengisi Survei</p>
+                  <h3 className="text-[40px] font-sans font-extrabold text-slate-800 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalUnits}</h3>
+                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Total Unit / Area Kerja Yang Mengisi Survei</p>
                 </div>
                 {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-indigo-500 to-purple-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300 shadow-md" />
+                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-blue-400 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
-              <div className="p-5 bg-slate-900/60 backdrop-blur-sm rounded-2xl border border-white/10 space-y-4 shadow-2xl shadow-blue-950/20 hover:border-white/20 hover:bg-slate-900/80 transition-all transform-gpu duration-300 relative overflow-hidden group shadow-md">
+              <div className="p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-white/60 space-y-4 shadow-lg shadow-teal-500/5 hover:border-teal-200/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Respon Positif</span>
-                  <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20 group-hover:bg-emerald-500/20 group-hover:border-emerald-500/30 transition-all transform-gpu">
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Rata-Rata Respon Positif</span>
+                  <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg border border-emerald-200/30 group-hover:bg-emerald-500/20 transition-all transform-gpu">
                     <TrendingUp className="w-4 h-4" />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-[45px] italic font-extrabold text-cyan-400 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{overallScorePercent}%</h3>
-                  <p className="text-[10px] text-slate-500 mt-1">Kategori: <strong className="text-emerald-400">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong></p>
+                  <h3 className="text-[40px] font-sans font-extrabold text-teal-600 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{overallScorePercent}%</h3>
+                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Kategori: <strong className="text-emerald-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong></p>
                 </div>
                 {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-emerald-500 to-teal-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300 shadow-md" />
+                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-emerald-400 to-teal-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
               </div>
 
             </div>
@@ -536,56 +536,56 @@ export default function Dashboard({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowRespondentsModal(false)}
-                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-full max-w-4xl bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                className="relative w-full max-w-4xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-[22px] overflow-hidden flex flex-col max-h-[85vh] text-slate-800"
               >
-                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-cyan-400" />
+                    <h2 className="text-xl font-sans font-bold text-slate-800 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-teal-600" />
                       Daftar Responden
                     </h2>
-                    <p className="text-sm text-slate-400 mt-1">Data staf yang telah berpartisipasi mengisi kuesioner.</p>
+                    <p className="text-sm text-slate-500 mt-1 font-medium">Data staf yang telah berpartisipasi mengisi kuesioner.</p>
                   </div>
                   <button
                     onClick={() => setShowRespondentsModal(false)}
-                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                    className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-0">
-                  <table className="w-full text-sm text-left text-slate-300">
-                    <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                  <table className="w-full text-sm text-left text-slate-700">
+                    <thead className="text-xs text-slate-600 uppercase bg-slate-50 sticky top-0 z-10 border-b border-slate-200">
                       <tr>
-                        <th className="px-6 py-4 font-semibold">No</th>
-                        <th className="px-6 py-4 font-semibold">Tanggal Input</th>
-                        <th className="px-6 py-4 font-semibold">Posisi Staf</th>
-                        <th className="px-6 py-4 font-semibold">Unit/Area Kerja</th>
-                        {(role === 'admin' || role === 'rs') && <th className="px-6 py-4 font-semibold text-center">Aksi</th>}
+                        <th className="px-6 py-4 font-bold">No</th>
+                        <th className="px-6 py-4 font-bold">Tanggal Input</th>
+                        <th className="px-6 py-4 font-bold">Posisi Staf</th>
+                        <th className="px-6 py-4 font-bold">Unit/Area Kerja</th>
+                        {(role === 'admin' || role === 'rs') && <th className="px-6 py-4 font-bold text-center">Aksi</th>}
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/50">
+                    <tbody className="divide-y divide-slate-150">
                       {filteredSurveys.length > 0 ? (
                         filteredSurveys.map((survey, index) => {
                           const rawAnswers = (survey.dimensiScores as any)?._rawAnswers || {};
                           return (
-                            <tr key={survey.id} className="hover:bg-slate-800/20 transition-colors">
-                              <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{survey.tanggalInput}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{rawAnswers.posisiStaf || '-'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{survey.unitKerja || '-'}</td>
+                            <tr key={survey.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-500">{index + 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap font-semibold text-slate-600">{survey.tanggalInput}</td>
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-800">{rawAnswers.posisiStaf || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-700">{survey.unitKerja || '-'}</td>
                               {(role === 'admin' || role === 'rs') && (
                                 <td className="px-6 py-4 whitespace-nowrap text-center">
                                   <button
                                     onClick={() => handleDeleteSurvey(survey.id)}
-                                    className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all transform-gpu group border border-rose-500/20 hover:border-transparent inline-flex items-center justify-center cursor-pointer"
+                                    className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all transform-gpu border border-rose-200 hover:border-transparent inline-flex items-center justify-center cursor-pointer"
                                     title="Hapus Responden"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -597,7 +597,7 @@ export default function Dashboard({
                         })
                       ) : (
                         <tr>
-                          <td colSpan={(role === 'admin' || role === 'rs') ? 5 : 4} className="px-6 py-8 text-center text-slate-500">
+                          <td colSpan={(role === 'admin' || role === 'rs') ? 5 : 4} className="px-6 py-8 text-center text-slate-400 font-medium">
                             Belum ada data responden.
                           </td>
                         </tr>
@@ -619,57 +619,57 @@ export default function Dashboard({
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 onClick={() => setShowUnitsModal(false)}
-                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-full max-w-4xl bg-slate-900 border border-slate-700 shadow-2xl rounded-2xl overflow-hidden flex flex-col max-h-[85vh]"
+                className="relative w-full max-w-4xl bg-white/95 backdrop-blur-md border border-slate-200 shadow-2xl rounded-[22px] overflow-hidden flex flex-col max-h-[85vh] text-slate-800"
               >
-                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/50">
+                <div className="p-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/50">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-                      <Building2 className="w-5 h-5 text-indigo-400" />
+                    <h2 className="text-xl font-sans font-bold text-slate-800 flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-blue-600" />
                       Unit / Area Kerja Terdata
                     </h2>
-                    <p className="text-sm text-slate-400 mt-1">Data jumlah responden berdasarkan unit atau area kerja fasyankes.</p>
+                    <p className="text-sm text-slate-500 mt-1 font-medium">Data jumlah responden berdasarkan unit atau area kerja fasyankes.</p>
                   </div>
                   <button
                     onClick={() => setShowUnitsModal(false)}
-                    className="p-2 rounded-lg bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+                    className="p-2 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition-colors cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
                 
                 <div className="flex-1 overflow-y-auto p-0">
-                  <table className="w-full text-sm text-left text-slate-300">
-                    <thead className="text-xs text-slate-400 uppercase bg-slate-800/50 sticky top-0 z-10">
+                  <table className="w-full text-sm text-left text-slate-700">
+                    <thead className="text-xs text-slate-600 uppercase bg-slate-50 sticky top-0 z-10 border-b border-slate-200">
                       <tr>
-                        <th className="px-6 py-4 font-semibold">No</th>
-                        <th className="px-6 py-4 font-semibold">Tanggal Input</th>
-                        <th className="px-6 py-4 font-semibold">Unit / Area Kerja</th>
-                        <th className="px-6 py-4 font-semibold">Posisi Staf</th>
-                        <th className="px-6 py-4 font-semibold text-center">Jumlah</th>
-                        <th className="px-6 py-4 font-semibold text-center">Aksi</th>
+                        <th className="px-6 py-4 font-bold">No</th>
+                        <th className="px-6 py-4 font-bold">Tanggal Input</th>
+                        <th className="px-6 py-4 font-bold">Unit / Area Kerja</th>
+                        <th className="px-6 py-4 font-bold">Posisi Staf</th>
+                        <th className="px-6 py-4 font-bold text-center">Jumlah</th>
+                        <th className="px-6 py-4 font-bold text-center">Aksi</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800/50">
+                    <tbody className="divide-y divide-slate-150">
                       {filteredSurveys.length > 0 ? (
                         filteredSurveys.map((survey, index) => {
                           const rawAnswers = (survey.dimensiScores as any)?._rawAnswers || {};
                           return (
-                            <tr key={survey.id} className="hover:bg-slate-800/20 transition-colors">
-                              <td className="px-6 py-4 whitespace-nowrap">{index + 1}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{survey.tanggalInput}</td>
-                              <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-100">{survey.unitKerja || '-'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap">{rawAnswers.posisiStaf || '-'}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-center">{survey.jumlahResponden || 1}</td>
+                            <tr key={survey.id} className="hover:bg-slate-50 transition-colors">
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-500">{index + 1}</td>
+                              <td className="px-6 py-4 whitespace-nowrap font-semibold text-slate-600">{survey.tanggalInput}</td>
+                              <td className="px-6 py-4 whitespace-nowrap font-bold text-slate-800">{survey.unitKerja || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-700">{rawAnswers.posisiStaf || '-'}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-center font-bold text-slate-800">{survey.jumlahResponden || 1}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-center">
                                 <button
                                   onClick={() => handleDeleteSurvey(survey.id)}
-                                  className="p-2 bg-rose-500/10 text-rose-400 rounded-lg hover:bg-rose-500 hover:text-white transition-all transform-gpu border border-rose-500/20 hover:border-transparent inline-flex items-center justify-center cursor-pointer"
+                                  className="p-2 bg-rose-50 text-rose-600 rounded-lg hover:bg-rose-600 hover:text-white transition-all transform-gpu border border-rose-200 hover:border-transparent inline-flex items-center justify-center cursor-pointer"
                                   title="Hapus Responden"
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -680,7 +680,7 @@ export default function Dashboard({
                         })
                       ) : (
                         <tr>
-                          <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
+                          <td colSpan={6} className="px-6 py-8 text-center text-slate-400 font-medium">
                             Belum ada data kuesioner.
                           </td>
                         </tr>
@@ -707,24 +707,24 @@ export default function Dashboard({
                     setSurveyToDelete(null);
                   }
                 }}
-                className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+                className="absolute inset-0 bg-slate-950/40 backdrop-blur-xs"
               />
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                className="relative w-full max-w-md bg-slate-900/80 backdrop-blur-sm border border-rose-500/30 shadow-md rounded-2xl overflow-hidden p-6 text-center space-y-6"
+                className="relative w-full max-w-md bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-[22px] overflow-hidden p-6 text-center space-y-6 text-slate-800"
               >
-                <div className="w-16 h-16 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+                <div className="w-16 h-16 bg-rose-50 text-rose-600 border border-rose-200 rounded-2xl flex items-center justify-center mx-auto shadow-sm">
                   <Trash2 className="w-8 h-8 animate-pulse" />
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-slate-100">Hapus Data Responden</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <h3 className="text-xl font-sans font-bold text-slate-800">Hapus Data Responden</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed font-medium">
                     Apakah Anda yakin ingin menghapus data responden ini?
                   </p>
-                  <p className="text-xs text-rose-400/80 bg-rose-500/5 py-1.5 px-3 rounded-lg border border-rose-500/10 inline-block font-semibold">
+                  <p className="text-xs text-rose-600 bg-rose-50 py-1.5 px-3 rounded-lg border border-rose-100 inline-block font-bold">
                     Tindakan ini tidak dapat dibatalkan.
                   </p>
                 </div>
@@ -737,7 +737,7 @@ export default function Dashboard({
                       setShowDeleteConfirm(false);
                       setSurveyToDelete(null);
                     }}
-                    className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all transform-gpu disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition-all transform-gpu disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     Batal
                   </button>
@@ -745,7 +745,7 @@ export default function Dashboard({
                     type="button"
                     disabled={isDeleting}
                     onClick={executeDeleteSurvey}
-                    className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-lg shadow-rose-600/15 transition-all transform-gpu flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 py-3 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-xs shadow-md shadow-rose-600/10 transition-all transform-gpu flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {isDeleting ? (
                       <span className="flex items-center gap-1.5">
@@ -772,18 +772,18 @@ export default function Dashboard({
               initial={{ opacity: 0, y: 50, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.95 }}
-              className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl border backdrop-blur-sm ${
+              className={`fixed bottom-6 right-6 z-[120] flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg border backdrop-blur-sm ${
                 notification.type === 'success'
-                  ? 'bg-emerald-950/90 border-emerald-500/50 text-emerald-200 shadow-emerald-950/50'
-                  : 'bg-rose-950/90 border-rose-500/50 text-rose-200 shadow-rose-950/50'
+                  ? 'bg-teal-50 border-teal-200 text-teal-800'
+                  : 'bg-rose-50 border-rose-200 text-rose-800'
               }`}
             >
               {notification.type === 'success' ? (
-                <div className="w-5 h-5 rounded-md bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-[10px] font-bold">✓</div>
+                <div className="w-5 h-5 rounded-md bg-teal-500/15 text-teal-600 border border-teal-200 flex items-center justify-center text-[10px] font-bold">✓</div>
               ) : (
-                <div className="w-5 h-5 rounded-md bg-rose-500/20 text-rose-400 border border-rose-500/30 flex items-center justify-center text-[10px] font-bold">✕</div>
+                <div className="w-5 h-5 rounded-md bg-rose-500/15 text-rose-600 border border-rose-200 flex items-center justify-center text-[10px] font-bold">✕</div>
               )}
-              <span className="text-xs font-semibold leading-none">{notification.text}</span>
+              <span className="text-xs font-bold leading-none">{notification.text}</span>
             </motion.div>
           )}
         </AnimatePresence>

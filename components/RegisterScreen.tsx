@@ -116,29 +116,29 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
 
   if (success) {
     return (
-      <div className="min-h-screen bg-[#0B101E] text-white flex flex-col justify-center items-center p-6 relative overflow-hidden">
+      <div className="min-h-screen bg-transparent text-slate-800 flex flex-col justify-center items-center p-6 relative overflow-hidden">
         {/* Decorative ambient glows */}
-        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -z-10" />
+        <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl -z-10" />
+        <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl -z-10" />
 
-        <div className="w-full max-w-xl bg-slate-900/80 backdrop-blur-sm rounded-3xl border border-emerald-500/30 shadow-2xl p-10 text-center space-y-6">
-          <div className="mx-auto w-20 h-20 bg-emerald-500/10 border border-emerald-500/30 rounded-full flex items-center justify-center text-emerald-400">
+        <div className="w-full max-w-xl bg-white/80 backdrop-blur-md rounded-3xl border border-teal-200/50 shadow-xl p-10 text-center space-y-6">
+          <div className="mx-auto w-20 h-20 bg-teal-500/10 border border-teal-200 rounded-full flex items-center justify-center text-teal-600">
             <CheckCircle2 className="w-12 h-12" />
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-3xl font-sans font-bold text-white tracking-tight">Registrasi Berhasil Dikirim</h2>
-            <p className="text-emerald-400 font-medium text-sm">Status Akun: Pending Approval</p>
+            <h2 className="text-3xl font-sans font-bold text-slate-850 tracking-tight">Registrasi Berhasil Dikirim</h2>
+            <p className="text-teal-600 font-bold text-sm">Status Akun: Pending Approval</p>
           </div>
 
-          <div className="p-5 bg-slate-950/60 rounded-2xl border border-slate-800 text-left text-sm text-slate-300 leading-relaxed space-y-3">
-            <p className="font-semibold text-white flex items-center gap-1.5">
+          <div className="p-5 bg-slate-50 rounded-2xl border border-slate-200 text-left text-sm text-slate-600 leading-relaxed space-y-3">
+            <p className="font-bold text-slate-800 flex items-center gap-1.5">
               📢 Informasi Penting:
             </p>
-            <p className="font-sans">
+            <p className="font-sans font-medium">
               Permohonan Anda sedang menunggu persetujuan <strong>Admin Pusat</strong>. Anda akan menerima email pemberitahuan setelah akun disetujui.
             </p>
-            <div className="border-t border-slate-800/80 pt-3 text-xs text-slate-400 space-y-1">
+            <div className="border-t border-slate-200 pt-3 text-xs text-slate-500 space-y-1">
               <p>• <strong>Nama Rumah Sakit:</strong> {namaRs}</p>
               <p>• <strong>Email Terdaftar:</strong> {emailRs}</p>
               <p>• <strong>Username:</strong> {username}</p>
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
 
           <button
             onClick={onBack}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm transition-all transform-gpu cursor-pointer shadow-lg shadow-indigo-500/20"
+            className="w-full py-3.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-extrabold rounded-xl text-sm transition-all transform-gpu cursor-pointer shadow-md shadow-teal-500/10"
           >
             Kembali ke Login Portal
           </button>
@@ -157,32 +157,32 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
   }
 
   return (
-    <div className="min-h-screen bg-slate-950/30 backdrop-blur-xs text-white flex flex-col justify-center items-center p-6 relative overflow-hidden">
+    <div className="min-h-screen bg-transparent text-slate-800 flex flex-col justify-center items-center p-6 relative overflow-hidden">
       {/* Decorative ambient glows */}
-      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -z-10" />
+      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-teal-500/5 rounded-full blur-3xl -z-10" />
+      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl -z-10" />
       
       {/* Back button */}
       <button
         onClick={onBack}
         disabled={loading}
-        className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2 text-sm font-semibold transition-all transform-gpu cursor-pointer disabled:opacity-50"
+        className="absolute top-6 left-6 text-slate-500 hover:text-teal-600 flex items-center gap-2 text-sm font-bold transition-all transform-gpu cursor-pointer disabled:opacity-50"
       >
         <ArrowLeft className="w-4 h-4" /> Kembali ke Login
       </button>
 
-      <div className="w-full max-w-3xl bg-slate-900/60 backdrop-blur-sm rounded-3xl border border-slate-800/80 shadow-2xl p-8 my-8">
+      <div className="w-full max-w-3xl bg-white/80 backdrop-blur-md rounded-3xl border border-white/60 shadow-xl shadow-teal-500/5 p-8 my-8">
         <div className="text-center space-y-2 mb-8">
-          <div className="mx-auto w-12 h-12 bg-indigo-500/10 border border-indigo-500/20 rounded-2xl flex items-center justify-center text-indigo-400 mb-4">
+          <div className="mx-auto w-12 h-12 bg-teal-500/10 border border-teal-200 rounded-2xl flex items-center justify-center text-teal-600 mb-4">
             <UserPlus className="w-6 h-6" />
           </div>
-          <h2 className="text-2xl font-sans font-semibold text-white">Daftar Akun Rumah Sakit</h2>
-          <p className="text-xs text-slate-400">Daftarkan fasyankes Anda untuk mengukur budaya keselamatan pasien melalui persetujuan Admin</p>
+          <h2 className="text-2xl font-sans font-bold text-slate-800">Daftar Akun Rumah Sakit</h2>
+          <p className="text-xs text-slate-500 font-medium">Daftarkan fasyankes Anda untuk mengukur budaya keselamatan pasien melalui persetujuan Admin</p>
         </div>
 
         {error && (
           <div className="mb-6 space-y-4">
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 text-center font-medium">
+            <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 text-center font-bold">
               ⚠️ {error}
             </div>
 
@@ -192,26 +192,26 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
               error.toLowerCase().includes('relation') || 
               error.toLowerCase().includes('email_notifications') ||
               error.toLowerCase().includes('does not exist')) && (
-              <div className="p-5 bg-indigo-950/40 border border-indigo-500/30 rounded-2xl space-y-4 text-left">
+              <div className="p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-4 text-left">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-indigo-500/20 text-indigo-300 rounded-lg shrink-0">
+                  <div className="p-2 bg-teal-500/10 text-teal-600 rounded-lg shrink-0">
                     <Database className="w-5 h-5" />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-bold text-white">Diperlukan Update Skema Database Supabase</h4>
-                    <p className="text-xs text-slate-300 leading-relaxed">
+                    <h4 className="text-sm font-bold text-slate-850">Diperlukan Update Skema Database Supabase</h4>
+                    <p className="text-xs text-slate-600 leading-relaxed">
                       Sistem mendeteksi bahwa database Supabase Anda belum memiliki kolom baru untuk persetujuan akun & notifikasi email. Silakan jalankan kueri SQL di bawah ini untuk memperbarui database Anda secara instan:
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-[11px] text-slate-400 font-semibold px-1">
+                  <div className="flex justify-between items-center text-[11px] text-slate-500 font-bold px-1">
                     <span>MIGRASI SQL (Salin & Jalankan di Supabase SQL Editor):</span>
                     <button
                       type="button"
                       onClick={handleCopySql}
-                      className="flex items-center gap-1.5 px-2.5 py-1 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white font-bold rounded-lg transition-all transform-gpu cursor-pointer text-[10px]"
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 text-white font-bold rounded-lg transition-all transform-gpu cursor-pointer text-[10px]"
                     >
                       {copied ? (
                         <>
@@ -225,18 +225,18 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
                     </button>
                   </div>
 
-                  <pre className="p-3 bg-black/60 rounded-xl border border-slate-800 text-[10px] font-mono text-indigo-300 overflow-x-auto max-h-40 leading-relaxed select-all">
+                  <pre className="p-3 bg-slate-900 rounded-xl border border-slate-800 text-[10px] font-mono text-teal-300 overflow-x-auto max-h-40 leading-relaxed select-all">
                     {sqlMigration}
                   </pre>
                 </div>
 
-                <div className="p-3 bg-slate-950/50 rounded-xl border border-slate-800 text-[11px] text-slate-300 space-y-1.5 leading-relaxed">
-                  <p className="font-bold text-white">🛠️ Langkah Mudah Update Database:</p>
+                <div className="p-3 bg-slate-100 rounded-xl border border-slate-200 text-[11px] text-slate-600 space-y-1.5 leading-relaxed">
+                  <p className="font-bold text-slate-800">🛠️ Langkah Mudah Update Database:</p>
                   <p>1. Masuk ke dashboard <strong>Supabase</strong> Anda.</p>
                   <p>2. Pilih proyek Anda, lalu klik menu <strong>SQL Editor</strong> di bilah sisi kiri.</p>
                   <p>3. Klik <strong>New Query</strong>, tempel (paste) kode SQL yang disalin di atas.</p>
                   <p>4. Klik tombol <strong>Run</strong> (atau tekan Ctrl+Enter / Cmd+Enter).</p>
-                  <p className="text-emerald-400 font-medium">✓ Selesai! Setelah itu, silakan klik ulang tombol &quot;Daftar Akun Rumah Sakit&quot; di bawah.</p>
+                  <p className="text-teal-600 font-semibold font-sans">✓ Selesai! Setelah itu, silakan klik ulang tombol &quot;Daftar Akun Rumah Sakit&quot; di bawah.</p>
                 </div>
               </div>
             )}
@@ -247,69 +247,69 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
           
           {/* BAGIAN 1: Identitas Rumah Sakit */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-teal-600 flex items-center gap-1.5 border-b border-slate-200 pb-1.5">
               <MapPin className="w-3.5 h-3.5" /> 1. Identitas Rumah Sakit
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Nama Rumah Sakit <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Nama Rumah Sakit <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   placeholder="cth: RSUD Al-Mulk"
                   value={namaRs}
                   onChange={e => setNamaRs(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Kode Rumah Sakit <span className="text-slate-500 text-[10px]">(Opsional)</span></label>
+                <label className="text-xs font-bold text-slate-600">Kode Rumah Sakit <span className="text-slate-400 text-[10px]">(Opsional)</span></label>
                 <input
                   type="text"
                   placeholder="cth: RS320401"
                   value={kodeRs}
                   onChange={e => setKodeRs(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Alamat Rumah Sakit <span className="text-red-400">*</span></label>
+              <label className="text-xs font-bold text-slate-600">Alamat Rumah Sakit <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
                 placeholder="cth: Jl. Pramuka No. 12, Kota Bengkulu"
                 value={alamatRs}
                 onChange={e => setAlamatRs(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Provinsi <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Provinsi <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   placeholder="cth: Bengkulu"
                   value={provinsi}
                   onChange={e => setProvinsi(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Kota / Kabupaten <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Kota / Kabupaten <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   placeholder="cth: Kota Bengkulu"
                   value={kotaKab}
                   onChange={e => setKotaKab(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
             </div>
@@ -317,58 +317,58 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
 
           {/* BAGIAN 2: Penanggung Jawab & Kontak */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-teal-600 flex items-center gap-1.5 border-b border-slate-200 pb-1.5">
               <User className="w-3.5 h-3.5" /> 2. Penanggung Jawab & Kontak
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Nama Penanggung Jawab <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Nama Penanggung Jawab <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   placeholder="cth: dr. Ahmad Fauzi"
                   value={penanggungJawab}
                   onChange={e => setPenanggungJawab(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Jabatan <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Jabatan <span className="text-red-500">*</span></label>
                 <input
                   type="text"
                   required
                   placeholder="cth: Kepala Bidang Pelayanan Medik"
                   value={jabatan}
                   onChange={e => setJabatan(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Nomor WhatsApp <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Nomor WhatsApp <span className="text-red-500">*</span></label>
                 <input
                   type="tel"
                   required
                   placeholder="cth: 081234567890"
                   value={noWhatsapp}
                   onChange={e => setNoWhatsapp(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Email Resmi RS <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Email Resmi RS <span className="text-red-500">*</span></label>
                 <input
                   type="email"
                   required
                   placeholder="cth: info@rsudalmulk.com"
                   value={emailRs}
                   onChange={e => setEmailRs(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
             </div>
@@ -376,44 +376,44 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
 
           {/* BAGIAN 3: Kredensial Akun */}
           <div className="space-y-4">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-indigo-400 flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-teal-600 flex items-center gap-1.5 border-b border-slate-200 pb-1.5">
               <Lock className="w-3.5 h-3.5" /> 3. Kredensial Akun Portal
             </h3>
             
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300">Username Rumah Sakit <span className="text-red-400">*</span></label>
+              <label className="text-xs font-bold text-slate-600">Username Rumah Sakit <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 required
                 placeholder="cth: rsudalmulk (digunakan untuk login)"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
               />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Password <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Password <span className="text-red-500">*</span></label>
                 <input
                   type="password"
                   required
                   placeholder="Minimal 6 karakter, huruf & angka"
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Konfirmasi Password <span className="text-red-400">*</span></label>
+                <label className="text-xs font-bold text-slate-600">Konfirmasi Password <span className="text-red-500">*</span></label>
                 <input
                   type="password"
                   required
                   placeholder="Ulangi password"
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-200"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:border-teal-500 focus:ring-1 focus:ring-teal-500 hover:shadow-xs transition-all transform-gpu outline-none text-slate-800 placeholder-slate-400 font-medium"
                 />
               </div>
             </div>
@@ -422,7 +422,7 @@ CREATE TABLE IF NOT EXISTS public.email_notifications (
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-500/10 hover:shadow-indigo-500/20 transition-all transform-gpu cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3.5 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-extrabold rounded-xl text-sm shadow-md shadow-teal-500/10 hover:shadow-lg hover:shadow-teal-500/25 transition-all transform-gpu cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {loading ? (
               <span className="flex items-center gap-2">

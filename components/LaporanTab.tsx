@@ -356,90 +356,90 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
     <div className="space-y-6 md:space-y-8 animate-in fade-in zoom-in duration-500 pb-12">
       {/* Premium Header */}
       <div className="relative p-6 md:p-8 rounded-[24px] md:rounded-[32px] overflow-hidden group">
-        <div className="absolute inset-0 bg-[#0f172a]/80 backdrop-blur-sm border border-indigo-500/20 rounded-[24px] md:rounded-[32px] -z-10 shadow-md"></div>
-        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/20 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/30 transition-all transform-gpu duration-700"></div>
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-cyan-500/20 transition-all transform-gpu duration-700"></div>
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-md border border-slate-200/80 rounded-[24px] md:rounded-[32px] -z-10 shadow-lg shadow-blue-500/5"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-indigo-500/10 transition-all transform-gpu duration-700"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-500/5 rounded-full blur-[80px] -z-10 group-hover:bg-cyan-500/10 transition-all transform-gpu duration-700"></div>
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-2">
-            <h1 className="text-[27px] font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 tracking-tight">
+            <h1 className="text-[27px] font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-teal-600 to-indigo-700 tracking-tight">
               Laporan Detail Hasil Survei Budaya Keselamatan Pasien
             </h1>
-            <p className="text-sm md:text-base font-semibold text-[#c9cfe6]">
+            <p className="text-sm md:text-base font-semibold text-slate-600">
               Berdasarkan AHRQ Hospital Survey on Patient Safety Culture (SOPS) Version 2.0
             </p>
           </div>
           <button 
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-5 py-2.5 bg-white/5 hover:bg-indigo-500/20 border border-indigo-500/30 rounded-xl text-indigo-300 hover:text-white transition-all transform-gpu shadow-md text-sm font-semibold whitespace-nowrap print:hidden shrink-0"
+            className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 border border-blue-500 rounded-xl text-white transition-all transform-gpu shadow-md text-sm font-semibold whitespace-nowrap print:hidden shrink-0 cursor-pointer"
           >
             <Printer className="w-4 h-4" /> Cetak PDF
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-8 border-t border-white/10">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8 pt-8 border-t border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-indigo-500/20 rounded-xl border border-indigo-500/20"><Building2 className="w-5 h-5 text-indigo-400" /></div>
+            <div className="p-2.5 bg-indigo-50 rounded-xl border border-indigo-100"><Building2 className="w-5 h-5 text-indigo-600" /></div>
             <div>
-              <p className="text-[11px] text-white/50 uppercase tracking-wider font-semibold">Rumah Sakit</p>
-              <p className="text-sm font-bold text-white">{namaRs}</p>
+              <p className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Rumah Sakit</p>
+              <p className="text-sm font-bold text-slate-800">{namaRs}</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-purple-500/20 rounded-xl border border-purple-500/20"><Users className="w-5 h-5 text-purple-400" /></div>
+            <div className="p-2.5 bg-purple-50 rounded-xl border border-purple-100"><Users className="w-5 h-5 text-purple-600" /></div>
             <div>
-              <p className="text-[11px] text-white/50 uppercase tracking-wider font-semibold">Responden</p>
-              <p className="text-sm font-bold text-white">{filteredSurveys.length} Staf</p>
+              <p className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Responden</p>
+              <p className="text-sm font-bold text-slate-800">{filteredSurveys.length} Staf</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-emerald-500/20 rounded-xl border border-emerald-500/20"><Clock className="w-5 h-5 text-emerald-400" /></div>
+            <div className="p-2.5 bg-emerald-50 rounded-xl border border-emerald-100"><Clock className="w-5 h-5 text-emerald-600" /></div>
             <div>
-              <p className="text-[11px] text-white/50 uppercase tracking-wider font-semibold">Update Terakhir</p>
-              <p className="text-sm font-bold text-white">{currentDate}</p>
+              <p className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">Update Terakhir</p>
+              <p className="text-sm font-bold text-slate-800">{currentDate}</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Dynamic Filters */}
-      <div className="bg-[#0f172a]/60 backdrop-blur-sm border border-white/10 p-5 rounded-2xl flex flex-col md:flex-row md:flex-wrap gap-4 md:items-center print:hidden shadow-md">
+      <div className="bg-white/80 backdrop-blur-md border border-slate-200/80 p-5 rounded-2xl flex flex-col md:flex-row md:flex-wrap gap-4 md:items-center print:hidden shadow-lg shadow-blue-500/5">
         <div className="flex items-center gap-2 md:mr-4 shrink-0">
-          <Filter className="w-5 h-5 text-indigo-400" />
-          <span className="text-sm font-semibold text-white/80">Filter Data:</span>
+          <Filter className="w-5 h-5 text-indigo-600" />
+          <span className="text-sm font-semibold text-slate-700">Filter Data:</span>
         </div>
         
         <div className="relative w-full md:w-auto">
           <select 
             value={selectedTahun}
             onChange={(e) => setSelectedTahun(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto"
+            className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto"
           >
             {tahunOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-3 top-2.5 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-2.5 pointer-events-none" />
         </div>
 
         <div className="relative w-full md:w-auto">
           <select 
             value={selectedUnit}
             onChange={(e) => setSelectedUnit(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
+            className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
           >
             {unitOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-3 top-2.5 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-2.5 pointer-events-none" />
         </div>
 
         <div className="relative w-full md:w-auto">
           <select 
             value={selectedProfesi}
             onChange={(e) => setSelectedProfesi(e.target.value)}
-            className="appearance-none bg-slate-900 border border-indigo-500/30 text-indigo-200 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
+            className="appearance-none bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-400/50 transition-all transform-gpu cursor-pointer w-full md:w-auto md:max-w-[200px] md:truncate"
           >
             {profesiOptions.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
-          <ChevronDown className="w-4 h-4 text-indigo-400 absolute right-3 top-2.5 pointer-events-none" />
+          <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-2.5 pointer-events-none" />
         </div>
       </div>
 

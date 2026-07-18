@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`${poppins.variable} h-full`}>
-      <body className="h-full bg-slate-950 text-slate-100 font-sans antialiased">
+      <body className="h-full bg-slate-50 text-slate-800 font-sans antialiased">
         {children}
       </body>
     </html>

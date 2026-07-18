@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useQuery, QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LabelList 
@@ -17,8 +16,6 @@ import { computeDimensionScores } from '../lib/scoring';
 interface GrafikTabProps {
   surveys: SurveyData[];
 }
-
-const queryClient = new QueryClient();
 
 function extractYear(tanggalStr?: string): string {
   if (!tanggalStr) return new Date().getFullYear().toString();
@@ -43,72 +40,6 @@ function extractYear(tanggalStr?: string): string {
   return new Date().getFullYear().toString();
 }
 
-function hashString(str: string): string {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = (hash << 5) - hash + char;
-    hash |= 0;
-  }
-  return Math.abs(hash).toString(36);
-}
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-const fetchAI = async (prompt: string) => {
-  const cacheKey = `ai_analysis_${hashString(prompt)}`;
-  
-  if (typeof window !== 'undefined') {
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        console.log('Using cached AI analysis for key:', cacheKey);
-        return JSON.parse(cached);
-      }
-    } catch (e) {
-      console.warn('Error reading from localStorage cache:', e);
-    }
-  }
-
-  const res = await fetch('/api/gemini/generate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt, model: 'gemini-3.5-flash' })
-  });
-  if (!res.ok) throw new Error('AI Fetch failed');
-  const data = await res.json();
-  const text = data.text as string;
-
-  if (typeof window !== 'undefined') {
-    try {
-      const keys = Object.keys(localStorage);
-      const aiKeys = keys.filter(k => k.startsWith('ai_analysis_'));
-      if (aiKeys.length > 30) {
-        aiKeys.slice(0, 10).forEach(k => localStorage.removeItem(k));
-      }
-      localStorage.setItem(cacheKey, JSON.stringify(text));
-    } catch (e) {
-      console.warn('Error saving to localStorage cache:', e);
-    }
-  }
-
-  return text;
-};
-
 function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan', tahun1: string, tahun2: string) {
   const getScore = (d: any) => mode === 'Tunggal' ? d['Capaian'] : d['Tahun 2'];
   const sortedData = [...combinedData].sort((a, b) => getScore(b) - getScore(a));
@@ -117,29 +48,33 @@ function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan
   const moderates = sortedData.filter(d => getScore(d) >= 50 && getScore(d) < 75);
   const weaknesses = sortedData.filter(d => getScore(d) < 50);
 
+  const averageScore = combinedData.length > 0 
+    ? (combinedData.reduce((acc, curr) => acc + getScore(curr), 0) / combinedData.length).toFixed(1) 
+    : '0';
+
   let analisis = '';
   let rekomendasi: string[] = [];
 
   if (mode === 'Tunggal') {
     analisis += `<strong>LAPORAN ANALISIS BUDAYA KESELAMATAN PASIEN (AHRQ SOPS 2.0) - PERIODE TAHUN ${tahun1}</strong><br/><br/>`;
-    analisis += `Berdasarkan kriteria evaluasi resmi <strong>AHRQ SOPS (Surveys on Patient Safety Culture) Versi 2.0</strong>, dimensi budaya keselamatan dikelompokkan menjadi kekuatan utama (skor positif ≥ 75%), area sedang/perlu pemantauan (50% - 74%), dan area prioritas/lemah (< 50%). Hasil evaluasi fasyankes Anda adalah sebagai berikut:<br/><br/>`;
+    analisis += `Berdasarkan hasil kalkulasi algoritma dari data survei yang dimasukkan, rata-rata tingkat budaya keselamatan rumah sakit saat ini berada pada angka <strong>${averageScore}%</strong>. Menurut kriteria evaluasi standar <strong>AHRQ SOPS Versi 2.0</strong>, dimensi budaya keselamatan diklasifikasikan menjadi tiga tingkatan: kekuatan utama (skor positif ≥ 75%), area perlu pemantauan (50% - 74%), dan area prioritas kritis (< 50%). Hasil evaluasi otomatis untuk fasyankes Anda adalah sebagai berikut:<br/><br/>`;
     
     // Strengths
     if (strengths.length > 0) {
-      analisis += `<strong class="text-emerald-400">1. KEKUATAN UTAMA BUDAYA KESELAMATAN (Skor ≥ 75%):</strong><br/>`;
-      analisis += `Terdapat <strong>${strengths.length} dimensi</strong> unggulan yang telah mencapai kriteria kekuatan budaya keselamatan pasien di fasyankes:<br/>`;
+      analisis += `<strong class="text-emerald-400">1. KEKUATAN UTAMA (Skor ≥ 75%):</strong><br/>`;
+      analisis += `Terdapat <strong>${strengths.length} dimensi</strong> yang telah mencapai kriteria kekuatan budaya keselamatan unggulan:<br/>`;
       strengths.forEach(s => {
         analisis += `• <strong>${s.dimensiSingkat}</strong> (${getScore(s).toFixed(1)}%): ${s.d1.interpretasi}<br/>`;
       });
       analisis += `<br/>`;
     } else {
-      analisis += `<strong class="text-slate-400">1. KEKUATAN UTAMA BUDAYA KESELAMATAN (Skor ≥ 75%):</strong><br/>Belum ada dimensi yang mencapai kriteria kekuatan ≥ 75%. Seluruh area memerlukan pembinaan intensif berkelanjutan.<br/><br/>`;
+      analisis += `<strong class="text-slate-400">1. KEKUATAN UTAMA (Skor ≥ 75%):</strong><br/>Saat ini belum ada dimensi yang mencapai kriteria kekuatan unggulan (≥ 75%). Area ini memerlukan pembinaan intensif secara konsisten.<br/><br/>`;
     }
 
     // Areas to Monitor
     if (moderates.length > 0) {
-      analisis += `<strong class="text-cyan-400">2. AREA PERLU PEMANTAUAN KONSISTEN (Skor 50% - 74%):</strong><br/>`;
-      analisis += `Sebanyak <strong>${moderates.length} dimensi</strong> berada dalam rentang sedang. Aspek ini rentan mengalami kemunduran apabila tidak dipantau secara berkala:<br/>`;
+      analisis += `<strong class="text-cyan-400">2. AREA PEMANTAUAN (Skor 50% - 74%):</strong><br/>`;
+      analisis += `Sebanyak <strong>${moderates.length} dimensi</strong> berada dalam rentang sedang. Aspek ini cukup stabil namun rentan mengalami penurunan jika tidak dipantau secara berkala:<br/>`;
       moderates.forEach(m => {
         analisis += `• <strong>${m.dimensiSingkat}</strong> (${getScore(m).toFixed(1)}%): ${m.d1.interpretasi}<br/>`;
       });
@@ -148,34 +83,34 @@ function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan
 
     // Weaknesses / Priority
     if (weaknesses.length > 0) {
-      analisis += `<strong class="text-rose-400">3. AREA PRIORITAS PERBAIKAN SISTEMIS (Skor < 50%):</strong><br/>`;
-      analisis += `Terdapat <strong>${weaknesses.length} dimensi kritis</strong> yang diidentifikasi di bawah batas aman keselamatan dan memerlukan tindakan perbaikan operasional mendesak:<br/>`;
+      analisis += `<strong class="text-rose-400">3. AREA PRIORITAS KRITIS (Skor < 50%):</strong><br/>`;
+      analisis += `Terdapat <strong>${weaknesses.length} dimensi kritis</strong> yang teridentifikasi di bawah batas aman dan memerlukan tindakan perbaikan mendesak dari manajemen:<br/>`;
       weaknesses.forEach(w => {
         analisis += `• <strong>${w.dimensiSingkat}</strong> (${getScore(w).toFixed(1)}%): <strong class="text-rose-300">${w.d1.interpretasi}</strong><br/>`;
       });
     } else {
-      analisis += `<strong class="text-emerald-400">3. AREA PRIORITAS PERBAIKAN SISTEMIS (Skor < 50%):</strong><br/>Kabar baik, tidak ada dimensi kritis yang berada di bawah skor 50%. Mutu budaya keselamatan fasyankes berada pada jalur yang aman.<br/>`;
+      analisis += `<strong class="text-emerald-400">3. AREA PRIORITAS KRITIS (Skor < 50%):</strong><br/>Hasil yang sangat baik, tidak ada dimensi kritis yang berada di bawah skor 50%.<br/>`;
     }
 
     // Recommendations
     if (weaknesses.length > 0) {
-      weaknesses.forEach(w => {
-        rekomendasi.push(`Prioritaskan pembenahan sistemis pada dimensi **${w.dimensiSingkat}** (${getScore(w).toFixed(1)}%) melalui rapat komite keselamatan pasien dan penyusunan SOP taktis.`);
+      weaknesses.slice(0, 3).forEach(w => {
+        rekomendasi.push(`Fokuskan intervensi strategis pada **${w.dimensiSingkat}** (${getScore(w).toFixed(1)}%) melalui penyusunan Standard Operating Procedure (SOP) yang lebih suportif dan pelatihan khusus tim terkait.`);
       });
     }
     if (moderates.length > 0) {
       moderates.slice(0, 2).forEach(m => {
-        rekomendasi.push(`Tingkatkan supervisi dan lakukan evaluasi berkala pada dimensi **${m.dimensiSingkat}** (${getScore(m).toFixed(1)}%) guna mendorong percepatan menjadi kekuatan utama.`);
+        rekomendasi.push(`Pertahankan tren positif pada **${m.dimensiSingkat}** (${getScore(m).toFixed(1)}%) dengan meningkatkan frekuensi supervisi manajerial dan pemberian *reward* (penghargaan) bagi kepatuhan staf.`);
       });
     }
     if (rekomendasi.length < 4) {
-      rekomendasi.push(`Laksanakan kegiatan **'Safety Walkround' (Ronde Keselamatan)** yang dipimpin oleh jajaran pimpinan RS ke unit-unit pelayanan utama secara terjadwal.`);
-      rekomendasi.push(`Gencarkan sosialisasi iklim **'Just Culture' (budaya non-punitif)** agar staf berani melapor tanpa rasa takut disalahkan secara personal.`);
+      rekomendasi.push(`Jadwalkan program rutin **'Safety Walkround' (Ronde Keselamatan)** oleh jajaran direksi untuk meningkatkan keterlibatan langsung pimpinan pada unit layanan operasional.`);
+      rekomendasi.push(`Terapkan prinsip **'Just Culture' (Budaya Adil)** dalam penanganan insiden untuk meningkatkan keberanian staf dalam melapor tanpa ketakutan terhadap sanksi punitif.`);
     }
   } else {
     // Perbandingan mode
     analisis += `<strong>LAPORAN ANALISIS KOMPARATIF BUDAYA KESELAMATAN (AHRQ SOPS 2.0) - PERBANDINGAN TAHUN ${tahun1} VS ${tahun2}</strong><br/><br/>`;
-    analisis += `Analisis komparatif ini menyajikan evaluasi tren kepatuhan keselamatan pasien antar-periode guna mengukur efektivitas intervensi penjaminan mutu di fasyankes Anda:<br/><br/>`;
+    analisis += `Analisis komparatif mengukur tingkat efektivitas program intervensi mutu yang telah dijalankan oleh rumah sakit dengan membandingkan data survei Tahun ${tahun1} dan Tahun ${tahun2}.<br/><br/>`;
 
     const compared = combinedData.map(d => ({
       ...d,
@@ -186,38 +121,38 @@ function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan
     const declined = compared.filter(d => d.diff < 0);
 
     if (improved.length > 0) {
-      analisis += `<strong class="text-emerald-400">1. ASPEK DENGAN TREN POSITIF (MENINGKAT):</strong><br/>`;
+      analisis += `<strong class="text-emerald-400">1. TREN PENINGKATAN KINERJA (POSITIF):</strong><br/>`;
       improved.slice(0, 3).forEach(imp => {
-        analisis += `• <strong>${imp.dimensiSingkat}</strong>: Meningkat dari **${imp['Tahun 1'].toFixed(1)}%** menjadi **${imp['Tahun 2'].toFixed(1)}%** (<span class="text-emerald-400 font-bold">+${imp.diff.toFixed(1)}%</span>)<br/>`;
+        analisis += `• <strong>${imp.dimensiSingkat}</strong>: Kinerja naik dari **${imp['Tahun 1'].toFixed(1)}%** ke **${imp['Tahun 2'].toFixed(1)}%** (<span class="text-emerald-400 font-bold">+${imp.diff.toFixed(1)}%</span>)<br/>`;
       });
-      analisis += `Kenaikan ini membuktikan efektivitas program perbaikan atau pembinaan berkelanjutan yang telah berjalan pada aspek tersebut.<br/><br/>`;
+      analisis += `Peningkatan ini merefleksikan keberhasilan program peningkatan mutu dan kepatuhan staf dalam menerapkan budaya keselamatan yang lebih baik pada aspek tersebut.<br/><br/>`;
     }
 
     if (declined.length > 0) {
-      analisis += `<strong class="text-rose-400">2. ASPEK DENGAN TREN NEGATIF (MENURUN):</strong><br/>`;
+      analisis += `<strong class="text-rose-400">2. TREN PENURUNAN KINERJA (NEGATIF):</strong><br/>`;
       declined.reverse().slice(0, 3).forEach(dec => {
-        analisis += `• <strong>${dec.dimensiSingkat}</strong>: Menurun dari **${dec['Tahun 1'].toFixed(1)}%** menjadi **${dec['Tahun 2'].toFixed(1)}%** (<span class="text-rose-300 font-bold">${dec.diff.toFixed(1)}%</span>)<br/>`;
+        analisis += `• <strong>${dec.dimensiSingkat}</strong>: Kinerja merosot dari **${dec['Tahun 1'].toFixed(1)}%** ke **${dec['Tahun 2'].toFixed(1)}%** (<span class="text-rose-300 font-bold">${dec.diff.toFixed(1)}%</span>)<br/>`;
       });
-      analisis += `Penurunan ini memerlukan investigasi mendalam untuk melacak apakah dipicu oleh peningkatan beban kerja harian, kejenuhan staf, atau supervisi klinis yang kendur.<br/><br/>`;
+      analisis += `Penurunan capaian ini mengindikasikan adanya kendala struktural maupun operasional yang mendesak untuk diinvestigasi (seperti burnout, peningkatan beban kerja, atau miskomunikasi antar unit).<br/><br/>`;
     }
 
-    analisis += `<strong class="text-cyan-400">3. REKOMENDASI STRATEGIS UNTUK MANAJEMEN:</strong><br/>`;
-    analisis += `Direkomendasikan melakukan standardisasi keberhasilan dari dimensi yang meningkat untuk direplikasi pada unit kerja lainnya, serta mengadakan Focused Group Discussion (FGD) pada unit kerja dengan penurunan terdalam guna merumuskan tindakan korektif secepatnya.`;
+    analisis += `<strong class="text-cyan-400">3. REKOMENDASI MANAJERIAL STRATEGIS:</strong><br/>`;
+    analisis += `Berdasarkan analisis pergerakan skor antar periode, manajemen perlu merumuskan langkah korektif segera pada aspek yang melemah, serta mereplikasi praktik baik pada aspek yang menunjukkan peningkatan.`;
 
     if (declined.length > 0) {
-      rekomendasi.push(`Lakukan evaluasi akar masalah mendalam pada aspek **${declined[0].dimensiSingkat}** yang mengalami tren penurunan signifikan (${declined[0].diff.toFixed(1)}%).`);
+      rekomendasi.push(`Laksanakan RCA (Root Cause Analysis) pada dimensi **${declined[0].dimensiSingkat}** yang mengalami kemerosotan kinerja tajam (${declined[0].diff.toFixed(1)}%) dalam periode ini.`);
     }
     if (improved.length > 0) {
-      rekomendasi.push(`Standardisasi prosedur sukses dan koordinasi kerja pada dimensi **${improved[0].dimensiSingkat}** (+${improved[0].diff.toFixed(1)}%) untuk diduplikasi pada unit-unit kerja yang masih lemah.`);
+      rekomendasi.push(`Dokumentasikan dan replikasikan pedoman/praktik keberhasilan dari dimensi **${improved[0].dimensiSingkat}** (+${improved[0].diff.toFixed(1)}%) sebagai *benchmark* internal bagi unit lain.`);
     }
-    rekomendasi.push(`Optimalkan sistem pelaporan insiden internal yang mudah diakses dan bersifat non-punitif demi meningkatkan partisipasi aktif pelaporan.`);
-    rekomendasi.push(`Selenggarakan program monitoring dan evaluasi terpadu (Monev) setiap triwulan atas capaian indikator budaya keselamatan.`);
+    rekomendasi.push(`Optimalkan sistem pelaporan insiden daring yang responsif, anonim, dan berpusat pada perbaikan sistem (bukan menyalahkan individu).`);
+    rekomendasi.push(`Selenggarakan program penyegaran (refreshment) kompetensi komunikasi efektif (misalnya teknik SBAR) antar unit secara terjadwal untuk mencegah miskomunikasi kritis.`);
   }
 
   return { analisis, rekomendasi };
 }
 
-function GrafikTabContent({ surveys }: GrafikTabProps) {
+export default function GrafikTab({ surveys }: GrafikTabProps) {
   const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
 
   const actualDataYears = useMemo(() => {
@@ -272,86 +207,6 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
       };
     });
   }, [dataTahun1, dataTahun2]);
-
-  const aiPrompt = useMemo(() => {
-    if (combinedData.length === 0) return null;
-    let text = `Anda adalah konsultan ahli manajemen mutu rumah sakit spesialis Budaya Keselamatan Pasien (Patient Safety Culture) berbasis standar global AHRQ SOPS (Surveys on Patient Safety Culture) Versi 2.0.\n`;
-    text += `Tugas Anda adalah membuat Analisis Otomatis dan Rekomendasi Peningkatan Mutu terperinci, formal, taktis, dan solutif yang ditujukan langsung kepada Direktur Utama Rumah Sakit dalam Bahasa Indonesia yang sangat profesional dan objektif.\n\n`;
-    
-    text += `Berdasarkan kriteria resmi AHRQ SOPS 2.0:\n`;
-    text += `- Dimensi Budaya Keselamatan Kuat (Kekuatan Utama): Skor respon positif ≥ 75%\n`;
-    text += `- Dimensi Perlu Pemantauan Konsisten (Sedang): Skor respon positif 50% - 74.99%\n`;
-    text += `- Dimensi Prioritas Perbaikan Sistemis (Kelemahan/Rentan): Skor respon positif < 50%\n\n`;
-
-    if (mode === 'Tunggal') {
-      text += `Berikut adalah data persentase respon positif hasil survei di Rumah Sakit pada periode Tahun ${tahun1}:\n`;
-      combinedData.forEach(d => {
-        const cat = d['Capaian'] >= 75 ? 'Kekuatan Utama (≥75%)' : d['Capaian'] >= 50 ? 'Perlu Pemantauan (50-74%)' : 'Prioritas Perbaikan (<50%)';
-        text += `- ${d.dimensiSingkat} (${d.kode}): ${d['Capaian']}% - Kategori: ${cat}\n`;
-      });
-    } else {
-      text += `Berikut adalah perbandingan data persentase respon positif hasil survei di Rumah Sakit antara Tahun ${tahun1} dengan Tahun ${tahun2}:\n`;
-      combinedData.forEach(d => {
-        const diff = d['Tahun 2'] - d['Tahun 1'];
-        const cat = d['Tahun 2'] >= 75 ? 'Kekuatan Utama (≥75%)' : d['Tahun 2'] >= 50 ? 'Perlu Pemantauan (50-74%)' : 'Prioritas Perbaikan (<50%)';
-        text += `- ${d.dimensiSingkat} (${d.kode}): Tahun ${tahun1} = ${d['Tahun 1']}% vs Tahun ${tahun2} = ${d['Tahun 2']}% (Tren: ${diff > 0 ? '+' : ''}${diff.toFixed(2)}% | Kategori Tahun Kedua: ${cat})\n`;
-      });
-    }
-    
-    text += `\nInstruksi Struktur Output:\n`;
-    text += `1. Berikan analisis mendalam mengenai kekuatan (dimensi dengan skor tertinggi), kelemahan utama (dimensi di bawah 50%), serta korelasi antar-aspek (misal, pengaruh ketenagaan dan beban kerja terhadap pelaporan insiden atau kerja sama tim) sesuai standar AHRQ SOPS 2.0.\n`;
-    text += `2. Berikan rekomendasi peningkatan mutu operasional yang konkret, taktis, dan aplikatif sesuai pedoman operasional rumah sakit.\n`;
-    text += `3. Hindari kalimat pembuka/penutup basa-basi. Format output harus langsung dimulai dengan judul "### Analisis" diikuti dengan ulasan analisis, kemudian dilanjutkan dengan judul "### Rekomendasi Peningkatan" diikuti dengan rekomendasi operasional.\n`;
-    text += `4. Batasi output maksimal 4 paragraf analisis mendalam, dan 4 poin rekomendasi berpoin (*).`;
-    return text;
-  }, [combinedData, mode, tahun1, tahun2]);
-
-  const debouncedAiPrompt = useDebounce(aiPrompt, 1500);
-
-  const { data: aiResponse, isLoading: aiLoading, isError: aiIsError } = useQuery({
-    queryKey: ['ai-analysis', debouncedAiPrompt],
-    queryFn: () => fetchAI(debouncedAiPrompt!),
-    enabled: !!debouncedAiPrompt,
-    staleTime: Infinity,
-    retry: false,
-  });
-
-  const isDebouncing = aiPrompt !== debouncedAiPrompt && !!aiPrompt;
-  const isCurrentlyLoading = aiLoading || isDebouncing;
-
-  const parsedAiReport = useMemo(() => {
-    if (!aiResponse) return null;
-    
-    // Split by the recommendation header
-    const parts = aiResponse.split(/###\s*Rekomendasi\s*Peningkatan/i);
-    let analysis = parts[0] || '';
-    let recommendationsText = parts[1] || '';
-    
-    // Clean up analysis heading
-    analysis = analysis.replace(/###\s*Analisis/i, '').trim();
-    
-    // Extract list items from recommendations text (lines starting with * or - or numbers)
-    const recs: string[] = [];
-    const lines = recommendationsText.split('\n');
-    for (let line of lines) {
-      const trimmed = line.trim();
-      if (trimmed.startsWith('*') || trimmed.startsWith('-')) {
-        const cleaned = trimmed.replace(/^[\*\-\s]+/, '').trim();
-        if (cleaned) recs.push(cleaned);
-      } else if (/^\d+\./.test(trimmed)) {
-        const cleaned = trimmed.replace(/^\d+\.\s*/, '').trim();
-        if (cleaned) recs.push(cleaned);
-      } else if (trimmed.length > 10) {
-        // If it's a longer line and not empty, we can also add it
-        recs.push(trimmed);
-      }
-    }
-    
-    return {
-      analisis: analysis,
-      rekomendasi: recs.length > 0 ? recs : null
-    };
-  }, [aiResponse]);
 
   const localReport = useMemo(() => {
     return generateAHRQReport(combinedData, mode, tahun1, tahun2);
@@ -453,46 +308,46 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
   }
 
   return (
-<motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6 pb-20 p-6 -m-6 rounded-[24px]">
-      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="space-y-6 pb-20 p-6 -m-6 rounded-[24px]">
+      <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6 bg-white/80 backdrop-blur-md border border-slate-200 p-6 rounded-[24px] shadow-lg shadow-blue-500/5">
         <div>
-          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 bg-clip-text text-transparent tracking-tight">Analisa Grafik Budaya Keselamatan Pasien</h1>
-          <p className="text-sm text-slate-400 mt-1">Visualisasi capaian seluruh dimensi Survei Budaya Keselamatan Pasien AHRQ SOPS Version 2.0.</p>
+          <h1 className="text-2xl font-extrabold bg-gradient-to-r from-blue-700 via-teal-600 to-indigo-700 bg-clip-text text-transparent tracking-tight">Analisa Grafik Budaya Keselamatan Pasien</h1>
+          <p className="text-sm text-slate-500 mt-1">Visualisasi capaian seluruh dimensi Survei Budaya Keselamatan Pasien AHRQ SOPS Version 2.0.</p>
         </div>
         <div className="flex flex-wrap items-center gap-4 text-xs font-medium">
-          <div className="flex items-center gap-2 bg-slate-900/50 px-3 py-2 rounded-xl border border-white/10">
-            <Calendar className="w-4 h-4 text-emerald-400" />
-            <span className="text-slate-300">{mode === 'Tunggal' ? `Periode ${tahun1}` : `Perbandingan ${tahun1} vs ${tahun2}`}</span>
+          <div className="flex items-center gap-2 bg-slate-50 px-3 py-2 rounded-xl border border-slate-200">
+            <Calendar className="w-4 h-4 text-teal-600" />
+            <span className="text-slate-700">{mode === 'Tunggal' ? `Periode ${tahun1}` : `Perbandingan ${tahun1} vs ${tahun2}`}</span>
           </div>
         </div>
       </div>
 
-      <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm flex flex-col md:flex-row gap-6 items-start md:items-center relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/10 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
+      <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-6 rounded-[24px] shadow-lg shadow-blue-500/5 flex flex-col md:flex-row gap-6 items-start md:items-center relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
         <div className="flex flex-wrap items-center gap-6">
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <ListFilter className="w-3 h-3 text-emerald-400" /> Mode Analisis
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <ListFilter className="w-3 h-3 text-teal-600" /> Mode Analisis
             </label>
-            <div className="flex items-center gap-2 bg-slate-950/50 p-1 rounded-xl border border-white/10">
-              <button onClick={() => setMode('Tunggal')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform-gpu ${mode === 'Tunggal' ? 'bg-white/10 text-emerald-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Periode Tunggal</button>
-              <button onClick={() => setMode('Perbandingan')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform-gpu ${mode === 'Perbandingan' ? 'bg-white/10 text-cyan-400 shadow-sm border border-white/5' : 'text-slate-500 hover:text-slate-300'}`}>Perbandingan Periode</button>
+            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+              <button onClick={() => setMode('Tunggal')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform-gpu ${mode === 'Tunggal' ? 'bg-white text-teal-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>Periode Tunggal</button>
+              <button onClick={() => setMode('Perbandingan')} className={`px-4 py-2 rounded-lg text-xs font-bold transition-all transform-gpu ${mode === 'Perbandingan' ? 'bg-white text-blue-700 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}>Perbandingan Periode</button>
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-emerald-400" /> {mode === 'Tunggal' ? 'Periode Tahun' : 'Tahun Pertama'}
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <Calendar className="w-3 h-3 text-teal-600" /> {mode === 'Tunggal' ? 'Periode Tahun' : 'Tahun Pertama'}
             </label>
-            <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm font-semibold text-slate-300 focus:border-emerald-500 outline-none w-32 [&>option]:bg-slate-900">
+            <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-teal-500 outline-none w-32 [&>option]:bg-white">
               {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
           {mode === 'Perbandingan' && (
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                <Calendar className="w-3 h-3 text-cyan-400" /> Tahun Kedua
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <Calendar className="w-3 h-3 text-blue-600" /> Tahun Kedua
               </label>
-              <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-slate-900/50 border border-white/10 rounded-xl px-4 py-2 text-sm font-semibold text-slate-300 focus:border-cyan-500 outline-none w-32 [&>option]:bg-slate-900">
+              <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 [&>option]:bg-white">
                 {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
@@ -500,29 +355,29 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
         </div>
       </div>
 
-      <div className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm">
-        <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
-          <BarChart2 className="w-5 h-5 text-emerald-400" />
+      <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-6 rounded-[24px] shadow-lg shadow-blue-500/5">
+        <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+          <BarChart2 className="w-5 h-5 text-teal-600" />
           Hasil Perbandingan Pengukuran Dimensi Untuk {rsName}
         </h3>
         <div className="w-full text-xs font-medium">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-sm border-collapse min-w-[800px]">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
                   <th className="p-3 w-10 text-center align-bottom">No.</th>
                   <th className="p-3 w-64 align-bottom">Komponen Budaya<br/>Keselamatan Pasien</th>
                   <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
-                  <th className="p-3 w-40 text-center border-l border-white/10">
+                  <th className="p-3 w-40 text-center border-l border-slate-200">
                     <div>Rata-rata RS Percontohan<br/>(% Respons Positif)</div>
-                    <div className="flex justify-between mt-2 pt-2 border-t border-t-white/5 text-emerald-400">
+                    <div className="flex justify-between mt-2 pt-2 border-t border-slate-150 text-teal-600">
                       <span className="w-1/2 text-center">MIN</span>
-                      <span className="w-1/2 text-center border-l border-white/5">MAX</span>
+                      <span className="w-1/2 text-center border-l border-slate-150">MAX</span>
                     </div>
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5">
+              <tbody className="divide-y divide-slate-100">
                 {combinedData.map((row, i) => {
                   const getBarColor = (val: number) => {
                     if (val >= 85) return 'bg-blue-500';
@@ -532,13 +387,13 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                   };
 
                   return (
-                    <tr key={row.id} className="hover:bg-white/[0.02] transition-colors group">
-                      <td className="p-3 text-center font-bold text-slate-500 align-top pt-5">{i + 1}.</td>
-                      <td className="p-3 font-semibold text-slate-200 text-xs align-top pt-5 pr-4 leading-relaxed">{row.dimensiSingkat}</td>
+                    <tr key={row.id} className="hover:bg-slate-50/50 transition-colors group">
+                      <td className="p-3 text-center font-bold text-slate-400 align-top pt-5">{i + 1}.</td>
+                      <td className="p-3 font-semibold text-slate-700 text-xs align-top pt-5 pr-4 leading-relaxed">{row.dimensiSingkat}</td>
                       <td className="p-3 align-middle py-4">
                         {mode === 'Tunggal' ? (
                           <div className="flex items-center gap-3 w-full">
-                            <div className="flex-1 bg-slate-800/50 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                            <div className="flex-1 bg-slate-100 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
                               <motion.div 
                                 initial={{ scaleX: 0 }}
                                 animate={{ scaleX: 1 }}
@@ -549,14 +404,14 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                               </motion.div>
                             </div>
-                            <span className="text-sm font-bold text-slate-200 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
+                            <span className="text-sm font-bold text-slate-700 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
                           </div>
                         ) : (
                           <div className="space-y-2 w-full pt-1">
                             {/* Bar Tahun 1 */}
                             <div className="flex items-center gap-3 w-full">
-                              <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun1}</span>
-                              <div className="flex-1 bg-slate-800/50 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                              <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun1}</span>
+                              <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
                                 <motion.div 
                                   initial={{ scaleX: 0 }}
                                   animate={{ scaleX: 1 }}
@@ -567,12 +422,12 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                 </motion.div>
                               </div>
-                              <span className="text-xs font-bold text-slate-400 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
+                              <span className="text-xs font-bold text-slate-500 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
                             </div>
                             {/* Bar Tahun 2 */}
                             <div className="flex items-center gap-3 w-full">
-                              <span className="text-[10px] text-slate-500 w-14 text-right">Thn {tahun2}</span>
-                              <div className="flex-1 bg-slate-800/50 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-700/50 shadow-inner">
+                              <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun2}</span>
+                              <div className="flex-1 bg-slate-100 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
                                 <motion.div 
                                   initial={{ scaleX: 0 }}
                                   animate={{ scaleX: 1 }}
@@ -583,15 +438,15 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
                                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                 </motion.div>
                               </div>
-                              <span className="text-sm font-bold text-slate-200 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
+                              <span className="text-sm font-bold text-slate-700 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
                             </div>
                           </div>
                         )}
                       </td>
-                      <td className="p-0 border-l border-white/10 text-center font-bold text-slate-300 text-sm align-middle bg-slate-900/20">
+                      <td className="p-0 border-l border-slate-200 text-center font-bold text-slate-700 text-sm align-middle bg-slate-50">
                         <div className="flex h-full items-center justify-center min-h-[60px]">
                           <span className="w-1/2 py-2">{row.d1.benchmarkMin}%</span>
-                          <span className="w-1/2 py-2 border-l border-white/5">{row.d1.benchmarkMax}%</span>
+                          <span className="w-1/2 py-2 border-l border-slate-150">{row.d1.benchmarkMax}%</span>
                         </div>
                       </td>
                     </tr>
@@ -600,7 +455,7 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
               </tbody>
             </table>
             
-            <div className="mt-6 flex flex-wrap gap-4 items-center justify-center text-[11px] font-medium text-slate-400 bg-slate-900/50 p-4 rounded-xl border border-white/5">
+            <div className="mt-6 flex flex-wrap gap-4 items-center justify-center text-[11px] font-semibold text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500 shadow-md"></div> &lt;50% (Perlu Perbaikan)</div>
               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-md"></div> 50-69% (Cukup)</div>
               <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-md"></div> 70-84% (Baik)</div>
@@ -614,31 +469,31 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white/[0.07] border border-white/10 p-6 rounded-[24px] backdrop-blur-sm relative overflow-hidden"
+        className="bg-white/80 backdrop-blur-md border border-slate-200 p-6 rounded-[24px] shadow-lg shadow-blue-500/5 relative overflow-hidden"
       >
-        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
-        <h3 className="text-lg font-bold text-slate-200 mb-1 flex items-center gap-2">
-          <ShieldAlert className="w-5 h-5 text-emerald-400" />
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
+        <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-teal-600" />
           Perbandingan Penilaian Keselamatan Pasien
         </h3>
-        <p className="text-sm text-slate-400 mb-8">Bagaimana Anda menilai tingkat keselamatan pasien di unit kerja Anda? (Butir E1)</p>
+        <p className="text-sm text-slate-500 mb-8">Bagaimana Anda menilai tingkat keselamatan pasien di unit kerja Anda? (Butir E1)</p>
         
         <div className="h-[400px]">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={e1Stats} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.5} />
-              <XAxis dataKey="kategori" stroke="#94a3b8" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} />
-              <YAxis type="number" domain={[0, 100]} stroke="#94a3b8" tickFormatter={(val) => `${val}%`} />
-              <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} />
-              <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#94a3b8', fontSize: '13px', fontWeight: 'bold' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.7} />
+              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }} />
+              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
+              <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
+              <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
               <Bar isAnimationActive={false} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#34d399" fontSize={11} fontWeight="bold" />
+                <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-rs-${index}`} fill="#10b981" />
                 ))}
               </Bar>
               <Bar isAnimationActive={false} dataKey="Data Pembanding" fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
-                <LabelList dataKey="Data Pembanding" position="top" formatter={(val: number) => `${val}%`} fill="#94a3b8" fontSize={11} fontWeight="bold" />
+                <LabelList dataKey="Data Pembanding" position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-bp-${index}`} fill="#64748b" />
                 ))}
@@ -649,77 +504,35 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/10 rounded-full blur-2xl -z-10 -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-          <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
-            <BrainCircuit className="w-6 h-6 text-cyan-400" /> Analisis Otomatis
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-6 md:p-8 rounded-[24px] shadow-lg shadow-blue-500/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/5 rounded-full blur-2xl -z-10 -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
+          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <BrainCircuit className="w-6 h-6 text-teal-600" /> Analisis Otomatis
           </h3>
-          <div className="prose prose-sm prose-invert max-w-none text-slate-300 text-xs">
+          <div className="prose prose-sm max-w-none text-slate-600 text-xs">
             <div className="space-y-4">
-              {parsedAiReport?.analisis ? (
-                <div dangerouslySetInnerHTML={{ 
-                  __html: parsedAiReport.analisis
-                    .replace(/\n\n/g, '<br/><br/>')
-                    .replace(/\n/g, '<br/>') 
-                    .replace(/\*\*(.*?)\*\*/g, '<strong class="text-slate-100 font-bold">$1</strong>')
-                }} className="leading-relaxed space-y-2" />
-              ) : (
-                <div dangerouslySetInnerHTML={{ __html: localReport.analisis }} className="leading-relaxed space-y-2" />
-              )}
-
-              {isCurrentlyLoading && (
-                <div className="text-[10px] text-cyan-400 bg-cyan-950/30 px-3 py-2.5 rounded-xl border border-cyan-500/20 flex items-center justify-between gap-1.5 no-print animate-pulse">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                    <span>
-                      {isDebouncing 
-                        ? "Menstabilkan data perubahan sebelum memulai analisis baru..." 
-                        : "Sedang mengoptimalkan analisis mendalam dengan Google Gemini AI..."}
-                    </span>
-                  </div>
-                  <svg className="animate-spin h-3.5 w-3.5 text-cyan-400" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                </div>
-              )}
-
-              {aiIsError && !isCurrentlyLoading && (
-                <div className="text-[10px] text-amber-400 bg-amber-950/20 px-3 py-2 rounded-xl border border-amber-500/10 flex items-center gap-1.5 no-print">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                  Sistem beralih ke Analisis Standar AHRQ SOPS 2.0 Lokal karena server AI sedang padat/sibuk.
-                </div>
-              )}
+              <div dangerouslySetInnerHTML={{ __html: localReport.analisis }} className="leading-relaxed space-y-2 text-slate-600" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white/[0.07] border border-white/10 p-6 md:p-8 rounded-[24px] backdrop-blur-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -z-10 -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
-          <h3 className="text-lg font-bold text-slate-200 mb-6 flex items-center gap-2">
-            <Lightbulb className="w-6 h-6 text-emerald-400" /> Rekomendasi Peningkatan
+        <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-6 md:p-8 rounded-[24px] shadow-lg shadow-blue-500/5 relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl -z-10 -mr-10 -mt-10 group-hover:scale-150 transition-transform duration-700"></div>
+          <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+            <Lightbulb className="w-6 h-6 text-teal-600" /> Rekomendasi Peningkatan
           </h3>
-          <div className="prose prose-sm prose-invert max-w-none text-slate-300">
+          <div className="prose prose-sm max-w-none text-slate-600">
             <div className="space-y-4 text-xs">
-              <p className="font-semibold text-slate-200 flex items-center justify-between gap-2">
+              <p className="font-semibold text-slate-700 flex items-center justify-between gap-2 m-0 p-0">
                 <span>Berdasarkan hasil kuesioner budaya keselamatan pasien RS Anda (AHRQ SOPS 2.0), berikut rekomendasi tindak lanjut strategis:</span>
-                {isCurrentlyLoading && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
-                    <svg className="animate-spin h-3 w-3 text-emerald-400" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    {isDebouncing ? "Menyiapkan..." : "Sinkronisasi AI..."}
-                  </span>
-                )}
               </p>
-              <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/10">
-                <ul className="space-y-3 text-slate-300 list-none m-0 p-0">
-                  {((parsedAiReport?.rekomendasi || localReport.rekomendasi) as string[]).map((rec, idx) => (
+              <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
+                <ul className="space-y-3 text-slate-600 list-none m-0 p-0">
+                  {localReport.rekomendasi.map((rec, idx) => (
                     <li key={idx} className="flex gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                      <span className="leading-relaxed" dangerouslySetInnerHTML={{ 
-                        __html: rec.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300 font-bold">$1</strong>') 
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                      <span className="leading-relaxed text-slate-600" dangerouslySetInnerHTML={{ 
+                        __html: rec.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-800 font-bold">$1</strong>') 
                       }} />
                     </li>
                   ))}
@@ -730,18 +543,10 @@ function GrafikTabContent({ surveys }: GrafikTabProps) {
         </div>
       </div>
       
-      <div className="flex justify-between items-center text-[11px] font-medium text-slate-500 px-2 pt-4">
+      <div className="flex justify-between items-center text-[11px] font-medium text-slate-400 px-2 pt-4">
         <span>Dicetak pada: {new Date().toLocaleString('id-ID')}</span>
         <span>AHRQ SOPS 2.0 BI Dashboard - {rsName}</span>
       </div>
     </motion.div>
-  );
-}
-
-export default function GrafikTab(props: GrafikTabProps) {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <GrafikTabContent {...props} />
-    </QueryClientProvider>
   );
 }

@@ -96,7 +96,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'morning',
         text: 'Selamat Pagi', 
         iconType: 'sunrise',
-        badgeClass: 'border-emerald-500/20 shadow-md',
+        badgeClass: 'border-teal-200 bg-teal-50 shadow-xs',
         gradId: 'sunrise-grad'
       };
     } else if (hour >= 11 && hour < 15) {
@@ -104,7 +104,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'noon',
         text: 'Selamat Siang', 
         iconType: 'sun',
-        badgeClass: 'border-white/[0.08] shadow-md',
+        badgeClass: 'border-teal-200 bg-teal-50 shadow-xs',
         gradId: 'sun-grad'
       };
     } else if (hour >= 15 && hour < 18) {
@@ -112,7 +112,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'afternoon',
         text: 'Selamat Sore', 
         iconType: 'sunset',
-        badgeClass: 'border-white/[0.08] shadow-md',
+        badgeClass: 'border-orange-200 bg-orange-50 shadow-xs',
         gradId: 'sunset-grad'
       };
     } else {
@@ -120,7 +120,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
         type: 'night',
         text: 'Selamat Malam', 
         iconType: 'moon',
-        badgeClass: 'border-white/[0.08] shadow-md',
+        badgeClass: 'border-indigo-200 bg-indigo-50 shadow-xs',
         gradId: 'moon-grad'
       };
     }
@@ -200,16 +200,16 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[32px] bg-[#121826]/90 backdrop-blur-sm border border-white/[0.08] shadow-md flex flex-col lg:flex-row justify-between items-start gap-8"
+      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[22px] bg-white/80 backdrop-blur-md border border-white/60 shadow-lg shadow-teal-500/5 flex flex-col lg:flex-row justify-between items-start gap-8"
     >
       {/* Decorative premium radial glow & gradient elements */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full filter blur-[100px] pointer-events-none -z-10" />
-      <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-purple-500/10 rounded-full filter blur-[80px] pointer-events-none -z-10" />
-      <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-48 h-48 bg-cyan-500/5 rounded-full filter blur-[60px] pointer-events-none -z-10" />
+      <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full filter blur-[100px] pointer-events-none -z-10" />
+      <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-blue-500/5 rounded-full filter blur-[80px] pointer-events-none -z-10" />
+      <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-48 h-48 bg-teal-500/5 rounded-full filter blur-[60px] pointer-events-none -z-10" />
 
       {/* Left Column: Greeting, Welcome Messages (100% on Desktop) */}
       <div className="flex-1 w-full min-w-0 flex items-stretch gap-4 md:gap-5">
-        {/* Blue-Indigo-Purple Vertical Accent Bar with vertical moving color animation */}
+        {/* Teal Vertical Accent Bar with vertical moving color animation */}
         <motion.div 
           animate={{ 
             backgroundPosition: ["0% 0%", "0% 100%", "0% 0%"]
@@ -221,9 +221,9 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
           }}
           style={{
             backgroundSize: "100% 200%",
-            backgroundImage: "linear-gradient(to bottom, #22d3ee, #6366f1, #a855f7, #6366f1, #22d3ee)"
+            backgroundImage: "linear-gradient(to bottom, #2dd4bf, #14b8a6, #0d9488, #14b8a6, #2dd4bf)"
           }}
-          className="w-1 md:w-1.5 rounded-full shadow-md shrink-0" 
+          className="w-1 md:w-1.5 rounded-full shadow-xs shrink-0" 
         />
         
         <div className="space-y-4 min-w-0 w-full">
@@ -232,7 +232,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
             <div className="flex items-center gap-3">
               <motion.div 
                 variants={sapaanVariants}
-                className="text-[22px] md:text-[36px] font-bold text-white/90 leading-tight md:leading-none tracking-tight whitespace-normal break-words"
+                className="text-[22px] md:text-[36px] font-bold text-slate-800 leading-tight md:leading-none tracking-tight whitespace-normal break-words"
               >
                 {greeting.text},
               </motion.div>
@@ -245,7 +245,7 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
                     animate={{ opacity: 1, scale: 1, rotate: 0 }}
                     exit={{ opacity: 0, scale: 0.9, rotate: 10 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
-                    className={`absolute inset-0 flex items-center justify-center rounded-[14px] bg-white/[0.05] backdrop-blur-[20px] border ${greeting.badgeClass}`}
+                    className={`absolute inset-0 flex items-center justify-center rounded-[14px] border ${greeting.badgeClass}`}
                   >
                     {renderGreetingIcon(greeting.iconType, greeting.gradId)}
                   </motion.div>
@@ -256,9 +256,9 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
             {/* Row 2: Hospital Title with Gradient Accent & Glow */}
             <motion.h2 
               variants={namaRsVariants}
-              className="text-[28px] md:text-[48px] font-extrabold text-white tracking-tight leading-tight md:leading-none break-words whitespace-normal"
+              className="text-[28px] md:text-[48px] font-extrabold text-slate-900 tracking-tight leading-tight md:leading-none break-words whitespace-normal font-sans"
             >
-              Hai, Sobat <span className="bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent drop-shadow-md font-extrabold">{displayHospital}</span>
+              Hai, Sobat <span className="bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600 bg-clip-text text-transparent drop-shadow-xs font-extrabold">{displayHospital}</span>
             </motion.h2>
           </div>
 
@@ -266,13 +266,13 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
           <div className="space-y-2">
             <motion.p 
               variants={subjudulVariants}
-              className="text-[18px] md:text-[22px] font-semibold text-slate-100 leading-tight"
+              className="text-[18px] md:text-[22px] font-bold text-slate-800 leading-tight"
             >
-              Selamat Datang di Aplikasi <span className="font-extrabold bg-gradient-to-r from-cyan-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Sistem Survei Budaya Keselamatan Pasien</span>
+              Selamat Datang di Aplikasi <span className="font-extrabold bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600 bg-clip-text text-transparent">Sistem Survei Budaya Keselamatan Pasien</span>
             </motion.p>
             <motion.p 
               variants={deskripsiVariants}
-              className="text-[14px] md:text-[14px] text-slate-300/90 font-normal leading-[1.7]"
+              className="text-[14px] md:text-[14px] text-slate-600 font-medium leading-[1.7]"
             >
               {"\"Kelola survei, analisis hasil, dan tingkatkan budaya keselamatan pasien melalui dashboard analitik berbasis AHRQ SOPS Version 2.0.\""}
             </motion.p>
@@ -284,20 +284,20 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
       <svg className="absolute w-0 h-0 pointer-events-none" aria-hidden="true">
         <defs>
           <linearGradient id="sunrise-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.9" /> {/* Emerald */}
-            <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.9" /> {/* Cyan */}
+            <stop offset="0%" stopColor="#0d9488" stopOpacity="0.9" /> {/* Teal */}
+            <stop offset="100%" stopColor="#14b8a6" stopOpacity="0.9" />
           </linearGradient>
           <linearGradient id="sun-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.9" /> {/* Cyan */}
-            <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.9" /> {/* Sky Blue */}
+            <stop offset="0%" stopColor="#14b8a6" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.9" /> {/* Blue */}
           </linearGradient>
           <linearGradient id="sunset-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.9" /> {/* Premium Rose-gold/Coral */}
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0.9" /> {/* Emerald */}
+            <stop offset="0%" stopColor="#ea580c" stopOpacity="0.9" /> {/* Orange */}
+            <stop offset="100%" stopColor="#eab308" stopOpacity="0.9" />
           </linearGradient>
           <linearGradient id="moon-grad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#6366f1" stopOpacity="0.9" /> {/* Indigo */}
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0.9" /> {/* Emerald */}
+            <stop offset="0%" stopColor="#4f46e5" stopOpacity="0.9" /> {/* Indigo */}
+            <stop offset="100%" stopColor="#0d9488" stopOpacity="0.9" />
           </linearGradient>
         </defs>
       </svg>
