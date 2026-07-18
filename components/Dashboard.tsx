@@ -26,6 +26,8 @@ import InputDataTab from './InputDataTab';
 import GrafikTab from './GrafikTab';
 import LaporanTab from './LaporanTab';
 import PengaturanTab from './PengaturanTab';
+import MasterPosisiTab from './MasterPosisiTab';
+import MasterUnitTab from './MasterUnitTab';
 import DashboardTable from './DashboardTable';
 import PersetujuanTab from './PersetujuanTab';
 import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey } from '../lib/db';
@@ -65,7 +67,7 @@ export default function Dashboard({
   activeLogo,
   onUpdateLogo
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan' | 'persetujuan'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan' | 'persetujuan' | 'master-posisi' | 'master-unit'>('dashboard');
   const mainContainerRef = useRef<HTMLElement | null>(null);
 
   // Reset scroll to top immediately whenever activeTab changes
@@ -168,7 +170,7 @@ export default function Dashboard({
   };
 
   // Filter surveys: Admin sees all, RS sees only their own
-  const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_');
+  const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
   const filteredSurveys = role === 'admin' 
     ? validSurveys 
     : validSurveys.filter(s => s.namaRs.toLowerCase() === namaRs.toLowerCase());
@@ -331,6 +333,34 @@ export default function Dashboard({
               <span className="hidden md:block text-[14px] leading-none">Pengaturan RS</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
+            {role === 'rs' && (
+              <>
+                <button
+                  onClick={() => setActiveTab('master-posisi')}
+                  className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+                    activeTab === 'master-posisi'
+                      ? 'text-white bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 shadow-lg shadow-emerald-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                      : 'text-slate-400 hover:text-emerald-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  }`}
+                >
+                  <Users className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'master-posisi' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+                  <span className="hidden md:block text-[14px] leading-none">Master Posisi Staf</span>
+                  <span className="md:hidden text-[10px] mt-1 tracking-wide">Posisi</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('master-unit')}
+                  className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+                    activeTab === 'master-unit'
+                      ? 'text-white bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 shadow-lg shadow-emerald-500/30 shadow-md md:shadow-none border border-white/20 md:border-transparent scale-105 md:scale-100'
+                      : 'text-slate-400 hover:text-emerald-300 md:hover:bg-white/[0.03] border border-transparent hover:bg-white/5'
+                  }`}
+                >
+                  <Building2 className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'master-unit' ? 'text-white drop-shadow-md md:drop-shadow-none' : ''}`} /> 
+                  <span className="hidden md:block text-[14px] leading-none">Master Unit Kerja</span>
+                  <span className="md:hidden text-[10px] mt-1 tracking-wide">Unit</span>
+                </button>
+              </>
+            )}
 
             {role === 'admin' && (
               <button
@@ -504,6 +534,14 @@ export default function Dashboard({
             activeLogo={activeLogo}
             onUpdateLogo={onUpdateLogo}
           />
+        )}
+
+        {activeTab === 'master-posisi' && role === 'rs' && (
+          <MasterPosisiTab rsName={namaRs} />
+        )}
+
+        {activeTab === 'master-unit' && role === 'rs' && (
+          <MasterUnitTab rsName={namaRs} />
         )}
 
         {activeTab === 'persetujuan' && role === 'admin' && (

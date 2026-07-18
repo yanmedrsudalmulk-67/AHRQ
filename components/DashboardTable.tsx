@@ -27,9 +27,10 @@ import {
   Clock,
   UserCheck,
   Briefcase,
-  Award
+  Award,
+  MapPin
 } from 'lucide-react';
-import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip } from 'recharts';
+import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { getSurveys, SurveyData } from '../lib/db';
 import { computeDimensionScores, DIMENSI_INFO, DIMENSI_ITEMS } from '../lib/scoring';
 import DimensiDetailModal from './DimensiDetailModal';
@@ -419,6 +420,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
       '16–20 Tahun': 0,
       '> 20 Tahun': 0,
     };
+    const unitCounts: Record<string, number> = {};
 
     let total = 0;
 
@@ -456,6 +458,10 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
       // 6. Lama Kerja Sesuai Profesi
       const profCat = getG6Category(g1Val, g2Val, sId);
       professionDurations[profCat] = (professionDurations[profCat] || 0) + 1;
+
+      // 7. Unit Kerja Name count
+      const unitName = s.unitKerja || 'Instansi Umum';
+      unitCounts[unitName] = (unitCounts[unitName] || 0) + 1;
     });
 
     return {
@@ -465,7 +471,8 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
       directInteractions,
       positions,
       weeklyHours,
-      professionDurations
+      professionDurations,
+      unitCounts
     };
   }, [filteredSurveys]);
 
@@ -493,6 +500,14 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
 
   const professionChartData = useMemo(() => {
     return prepareChartData(profileStats.professionDurations, ['<1 Tahun', '1–5 Tahun', '6–10 Tahun', '11–15 Tahun', '16–20 Tahun', '> 20 Tahun']);
+  }, [profileStats]);
+
+  const unitCountsChartData = useMemo(() => {
+    const allUnits = Object.keys(profileStats.unitCounts);
+    // Sort by value descending
+    return prepareChartData(profileStats.unitCounts, allUnits)
+      .filter(item => item.value > 0)
+      .sort((a, b) => b.value - a.value);
   }, [profileStats]);
 
   // Excel (CSV) Export Functionality
@@ -603,7 +618,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                     </tr>
                   );
                 })
-              )}
+        )}
             </tbody>
           </table>
         </div>
@@ -617,7 +632,7 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
               surveys={filteredSurveys}
               rsName={namaRs}
             />
-          )}
+        )}
         </AnimatePresence>
 
         {/* Styled Printable section */}
@@ -684,7 +699,8 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
             </div>
           </div>
         ) : (
-          /* Responsive grid for 6 charts: 3 columns on wide screens, 2 on medium, 1 on small */
+          <div className="flex flex-col gap-6">
+          {/* Responsive grid for 6 charts: 3 columns on wide screens, 2 on medium, 1 on small */}
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             
             {/* 1. Lama Kerja di RS */}
@@ -1050,11 +1066,49 @@ export default function DashboardTable({ role, namaRs }: DashboardTableProps) {
                 {getProfExperienceAnalysis(professionChartData, profileStats.total)}
               </div>
             </motion.div>
+          </div>
 
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4, delay: 0.35 }}
+            className="mt-6 bg-slate-950/40 border border-white/[0.08] p-5 rounded-[20px] shadow-xl backdrop-blur-sm"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xs font-bold text-slate-200 flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-cyan-400" /> Distribusi Responden Berdasarkan Unit Kerja
+              </h3>
+            </div>
+            
+            <div className="h-72 w-full pr-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={unitCountsChartData}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" horizontal={false} />
+                  <XAxis type="number" stroke="#ffffff50" fontSize={10} tickFormatter={(val) => Math.floor(val).toString()} />
+                  <YAxis dataKey="name" type="category" width={150} stroke="#ffffff90" fontSize={11} />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: '#0B101E', borderColor: '#1e293b', borderRadius: '12px', fontSize: '12px' }}
+                    itemStyle={{ color: '#e2e8f0' }}
+                    cursor={{fill: '#ffffff05'}}
+                  />
+                  <Bar dataKey="value" name="Responden" fill="#3b82f6" radius={[0, 4, 4, 0]}>
+                    {
+                      unitCountsChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
+                      ))
+                    }
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </motion.div>
           </div>
         )}
       </div>
-
     </div>
   );
 }

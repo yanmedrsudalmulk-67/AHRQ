@@ -1,0 +1,4 @@
+        ) : (
+          <div className="flex flex-col gap-6">
+          {/* Responsive grid for 6 charts: 3 columns on wide screens, 2 on medium, 1 on small */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">

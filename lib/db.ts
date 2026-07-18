@@ -783,4 +783,300 @@ export async function saveMasterBenchmark(benchmarkData: Record<string, { min: n
   }
 }
 
+export interface PosisiStaff {
+  id: string;
+  kategori: string;
+  nama_posisi: string;
+  is_active: boolean;
+}
+
+export const DEFAULT_STAFF_POSITIONS: PosisiStaff[] = [
+  // Manajemen
+  { id: 'manajemen-1', kategori: 'Manajemen', nama_posisi: 'Direktur', is_active: true },
+  { id: 'manajemen-2', kategori: 'Manajemen', nama_posisi: 'Wakil Direktur', is_active: true },
+  { id: 'manajemen-3', kategori: 'Manajemen', nama_posisi: 'Kepala Bidang', is_active: true },
+  { id: 'manajemen-4', kategori: 'Manajemen', nama_posisi: 'Kepala Bagian', is_active: true },
+  { id: 'manajemen-5', kategori: 'Manajemen', nama_posisi: 'Kepala Instalasi', is_active: true },
+  { id: 'manajemen-6', kategori: 'Manajemen', nama_posisi: 'Kepala Ruangan', is_active: true },
+  { id: 'manajemen-7', kategori: 'Manajemen', nama_posisi: 'Kepala Seksi', is_active: true },
+  { id: 'manajemen-8', kategori: 'Manajemen', nama_posisi: 'Kepala Sub Bagian', is_active: true },
+  { id: 'manajemen-9', kategori: 'Manajemen', nama_posisi: 'Supervisor', is_active: true },
+  { id: 'manajemen-10', kategori: 'Manajemen', nama_posisi: 'Manajer', is_active: true },
+  { id: 'manajemen-11', kategori: 'Manajemen', nama_posisi: 'Koordinator', is_active: true },
+  { id: 'manajemen-12', kategori: 'Manajemen', nama_posisi: 'Ketua Tim', is_active: true },
+  
+  // Tenaga Medis
+  { id: 'medis-1', kategori: 'Tenaga Medis', nama_posisi: 'Dokter Spesialis', is_active: true },
+  { id: 'medis-2', kategori: 'Tenaga Medis', nama_posisi: 'Dokter Umum', is_active: true },
+  { id: 'medis-3', kategori: 'Tenaga Medis', nama_posisi: 'Dokter Gigi', is_active: true },
+  { id: 'medis-4', kategori: 'Tenaga Medis', nama_posisi: 'Dokter Internship', is_active: true },
+  { id: 'medis-5', kategori: 'Tenaga Medis', nama_posisi: 'Residen', is_active: true },
+  
+  // Tenaga Keperawatan
+  { id: 'perawat-1', kategori: 'Tenaga Keperawatan', nama_posisi: 'Perawat', is_active: true },
+  { id: 'perawat-2', kategori: 'Tenaga Keperawatan', nama_posisi: 'Bidan', is_active: true },
+  { id: 'perawat-3', kategori: 'Tenaga Keperawatan', nama_posisi: 'Penata Anestesi', is_active: true },
+  
+  // Tenaga Kefarmasian
+  { id: 'farmasi-1', kategori: 'Tenaga Kefarmasian', nama_posisi: 'Apoteker', is_active: true },
+  { id: 'farmasi-2', kategori: 'Tenaga Kefarmasian', nama_posisi: 'Asisten Apoteker / Tenaga Teknis Kefarmasian', is_active: true },
+  
+  // Tenaga Penunjang Medis
+  { id: 'penunjang-medis-1', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Radiografer', is_active: true },
+  { id: 'penunjang-medis-2', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Analis Kesehatan / ATLM', is_active: true },
+  { id: 'penunjang-medis-3', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Perekam Medis', is_active: true },
+  { id: 'penunjang-medis-4', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Nutrisionis / Ahli Gizi', is_active: true },
+  { id: 'penunjang-medis-5', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Fisioterapis', is_active: true },
+  { id: 'penunjang-medis-6', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Okupasi Terapis', is_active: true },
+  { id: 'penunjang-medis-7', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Terapis Wicara', is_active: true },
+  { id: 'penunjang-medis-8', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Psikolog Klinis', is_active: true },
+  { id: 'penunjang-medis-9', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Sanitarian', is_active: true },
+  { id: 'penunjang-medis-10', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Elektromedis', is_active: true },
+  { id: 'penunjang-medis-11', kategori: 'Tenaga Penunjang Medis', nama_posisi: 'Refraksionis Optisien', is_active: true },
+
+  // Penunjang Rumah Sakit
+  { id: 'penunjang-rs-1', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Teknisi IPSRS', is_active: true },
+  { id: 'penunjang-rs-2', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Staf CSSD', is_active: true },
+  { id: 'penunjang-rs-3', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Casemix', is_active: true },
+  { id: 'penunjang-rs-4', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Ahli K3RS', is_active: true },
+  { id: 'penunjang-rs-5', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Staf IT', is_active: true },
+  { id: 'penunjang-rs-6', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Humas', is_active: true },
+  { id: 'penunjang-rs-7', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Driver / Sopir Ambulans', is_active: true },
+  { id: 'penunjang-rs-8', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Cleaning Service', is_active: true },
+  { id: 'penunjang-rs-9', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Pramusaji', is_active: true },
+  { id: 'penunjang-rs-10', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Laundry', is_active: true },
+  { id: 'penunjang-rs-11', kategori: 'Penunjang Rumah Sakit', nama_posisi: 'Security', is_active: true },
+
+  // Administrasi
+  { id: 'admin-1', kategori: 'Administrasi', nama_posisi: 'Staf Administrasi Pendaftaran', is_active: true },
+  { id: 'admin-2', kategori: 'Administrasi', nama_posisi: 'Kasir', is_active: true },
+  { id: 'admin-3', kategori: 'Administrasi', nama_posisi: 'Staf Administrasi Pengadaan', is_active: true },
+  { id: 'admin-4', kategori: 'Administrasi', nama_posisi: 'Staf Administrasi Umum', is_active: true },
+  { id: 'admin-5', kategori: 'Administrasi', nama_posisi: 'Staf Kepegawaian', is_active: true },
+  { id: 'admin-6', kategori: 'Administrasi', nama_posisi: 'Staf Administrasi Aset', is_active: true },
+  { id: 'admin-7', kategori: 'Administrasi', nama_posisi: 'Staf Keuangan', is_active: true },
+  { id: 'admin-8', kategori: 'Administrasi', nama_posisi: 'Staf Rekam Medis', is_active: true },
+
+  // Lainnya
+  { id: 'lainnya-1', kategori: 'Lainnya', nama_posisi: 'Lainnya', is_active: true }
+];
+
+export async function getMasterPosisi(rsName: string): Promise<PosisiStaff[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('ahrq_surveys')
+        .select('dimensi_scores')
+        .eq('id', `MASTER_POSISI_${rsName}`)
+        .single();
+        
+      if (!error && data && data.dimensi_scores && Array.isArray((data.dimensi_scores as any).positions)) {
+        return (data.dimensi_scores as any).positions as PosisiStaff[];
+      }
+    } catch (e) {
+      console.error("Failed to get master posisi", e);
+    }
+  }
+  return DEFAULT_STAFF_POSITIONS;
+}
+
+export async function saveMasterPosisi(rsName: string, positions: PosisiStaff[]): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data: existing } = await supabase.from('ahrq_surveys').select('id').eq('id', `MASTER_POSISI_${rsName}`).single();
+      
+      if (existing) {
+        await supabase.from('ahrq_surveys').update({ dimensi_scores: { positions } }).eq('id', `MASTER_POSISI_${rsName}`);
+      } else {
+        await supabase.from('ahrq_surveys').insert([{
+          id: `MASTER_POSISI_${rsName}`,
+          nama_rs: '_MASTER_CONFIG_',
+          unit_kerja: rsName,
+          jumlah_responden: 0,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: { positions }
+        }]);
+      }
+    } catch (e) {
+      console.error("Failed to save master posisi", e);
+    }
+  }
+}
+
+export async function updateSurveyUnitName(rsName: string, oldName: string, newName: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      // Find all surveys for this hospital with the old unit name
+      const { data, error } = await supabase
+        .from('ahrq_surveys')
+        .select('*')
+        .eq('nama_rs', rsName)
+        .eq('unit_kerja', oldName);
+        
+      if (!error && data && data.length > 0) {
+        for (const row of data) {
+          // Keep raw answers intact, just update the top level unit_kerja which is used for grouping
+          await supabase
+            .from('ahrq_surveys')
+            .update({ unit_kerja: newName })
+            .eq('id', row.id);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to update survey unit names", e);
+    }
+  }
+}
+
+export interface UnitKerja {
+  id: string;
+  kategori: string;
+  nama_unit: string;
+  is_active: boolean;
+  order: number;
+}
+
+export const DEFAULT_UNIT_KERJA: UnitKerja[] = [
+  // Manajemen & Direksi
+  { id: 'unit-manajemen-1', kategori: 'Manajemen & Direksi', nama_unit: 'Direksi', is_active: true, order: 1 },
+  { id: 'unit-manajemen-2', kategori: 'Manajemen & Direksi', nama_unit: 'Sekretariat Direksi', is_active: true, order: 2 },
+  { id: 'unit-manajemen-3', kategori: 'Manajemen & Direksi', nama_unit: 'Manajemen Rumah Sakit', is_active: true, order: 3 },
+  { id: 'unit-manajemen-4', kategori: 'Manajemen & Direksi', nama_unit: 'SPI (Satuan Pengawas Internal)', is_active: true, order: 4 },
+  { id: 'unit-manajemen-5', kategori: 'Manajemen & Direksi', nama_unit: 'Humas & Pemasaran', is_active: true, order: 5 },
+  { id: 'unit-manajemen-6', kategori: 'Manajemen & Direksi', nama_unit: 'PMKP', is_active: true, order: 6 },
+  { id: 'unit-manajemen-7', kategori: 'Manajemen & Direksi', nama_unit: 'PPI', is_active: true, order: 7 },
+  { id: 'unit-manajemen-8', kategori: 'Manajemen & Direksi', nama_unit: 'K3RS', is_active: true, order: 8 },
+  { id: 'unit-manajemen-9', kategori: 'Manajemen & Direksi', nama_unit: 'Casemix', is_active: true, order: 9 },
+  { id: 'unit-manajemen-10', kategori: 'Manajemen & Direksi', nama_unit: 'Rekam Medis', is_active: true, order: 10 },
+  { id: 'unit-manajemen-11', kategori: 'Manajemen & Direksi', nama_unit: 'SIMRS / IT', is_active: true, order: 11 },
+
+  // Rawat Jalan
+  { id: 'unit-rj-1', kategori: 'Rawat Jalan', nama_unit: 'Poli Penyakit Dalam', is_active: true, order: 12 },
+  { id: 'unit-rj-2', kategori: 'Rawat Jalan', nama_unit: 'Poli Bedah', is_active: true, order: 13 },
+  { id: 'unit-rj-3', kategori: 'Rawat Jalan', nama_unit: 'Poli Anak', is_active: true, order: 14 },
+  { id: 'unit-rj-4', kategori: 'Rawat Jalan', nama_unit: 'Poli Kebidanan & Kandungan', is_active: true, order: 15 },
+  { id: 'unit-rj-5', kategori: 'Rawat Jalan', nama_unit: 'Poli Saraf', is_active: true, order: 16 },
+  { id: 'unit-rj-6', kategori: 'Rawat Jalan', nama_unit: 'Poli Jantung', is_active: true, order: 17 },
+  { id: 'unit-rj-7', kategori: 'Rawat Jalan', nama_unit: 'Poli Mata', is_active: true, order: 18 },
+  { id: 'unit-rj-8', kategori: 'Rawat Jalan', nama_unit: 'Poli THT', is_active: true, order: 19 },
+  { id: 'unit-rj-9', kategori: 'Rawat Jalan', nama_unit: 'Poli Kulit & Kelamin', is_active: true, order: 20 },
+  { id: 'unit-rj-10', kategori: 'Rawat Jalan', nama_unit: 'Poli Gigi & Mulut', is_active: true, order: 21 },
+  { id: 'unit-rj-11', kategori: 'Rawat Jalan', nama_unit: 'Poli Rehabilitasi Medik', is_active: true, order: 22 },
+  { id: 'unit-rj-12', kategori: 'Rawat Jalan', nama_unit: 'Poli Psikiatri', is_active: true, order: 23 },
+  { id: 'unit-rj-13', kategori: 'Rawat Jalan', nama_unit: 'Poli Orthopedi', is_active: true, order: 24 },
+  { id: 'unit-rj-14', kategori: 'Rawat Jalan', nama_unit: 'Poli Urologi', is_active: true, order: 25 },
+  { id: 'unit-rj-15', kategori: 'Rawat Jalan', nama_unit: 'Poli Paru', is_active: true, order: 26 },
+  { id: 'unit-rj-16', kategori: 'Rawat Jalan', nama_unit: 'Poli Gizi', is_active: true, order: 27 },
+  { id: 'unit-rj-17', kategori: 'Rawat Jalan', nama_unit: 'Poli MCU', is_active: true, order: 28 },
+  { id: 'unit-rj-18', kategori: 'Rawat Jalan', nama_unit: 'Poli Lainnya', is_active: true, order: 29 },
+
+  // Instalasi Gawat Darurat
+  { id: 'unit-igd-1', kategori: 'Instalasi Gawat Darurat', nama_unit: 'IGD', is_active: true, order: 30 },
+
+  // Rawat Inap
+  { id: 'unit-ri-1', kategori: 'Rawat Inap', nama_unit: 'Ruang Rawat Inap Kelas III', is_active: true, order: 31 },
+  { id: 'unit-ri-2', kategori: 'Rawat Inap', nama_unit: 'Ruang Rawat Inap Kelas II', is_active: true, order: 32 },
+  { id: 'unit-ri-3', kategori: 'Rawat Inap', nama_unit: 'Ruang Rawat Inap Kelas I', is_active: true, order: 33 },
+  { id: 'unit-ri-4', kategori: 'Rawat Inap', nama_unit: 'Ruang VIP/VVIP', is_active: true, order: 34 },
+  { id: 'unit-ri-5', kategori: 'Rawat Inap', nama_unit: 'ICU', is_active: true, order: 35 },
+  { id: 'unit-ri-6', kategori: 'Rawat Inap', nama_unit: 'ICCU', is_active: true, order: 36 },
+  { id: 'unit-ri-7', kategori: 'Rawat Inap', nama_unit: 'NICU', is_active: true, order: 37 },
+  { id: 'unit-ri-8', kategori: 'Rawat Inap', nama_unit: 'PICU', is_active: true, order: 38 },
+  { id: 'unit-ri-9', kategori: 'Rawat Inap', nama_unit: 'HCU', is_active: true, order: 39 },
+  { id: 'unit-ri-10', kategori: 'Rawat Inap', nama_unit: 'Perinatologi', is_active: true, order: 40 },
+  { id: 'unit-ri-11', kategori: 'Rawat Inap', nama_unit: 'Isolasi', is_active: true, order: 41 },
+
+  // Kamar Operasi
+  { id: 'unit-ok-1', kategori: 'Kamar Operasi', nama_unit: 'IBS / OK', is_active: true, order: 42 },
+  { id: 'unit-ok-2', kategori: 'Kamar Operasi', nama_unit: 'Recovery Room', is_active: true, order: 43 },
+  { id: 'unit-ok-3', kategori: 'Kamar Operasi', nama_unit: 'CSSD', is_active: true, order: 44 },
+  { id: 'unit-ok-4', kategori: 'Kamar Operasi', nama_unit: 'Anestesi', is_active: true, order: 45 },
+
+  // Penunjang Medis
+  { id: 'unit-pm-1', kategori: 'Penunjang Medis', nama_unit: 'Laboratorium', is_active: true, order: 46 },
+  { id: 'unit-pm-2', kategori: 'Penunjang Medis', nama_unit: 'Radiologi', is_active: true, order: 47 },
+  { id: 'unit-pm-3', kategori: 'Penunjang Medis', nama_unit: 'Farmasi', is_active: true, order: 48 },
+  { id: 'unit-pm-4', kategori: 'Penunjang Medis', nama_unit: 'Bank Darah', is_active: true, order: 49 },
+  { id: 'unit-pm-5', kategori: 'Penunjang Medis', nama_unit: 'Hemodialisa', is_active: true, order: 50 },
+  { id: 'unit-pm-6', kategori: 'Penunjang Medis', nama_unit: 'Endoskopi', is_active: true, order: 51 },
+  { id: 'unit-pm-7', kategori: 'Penunjang Medis', nama_unit: 'Fisioterapi', is_active: true, order: 52 },
+  { id: 'unit-pm-8', kategori: 'Penunjang Medis', nama_unit: 'Rehabilitasi Medik', is_active: true, order: 53 },
+  { id: 'unit-pm-9', kategori: 'Penunjang Medis', nama_unit: 'Patologi Anatomi', is_active: true, order: 54 },
+  { id: 'unit-pm-10', kategori: 'Penunjang Medis', nama_unit: 'Patologi Klinik', is_active: true, order: 55 },
+  { id: 'unit-pm-11', kategori: 'Penunjang Medis', nama_unit: 'Gizi', is_active: true, order: 56 },
+
+  // Penunjang Non Medis
+  { id: 'unit-pnm-1', kategori: 'Penunjang Non Medis', nama_unit: 'IPSRS', is_active: true, order: 57 },
+  { id: 'unit-pnm-2', kategori: 'Penunjang Non Medis', nama_unit: 'Laundry', is_active: true, order: 58 },
+  { id: 'unit-pnm-3', kategori: 'Penunjang Non Medis', nama_unit: 'Housekeeping / Cleaning Service', is_active: true, order: 59 },
+  { id: 'unit-pnm-4', kategori: 'Penunjang Non Medis', nama_unit: 'Keamanan / Security', is_active: true, order: 60 },
+  { id: 'unit-pnm-5', kategori: 'Penunjang Non Medis', nama_unit: 'Transportasi / Driver', is_active: true, order: 61 },
+  { id: 'unit-pnm-6', kategori: 'Penunjang Non Medis', nama_unit: 'Ambulans', is_active: true, order: 62 },
+  { id: 'unit-pnm-7', kategori: 'Penunjang Non Medis', nama_unit: 'Logistik', is_active: true, order: 63 },
+  { id: 'unit-pnm-8', kategori: 'Penunjang Non Medis', nama_unit: 'Gudang', is_active: true, order: 64 },
+  { id: 'unit-pnm-9', kategori: 'Penunjang Non Medis', nama_unit: 'Pemulasaran Jenazah', is_active: true, order: 65 },
+
+  // Administrasi
+  { id: 'unit-adm-1', kategori: 'Administrasi', nama_unit: 'Pendaftaran', is_active: true, order: 66 },
+  { id: 'unit-adm-2', kategori: 'Administrasi', nama_unit: 'Kasir', is_active: true, order: 67 },
+  { id: 'unit-adm-3', kategori: 'Administrasi', nama_unit: 'Keuangan', is_active: true, order: 68 },
+  { id: 'unit-adm-4', kategori: 'Administrasi', nama_unit: 'Akuntansi', is_active: true, order: 69 },
+  { id: 'unit-adm-5', kategori: 'Administrasi', nama_unit: 'Pengadaan Barang/Jasa', is_active: true, order: 70 },
+  { id: 'unit-adm-6', kategori: 'Administrasi', nama_unit: 'SDM / Kepegawaian', is_active: true, order: 71 },
+  { id: 'unit-adm-7', kategori: 'Administrasi', nama_unit: 'Umum', is_active: true, order: 72 },
+  { id: 'unit-adm-8', kategori: 'Administrasi', nama_unit: 'Aset', is_active: true, order: 73 },
+  { id: 'unit-adm-9', kategori: 'Administrasi', nama_unit: 'Tata Usaha', is_active: true, order: 74 },
+
+  // Lainnya
+  { id: 'unit-lainnya-1', kategori: 'Lainnya', nama_unit: 'Lainnya', is_active: true, order: 75 }
+];
+
+export async function getMasterUnit(rsName: string): Promise<UnitKerja[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('ahrq_surveys')
+        .select('dimensi_scores')
+        .eq('id', `MASTER_UNIT_${rsName}`)
+        .single();
+        
+      if (!error && data && data.dimensi_scores && Array.isArray((data.dimensi_scores as any).units)) {
+        return (data.dimensi_scores as any).units as UnitKerja[];
+      }
+    } catch (e) {
+      console.error("Failed to get master unit", e);
+    }
+  }
+  return DEFAULT_UNIT_KERJA;
+}
+
+export async function saveMasterUnit(rsName: string, units: UnitKerja[]): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data: existing } = await supabase.from('ahrq_surveys').select('id').eq('id', `MASTER_UNIT_${rsName}`).single();
+      
+      if (existing) {
+        await supabase.from('ahrq_surveys').update({ dimensi_scores: { units } }).eq('id', `MASTER_UNIT_${rsName}`);
+      } else {
+        await supabase.from('ahrq_surveys').insert([{
+          id: `MASTER_UNIT_${rsName}`,
+          nama_rs: '_MASTER_CONFIG_',
+          unit_kerja: rsName,
+          jumlah_responden: 0,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: { units }
+        }]);
+      }
+    } catch (e) {
+      console.error("Failed to save master unit", e);
+    }
+  }
+}
+
+
 

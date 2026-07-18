@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { 
+  Search,
   Save, 
   Sparkles, 
   ClipboardCheck, 
@@ -34,6 +35,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConnected, getSupabaseClient } from '../lib/supabase';
+import { getMasterPosisi, PosisiStaff, getMasterUnit, UnitKerja } from '../lib/db';
 
 interface RippleButtonProps extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'onAnimationStart' | 'onDragStart' | 'onDragEnd' | 'onDrag' | 'style'> {
   isSelected?: boolean;
@@ -161,45 +163,6 @@ const FREQUENCY_OPTIONS = [
   { value: 9, label: 'Tidak Berlaku / Tidak Tahu' },
 ];
 
-const STAFF_POSITIONS = {
-  'Keperawatan': [
-    { value: '1', label: 'Perawat Praktik Lanjutan (NP, CRNA, CNS, CNM)' },
-    { value: '2', label: 'Perawat Kejuruan Berlisensi (LVN), Perawat Praktik Berlisensi (LPN)' },
-    { value: '3', label: 'Pembantu Perawatan Pasien, Pembantu Rumah Sakit, Asisten Perawat' },
-    { value: '4', label: 'Perawat Terdaftar (RN)' }
-  ],
-  'Medis': [
-    { value: '5', label: 'Asisten Dokter' },
-    { value: '6', label: 'Residen, Peserta Magang' },
-    { value: '7', label: 'Dokter, Perawat, Perawat Rumah Sakit' }
-  ],
-  'Posisi Klinis Lainnya': [
-    { value: '8', label: 'Ahli Gizi' },
-    { value: '9', label: 'Apoteker, Teknisi Farmasi' },
-    { value: '10', label: 'Terapis Fisik, Okupasi, atau Wicara' },
-    { value: '11', label: 'Psikolog' },
-    { value: '12', label: 'Terapis Pernapasan' },
-    { value: '13', label: 'Pekerja Sosial' },
-    { value: '14', label: 'Ahli Teknologi, Teknisi (mis. EKG, Laboratorium, Radiologi)' }
-  ],
-  'Supervisor & Manajemen': [
-    { value: '15', label: 'Supervisor, Manajer, Manajer Departemen, Pemimpin Klinis, Administrator, Direktur' },
-    { value: '16', label: 'Pemimpin Senior, Executive, C-Suite' }
-  ],
-  'Dukungan': [
-    { value: '17', label: 'Fasilitas' },
-    { value: '18', label: 'Layanan Makanan' },
-    { value: '19', label: 'Rumah Tangga, Layanan Lingkungan' },
-    { value: '20', label: 'Teknologi Informasi, Layanan Informasi Kesehatan, Informatika Klinis' },
-    { value: '21', label: 'Keamanan' },
-    { value: '22', label: 'Pengangkut' },
-    { value: '23', label: 'Petugas Unit, Sekretaris, Resepsionis, Staf Kantor' }
-  ],
-  'Lainnya': [
-    { value: '24', label: 'Lainnya' }
-  ]
-};
-
 const WORK_UNITS = {
   'Beberapa Unit / Tidak Khusus': [
     { value: '1', label: 'Banyak unit rumah sakit yang berbeda, Tidak ada unit khusus' }
@@ -292,6 +255,14 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
   const [expiryDate, setExpiryDate] = useState('');
   const [maxRespondents, setMaxRespondents] = useState('');
   const [preventDuplicate, setPreventDuplicate] = useState(true);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+
+  const showNotification = (message: string, type: 'success' | 'info' | 'error' = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => {
+      setNotification(null);
+    }, 4500);
+  };
 
   // Sync state when config loads
   useEffect(() => {
@@ -469,7 +440,27 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
   }, [showLinkModal]);
 
   const [posisiStaf, setPosisiStaf] = useState('');
+  const [customPosisiStaf, setCustomPosisiStaf] = useState('');
+  const [posisiMaster, setPosisiMaster] = useState<PosisiStaff[]>([]);
+  const [posisiSearch, setPosisiSearch] = useState('');
   const [unitKerja, setUnitKerja] = useState('');
+  const [customUnitKerja, setCustomUnitKerja] = useState('');
+  const [unitMaster, setUnitMaster] = useState<UnitKerja[]>([]);
+  const [unitSearch, setUnitSearch] = useState('');
+
+  useEffect(() => {
+    async function loadMasterData() {
+      if (currentRsName) {
+        const [posData, unitData] = await Promise.all([
+          getMasterPosisi(currentRsName),
+          getMasterUnit(currentRsName)
+        ]);
+        setPosisiMaster(posData);
+        setUnitMaster(unitData);
+      }
+    }
+    loadMasterData();
+  }, [currentRsName]);
   
   // Custom Select Modals
   const [isPosisiModalOpen, setIsPosisiModalOpen] = useState(false);
@@ -839,10 +830,13 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
     setIsSubmitting(true);
     // Simulate real cloud sync with Supabase / local
     const finalScores = computeScores();
+    const finalPosisi = posisiStaf === 'Lainnya' && customPosisiStaf ? customPosisiStaf : posisiStaf;
+    const finalUnit = unitKerja === 'Lainnya' && customUnitKerja ? customUnitKerja : unitKerja;
+    
     const finalSurvey: SurveyData = {
       id: 'srv_' + Date.now(),
       namaRs: currentRsName,
-      unitKerja: unitKerja || 'Instansi Umum',
+      unitKerja: finalUnit || 'Instansi Umum',
       jumlahResponden: 1,
       tanggalInput: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
       dimensiScores: {
@@ -855,7 +849,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
           ansE,
           ansF,
           ansG,
-          posisiStaf,
+          posisiStaf: finalPosisi,
           unitKerja,
           namaRs: currentRsName,
           tanggalInput: new Date().toISOString()
@@ -895,55 +889,76 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
   return (
     <div id="survey-main-wrapper" className="bg-transparent text-slate-200 min-h-screen rounded-3xl border border-[#00244d]/30 overflow-hidden shadow-xl flex flex-col font-sans">
       
-      {/* 1. STICKY HEADER */}
-      <header id="survey-sticky-header" className="sticky top-0 bg-[#0c1a36]/75 backdrop-blur-sm border-b border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-20 shadow-sm">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-lg md:text-xl font-bold text-slate-100 leading-tight">Formulir Survei Budaya Keselamatan Pasien</h1>
-            <p className="text-[11px] text-slate-400 font-medium tracking-wide">AHRQ Hospital Survey on Patient Safety Culture Version 2.0</p>
+      {/* 1 & 2. PREMIUM STICKY HEADER & PROGRESS */}
+      <div className="sticky top-0 z-30 p-4 md:p-6 pb-2">
+        <header 
+          id="survey-sticky-header" 
+          className="bg-[#0c1a36]/80 backdrop-blur-xl border border-indigo-500/20 shadow-[0_8px_30px_rgba(59,130,246,0.12)] rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
+        >
+          {/* Subtle gradient background effect */}
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 pointer-events-none" />
+
+          {/* Top section: Title and Actions */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
+            <div className="space-y-1">
+              <h1 className="text-xl md:text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-100 to-indigo-100 leading-tight">
+                Kuesioner Survei Budaya Keselamatan Pasien
+              </h1>
+              <p className="text-[11px] md:text-xs text-indigo-300/70 font-semibold tracking-wider uppercase">
+                AHRQ Hospital Survey on Patient Safety Culture Version 2.0
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-3 shrink-0">
+              <AnimatePresence>
+                {autoSavePulse && (
+                  <motion.div 
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20 shadow-[0_0_10px_rgba(52,211,153,0.1)]"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Tersimpan</span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              {!isPublic && (
+                <button
+                  onClick={() => setShowLinkModal(true)}
+                  className="flex items-center gap-2 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 hover:from-blue-600/30 hover:to-indigo-600/30 text-blue-300 border border-blue-500/30 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(59,130,246,0.15)]"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Bagikan Link
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div>
-          {/* Mini Auto save check */}
-          <AnimatePresence>
-            {autoSavePulse && (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex items-center gap-1 text-[11px] font-medium text-emerald-400"
-              >
-                <Check className="w-3.5 h-3.5" />
-                <span>Saved</span>
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {!isPublic && (
-            <button
-              onClick={() => setShowLinkModal(true)}
-              className="flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-4 py-2 rounded-xl text-xs font-bold transition-all"
-            >
-              <Share2 className="w-4 h-4" />
-              Bagikan Link
-            </button>
-          )}
-        </div>
-      </header>
-
-      {/* 2. ELEGANT HORIZONTAL PROGRESS BAR */}
-      <div id="survey-horizontal-progress" className="bg-[#0c1a36]/60 backdrop-blur-sm border-b border-[#00244d]/40 px-6 md:px-8 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Progres Pengisian Kuesioner</span>
-          <span className="text-xs font-extrabold text-emerald-400 font-mono bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">{progressPercent}%</span>
-          <span className="text-xs font-medium text-slate-400">({answeredCount} dari {totalQuestions} Pertanyaan Terjawab)</span>
-        </div>
-        <div className="w-full sm:w-80 bg-[#020918]/55 h-2 rounded-full overflow-hidden relative">
-          <div 
-            className={`bg-gradient-to-r ${getProgressGradient()} h-full rounded-full transition-all transform-gpu duration-500`} 
-            style={{ width: `${progressPercent}%` }}
-          />
-        </div>
+          {/* Bottom section: Progress Bar */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between w-full relative z-10 pt-2 gap-3 md:gap-6">
+            <div className="shrink-0">
+              <h3 className="text-[10px] md:text-xs font-bold text-indigo-300/80 uppercase tracking-widest">
+                Progres Pengisian Kuesioner
+              </h3>
+            </div>
+            
+            <div className="flex items-center gap-3 flex-1 w-full">
+              <span className="text-xs font-bold text-indigo-200 tabular-nums shrink-0">
+                {answeredCount}/{totalQuestions}
+              </span>
+              <div className="flex-1 bg-[#020918]/60 h-3.5 rounded-full overflow-hidden relative shadow-inner border border-white/10">
+                <div 
+                  className="bg-gradient-to-r from-blue-500 via-indigo-400 to-cyan-400 h-full rounded-full transition-all transform-gpu duration-500 ease-out shadow-[0_0_12px_rgba(34,211,238,0.6)]" 
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="text-sm font-extrabold text-cyan-400 w-10 text-right shrink-0 tabular-nums">
+                {progressPercent}%
+              </span>
+            </div>
+          </div>
+        </header>
       </div>
 
       {/* Main content layout (Centered and Elegant) */}
@@ -1038,9 +1053,33 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                             onClick={() => setIsPosisiModalOpen(true)}
                             className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-sm"
                           >
-                            <span className={posisiStaf ? 'text-slate-100' : 'text-slate-400'}>{posisiStaf || 'Pilih Posisi Anda'}</span>
+                            <span className={posisiStaf ? 'text-slate-100' : 'text-slate-400'}>
+                              {posisiStaf === 'Lainnya' && customPosisiStaf ? customPosisiStaf : (posisiStaf || 'Pilih Posisi Anda')}
+                            </span>
                             <ChevronRight className="w-4 h-4 text-slate-400" />
                           </button>
+                          
+                          <AnimatePresence>
+                            {posisiStaf === 'Lainnya' && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <input
+                                  type="text"
+                                  value={customPosisiStaf}
+                                  onChange={(e) => {
+                                    setCustomPosisiStaf(e.target.value);
+                                    triggerAutoSave({ customPosisiStaf: e.target.value });
+                                  }}
+                                  placeholder="Ketik nama jabatan Anda di sini..."
+                                  className="w-full bg-[#0c1a36]/60 border border-emerald-500/30 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:bg-[#0c1a36] transition-all"
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
 
                         <div className="space-y-1.5">
@@ -1052,9 +1091,33 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                             onClick={() => setIsUnitModalOpen(true)}
                             className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-xl px-4 py-3.5 text-sm text-left transition-all transform-gpu outline-none flex items-center justify-between hover:bg-[#0c1a36]/50 backdrop-blur-sm"
                           >
-                            <span className={unitKerja ? 'text-slate-100' : 'text-slate-400'}>{unitKerja || 'Pilih Unit / Area Kerja'}</span>
+                            <span className={unitKerja ? 'text-slate-100' : 'text-slate-400'}>
+                              {unitKerja === 'Lainnya' && customUnitKerja ? customUnitKerja : (unitKerja || 'Pilih Unit / Area Kerja')}
+                            </span>
                             <ChevronRight className="w-4 h-4 text-slate-400" />
                           </button>
+                          
+                          <AnimatePresence>
+                            {unitKerja === 'Lainnya' && (
+                              <motion.div
+                                initial={{ opacity: 0, height: 0, marginTop: 0 }}
+                                animate={{ opacity: 1, height: 'auto', marginTop: 12 }}
+                                exit={{ opacity: 0, height: 0, marginTop: 0 }}
+                                className="overflow-hidden"
+                              >
+                                <input
+                                  type="text"
+                                  value={customUnitKerja}
+                                  onChange={(e) => {
+                                    setCustomUnitKerja(e.target.value);
+                                    triggerAutoSave({ customUnitKerja: e.target.value });
+                                  }}
+                                  placeholder="Ketik nama unit kerja Anda di sini..."
+                                  className="w-full bg-[#0c1a36]/60 border border-emerald-500/30 rounded-xl px-4 py-3 text-sm text-slate-100 outline-none focus:border-emerald-500 focus:bg-[#0c1a36] transition-all"
+                                />
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
                     </div>
@@ -2231,36 +2294,70 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
               className="fixed inset-0 bg-[#0B101E] backdrop-blur-md flex flex-col z-[9999]"
             >
               <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
-                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-6 border-b border-slate-800/50 z-10 max-w-4xl mx-auto w-full">
+                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-2 border-b border-slate-800/50 z-20 max-w-4xl mx-auto w-full">
                   <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><Users className="w-5 h-5 text-emerald-400"/> Pilih Posisi Staf</h3>
                   <button type="button" onClick={() => setIsPosisiModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
                 </div>
-                <div className="space-y-6 max-w-4xl mx-auto w-full">
-                  {Object.entries(STAFF_POSITIONS).map(([group, list]) => (
-                    <div key={group} className="space-y-2">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{group}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {list.map(pos => (
-                          <button
-                            type="button"
-                            key={pos.value}
-                            onClick={() => {
-                              setPosisiStaf(pos.label);
-                              triggerAutoSave({ posisiStaf: pos.label });
-                              setIsPosisiModalOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
-                              posisiStaf === pos.label 
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
-                                : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
-                            }`}
-                          >
-                            {pos.label}
-                          </button>
-                        ))}
+                
+                <div className="max-w-4xl mx-auto w-full sticky top-[68px] z-10 bg-[#0B101E] pb-4 pt-2">
+                  <div className="relative">
+                    <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input 
+                      type="text" 
+                      placeholder="Cari posisi staf (nama jabatan atau kategori)..." 
+                      value={posisiSearch}
+                      onChange={(e) => setPosisiSearch(e.target.value)}
+                      className="w-full bg-[#0c1a36] border border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-200 outline-none focus:border-emerald-500/50 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6 max-w-4xl mx-auto w-full pt-0">
+                  {(() => {
+                    const filtered = posisiMaster.filter(p => 
+                      p.is_active && 
+                      (p.nama_posisi.toLowerCase().includes(posisiSearch.toLowerCase()) || p.kategori.toLowerCase().includes(posisiSearch.toLowerCase()))
+                    );
+                    const grouped = filtered.reduce((acc, curr) => {
+                      if (!acc[curr.kategori]) acc[curr.kategori] = [];
+                      acc[curr.kategori].push(curr);
+                      return acc;
+                    }, {} as Record<string, typeof posisiMaster>);
+
+                    if (Object.keys(grouped).length === 0) {
+                      return (
+                        <div className="text-center py-12 text-slate-400">
+                          <p>Tidak ada posisi staf yang cocok dengan &quot;{posisiSearch}&quot;.</p>
+                        </div>
+                      );
+                    }
+
+                    return Object.entries(grouped).map(([group, list], idx) => (
+                      <div key={group} className={`space-y-3 ${idx === 0 ? 'mt-2' : 'mt-6'}`}>
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{group}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {list.map(pos => (
+                            <button
+                              type="button"
+                              key={pos.id}
+                              onClick={() => {
+                                setPosisiStaf(pos.nama_posisi);
+                                triggerAutoSave({ posisiStaf: pos.nama_posisi });
+                                setIsPosisiModalOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
+                                posisiStaf === pos.nama_posisi 
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
+                                  : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
+                              }`}
+                            >
+                              {pos.nama_posisi}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </div>
             </motion.div>
@@ -2281,36 +2378,71 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
               className="fixed inset-0 bg-[#0B101E] backdrop-blur-md flex flex-col z-[9999]"
             >
               <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
-                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-6 border-b border-slate-800/50 z-10 max-w-4xl mx-auto w-full">
+                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-2 border-b border-slate-800/50 z-20 max-w-4xl mx-auto w-full">
                   <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-400"/> Pilih Unit / Area Kerja</h3>
                   <button type="button" onClick={() => setIsUnitModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
                 </div>
-                <div className="space-y-6 max-w-4xl mx-auto w-full">
-                  {Object.entries(WORK_UNITS).map(([group, list]) => (
-                    <div key={group} className="space-y-2">
-                      <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">{group}</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {list.map(u => (
-                          <button
-                            type="button"
-                            key={u.value}
-                            onClick={() => {
-                              setUnitKerja(u.label);
-                              triggerAutoSave({ unitKerja: u.label });
-                              setIsUnitModalOpen(false);
-                            }}
-                            className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
-                              unitKerja === u.label 
-                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
-                                : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
-                            }`}
-                          >
-                            {u.label}
-                          </button>
-                        ))}
+
+                <div className="max-w-4xl mx-auto w-full sticky top-[68px] z-10 bg-[#0B101E] pb-4 pt-2">
+                  <div className="relative">
+                    <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                    <input 
+                      type="text"
+                      placeholder="Cari unit..."
+                      value={unitSearch}
+                      onChange={(e) => setUnitSearch(e.target.value)}
+                      className="w-full bg-[#0c1a36] border border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-200 outline-none focus:border-emerald-500/50 transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-6 max-w-4xl mx-auto w-full pt-0">
+                  {(() => {
+                    const filtered = unitMaster.filter(u => 
+                      u.is_active && 
+                      (u.nama_unit.toLowerCase().includes(unitSearch.toLowerCase()) || 
+                       u.kategori.toLowerCase().includes(unitSearch.toLowerCase()))
+                    );
+                    const grouped = filtered.reduce((acc, curr) => {
+                      if (!acc[curr.kategori]) acc[curr.kategori] = [];
+                      acc[curr.kategori].push(curr);
+                      return acc;
+                    }, {} as Record<string, typeof unitMaster>);
+
+                    if (Object.keys(grouped).length === 0) {
+                      return (
+                        <div className="text-center py-12 text-slate-400">
+                          <p>Tidak ada unit / area kerja yang cocok dengan &quot;{unitSearch}&quot;.</p>
+                        </div>
+                      );
+                    }
+
+                    return Object.entries(grouped).map(([group, list], idx) => (
+                      <div key={group} className={`space-y-3 ${idx === 0 ? 'mt-2' : 'mt-6'}`}>
+                        <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-1">{group}</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {list.map(u => (
+                            <button
+                              type="button"
+                              key={u.id}
+                              onClick={() => {
+                                setUnitKerja(u.nama_unit);
+                                triggerAutoSave({ unitKerja: u.nama_unit });
+                                setIsUnitModalOpen(false);
+                              }}
+                              className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
+                                unitKerja === u.nama_unit 
+                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
+                                  : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
+                              }`}
+                            >
+                              {u.nama_unit}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </div>
             </motion.div>
@@ -2405,15 +2537,12 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                 </button>
               </div>
             ) : (() => {
-              const computedBaseUrl = surveyLinkConfig.customDomain 
-                ? (surveyLinkConfig.customDomain.endsWith('/') ? surveyLinkConfig.customDomain.slice(0, -1) : surveyLinkConfig.customDomain)
-                : getPublicBaseUrl();
-              const computedLink = `${computedBaseUrl}/survey/${surveyLinkConfig.token}`;
+              const computedLink = `${getPublicBaseUrl()}/survey/${surveyLinkConfig.token}`;
 
               return (
                 <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
                   <div className="bg-[#020918]/60 border border-slate-700/80 p-4 rounded-xl space-y-3">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Tautan Publik Survei</label>
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Tautan Publik Survei</label>
                     <div className="flex items-center gap-2">
                       <input 
                         type="text" 
@@ -2427,9 +2556,10 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                         onClick={() => {
                           navigator.clipboard.writeText(computedLink);
                           setIsCopied(true);
+                          showNotification("Link survei berhasil disalin ke clipboard!", "success");
                           setTimeout(() => setIsCopied(false), 2000);
                         }}
-                        className="flex-1 bg-[#0c1a36]/80 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 border border-slate-700/50"
+                        className="flex-1 bg-[#0c1a36]/80 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 border border-slate-700/50 cursor-pointer"
                       >
                         {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                         {isCopied ? 'Tersalin' : 'Salin Link'}
@@ -2443,54 +2573,74 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                         <ExternalLink className="w-4 h-4" /> Buka Link
                       </a>
                     </div>
-                    
-                    <div className="pt-2 border-t border-white/5 flex flex-col items-center gap-1.5">
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Kirim Langsung</span>
-                      <div className="flex justify-center gap-3">
-                        <a 
-                          href={`https://wa.me/?text=Mohon%20kesediaannya%20mengisi%20Survei%20Budaya%20Keselamatan%20Pasien%20untuk%20RS%20kami%3A%20${encodeURIComponent(computedLink)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-9 h-9 bg-green-500 hover:bg-green-600 text-white rounded-full flex items-center justify-center transition-all shadow-md text-xs font-bold"
-                          title="Share via WhatsApp"
-                        >
-                          WA
-                        </a>
-                        <a 
-                          href={`https://t.me/share/url?url=${encodeURIComponent(computedLink)}&text=Mohon%20kesediaannya%20mengisi%20Survei%20Budaya%20Keselamatan%20Pasien`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="w-9 h-9 bg-blue-500 hover:bg-blue-600 text-white rounded-full flex items-center justify-center transition-all shadow-md text-xs font-bold"
-                          title="Share via Telegram"
-                        >
-                          TG
-                        </a>
-                        <a 
-                          href={`mailto:?subject=Survei Budaya Keselamatan Pasien&body=Mohon kesediaannya mengisi Survei Budaya Keselamatan Pasien untuk RS kami:%0D%0A${encodeURIComponent(computedLink)}`}
-                          className="w-9 h-9 bg-slate-600 hover:bg-slate-500 text-white rounded-full flex items-center justify-center transition-all shadow-md text-xs font-bold"
-                          title="Share via Email"
-                        >
-                          ✉
-                        </a>
-                      </div>
+                  </div>
+
+                  {/* PREMIUM DIRECT SHARE - BAGIKAN MELALUI */}
+                  <div className="space-y-3 pt-1">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Bagikan Melalui</span>
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* WhatsApp */}
+                      <a 
+                        href={`https://wa.me/?text=${encodeURIComponent('Mohon kesediaannya mengisi Survei Budaya Keselamatan Pasien: ' + computedLink)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#121c33] hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
+                      >
+                        <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.456L0 24zm6.59-2.586c1.65.98 3.267 1.497 4.947 1.498 5.464 0 9.909-4.444 9.913-9.91.002-2.648-1.02-5.138-2.878-6.998-1.858-1.86-4.348-2.883-6.997-2.884-5.467 0-9.914 4.444-9.918 9.91-.001 1.77.476 3.5 1.38 5.02L2.015 21.91l5.485-1.437c-.302-.178-.58-.363-.853-.559zm10.153-7.033c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                        </svg>
+                        <span className="text-xs font-semibold">WhatsApp</span>
+                      </a>
+
+                      {/* Telegram */}
+                      <a 
+                        href={`https://t.me/share/url?url=${encodeURIComponent(computedLink)}&text=${encodeURIComponent('Mohon kesediaannya mengisi Survei Budaya Keselamatan Pasien')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#121c33] hover:bg-[#0088cc] text-[#0088cc] hover:text-white border border-[#0088cc]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
+                      >
+                        <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M23.91 3.123c-.114-.627-.61-.986-1.18-.986-.23 0-.46.06-.67.16l-.03.013L.66 10.42c-.52.2-.66.69-.66 1.05 0 .37.21.73.66.9l4.58 1.673c.3.1.58.07.82-.09l12.44-8.03c.12-.08.26.04.17.15l-10 9.243c-.22.2-.33.48-.3.77l.54 5.37c.05.47.38.74.77.74.27 0 .52-.11.71-.3l2.87-2.65 4.39 3.22c.32.23.7.35 1.09.35.68 0 1.21-.49 1.28-1.17l3.12-17.123a1.43 1.43 0 00.01-.26z"/>
+                        </svg>
+                        <span className="text-xs font-semibold">Telegram</span>
+                      </a>
+
+                      {/* Instagram */}
+                      <button 
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(computedLink);
+                          showNotification("Link berhasil disalin. Silakan tempel pada Bio, Story, atau Direct Message Instagram.", "success");
+                          setTimeout(() => {
+                            window.open("https://instagram.com", "_blank", "noopener,noreferrer");
+                          }, 1500);
+                        }}
+                        className="bg-[#121c33] hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] text-[#DD2A7B] hover:text-white border border-[#DD2A7B]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95 cursor-pointer"
+                      >
+                        <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051c-.059 1.28-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                        </svg>
+                        <span className="text-xs font-semibold">Instagram</span>
+                      </button>
+
+                      {/* Facebook */}
+                      <a 
+                        href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(computedLink)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-[#121c33] hover:bg-[#1877F2] text-[#1877F2] hover:text-white border border-[#1877F2]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
+                      >
+                        <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                        <span className="text-xs font-semibold">Facebook</span>
+                      </a>
                     </div>
                   </div>
 
                   {/* ADVANCED CONFIGURATION PANEL */}
                   <div className="bg-[#020918]/40 border border-slate-800 p-4 rounded-xl space-y-3.5">
                     <h4 className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider border-b border-white/5 pb-1.5">Pengaturan Keamanan & Link</h4>
-                    
-                    <div className="space-y-1">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Domain / Base URL Kustom (Opsional)</label>
-                      <input 
-                        type="text" 
-                        placeholder="https://survei-rsanda.com" 
-                        value={customDomain}
-                        onChange={(e) => setCustomDomain(e.target.value)}
-                        className="w-full bg-[#0c1a36] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500/50"
-                      />
-                      <span className="text-[9px] text-slate-500 leading-tight block">Tulis domain Anda apabila aplikasi dideploy secara mandiri di luar AI Studio.</span>
-                    </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
@@ -2530,9 +2680,9 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                     <button
                       onClick={() => {
                         updateSurveyLinkConfig({ customDomain, expiryDate, maxRespondents, preventDuplicate });
-                        alert("Pengaturan tautan survei berhasil disimpan!");
+                        showNotification("Pengaturan tautan survei berhasil disimpan!", "success");
                       }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-600/10"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-600/10 cursor-pointer"
                     >
                       Simpan Pengaturan
                     </button>
@@ -2542,7 +2692,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                     <span className="text-sm text-slate-300 font-medium">Status Link</span>
                     <button 
                       onClick={toggleSurveyLinkStatus}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${surveyLinkConfig.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${surveyLinkConfig.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'} cursor-pointer`}
                     >
                       {surveyLinkConfig.isActive ? 'Aktif' : 'Tidak Aktif'}
                     </button>
@@ -2566,7 +2716,7 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
                           generateSurveyLink();
                         }
                       }}
-                      className="w-full text-xs text-rose-400 hover:text-rose-300 font-semibold text-center py-2 transition-colors"
+                      className="w-full text-xs text-rose-400 hover:text-rose-300 font-semibold text-center py-2 transition-colors cursor-pointer"
                     >
                       Buat Ulang (Regenerate) Link
                     </button>
@@ -2578,6 +2728,41 @@ export default function InputDataTab({ currentRsName, identifier, isPublic, onSa
         </div>,
         document.body
       )}
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {notification && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.9 }}
+            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[10001] max-w-md w-[calc(100%-2rem)] p-4 rounded-xl shadow-2xl border flex items-start gap-3 backdrop-blur-md ${
+              notification.type === 'success'
+                ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200'
+                : notification.type === 'error'
+                ? 'bg-rose-950/90 border-rose-500/30 text-rose-200'
+                : 'bg-slate-900/90 border-slate-700/50 text-slate-200'
+            }`}
+          >
+            {notification.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+            ) : notification.type === 'error' ? (
+              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+            ) : (
+              <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+            )}
+            <div className="flex-1 text-sm leading-snug">
+              {notification.message}
+            </div>
+            <button
+              onClick={() => setNotification(null)}
+              className="text-slate-400 hover:text-slate-200 shrink-0 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
