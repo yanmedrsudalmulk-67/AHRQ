@@ -57,6 +57,8 @@ interface DashboardTableProps {
   namaRs: string;
   identifier?: string;
   hospitalId?: string;
+  selectedRsFilter?: string;
+  accounts?: any[];
 }
 
 const STAFF_GROUPS: { [key: string]: string[] } = {
@@ -307,7 +309,7 @@ const getProfExperienceAnalysis = (data: { name: string; value: number; percenta
   return `Distribusi lama kerja sesuai profesi didominasi oleh kelompok ${maxItem.name} sebesar ${maxItem.percentage}% (${maxItem.value} responden), mencerminkan kematangan tingkat keahlian dan kompetensi dalam pemberian asuhan keselamatan pasien.`;
 };
 
-export default function DashboardTable({ role, namaRs, identifier, hospitalId }: DashboardTableProps) {
+export default function DashboardTable({ role, namaRs, identifier, hospitalId, selectedRsFilter, accounts }: DashboardTableProps) {
   // SWR for automatic realtime data synchronization
   const { data: surveys = [], error, mutate, isValidating } = useSWR(
     role === 'admin' ? 'ahrq_surveys_all' : ['ahrq_surveys', hospitalId || identifier],
@@ -408,8 +410,28 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId }:
         } else {
           if (s.namaRs.toLowerCase() !== namaRs.toLowerCase()) return false;
         }
+      } else if (role === 'admin') {
+        const activeFilter = selectedRsFilter || 'admin';
+        if (activeFilter === 'admin') {
+          const surveyUser = (s.dimensiScores as any)?.username;
+          if (surveyUser) {
+            if (surveyUser.toLowerCase() !== 'admin') return false;
+          } else {
+            if (s.namaRs !== 'Administrator Pusat') return false;
+          }
+        } else if (activeFilter === 'all') {
+          if (filterHospital !== 'Semua Rumah Sakit' && s.namaRs !== filterHospital) return false;
+        } else {
+          // Filter by specific RS username or ID
+          const surveyUser = (s.dimensiScores as any)?.username;
+          const surveyHospitalId = (s.dimensiScores as any)?.hospital_id;
+          if (surveyUser?.toLowerCase() !== activeFilter.toLowerCase() && 
+              surveyHospitalId !== activeFilter && 
+              s.namaRs.toLowerCase() !== activeFilter.toLowerCase()) {
+            return false;
+          }
+        }
       }
-      if (role === 'admin' && filterHospital !== 'Semua Rumah Sakit' && s.namaRs !== filterHospital) return false;
 
       // 2. Unit Filter
       if (filterUnit !== 'Semua Unit' && s.unitKerja !== filterUnit) return false;
@@ -443,7 +465,7 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId }:
 
       return true;
     });
-  }, [surveys, role, namaRs, identifier, filterHospital, filterUnit, filterProfesi, filterJabatan, filterPeriod, filterTahun]);
+  }, [surveys, role, namaRs, identifier, filterHospital, filterUnit, filterProfesi, filterJabatan, filterPeriod, filterTahun, selectedRsFilter]);
 
   // Calculate Positive Response Rates Compositely for each Dimension over all filtered surveys
   const calculatedDimensions = useMemo(() => {
@@ -1015,19 +1037,19 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId }:
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 group-hover:bg-emerald-500/10 transition-colors duration-700"></div>
         
         {/* Header with gradient and badge */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-6 border-b border-slate-200">
-          <div className="space-y-1">
-            <h2 className="text-xl md:text-2xl font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-              <Users className="w-6 h-6 text-teal-600" /> Dashboard Profil Responden
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 p-6 md:p-8 rounded-[24px] bg-gradient-to-r from-[#2563EB] via-[#3B82F6] to-[#4F46E5] backdrop-blur-md border border-white/20 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+          <div className="space-y-2 max-w-3xl">
+            <h2 className="text-[28px] md:text-[32px] font-bold text-white tracking-tight flex items-center gap-3">
+              <Users className="w-8 h-8 text-white stroke-[1.5]" /> Dashboard Profil Responden
             </h2>
-            <p className="text-xs text-slate-500 font-semibold">
-              Analisis demografi dan karakteristik responden pengisi kuesioner budaya keselamatan pasien secara dinamis.
+            <p className="text-sm md:text-base text-white/90 leading-relaxed">
+              Analisis demografi dan karakteristik responden pengisi Kuesioner Budaya Keselamatan Pasien secara dinamis dan real-time.
             </p>
           </div>
           
-          <div className="flex items-center gap-2 px-4 py-2 bg-teal-500/10 border border-teal-500/20 rounded-2xl">
-            <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-ping"></span>
-            <span className="text-[11px] font-bold text-teal-700 uppercase tracking-wider">
+          <div className="flex items-center gap-2.5 px-5 py-2.5 bg-white/95 backdrop-blur-sm border border-white/50 rounded-full shadow-sm shrink-0">
+            <Filter className="w-4 h-4 text-[#2563EB]" />
+            <span className="text-xs font-bold text-[#2563EB] uppercase tracking-wider">
               {profileStats.total} Responden Terfilter
             </span>
           </div>

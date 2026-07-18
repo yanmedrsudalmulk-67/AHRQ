@@ -171,11 +171,30 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
   if (supabase) {
     try {
       if (hospitalId && hospitalId !== 'admin') {
+        // Resolve both UUID and username
+        let uuid = hospitalId;
+        let username = hospitalId;
+
+        try {
+          const { data: accounts } = await supabase
+            .from('hospital_accounts')
+            .select('id, username')
+            .or(`id.eq.${hospitalId},username.eq.${hospitalId}`)
+            .limit(1);
+
+          if (accounts && accounts.length > 0) {
+            uuid = accounts[0].id;
+            username = accounts[0].username;
+          }
+        } catch (err) {
+          console.warn("Gagal lookup hospital_accounts in getSurveys:", err);
+        }
+
         try {
           const { data, error } = await supabase
             .from('ahrq_surveys')
             .select('*')
-            .or(`hospital_id.eq.${hospitalId},user_id.eq.${hospitalId},created_by.eq.${hospitalId},dimensi_scores->>username.eq.${hospitalId},dimensi_scores->>hospital_id.eq.${hospitalId},dimensi_scores->>user_id.eq.${hospitalId}`)
+            .or(`hospital_id.eq.${uuid},hospital_id.eq.${username},user_id.eq.${uuid},user_id.eq.${username},created_by.eq.${uuid},created_by.eq.${username},dimensi_scores->>username.eq.${uuid},dimensi_scores->>username.eq.${username},dimensi_scores->>hospital_id.eq.${uuid},dimensi_scores->>hospital_id.eq.${username},dimensi_scores->>user_id.eq.${uuid},dimensi_scores->>user_id.eq.${username}`)
             .order('created_at', { ascending: false });
 
           if (!error && data) {
@@ -183,6 +202,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
           }
           if (error) {
             const isColError = error.code === '42703' || 
+                               error.code === 'PGRST204' ||
                                error.message?.includes('column') || 
                                error.message?.includes('does not exist') ||
                                error.message?.includes('schema cache');
@@ -194,11 +214,11 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
             }
           }
         } catch (innerErr) {
-          // Fallback query using only JSONB dimensi_scores keys and unit_kerja (always safe, won't cause 42703)
+          // Fallback query using only JSONB dimensi_scores keys (always safe, won't cause 42703 / PGRST204)
           const { data, error } = await supabase
             .from('ahrq_surveys')
             .select('*')
-            .or(`dimensi_scores->>username.eq.${hospitalId},dimensi_scores->>hospital_id.eq.${hospitalId},dimensi_scores->>user_id.eq.${hospitalId},unit_kerja.eq.${hospitalId}`)
+            .or(`dimensi_scores->>username.eq.${uuid},dimensi_scores->>username.eq.${username},dimensi_scores->>hospital_id.eq.${uuid},dimensi_scores->>hospital_id.eq.${username},dimensi_scores->>user_id.eq.${uuid},dimensi_scores->>user_id.eq.${username},unit_kerja.eq.${uuid},unit_kerja.eq.${username}`)
             .order('created_at', { ascending: false });
 
           if (!error && data) {
@@ -251,10 +271,10 @@ export async function saveSurvey(
           created_by: createdBy || survey.dimensiScores?.created_by || survey.dimensiScores?.username,
           hospital_name: hospitalName || survey.dimensiScores?.hospital_name || survey.namaRs
         },
-        hospital_id: hospitalId || null,
-        user_id: userId || null,
-        created_by: createdBy || null,
-        hospital_name: hospitalName || null
+        hospital_id: hospitalId || survey.dimensiScores?.hospital_id,
+        user_id: userId || survey.dimensiScores?.user_id || survey.dimensiScores?.username,
+        created_by: createdBy || survey.dimensiScores?.created_by || survey.dimensiScores?.username,
+        hospital_name: hospitalName || survey.dimensiScores?.hospital_name || survey.namaRs
       };
 
       let attempts = 0;
@@ -276,18 +296,21 @@ export async function saveSurvey(
             throw error;
           }
         } catch (error: any) {
-          console.warn(`saveSurvey attempt ${attempts} failed:`, error);
           const isColError = error.code === '42703' || 
+                             error.code === 'PGRST204' ||
                              error.message?.includes('column') || 
                              error.message?.includes('does not exist') ||
                              error.message?.includes('schema cache');
+          
           if (isColError && attempts < maxAttempts) {
+            // Attempt to remove any top-level keys that might cause schema issues if added dynamically later
             delete insertRow.hospital_id;
             delete insertRow.user_id;
             delete insertRow.created_by;
             delete insertRow.hospital_name;
             continue;
           }
+          console.warn(`saveSurvey attempt ${attempts} failed:`, error);
           throw new Error(`Gagal menyimpan survei ke database Supabase: ${error.message}`);
         }
       }
@@ -861,8 +884,8 @@ export async function saveSubmission(submission: Omit<SurveySubmission, 'id' | '
           throw error;
         }
       } catch (error: any) {
-        console.warn(`saveSubmission attempt ${attempts} failed:`, error);
         const isColError = error.code === '42703' || 
+                           error.code === 'PGRST204' ||
                            error.message?.includes('column') || 
                            error.message?.includes('does not exist') ||
                            error.message?.includes('schema cache');
@@ -873,6 +896,7 @@ export async function saveSubmission(submission: Omit<SurveySubmission, 'id' | '
           delete insertRow.hospital_name;
           continue;
         }
+        console.warn(`saveSubmission attempt ${attempts} failed:`, error);
         throw new Error(`Gagal menyimpan pengisian survei ke Supabase: ${error.message}`);
       }
     }

@@ -145,8 +145,8 @@ export default function PublicSurveyPage() {
         if (!error) break;
         throw error;
       } catch (error: any) {
-        console.warn(`Public saveSurvey attempt ${attempts} failed:`, error);
         const isColError = error.code === '42703' || 
+                           error.code === 'PGRST204' ||
                            error.message?.includes('column') || 
                            error.message?.includes('does not exist') ||
                            error.message?.includes('schema cache');
@@ -157,6 +157,7 @@ export default function PublicSurveyPage() {
           delete insertRow.hospital_name;
           continue;
         }
+        console.warn(`Public saveSurvey attempt ${attempts} failed:`, error);
         throw new Error(`Gagal menyimpan pengisian survei: ${error.message}`);
       }
     }

@@ -758,7 +758,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       d1: getAverage([getVal(ansA[1]), getVal(ansA[8]), getVal(ansA[9], true)]),
       d2: getAverage([getVal(ansA[2]), getVal(ansA[3], true), getVal(ansA[5], true), getVal(ansA[11], true)]),
       d3: getAverage([getVal(ansA[4]), getVal(ansA[12])]),
-      d4: getAverage([getVal(ansA[6], true), getVal(ansA[7], true), getVal(ansA[10])]),
+      d4: getAverage([getVal(ansA[6], true), getVal(ansA[7], true), getVal(ansA[10]), getVal(ansA[13], true), getVal(ansA[14], true)]),
       d5: getAverage([getVal(ansB[1]), getVal(ansB[2], true), getVal(ansB[3])]),
       d6: getAverage([getVal(ansC[4]), getVal(ansC[5]), getVal(ansC[6]), getVal(ansC[7], true)]),
       d7: getAverage([getVal(ansC[1]), getVal(ansC[2]), getVal(ansC[3])]),
@@ -1529,59 +1529,43 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     const category = getFeedbackCategory(ans, false);
                     return (
                       <div
+                        key="D-1"
                         ref={(el) => { questionRefs.current[`D-1`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
                         {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>D1</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Pelaporan Kejadian</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>D1</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Pelaporan Kejadian</span>
                           </div>
 
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {/* Response Quality Indicator */}
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Respon Positif
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Respon Netral
                               </span>
                             )}
                             {category === 'negative' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Respon Negatif
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-base md:text-lg font-bold text-slate-200">Ketika kesalahan diketahui dan diperbaiki sebelum sampai ke pasien, seberapa sering hal ini dilaporkan?</p>
+                        <p className="text-base md:text-lg font-bold text-slate-800">Ketika kesalahan diketahui dan diperbaiki sebelum sampai ke pasien, seberapa sering hal ini dilaporkan?</p>
                         
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {FREQUENCY_OPTIONS.map((opt) => {
@@ -1593,23 +1577,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectD(1, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
-                                  isSelected 
-                                    ? opt.value === 9
-                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
-                                      : optCategory === 'positive'
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                        : optCategory === 'neutral'
-                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
-                                        : optCategory === 'negative'
-                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
-                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
-                                    : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : opt.value === 9
-                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
-                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                                }`}
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${getLikertButtonClass(isSelected, ans !== undefined, opt.value, optCategory)}`}
                               >
                                 <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
                                   {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -1629,59 +1597,43 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     const category = getFeedbackCategory(ans, false);
                     return (
                       <div
+                        key="D-2"
                         ref={(el) => { questionRefs.current[`D-2`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
                         {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>D2</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Pelaporan Kejadian</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>D2</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Pelaporan Kejadian</span>
                           </div>
 
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {/* Response Quality Indicator */}
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Respon Positif
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Respon Netral
                               </span>
                             )}
                             {category === 'negative' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Respon Negatif
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-base md:text-lg font-bold text-slate-200">Ketika suatu kesalahan sampai ke pasien dan dapat membahayakan pasien, tetapi tidak terjadi, seberapa sering hal ini dilaporkan?</p>
+                        <p className="text-base md:text-lg font-bold text-slate-800">Ketika suatu kesalahan sampai ke pasien dan dapat membahayakan pasien, tetapi tidak terjadi, seberapa sering hal ini dilaporkan?</p>
                         
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {FREQUENCY_OPTIONS.map((opt) => {
@@ -1693,23 +1645,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectD(2, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
-                                  isSelected 
-                                    ? opt.value === 9
-                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
-                                      : optCategory === 'positive'
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                        : optCategory === 'neutral'
-                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
-                                        : optCategory === 'negative'
-                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
-                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
-                                    : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : opt.value === 9
-                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
-                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                                }`}
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${getLikertButtonClass(isSelected, ans !== undefined, opt.value, optCategory)}`}
                               >
                                 <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
                                   {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -1729,49 +1665,36 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     const category = ans ? (ans === 'Tidak ada' ? 'neutral' : 'positive') : 'none';
                     return (
                       <div
+                        key="D-3"
                         ref={(el) => { questionRefs.current[`D-3`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>D3</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Intensitas 12 Bulan Terakhir</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>D3</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Intensitas 12 Bulan Terakhir</span>
                           </div>
 
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Berpartisipasi Melapor
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Berpartisipasi Melapor
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Belum Melapor
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Belum Melapor
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-base md:text-lg font-bold text-slate-200">Dalam 12 bulan terakhir, berapa banyak kejadian keselamatan pasien yang telah Anda laporkan?</p>
+                        <p className="text-base md:text-lg font-bold text-slate-800">Dalam 12 bulan terakhir, berapa banyak kejadian keselamatan pasien yang telah Anda laporkan?</p>
                         
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                           {['Tidak ada', '1 sampai 2', '3 sampai 5', '6 hingga 10', '11 atau lebih'].map((choice, i) => {
@@ -1786,11 +1709,11 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                                 className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
                                   isSelected 
                                     ? choiceCategory === 'positive'
-                                      ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                      : 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
+                                      ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-[1.02] font-bold'
+                                      : 'bg-amber-600 border-amber-600 text-white shadow-md shadow-amber-500/20 scale-[1.02] font-bold'
                                     : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                                      ? 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-300 hover:bg-slate-50'
+                                      : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:border-emerald-500/30 hover:bg-emerald-50/20'
                                 }`}
                               >
                                 <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
@@ -1816,58 +1739,41 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     return (
                       <div
                         ref={(el) => { questionRefs.current[`E-1`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
                         {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>E1</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Peringkat Budaya Keselamatan</span>
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>E1</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Peringkat Budaya Keselamatan</span>
                           </div>
 
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {/* Response Quality Indicator */}
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Respon Positif
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Respon Netral
                               </span>
                             )}
                             {category === 'negative' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Respon Negatif
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-lg md:text-xl font-bold text-slate-200 leading-normal pt-2">Bagaimana Anda menilai unit/area kerja Anda dalam hal keselamatan pasien?</p>
+                        <p className="text-lg md:text-xl font-bold text-slate-800 leading-normal pt-2">Bagaimana Anda menilai unit/area kerja Anda dalam hal keselamatan pasien?</p>
                         
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                           {[
@@ -1885,19 +1791,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectE(item.val)}
-                                className={`p-6 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex flex-col justify-center items-center gap-3 ${
-                                  isSelected 
-                                    ? optCategory === 'positive'
-                                      ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                      : optCategory === 'neutral'
-                                      ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
-                                      : optCategory === 'negative'
-                                      ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
-                                      : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
-                                    : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                                }`}
+                                className={`p-6 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex flex-col justify-center items-center gap-3 ${getLikertButtonClass(isSelected, ans !== undefined, item.val, optCategory)}`}
                               >
                                 <span className="text-sm font-bold flex items-center justify-center gap-1.5">
                                   {isSelected && <Check className="w-4 h-4" />}
@@ -1923,29 +1817,16 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`F-${st.id}`] = el; }}
-                        className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
-                          category === 'positive'
-                            ? 'bg-[#0c1a36]/80 border-emerald-500/60 shadow-md ring-1 ring-emerald-500/10'
-                            : category === 'neutral'
-                            ? 'bg-[#0c1a36]/80 border-amber-500/60 shadow-md ring-1 ring-amber-500/10'
-                            : category === 'negative'
-                            ? 'bg-[#0c1a36]/80 border-rose-500/60 shadow-md ring-1 ring-rose-500/10'
-                            : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
-                        }`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
                         {category === 'negative' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-rose-500 to-red-500" />}
 
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-4">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
                           <div className="flex items-center gap-3">
-                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${
-                              category === 'positive' ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' :
-                              category === 'neutral' ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30' :
-                              category === 'negative' ? 'bg-rose-500/15 text-rose-400 border border-rose-500/30' :
-                              'bg-slate-800/50 text-slate-400 border border-slate-700/30'
-                            }`}>{st.code}</span>
-                            <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-500/20/50">
+                            <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs transition-all transform-gpu duration-300 ${getBadgeClass(category)}`}>{st.code}</span>
+                            <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">
                               {DIMENSI_AHRQ.find(d => d.id === st.dim)?.nama || 'Dimensi'}
                             </span>
                           </div>
@@ -1953,30 +1834,26 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                           <div className="flex items-center gap-3 text-xs font-semibold">
                             {/* Response Quality Indicator */}
                             {category === 'positive' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full border border-emerald-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Respon Positif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-full border border-emerald-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Respon Positif
                               </span>
                             )}
                             {category === 'neutral' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> Respon Netral
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-full border border-amber-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" /> Respon Netral
                               </span>
                             )}
                             {category === 'negative' && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-500/10 text-rose-400 text-[10px] font-bold rounded-full border border-rose-500/20">
-                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse" /> Respon Negatif
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-50 text-rose-700 text-[10px] font-bold rounded-full border border-rose-200">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> Respon Negatif
                               </span>
                             )}
 
-                            {ans ? (
-                              <span className="text-emerald-400 flex items-center gap-1 bg-emerald-500/5 px-2 py-1 rounded-lg border border-emerald-500/10"><Check className="w-4 h-4" /> Selesai</span>
-                            ) : (
-                              <span className="text-red-500 flex items-center gap-1 bg-red-500/5 px-2 py-1 rounded-lg border border-red-500/10"><AlertCircle className="w-4 h-4" /> Belum Dijawab</span>
-                            )}
+                            {getDoneBadgeClass(!!ans)}
                           </div>
                         </div>
 
-                        <p className="text-base md:text-lg font-bold text-slate-200 leading-relaxed">{st.text}</p>
+                        <p className="text-base md:text-lg font-bold text-slate-800 leading-relaxed">{st.text}</p>
 
                         <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
                           {LIKERT_OPTIONS.map((opt) => {
@@ -1988,23 +1865,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                                 isSelected={isSelected}
                                 shakeOnHover={true}
                                 onClick={() => handleSelectOption('F', st.id, opt.value)}
-                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${
-                                  isSelected 
-                                    ? opt.value === 9
-                                      ? 'bg-slate-600 border-slate-500 text-white shadow-lg shadow-slate-500/30 scale-103 font-bold'
-                                      : optCategory === 'positive'
-                                        ? 'bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-500/30 scale-103 font-bold'
-                                        : optCategory === 'neutral'
-                                        ? 'bg-amber-600 border-amber-500 text-white shadow-lg shadow-amber-500/30 scale-103 font-bold'
-                                        : optCategory === 'negative'
-                                        ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-500/30 scale-103 font-bold'
-                                        : 'bg-emerald-600 border-emerald-600 text-white shadow-lg scale-103 font-bold'
-                                    : ans !== undefined
-                                      ? 'border-[#00244d]/20 bg-[#020918]/30 text-slate-500 opacity-60 hover:opacity-100 hover:border-[#00244d]/60'
-                                      : opt.value === 9
-                                        ? 'border-slate-700 bg-slate-900/40 text-slate-400 hover:border-slate-400 hover:bg-slate-500/10'
-                                        : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-400 hover:border-emerald-400 hover:bg-emerald-500/10/20'
-                                }`}
+                                className={`p-4 rounded-2xl border text-center transition-all transform-gpu duration-300 cursor-pointer flex items-center justify-center min-h-[64px] ${getLikertButtonClass(isSelected, ans !== undefined, opt.value, optCategory)}`}
                               >
                                 <span className="text-xs leading-tight font-medium flex items-center justify-center gap-1.5">
                                   {isSelected && <Check className="w-3.5 h-3.5" />}
@@ -2026,17 +1887,19 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G1 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-1`] = el; }}
-                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[1] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
+                        ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
+                        : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
-                      <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">G1</span>
-                      <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Latar Belakang RS</span>
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        ansG[1] ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60' : 'bg-slate-50 text-slate-500 border border-slate-200'
+                      }`}>G1</span>
+                      <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Latar Belakang RS</span>
                     </div>
-                    <p className="text-base md:text-lg font-bold text-slate-200">Sudah berapa lama Anda bekerja di rumah sakit ini?</p>
+                    <p className="text-base md:text-lg font-bold text-slate-800">Sudah berapa lama Anda bekerja di rumah sakit ini?</p>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       {['Kurang dari 1 tahun', '1 hingga 5 tahun', '6 hingga 10 tahun', '11 tahun atau lebih'].map((opt, i) => (
                         <RippleButton
@@ -2046,8 +1909,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                           onClick={() => handleSelectG(1, opt)}
                           className={`p-4 rounded-2xl border text-center transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[1] === opt 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-[1.02] font-semibold' 
+                              : ansG[1] !== undefined
+                                ? 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-300 hover:bg-slate-50'
+                                : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:border-emerald-500/30 hover:bg-emerald-50/20'
                           }`}
                         >
                           {opt}
@@ -2059,17 +1924,19 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G2 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-2`] = el; }}
-                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[2] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
+                        ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
+                        : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
-                      <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">G2</span>
-                      <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Latar Belakang Unit</span>
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        ansG[2] ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60' : 'bg-slate-50 text-slate-500 border border-slate-200'
+                      }`}>G2</span>
+                      <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Latar Belakang Unit</span>
                     </div>
-                    <p className="text-base md:text-lg font-bold text-slate-200">Di rumah sakit ini, sudah berapa lama Anda bekerja di unit/area kerja saat ini?</p>
+                    <p className="text-base md:text-lg font-bold text-slate-800">Di rumah sakit ini, sudah berapa lama Anda bekerja di unit/area kerja saat ini?</p>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                       {['Kurang dari 1 tahun', '1 hingga 5 tahun', '6 hingga 10 tahun', '11 tahun atau lebih'].map((opt, i) => (
                         <RippleButton
@@ -2079,8 +1946,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                           onClick={() => handleSelectG(2, opt)}
                           className={`p-4 rounded-2xl border text-center transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[2] === opt 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-[1.02] font-semibold' 
+                              : ansG[2] !== undefined
+                                ? 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-300 hover:bg-slate-50'
+                                : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:border-emerald-500/30 hover:bg-emerald-50/20'
                           }`}
                         >
                           {opt}
@@ -2092,17 +1961,19 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G3 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-3`] = el; }}
-                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[3] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
+                        ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
+                        : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
-                      <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">G3</span>
-                      <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Durasi Jam Kerja</span>
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        ansG[3] ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60' : 'bg-slate-50 text-slate-500 border border-slate-200'
+                      }`}>G3</span>
+                      <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Durasi Jam Kerja</span>
                     </div>
-                    <p className="text-base md:text-lg font-bold text-slate-200">Biasanya, berapa jam per minggu Anda bekerja di rumah sakit ini?</p>
+                    <p className="text-base md:text-lg font-bold text-slate-800">Biasanya, berapa jam per minggu Anda bekerja di rumah sakit ini?</p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       {['Kurang dari 30 jam per minggu', '30 hingga 40 jam per minggu', 'Lebih dari 40 jam per minggu'].map((opt, i) => (
                         <RippleButton
@@ -2112,8 +1983,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                           onClick={() => handleSelectG(3, opt)}
                           className={`p-4 rounded-2xl border text-center transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[3] === opt 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-[1.02] font-semibold' 
+                              : ansG[3] !== undefined
+                                ? 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-300 hover:bg-slate-50'
+                                : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:border-emerald-500/30 hover:bg-emerald-50/20'
                           }`}
                         >
                           {opt}
@@ -2125,17 +1998,19 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G4 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-4`] = el; }}
-                    className={`backdrop-blur-sm rounded-3xl border p-6 md:p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[4] 
-                        ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
-                        : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
+                        ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
+                        : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
                     }`}
                   >
-                    <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
-                      <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">G4</span>
-                      <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Interaksi Pasien</span>
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                      <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        ansG[4] ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60' : 'bg-slate-50 text-slate-500 border border-slate-200'
+                      }`}>G4</span>
+                      <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Interaksi Pasien</span>
                     </div>
-                    <p className="text-base md:text-lg font-bold text-slate-200">Dalam posisi staf Anda, apakah Anda memiliki interaksi atau kontak langsung dengan pasien?</p>
+                    <p className="text-base md:text-lg font-bold text-slate-800">Dalam posisi staf Anda, apakah Anda memiliki interaksi atau kontak langsung dengan pasien?</p>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {[
                         'YA, saya melakukan interaksi atau kontak langsung dengan pasien',
@@ -2148,8 +2023,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                           onClick={() => handleSelectG(4, opt)}
                           className={`p-5 rounded-2xl border text-left transition-all transform-gpu cursor-pointer font-bold text-xs ${
                             ansG[4] === opt 
-                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-600/15 scale-102 font-semibold' 
-                              : 'border-[#00244d]/40 bg-[#020918]/60 text-slate-300 hover:border-emerald-400 hover:bg-emerald-500/10/20'
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md shadow-emerald-500/20 scale-[1.02] font-semibold' 
+                              : ansG[4] !== undefined
+                                ? 'border-slate-100 bg-slate-50/40 text-slate-400 opacity-60 hover:opacity-100 hover:border-slate-300 hover:bg-slate-50'
+                                : 'border-slate-200 bg-slate-50/60 text-slate-600 hover:border-emerald-500/30 hover:bg-emerald-50/20'
                           }`}
                         >
                           {opt}
@@ -2164,20 +2041,22 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {step === 8 && (
                 <div
                   ref={(el) => { questionRefs.current[`H-1`] = el; }}
-                  className={`backdrop-blur-sm rounded-3xl border p-8 shadow-2xl transition-all transform-gpu duration-300 space-y-6 ${
+                  className={`rounded-3xl border p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
                     komentar.trim() 
-                      ? 'bg-[#0c1a36]/60 border-emerald-500/50 shadow-md ring-1 ring-emerald-500/20' 
-                      : 'bg-[#0c1a36]/20 border-slate-500/30 hover:border-slate-500/50'
+                      ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
+                      : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
                   }`}
                 >
-                  <div className="flex items-center gap-3 border-b border-white/[0.08] pb-4">
-                    <span className="w-8 h-8 rounded-xl bg-slate-800/50 text-slate-400 flex items-center justify-center font-bold text-xs">H1</span>
-                    <span className="inline-flex items-center px-2.5 py-1 bg-emerald-500/10 text-emerald-400 text-[10px] font-bold rounded-full">Ulasan & Konstruksi Masukan</span>
+                  <div className="flex items-center gap-3 border-b border-slate-100 pb-4">
+                    <span className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs ${
+                      komentar.trim() ? 'bg-emerald-50 text-emerald-600 border border-emerald-200/60' : 'bg-slate-50 text-slate-500 border border-slate-200'
+                    }`}>H1</span>
+                    <span className="inline-flex items-center px-2.5 py-1 bg-indigo-50 text-indigo-700 text-[10px] font-bold rounded-full border border-indigo-200">Ulasan & Konstruksi Masukan</span>
                   </div>
 
                   <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-slate-200">Bagikan Komentar atau Pengalaman Anda</h3>
-                    <p className="text-xs text-slate-400">Silakan berikan komentar Anda tentang bagaimana hal-hal yang dilakukan atau dapat dilakukan di rumah sakit Anda yang dapat mempengaruhi keselamatan pasien.</p>
+                    <h3 className="text-lg font-bold text-slate-800">Bagikan Komentar atau Pengalaman Anda</h3>
+                    <p className="text-xs text-slate-500">Silakan berikan komentar Anda tentang bagaimana hal-hal yang dilakukan atau dapat dilakukan di rumah sakit Anda yang dapat mempengaruhi keselamatan pasien.</p>
                   </div>
 
                   <textarea
@@ -2188,11 +2067,11 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       triggerAutoSave({ komentar: e.target.value });
                     }}
                     placeholder="Tulis ulasan, hambatan, atau ide perbaikan konstruktif Anda di sini secara rinci..."
-                    className="w-full bg-[#020918]/60 border border-[#00244d]/40 rounded-2xl p-4 text-sm focus:border-emerald-500 focus:bg-[#0c1a36]/50 backdrop-blur-sm focus:ring-1 focus:ring-emerald-500 transition-all transform-gpu outline-none leading-relaxed"
+                    className="w-full bg-white border border-slate-200 rounded-2xl p-4 text-sm focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-all outline-none leading-relaxed text-slate-800 placeholder-slate-400"
                   />
 
-                  <div className="p-4 bg-emerald-500/10/50 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
-                    <BookOpen className="w-5 h-5 text-emerald-400 shrink-0" />
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-center gap-3">
+                    <BookOpen className="w-5 h-5 text-emerald-600 shrink-0" />
                     <p className="text-[11px] text-emerald-800 leading-normal">
                       Ulasan masukan Anda akan diolah secara analitis kualitatif oleh tim manajemen fasyankes guna menentukan prioritas mitigasi insiden keselamatan pasien.
                     </p>
@@ -2202,17 +2081,17 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
               {/* STEP 9: REVIEW SECTION */}
               {step === 9 && (
-                <div className="bg-[#0c1a36]/40 backdrop-blur-sm rounded-3xl border border-[#00244d]/30 p-8 shadow-2xl space-y-8">
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-8">
                   <div className="space-y-2">
-                    <span className="text-xs font-bold text-emerald-400 tracking-wider">KOMPILASI</span>
-                    <h2 className="text-2xl font-bold text-slate-100">Review Sebelum Kirim Kuesioner</h2>
-                    <p className="text-xs text-slate-400">Silakan tinjau seluruh kelengkapan jawaban kuesioner Anda untuk menjamin akurasi data budaya keselamatan.</p>
+                    <span className="text-xs font-bold text-emerald-600 tracking-wider font-mono">KOMPILASI</span>
+                    <h2 className="text-2xl font-bold text-slate-800">Review Sebelum Kirim Kuesioner</h2>
+                    <p className="text-xs text-slate-500">Silakan tinjau seluruh kelengkapan jawaban kuesioner Anda untuk menjamin akurasi data budaya keselamatan.</p>
                   </div>
 
-                  <hr className="border-white/[0.08]" />
+                  <hr className="border-slate-100" />
 
                   {unansweredCount > 0 ? (
-                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-start gap-3">
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-start gap-3">
                       <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
                       <div>
                         <h5 className="text-xs font-bold text-red-800">Ditemukan {unansweredCount} Isian Belum Lengkap</h5>
@@ -2222,8 +2101,8 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       </div>
                     </div>
                   ) : (
-                    <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-3 text-emerald-800">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
                       <span className="text-xs font-bold">Luar biasa! Seluruh {totalQuestions} pertanyaan kuesioner berhasil terjawab dengan lengkap.</span>
                     </div>
                   )}
@@ -2242,24 +2121,24 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
               {/* STEP 10: SUCCESS SCREEN */}
               {step === 10 && (
-                <div className="bg-[#0c1a36]/40 backdrop-blur-sm rounded-3xl border border-[#00244d]/30 p-12 text-center shadow-2xl space-y-6 max-w-xl mx-auto my-6">
-                  <div className="w-20 h-20 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner animate-bounce">
+                <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-sm space-y-6 max-w-xl mx-auto my-6">
+                  <div className="w-20 h-20 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full flex items-center justify-center mx-auto shadow-inner animate-bounce">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>
 
                   <div className="space-y-2">
-                    <span className="text-[10px] font-extrabold text-emerald-400 tracking-widest uppercase font-mono">SINKRONISASI SELESAI</span>
-                    <h2 className="text-2xl font-extrabold text-slate-100">Terima Kasih Banyak!</h2>
-                    <p className="text-xs text-slate-400 max-w-md mx-auto leading-relaxed">
+                    <span className="text-[10px] font-extrabold text-emerald-600 tracking-widest uppercase font-mono">SINKRONISASI SELESAI</span>
+                    <h2 className="text-2xl font-extrabold text-slate-800">Terima Kasih Banyak!</h2>
+                    <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
                       Kuesioner budaya keselamatan pasien Anda berhasil dikirim secara realtime dan diintegrasikan ke basis data cloud rumah sakit.
                     </p>
                   </div>
 
-                  <hr className="border-white/[0.08]" />
+                  <hr className="border-slate-100" />
 
-                  <div className="p-4 bg-emerald-500/10/50 rounded-2xl text-[11px] text-emerald-800 leading-relaxed text-left space-y-2">
+                  <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col gap-2 text-[11px] text-emerald-800 leading-relaxed text-left">
                     <div className="flex items-center gap-2 font-bold">
-                      <Database className="w-4 h-4 text-emerald-400" />
+                      <Database className="w-4 h-4 text-emerald-600 animate-pulse" />
                       <span>Data Dimasukkan Ke Basis Data</span>
                     </div>
                     <p>Hasil entri kuesioner Anda akan segera dikompilasi secara dinamis pada tab <strong>Dashboard</strong>, <strong>Analisis Grafik</strong>, dan pembuatan laporan otomatis.</p>
@@ -2296,14 +2175,14 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
       {/* 3. STICKY FOOTER NAVIGATION */}
       {step > 0 && step < 10 && (
-      <footer id="survey-sticky-footer" className="sticky bottom-0 bg-[#0c1a36]/75 backdrop-blur-sm border-t border-[#00244d]/40 py-4 px-6 md:px-8 flex justify-between items-center z-10 shadow-lg">
+      <footer id="survey-sticky-footer" className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-slate-200 py-4 px-6 md:px-8 flex justify-between items-center z-10 shadow-md">
         <button
           onClick={() => step > 0 && setStep(step - 1)}
           disabled={step === 0 || step === 10}
           className={`px-5 py-3 rounded-xl text-xs font-bold transition-all transform-gpu flex items-center gap-1.5 ${
             step === 0 || step === 10
-              ? 'text-slate-300 bg-slate-950/50 border border-slate-100 cursor-not-allowed'
-              : 'bg-[#0c1a36]/50 backdrop-blur-sm border border-[#00244d]/40 text-slate-300 hover:bg-[#020918]/50'
+              ? 'text-slate-300 bg-slate-50 border border-slate-100 cursor-not-allowed'
+              : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 cursor-pointer'
           }`}
         >
           <ChevronLeft className="w-4 h-4" /> Sebelumnya
@@ -2340,15 +2219,15 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-[#0B101E] backdrop-blur-md flex flex-col z-[9999]"
+              className="fixed inset-0 bg-slate-50 flex flex-col z-[9999]"
             >
               <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
-                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-2 border-b border-slate-800/50 z-20 max-w-4xl mx-auto w-full">
-                  <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><Users className="w-5 h-5 text-emerald-400"/> Pilih Posisi Staf</h3>
-                  <button type="button" onClick={() => setIsPosisiModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+                <div className="flex justify-between items-center sticky top-0 bg-slate-50 p-4 -mx-6 -mt-6 mb-2 border-b border-slate-200 z-20 max-w-4xl mx-auto w-full">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Users className="w-5 h-5 text-emerald-600"/> Pilih Posisi Staf</h3>
+                  <button type="button" onClick={() => setIsPosisiModalOpen(false)} className="p-2 bg-slate-200 hover:bg-slate-300 rounded-full text-slate-600 hover:text-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
                 </div>
                 
-                <div className="max-w-4xl mx-auto w-full sticky top-[68px] z-10 bg-[#0B101E] pb-4 pt-2">
+                <div className="max-w-4xl mx-auto w-full sticky top-[68px] z-10 bg-slate-50 pb-4 pt-2">
                   <div className="relative">
                     <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                     <input 
@@ -2356,7 +2235,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       placeholder="Cari posisi staf (nama jabatan atau kategori)..." 
                       value={posisiSearch}
                       onChange={(e) => setPosisiSearch(e.target.value)}
-                      className="w-full bg-[#0c1a36] border border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-200 outline-none focus:border-emerald-500/50 transition-colors"
+                      className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors placeholder-slate-400"
                     />
                   </div>
                 </div>
@@ -2396,8 +2275,8 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                               }}
                               className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
                                 posisiStaf === pos.nama_posisi 
-                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
-                                  : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold shadow-sm' 
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                               }`}
                             >
                               {pos.nama_posisi}
@@ -2424,15 +2303,15 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="fixed inset-0 bg-[#0B101E] backdrop-blur-md flex flex-col z-[9999]"
+              className="fixed inset-0 bg-slate-50 flex flex-col z-[9999]"
             >
               <div className="flex-1 overflow-y-auto p-6 space-y-6 pb-24">
-                <div className="flex justify-between items-center sticky top-0 bg-[#0B101E] p-4 -mx-6 -mt-6 mb-2 border-b border-slate-800/50 z-20 max-w-4xl mx-auto w-full">
-                  <h3 className="text-lg font-bold text-slate-100 flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-400"/> Pilih Unit / Area Kerja</h3>
-                  <button type="button" onClick={() => setIsUnitModalOpen(false)} className="p-2 bg-slate-800/50 rounded-full text-slate-300 hover:text-white cursor-pointer"><X className="w-5 h-5" /></button>
+                <div className="flex justify-between items-center sticky top-0 bg-slate-50 p-4 -mx-6 -mt-6 mb-2 border-b border-slate-200 z-20 max-w-4xl mx-auto w-full">
+                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2"><MapPin className="w-5 h-5 text-emerald-600"/> Pilih Unit / Area Kerja</h3>
+                  <button type="button" onClick={() => setIsUnitModalOpen(false)} className="p-2 bg-slate-200 hover:bg-slate-300 rounded-full text-slate-600 hover:text-slate-800 cursor-pointer"><X className="w-5 h-5" /></button>
                 </div>
 
-                <div className="max-w-4xl mx-auto w-full sticky top-[68px] z-10 bg-[#0B101E] pb-4 pt-2">
+                <div className="max-w-4xl mx-auto w-full sticky top-[68px] z-10 bg-slate-50 pb-4 pt-2">
                   <div className="relative">
                     <Search className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
                     <input 
@@ -2440,7 +2319,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       placeholder="Cari unit..."
                       value={unitSearch}
                       onChange={(e) => setUnitSearch(e.target.value)}
-                      className="w-full bg-[#0c1a36] border border-slate-700 rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-200 outline-none focus:border-emerald-500/50 transition-colors"
+                      className="w-full bg-white border border-slate-200 rounded-xl pl-11 pr-4 py-3.5 text-sm text-slate-800 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors placeholder-slate-400"
                     />
                   </div>
                 </div>
@@ -2481,8 +2360,8 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                               }}
                               className={`w-full text-left px-4 py-3 rounded-xl transition-all transform-gpu cursor-pointer ${
                                 unitKerja === u.nama_unit 
-                                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold' 
-                                  : 'bg-slate-900/50 text-slate-300 border border-slate-800/50 hover:bg-slate-800'
+                                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold shadow-sm' 
+                                  : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                               }`}
                             >
                               {u.nama_unit}
@@ -2504,21 +2383,21 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       {mounted && createPortal(
         <AnimatePresence>
           {showConfirmModal && (
-            <div className="fixed inset-0 bg-[#0B101E]/80 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999]">
               <motion.div
                 key="confirm-modal-content"
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6"
+                className="bg-white border border-slate-200 rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6"
               >
-                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl flex items-center justify-center shadow-inner">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-2xl flex items-center justify-center shadow-inner">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="text-xl font-bold text-slate-100">Kirim Kuesioner Anda?</h3>
-                  <p className="text-xs text-slate-400 leading-relaxed">
+                  <h3 className="text-xl font-bold text-slate-800">Kirim Kuesioner Anda?</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">
                     Apakah Anda yakin seluruh jawaban sudah benar? Seluruh data yang Anda masukkan akan disinkronisasikan langsung demi kalkulasi dimensi budaya keselamatan RS.
                   </p>
                 </div>
@@ -2527,7 +2406,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   <button
                     type="button"
                     onClick={() => setShowConfirmModal(false)}
-                    className="flex-1 py-3 bg-slate-800/50 hover:bg-slate-700 text-slate-300 font-bold rounded-xl text-xs transition-all transform-gpu cursor-pointer"
+                    className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs transition-all transform-gpu cursor-pointer"
                   >
                     Kembali Periksa
                   </button>
@@ -2555,18 +2434,18 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       )}
 
       {showLinkModal && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#020918]/80 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }} 
             animate={{ opacity: 1, scale: 1 }} 
             exit={{ opacity: 0, scale: 0.95 }}
-            className="bg-[#0c1a36] border border-[#00244d] p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-5 my-8"
+            className="bg-white border border-slate-200 p-6 rounded-2xl max-w-md w-full shadow-2xl space-y-5 my-8"
           >
-            <div className="flex justify-between items-center border-b border-white/10 pb-3">
-              <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
-                <Share2 className="w-5 h-5 text-emerald-400" /> Bagikan Link Survei
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-emerald-600" /> Bagikan Link Survei
               </h2>
-              <button onClick={() => setShowLinkModal(false)} className="text-slate-400 hover:text-slate-200">
+              <button onClick={() => setShowLinkModal(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -2577,10 +2456,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               </div>
             ) : !surveyLinkConfig ? (
               <div className="text-center space-y-4">
-                <p className="text-sm text-slate-300">Belum ada link survei publik yang dibuat untuk rumah sakit ini.</p>
+                <p className="text-sm text-slate-600">Belum ada link survei publik yang dibuat untuk rumah sakit ini.</p>
                 <button
                   onClick={generateSurveyLink}
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all w-full"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl text-sm font-bold transition-all w-full cursor-pointer"
                 >
                   Buat Link Survei Baru
                 </button>
@@ -2590,14 +2469,14 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
               return (
                 <div className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-                  <div className="bg-[#020918]/60 border border-slate-700/80 p-4 rounded-xl space-y-3">
-                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Tautan Publik Survei</label>
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Tautan Publik Survei</label>
                     <div className="flex items-center gap-2">
                       <input 
                         type="text" 
                         readOnly 
                         value={computedLink} 
-                        className="bg-[#0c1a36] border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-400 font-mono w-full outline-none"
+                        className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs text-emerald-600 font-mono w-full outline-none"
                       />
                     </div>
                     <div className="flex gap-2">
@@ -2608,9 +2487,9 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                           showNotification("Link survei berhasil disalin ke clipboard!", "success");
                           setTimeout(() => setIsCopied(false), 2000);
                         }}
-                        className="flex-1 bg-[#0c1a36]/80 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 border border-slate-700/50 cursor-pointer"
+                        className="flex-1 bg-white hover:bg-slate-50 text-slate-700 px-3 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center gap-2 border border-slate-200 cursor-pointer"
                       >
-                        {isCopied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                        {isCopied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
                         {isCopied ? 'Tersalin' : 'Salin Link'}
                       </button>
                       <a 
@@ -2626,19 +2505,19 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
                   {/* PREMIUM DIRECT SHARE - BAGIKAN MELALUI */}
                   <div className="space-y-3 pt-1">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Bagikan Melalui</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block">Bagikan Melalui</span>
                     <div className="grid grid-cols-2 gap-3">
                       {/* WhatsApp */}
                       <a 
                         href={`https://wa.me/?text=${encodeURIComponent('Mohon kesediaannya mengisi Survei Budaya Keselamatan Pasien: ' + computedLink)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-[#121c33] hover:bg-[#25D366] text-[#25D366] hover:text-white border border-[#25D366]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
+                        className="bg-slate-50 hover:bg-[#25D366] text-[#25D366] hover:text-white border border-slate-200 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
                       >
                         <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.456L0 24zm6.59-2.586c1.65.98 3.267 1.497 4.947 1.498 5.464 0 9.909-4.444 9.913-9.91.002-2.648-1.02-5.138-2.878-6.998-1.858-1.86-4.348-2.883-6.997-2.884-5.467 0-9.914 4.444-9.918 9.91-.001 1.77.476 3.5 1.38 5.02L2.015 21.91l5.485-1.437c-.302-.178-.58-.363-.853-.559zm10.153-7.033c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
                         </svg>
-                        <span className="text-xs font-semibold">WhatsApp</span>
+                        <span className="text-xs font-semibold text-slate-700 group-hover:text-white">WhatsApp</span>
                       </a>
 
                       {/* Telegram */}
@@ -2646,12 +2525,12 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                         href={`https://t.me/share/url?url=${encodeURIComponent(computedLink)}&text=${encodeURIComponent('Mohon kesediaannya mengisi Survei Budaya Keselamatan Pasien')}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-[#121c33] hover:bg-[#0088cc] text-[#0088cc] hover:text-white border border-[#0088cc]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
+                        className="bg-slate-50 hover:bg-[#0088cc] text-[#0088cc] hover:text-white border border-slate-200 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
                       >
                         <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M23.91 3.123c-.114-.627-.61-.986-1.18-.986-.23 0-.46.06-.67.16l-.03.013L.66 10.42c-.52.2-.66.69-.66 1.05 0 .37.21.73.66.9l4.58 1.673c.3.1.58.07.82-.09l12.44-8.03c.12-.08.26.04.17.15l-10 9.243c-.22.2-.33.48-.3.77l.54 5.37c.05.47.38.74.77.74.27 0 .52-.11.71-.3l2.87-2.65 4.39 3.22c.32.23.7.35 1.09.35.68 0 1.21-.49 1.28-1.17l3.12-17.123a1.43 1.43 0 00.01-.26z"/>
                         </svg>
-                        <span className="text-xs font-semibold">Telegram</span>
+                        <span className="text-xs font-semibold text-slate-700 group-hover:text-white">Telegram</span>
                       </a>
 
                       {/* Instagram */}
@@ -2664,12 +2543,12 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                             window.open("https://instagram.com", "_blank", "noopener,noreferrer");
                           }, 1500);
                         }}
-                        className="bg-[#121c33] hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] text-[#DD2A7B] hover:text-white border border-[#DD2A7B]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95 cursor-pointer"
+                        className="bg-slate-50 hover:bg-gradient-to-tr hover:from-[#F58529] hover:via-[#DD2A7B] hover:to-[#8134AF] text-[#DD2A7B] hover:text-white border border-slate-200 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95 cursor-pointer"
                       >
                         <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051c-.059 1.28-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051c-.059 1.28-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0 3.259-.014 3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
                         </svg>
-                        <span className="text-xs font-semibold">Instagram</span>
+                        <span className="text-xs font-semibold text-slate-700 group-hover:text-white">Instagram</span>
                       </button>
 
                       {/* Facebook */}
@@ -2677,44 +2556,44 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                         href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(computedLink)}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-[#121c33] hover:bg-[#1877F2] text-[#1877F2] hover:text-white border border-[#1877F2]/20 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
+                        className="bg-slate-50 hover:bg-[#1877F2] text-[#1877F2] hover:text-white border border-slate-200 hover:border-transparent transition-all duration-300 shadow-sm rounded-xl py-3 px-4 flex flex-col items-center justify-center gap-2 font-medium active:scale-95"
                       >
                         <svg className="w-6 h-6 transition-transform duration-200 hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
                           <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
                         </svg>
-                        <span className="text-xs font-semibold">Facebook</span>
+                        <span className="text-xs font-semibold text-slate-700 group-hover:text-white">Facebook</span>
                       </a>
                     </div>
                   </div>
 
                   {/* ADVANCED CONFIGURATION PANEL */}
-                  <div className="bg-[#020918]/40 border border-slate-800 p-4 rounded-xl space-y-3.5">
-                    <h4 className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider border-b border-white/5 pb-1.5">Pengaturan Keamanan & Link</h4>
+                  <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3.5">
+                    <h4 className="text-[11px] font-bold text-emerald-600 uppercase tracking-wider border-b border-slate-200 pb-1.5 font-mono">Pengaturan Keamanan & Link</h4>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Masa Berlaku</label>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Masa Berlaku</label>
                         <input 
                           type="date" 
                           value={expiryDate}
                           onChange={(e) => setExpiryDate(e.target.value)}
-                          className="w-full bg-[#0c1a36] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500/50"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-emerald-500"
                         />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Maks. Responden</label>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Maks. Responden</label>
                         <input 
                           type="number" 
                           placeholder="Tanpa Batas" 
                           value={maxRespondents}
                           onChange={(e) => setMaxRespondents(e.target.value)}
-                          className="w-full bg-[#0c1a36] border border-slate-700/60 rounded-lg px-3 py-1.5 text-xs text-slate-200 outline-none focus:border-emerald-500/50"
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-emerald-500"
                         />
                       </div>
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
-                      <label className="text-[11px] font-bold text-slate-300 cursor-pointer select-none" htmlFor="prevent-dup-toggle">
+                      <label className="text-[11px] font-bold text-slate-700 cursor-pointer select-none" htmlFor="prevent-dup-toggle">
                         Batasi 1 Pengisian per Perangkat
                       </label>
                       <input 
@@ -2722,7 +2601,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                         type="checkbox" 
                         checked={preventDuplicate}
                         onChange={(e) => setPreventDuplicate(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-700 text-emerald-600 bg-slate-900 focus:ring-emerald-500 cursor-pointer"
+                        className="w-4 h-4 rounded border-slate-300 text-emerald-600 bg-white focus:ring-emerald-500 cursor-pointer"
                       />
                     </div>
 
@@ -2737,35 +2616,35 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     </button>
                   </div>
                   
-                  <div className="flex justify-between items-center p-3 bg-slate-900/50 rounded-xl border border-slate-800">
-                    <span className="text-sm text-slate-300 font-medium">Status Link</span>
+                  <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-200">
+                    <span className="text-sm text-slate-700 font-medium">Status Link</span>
                     <button 
                       onClick={toggleSurveyLinkStatus}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${surveyLinkConfig.isActive ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'} cursor-pointer`}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${surveyLinkConfig.isActive ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'} cursor-pointer`}
                     >
                       {surveyLinkConfig.isActive ? 'Aktif' : 'Tidak Aktif'}
                     </button>
                   </div>
                   
-                  <div className="p-3 bg-slate-900/50 rounded-xl border border-slate-800 text-xs text-slate-400 space-y-1">
+                  <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs text-slate-500 space-y-1">
                     <div className="flex justify-between">
                       <span>Tanggal Dibuat:</span>
-                      <span className="text-slate-300">{new Date(surveyLinkConfig.createdAt).toLocaleDateString('id-ID')}</span>
+                      <span className="text-slate-700">{new Date(surveyLinkConfig.createdAt).toLocaleDateString('id-ID')}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Jumlah Responden via Link:</span>
-                      <span className="text-emerald-400 font-bold">{surveyLinkConfig.respondentCount} orang</span>
+                      <span className="text-emerald-600 font-bold">{surveyLinkConfig.respondentCount} orang</span>
                     </div>
                   </div>
                   
-                  <div className="pt-2 border-t border-white/10">
+                  <div className="pt-2 border-t border-slate-100">
                     <button 
                       onClick={() => {
                         if (confirm('Link lama akan dinonaktifkan secara permanen dan tidak dapat digunakan lagi. Lanjutkan?')) {
                           generateSurveyLink();
                         }
                       }}
-                      className="w-full text-xs text-rose-400 hover:text-rose-300 font-semibold text-center py-2 transition-colors cursor-pointer"
+                      className="w-full text-xs text-rose-600 hover:text-rose-500 font-semibold text-center py-2 transition-colors cursor-pointer"
                     >
                       Buat Ulang (Regenerate) Link
                     </button>

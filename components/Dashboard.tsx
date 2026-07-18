@@ -29,6 +29,7 @@ import PengaturanTab from './PengaturanTab';
 import PersetujuanTab from './PersetujuanTab';
 import DashboardTable from './DashboardTable';
 import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey } from '../lib/db';
+import { computeDimensionScores } from '../lib/scoring';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
 import DashboardHeader from './DashboardHeader';
@@ -84,6 +85,7 @@ export default function Dashboard({
   const [surveyToDelete, setSurveyToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [selectedRsFilter, setSelectedRsFilter] = useState<'all' | 'admin' | string>('admin');
 
   useEffect(() => {
     if (notification) {
@@ -174,15 +176,32 @@ export default function Dashboard({
 
   // Filter surveys: Admin sees all, RS sees only their own
   const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
-  const filteredSurveys = role === 'admin' 
-    ? validSurveys 
-    : validSurveys.filter(s => {
+  
+  const filteredSurveys = useMemo(() => {
+    return validSurveys.filter(s => {
+      if (role === 'admin') {
+        if (selectedRsFilter === 'admin') {
+          const surveyUser = (s.dimensiScores as any)?.username;
+          if (surveyUser) return surveyUser.toLowerCase() === 'admin';
+          return s.namaRs === 'Administrator Pusat';
+        } else if (selectedRsFilter === 'all') {
+          return true;
+        } else {
+          const surveyUser = (s.dimensiScores as any)?.username;
+          const surveyHospitalId = (s.dimensiScores as any)?.hospital_id;
+          return (surveyUser?.toLowerCase() === selectedRsFilter.toLowerCase() || 
+                  surveyHospitalId === selectedRsFilter || 
+                  s.namaRs.toLowerCase() === selectedRsFilter.toLowerCase());
+        }
+      } else {
         const surveyUser = (s.dimensiScores as any)?.username;
         if (surveyUser) {
           return surveyUser.toLowerCase() === identifier.toLowerCase();
         }
         return s.namaRs.toLowerCase() === namaRs.toLowerCase();
-      });
+      }
+    });
+  }, [validSurveys, role, identifier, namaRs, selectedRsFilter]);
 
   // Statistics calculations
   const totalRespondents = filteredSurveys.reduce((acc, curr) => acc + curr.jumlahResponden, 0);
@@ -206,30 +225,14 @@ export default function Dashboard({
 
   const totalUnits = unitsSummary.length;
   
-  // Overall average percentage response
-  const scoreToPercent = (score: number): number => {
-    if (score === 5) return 96;
-    if (score === 4) return 78;
-    if (score === 3) return 48;
-    if (score === 2) return 22;
-    return 6;
-  };
-
-  let overallPercentSum = 0;
-  let totalScoreCount = 0;
-
-  filteredSurveys.forEach(s => {
-    if (s.dimensiScores) {
-      Object.values(s.dimensiScores).forEach(score => {
-        overallPercentSum += scoreToPercent(score);
-        totalScoreCount++;
-      });
-    }
-  });
-
-  const overallScorePercent = totalScoreCount > 0 
-    ? Math.round(overallPercentSum / totalScoreCount) 
-    : 0; // fallback realistic default
+  // Overall average percentage response using robust dimension scoring
+  const overallScorePercent = useMemo(() => {
+    if (filteredSurveys.length === 0) return 0;
+    const calculatedDims = computeDimensionScores(filteredSurveys);
+    if (calculatedDims.length === 0) return 0;
+    const sum = calculatedDims.reduce((acc, dim) => acc + dim.percentage, 0);
+    return Math.round(sum / calculatedDims.length);
+  }, [filteredSurveys]);
 
   return (
     <div className="h-[100dvh] md:h-screen w-full bg-slate-50 text-slate-800 flex flex-col md:flex-row font-sans overflow-hidden relative">
@@ -425,6 +428,37 @@ export default function Dashboard({
             {/* Greeting */}
             <DashboardHeader role={role} namaRs={namaRs} surveys={surveys} />
 
+            {/* Filter Fasyankes / Rumah Sakit - Khusus Admin Utama */}
+            {role === 'admin' && (
+              <div className="bg-white/90 backdrop-blur-md rounded-3xl border border-slate-200/80 p-5 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.05)] flex flex-col md:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-50 text-blue-600 border border-blue-100 rounded-2xl shadow-xs">
+                    <Building2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] font-bold text-blue-600 tracking-widest uppercase font-mono">SELEKSI SUMBER DATA</span>
+                    <h4 className="text-sm font-bold text-slate-800">Tampilkan Data Fasyankes</h4>
+                  </div>
+                </div>
+                
+                <div className="w-full md:w-auto flex items-center gap-2">
+                  <select
+                    value={selectedRsFilter}
+                    onChange={(e) => setSelectedRsFilter(e.target.value)}
+                    className="w-full md:w-[280px] bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer shadow-xs"
+                  >
+                    <option value="admin">Administrator Pusat (Hanya Data Saya)</option>
+                    <option value="all">Semua Rumah Sakit (Data Gabungan)</option>
+                    {accounts.map((acc) => (
+                      <option key={acc.id} value={acc.username}>
+                        {acc.namaRs} ({acc.username})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            )}
+
             {/* Quick alert for admin about pending registrations */}
             {role === 'admin' && pendingAccountsCount > 0 && (
               <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-sm">
@@ -503,7 +537,7 @@ export default function Dashboard({
             </div>
 
             {/* Tabel Hasil Survei AHRQ 10 Dimensi */}
-            <DashboardTable role={role} namaRs={namaRs} identifier={identifier} hospitalId={hospitalId} />
+            <DashboardTable role={role} namaRs={namaRs} identifier={identifier} hospitalId={hospitalId} selectedRsFilter={selectedRsFilter} accounts={accounts} />
 
           </div>
         )}

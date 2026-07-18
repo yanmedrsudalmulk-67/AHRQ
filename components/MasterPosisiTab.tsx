@@ -91,13 +91,13 @@ export default function MasterPosisiTab({ rsName }: MasterPosisiTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#0B101E] rounded-3xl border border-slate-800/50 p-6 shadow-xl">
+      <div className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm">
         <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-8">
           <div>
-            <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
-              <Users className="w-5 h-5 text-emerald-400" /> Master Posisi Staff
+            <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+              <Users className="w-5 h-5 text-emerald-600" /> Master Posisi Staff
             </h2>
-            <p className="text-sm text-slate-400 mt-1">Kelola daftar posisi staff yang muncul pada form kuesioner.</p>
+            <p className="text-sm text-slate-500 mt-1">Kelola daftar posisi staff yang muncul pada form kuesioner.</p>
           </div>
           
           <button
@@ -115,7 +115,7 @@ export default function MasterPosisiTab({ rsName }: MasterPosisiTabProps) {
             placeholder="Cari posisi atau kategori..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-[#020918]/60 border border-slate-700/50 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-200 outline-none focus:border-emerald-500/50 transition-colors"
+            className="w-full bg-slate-50/50 border border-slate-200 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-700 outline-none focus:border-emerald-500/50 transition-colors"
           />
         </div>
 
@@ -123,28 +123,28 @@ export default function MasterPosisiTab({ rsName }: MasterPosisiTabProps) {
           <motion.div 
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#020918]/80 border border-emerald-500/30 rounded-2xl p-4 mb-6"
+            className="bg-emerald-50/30 border border-emerald-200 rounded-2xl p-4 mb-6"
           >
-            <h4 className="text-sm font-bold text-emerald-400 mb-4">Tambah Posisi Baru</h4>
+            <h4 className="text-sm font-bold text-emerald-700 mb-4">Tambah Posisi Baru</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Nama Posisi</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5">Nama Posisi</label>
                 <input 
                   type="text" 
                   value={addForm.nama_posisi || ''}
                   onChange={e => setAddForm({...addForm, nama_posisi: e.target.value})}
-                  className="w-full bg-[#0c1a36]/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500/50"
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500/50"
                   placeholder="Contoh: Perawat IGD"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1.5">Kategori</label>
+                <label className="block text-xs font-semibold text-slate-500 mb-1.5">Kategori</label>
                 <div className="relative">
                   <input 
                     type="text" 
                     value={addForm.kategori || ''}
                     onChange={e => setAddForm({...addForm, kategori: e.target.value})}
-                    className="w-full bg-[#0c1a36]/60 border border-slate-700/50 rounded-lg px-3 py-2 text-sm text-slate-200 outline-none focus:border-emerald-500/50"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500/50"
                     list="categories"
                   />
                   <datalist id="categories">
@@ -154,7 +154,7 @@ export default function MasterPosisiTab({ rsName }: MasterPosisiTabProps) {
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-sm text-slate-400 hover:text-white transition-colors">Batal</button>
+              <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-800 transition-colors">Batal</button>
               <button onClick={saveAdd} className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors">Simpan</button>
             </div>
           </motion.div>
@@ -163,12 +163,12 @@ export default function MasterPosisiTab({ rsName }: MasterPosisiTabProps) {
         <div className="space-y-8">
           {Object.entries(groupedPositions).map(([group, list]) => (
             <div key={group} className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider pl-2">{group}</h4>
+              <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider pl-2">{group}</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {list.map(pos => (
                   <div 
                     key={pos.id}
-                    className={`bg-[#020918]/60 border ${pos.is_active ? 'border-slate-800/80' : 'border-red-900/30 opacity-60'} rounded-xl p-4 flex flex-col justify-between transition-colors`}
+                    className={`bg-slate-50 border ${pos.is_active ? 'border-slate-200/80' : 'border-red-100 opacity-60'} rounded-xl p-4 flex flex-col justify-between transition-colors`}
                   >
                     {isEditing === pos.id ? (
                       <div className="space-y-3">
@@ -176,40 +176,40 @@ export default function MasterPosisiTab({ rsName }: MasterPosisiTabProps) {
                           type="text" 
                           value={editForm.nama_posisi || ''}
                           onChange={e => setEditForm({...editForm, nama_posisi: e.target.value})}
-                          className="w-full bg-[#0c1a36]/60 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 outline-none"
+                          className="w-full bg-white border border-emerald-500 rounded-lg px-3 py-1.5 text-sm text-slate-700 outline-none"
                         />
                         <input 
                           type="text" 
                           value={editForm.kategori || ''}
                           onChange={e => setEditForm({...editForm, kategori: e.target.value})}
-                          className="w-full bg-[#0c1a36]/60 border border-emerald-500/50 rounded-lg px-3 py-1.5 text-sm text-slate-200 outline-none"
+                          className="w-full bg-white border border-emerald-500 rounded-lg px-3 py-1.5 text-sm text-slate-700 outline-none"
                         />
                         <div className="flex justify-end gap-2 pt-1">
-                          <button onClick={() => setIsEditing(null)} className="p-1.5 text-slate-400 hover:text-white bg-slate-800 rounded-lg"><X className="w-4 h-4" /></button>
+                          <button onClick={() => setIsEditing(null)} className="p-1.5 text-slate-500 hover:text-slate-800 bg-slate-100 rounded-lg"><X className="w-4 h-4" /></button>
                           <button onClick={saveEdit} className="p-1.5 text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg"><Check className="w-4 h-4" /></button>
                         </div>
                       </div>
                     ) : (
                       <>
                         <div className="flex justify-between items-start mb-2">
-                          <span className={`text-sm font-semibold ${pos.is_active ? 'text-slate-200' : 'text-slate-500 line-through'}`}>
+                          <span className={`text-sm font-semibold ${pos.is_active ? 'text-slate-700' : 'text-slate-400 line-through'}`}>
                             {pos.nama_posisi}
                           </span>
                           <div className="flex gap-1.5 shrink-0 ml-3">
-                            <button onClick={() => { setIsEditing(pos.id); setEditForm(pos); }} className="text-slate-500 hover:text-blue-400 transition-colors" title="Edit">
+                            <button onClick={() => { setIsEditing(pos.id); setEditForm(pos); }} className="text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
-                            <button onClick={() => toggleStatus(pos.id)} className={`transition-colors ${pos.is_active ? 'text-slate-500 hover:text-amber-400' : 'text-amber-500 hover:text-amber-400'}`} title={pos.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
+                            <button onClick={() => toggleStatus(pos.id)} className={`transition-colors ${pos.is_active ? 'text-slate-400 hover:text-amber-600' : 'text-amber-600 hover:text-amber-500'}`} title={pos.is_active ? 'Nonaktifkan' : 'Aktifkan'}>
                               {pos.is_active ? <ShieldAlert className="w-3.5 h-3.5" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
                             </button>
                             {pos.nama_posisi !== 'Lainnya' && (
-                              <button onClick={() => handleDelete(pos.id)} className="text-slate-500 hover:text-red-400 transition-colors" title="Hapus">
+                              <button onClick={() => handleDelete(pos.id)} className="text-slate-400 hover:text-red-600 transition-colors" title="Hapus">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             )}
                           </div>
                         </div>
-                        <span className="text-[10px] text-slate-500 bg-slate-800/50 px-2 py-0.5 rounded max-w-fit">
+                        <span className={`text-[10px] px-2 py-0.5 rounded max-w-fit font-medium border ${pos.is_active ? 'text-emerald-700 bg-emerald-50 border-emerald-100' : 'text-slate-500 bg-slate-100 border-slate-200'}`}>
                           {pos.is_active ? 'Aktif' : 'Nonaktif'}
                         </span>
                       </>
