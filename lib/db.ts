@@ -1046,6 +1046,51 @@ export const DEFAULT_STAFF_POSITIONS: PosisiStaff[] = [
   { id: 'lainnya-1', kategori: 'Lainnya', nama_posisi: 'Lainnya', is_active: true }
 ];
 
+export interface BenchmarkInteraksi {
+  id: string;
+  dimensi: string;
+  dengan_pasien: number;
+  tanpa_pasien: number;
+}
+
+export async function getBenchmarkInteraksi(): Promise<BenchmarkInteraksi[]> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data } = await supabase.from('ahrq_surveys').select('dimensi_scores').eq('id', 'MASTER_BENCHMARK_INTERAKSI').single();
+      if (data && data.dimensi_scores && (data.dimensi_scores as any).benchmarks) {
+        return (data.dimensi_scores as any).benchmarks;
+      }
+    } catch (e) {
+      console.warn("Failed to get benchmark interaksi from supabase", e);
+    }
+  }
+  return [];
+}
+
+export async function saveBenchmarkInteraksi(benchmarks: BenchmarkInteraksi[]): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { data: existing } = await supabase.from('ahrq_surveys').select('id').eq('id', 'MASTER_BENCHMARK_INTERAKSI').single();
+      if (existing) {
+        await supabase.from('ahrq_surveys').update({ dimensi_scores: { benchmarks } }).eq('id', 'MASTER_BENCHMARK_INTERAKSI');
+      } else {
+        await supabase.from('ahrq_surveys').insert([{
+          id: 'MASTER_BENCHMARK_INTERAKSI',
+          nama_rs: 'SYSTEM_BENCHMARK_INTERAKSI',
+          unit_kerja: 'SYSTEM',
+          jumlah_responden: 0,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: { benchmarks }
+        }]);
+      }
+    } catch (e) {
+      console.error("Failed to save benchmark interaksi to supabase", e);
+    }
+  }
+}
+
 export async function getMasterPosisi(rsName: string): Promise<PosisiStaff[]> {
   const supabase = getSupabaseClient();
   if (supabase) {

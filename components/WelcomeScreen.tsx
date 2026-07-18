@@ -58,10 +58,10 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       {/* 1. Header (Translucent Light Glass Bar) */}
       <header 
         id="welcome-header" 
-        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-white/75 backdrop-blur-md rounded-2xl border border-white/60 shadow-lg shadow-teal-500/5"
+        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.1)] ring-1 ring-white/20"
       >
         <div className="flex items-center gap-3">
-          <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-lg shadow-blue-500/20 flex items-center justify-center shrink-0 w-12 h-12">
+          <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-[0_8px_32px_rgba(37,99,235,0.25)] ring-1 ring-inset ring-white/30 flex items-center justify-center shrink-0 w-12 h-12">
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
@@ -78,13 +78,13 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         {/* Real-time Date and Clock Widget */}
         <div className="flex items-center gap-2 md:gap-3">
           {/* Date pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100/80 backdrop-blur-sm border border-slate-200/60 shadow-sm text-slate-600">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/40 backdrop-blur-lg border border-white/50 shadow-[0_4px_12px_rgba(0,0,0,0.05)] ring-1 ring-white/20 text-slate-600">
             <Calendar className="w-3.5 h-3.5 text-teal-600 shrink-0" />
             <span className="text-[11px] font-semibold tracking-wide">{dateString || 'Memuat...'}</span>
           </div>
 
           {/* Clock pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-50 to-teal-100/80 backdrop-blur-sm border border-teal-200/50 shadow-sm text-teal-700 font-mono">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/40 backdrop-blur-lg border border-white/50 shadow-[0_4px_12px_rgba(0,0,0,0.05)] ring-1 ring-white/20 text-teal-700 font-mono">
             <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0 animate-pulse" />
             <span className="text-xs font-bold tracking-wider">{timeString || '--:--:-- WIB'}</span>
           </div>
@@ -154,10 +154,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         id="welcome-footer" 
         className="max-w-7xl mx-auto w-full py-4 border-t border-slate-200 text-center flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 px-6"
       >
-        <p className="text-[#e7eef8]">© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
-        <div className="flex gap-4 font-mono font-bold text-slate-400">
-          <span className="text-[#45556c] hover:text-teal-600 transition-colors">STANDAR AKREDITASI KEMENKES</span>
-        </div>
+        <p className="text-[#e7eef8] [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)] font-medium">© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
       </footer>
 
     </div>

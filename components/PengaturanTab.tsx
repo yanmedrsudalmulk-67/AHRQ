@@ -35,7 +35,7 @@ import bcrypt from 'bcryptjs';
 import { saveWallpaper, clearWallpaper, WallpaperData } from '../lib/wallpaper';
 import { saveLogo, clearLogo, LogoData } from '../lib/logo';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
-import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile, HospitalAccount, getMasterBenchmark, saveMasterBenchmark } from '../lib/db';
+import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile, HospitalAccount, getMasterBenchmark, saveMasterBenchmark, getBenchmarkInteraksi, saveBenchmarkInteraksi, BenchmarkInteraksi } from '../lib/db';
 import { DIMENSI_INFO } from '../lib/scoring';
 import { BarChart2, Users } from 'lucide-react';
 import MasterPosisiTab from './MasterPosisiTab';
@@ -67,7 +67,9 @@ export default function PengaturanTab({
   const [activeSettingsSection, setActiveSettingsSection] = useState<'profil' | 'posisi' | 'unit'>('profil');
   // Benchmark state
   const [benchmarks, setBenchmarks] = useState<Record<string, { min: number, max: number }>>({});
+  const [benchmarkInteraksi, setBenchmarkInteraksi] = useState<BenchmarkInteraksi[]>([]);
   const [isSavingBenchmark, setIsSavingBenchmark] = useState(false);
+  const [isSavingBenchmarkInteraksi, setIsSavingBenchmarkInteraksi] = useState(false);
 
   useEffect(() => {
     if (role === 'admin') {
@@ -85,6 +87,22 @@ export default function PengaturanTab({
         }
       };
       fetchBenchmark();
+      
+      const fetchBenchmarkInteraksi = async () => {
+        const bmInteraksi = await getBenchmarkInteraksi();
+        if (bmInteraksi && bmInteraksi.length > 0) {
+          setBenchmarkInteraksi(bmInteraksi);
+        } else {
+          const initial = Object.keys(DIMENSI_INFO).map(dimId => ({
+            id: `bm_int_${dimId}`,
+            dimensi: dimId,
+            dengan_pasien: 0,
+            tanpa_pasien: 0
+          }));
+          setBenchmarkInteraksi(initial);
+        }
+      }
+      fetchBenchmarkInteraksi();
     }
   }, [role]);
 
@@ -98,6 +116,28 @@ export default function PengaturanTab({
     } finally {
       setIsSavingBenchmark(false);
     }
+  };
+
+  const handleSaveBenchmarkInteraksi = async () => {
+    setIsSavingBenchmarkInteraksi(true);
+    try {
+      await saveBenchmarkInteraksi(benchmarkInteraksi);
+      showToast("✅ Master Benchmark Interaksi berhasil disimpan.", "success");
+    } catch (e: any) {
+      showToast(`❌ Gagal menyimpan benchmark interaksi: ${e.message}`, "error");
+    } finally {
+      setIsSavingBenchmarkInteraksi(false);
+    }
+  };
+
+  const handleBenchmarkInteraksiChange = (dimensi: string, field: 'dengan_pasien' | 'tanpa_pasien', value: string) => {
+    const val = parseFloat(value);
+    setBenchmarkInteraksi(prev => prev.map(item => {
+      if (item.dimensi === dimensi) {
+        return { ...item, [field]: isNaN(val) ? 0 : val };
+      }
+      return item;
+    }));
   };
 
   const handleBenchmarkChange = (dimId: string, field: 'min' | 'max', value: string) => {
@@ -1509,6 +1549,66 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
                           className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-cyan-600 font-mono focus:border-cyan-500 outline-none transition-colors"
                         />
                       </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Benchmark Interaksi Konfigurasi */}
+      {role === 'admin' && (
+        <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="text-[16px] font-semibold text-slate-800 flex items-center gap-1.5">
+                <BarChart2 className="w-4 h-4 text-emerald-600" /> Master Benchmark Rumah Sakit Percontohan (Interaksi)
+              </h3>
+              <p className="text-[12px] text-slate-500 mt-1">Atur nilai persentase rata-rata rumah sakit percontohan untuk perbandingan interaksi dengan pasien.</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleSaveBenchmarkInteraksi}
+              disabled={isSavingBenchmarkInteraksi}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu shadow-md shrink-0 cursor-pointer"
+            >
+              {isSavingBenchmarkInteraksi ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} 
+              {isSavingBenchmarkInteraksi ? 'Menyimpan...' : 'Simpan Benchmark'}
+            </button>
+          </div>
+
+          <div className="overflow-x-auto border border-slate-100 rounded-xl bg-slate-50">
+            <table className="w-full text-left text-[11px]">
+              <thead className="bg-slate-100 border-b border-slate-200 text-slate-600 uppercase tracking-wider font-semibold">
+                <tr>
+                  <th className="p-3 w-8 text-center">No</th>
+                  <th className="p-3">Dimensi Budaya Keselamatan Pasien</th>
+                  <th className="p-3 w-32 text-center text-emerald-600">Berhubungan Langsung (%)</th>
+                  <th className="p-3 w-32 text-center text-cyan-650">Tidak Berhubungan (%)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-slate-700">
+                {benchmarkInteraksi.map((item, i) => (
+                  <tr key={item.id} className="hover:bg-slate-100/50 transition-colors">
+                    <td className="p-3 text-center text-slate-400 font-bold">{i + 1}</td>
+                    <td className="p-3 font-medium text-slate-800">{DIMENSI_INFO[item.dimensi].nama}</td>
+                    <td className="p-3">
+                      <input
+                        type="number" step="0.01"
+                        value={item.dengan_pasien === 0 ? '' : item.dengan_pasien}
+                        onChange={e => handleBenchmarkInteraksiChange(item.dimensi, 'dengan_pasien', e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-emerald-600 font-mono focus:border-emerald-500 outline-none transition-colors"
+                      />
+                    </td>
+                    <td className="p-3">
+                      <input
+                        type="number" step="0.01"
+                        value={item.tanpa_pasien === 0 ? '' : item.tanpa_pasien}
+                        onChange={e => handleBenchmarkInteraksiChange(item.dimensi, 'tanpa_pasien', e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-center text-cyan-600 font-mono focus:border-cyan-500 outline-none transition-colors"
+                      />
                     </td>
                   </tr>
                 ))}

@@ -3,9 +3,9 @@
 import { useState, useMemo, useEffect, Fragment } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import CountUp from './CountUp';
-import { FileText, Printer, CheckCircle2, AlertTriangle, TrendingUp, TrendingDown, Users, Calendar, Filter, ChevronDown, Clock, Building2, UserCircle } from 'lucide-react';
+import { FileText, Printer, CheckCircle2, AlertTriangle, TrendingUp, TrendingDown, Users, Calendar, Filter, ChevronDown, Clock, Building2, UserCircle, Stethoscope } from 'lucide-react';
 import { DIMENSI_INFO, DIMENSI_ITEMS } from '../lib/scoring';
-import { SurveyData, getMasterBenchmark } from '../lib/db';
+import { SurveyData, getMasterBenchmark, getBenchmarkInteraksi, BenchmarkInteraksi } from '../lib/db';
 
 const ALL_QUESTIONS = [
   // Bagian A
@@ -130,6 +130,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
 
   // Master Benchmark from surveys prop
   const [masterBenchmarkData, setMasterBenchmarkData] = useState<Record<string, { min: number, max: number }> | null>(null);
+  const [benchmarkInteraksiData, setBenchmarkInteraksiData] = useState<BenchmarkInteraksi[]>([]);
 
   useEffect(() => {
     // Attempt to load from surveys first
@@ -149,6 +150,14 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
         }
       };
       loadBenchmark();
+
+      const loadBenchmarkInteraksi = async () => {
+        try {
+          const data = await getBenchmarkInteraksi();
+          if (data && data.length > 0) setBenchmarkInteraksiData(data);
+        } catch (e) { console.error(e) }
+      }
+      loadBenchmarkInteraksi();
     }
   }, [surveys]);
 
@@ -299,6 +308,60 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
     });
     return count > 0 ? sum / count : null;
   };
+
+  // Calculate composite positive response percentage for interaksi dengan pasien
+  const getInteraksiStats = (dimId: string, type: 'langsung' | 'tidak') => {
+    const interaksiSurveys = filteredSurveys.filter(s => {
+      if (s.id === 'MASTER_BENCHMARK') return false;
+      const raw = (s.dimensiScores as any)?._rawAnswers;
+      if (!raw || !raw.ansG) return false;
+      const isLangsung = raw.ansG[4] === 'YA, saya melakukan interaksi atau kontak langsung dengan pasien';
+      return type === 'langsung' ? isLangsung : !isLangsung;
+    });
+
+    let totalPositive = 0;
+    let totalValid = 0;
+
+    interaksiSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw) {
+        DIMENSI_ITEMS[dimId].forEach(item => {
+          const ansKey = 'ans' + item.section;
+          const ansVal = raw[ansKey] ? raw[ansKey][item.id] : undefined;
+
+          if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+          const val = Number(ansVal);
+          totalValid++;
+          if (item.isReversed) {
+            if (val === 1 || val === 2) totalPositive++;
+          } else {
+            if (val === 4 || val === 5) totalPositive++;
+          }
+        });
+      }
+    });
+
+    return {
+      percentage: totalValid > 0 ? (totalPositive / totalValid) * 100 : null,
+      count: interaksiSurveys.length
+    };
+  };
+
+  const getAverageInteraksiStats = (type: 'langsung' | 'tidak') => {
+    let sum = 0;
+    let count = 0;
+    DIMENSION_ORDER.forEach(dimId => {
+      const { percentage } = getInteraksiStats(dimId, type);
+      if (percentage !== null) {
+        sum += percentage;
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : null;
+  };
+
+  const countLangsung = getInteraksiStats(DIMENSION_ORDER[0], 'langsung').count;
+  const countTidakLangsung = getInteraksiStats(DIMENSION_ORDER[0], 'tidak').count;
 
   // Get CSS class and background pill styling based on score ranges (AHRQ SOPS standard threshold colors)
   const getCellColorClass = (val: number | null) => {
@@ -590,7 +653,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
       >
         <div className="space-y-3 border-b border-slate-100 pb-5">
           <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
+          <h2 className="text-[17px] font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
             <Users className="w-6 h-6 text-indigo-600" />
             Perbandingan Rata-rata Persentase Respon Positif Dimensi Berdasarkan Posisi Staf
           </h2>
@@ -790,7 +853,7 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
       >
         <div className="space-y-3 border-b border-slate-100 pb-5">
           <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
+          <h2 className="text-[17px] font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
             <Building2 className="w-6 h-6 text-indigo-600" />
             Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
           </h2>
@@ -964,6 +1027,117 @@ export default function LaporanTab({ surveys, namaRs }: LaporanTabProps) {
           </table>
         </div>
       </motion.div>
+
+      {/* TABLE PERBANDINGAN BERDASARKAN INTERAKSI DENGAN PASIEN */}
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        className="bg-white/85 backdrop-blur-md border border-slate-200/80 rounded-[20px] md:rounded-[24px] overflow-hidden shadow-lg shadow-blue-500/5 p-6 md:p-8 space-y-6 mt-8 md:mt-12"
+      >
+        <div className="space-y-3 border-b border-slate-100 pb-5">
+          <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL KOMPARATIF INTERAKSI</span>
+          <h2 className="text-[19px] font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
+            <Stethoscope className="w-6 h-6 text-indigo-600" />
+            Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Hubungan Langsung dengan Pasien dan Rumah Sakit Percontohan
+          </h2>
+          <p className="text-xs md:text-sm text-slate-500 font-medium">
+            Analisis perbandingan persentase respon positif antara rumah sakit pengguna aplikasi dengan nilai benchmark (Rumah Sakit Percontohan) berdasarkan responden yang memiliki hubungan langsung maupun tidak langsung dengan pasien.
+          </p>
+        </div>
+
+        <div className="overflow-x-auto pb-4 custom-scrollbar">
+          <table className="w-full text-[10px] md:text-[11px] text-left border-collapse border border-slate-200">
+            <thead className="bg-gradient-to-r from-blue-800 to-indigo-900 text-white">
+              <tr>
+                <th rowSpan={2} className="py-2.5 px-2 font-bold border-r border-white/40 whitespace-nowrap text-center align-middle w-10">
+                  No
+                </th>
+                <th rowSpan={2} className="py-2.5 px-3 font-bold border-r border-white/40 text-center align-middle w-[30%]">
+                  Komposit / Dimensi Budaya Keselamatan Pasien
+                </th>
+                <th colSpan={2} className="py-2 px-3 font-bold border-b border-r border-white/40 text-center uppercase tracking-tight">
+                  Rumah Sakit Anda
+                </th>
+                <th colSpan={2} className="py-2 px-3 font-bold border-b border-white/40 text-center uppercase tracking-tight">
+                  <div className="flex justify-center items-center gap-1.5" title="Nilai benchmark berasal dari rata-rata Rumah Sakit Percontohan yang dikelola oleh Super Admin.">
+                    Benchmark Percontohan
+                    <div className="w-3 h-3 rounded-full border border-white/40 flex items-center justify-center text-[8px] cursor-help">i</div>
+                  </div>
+                </th>
+              </tr>
+              <tr className="border-t border-white/20">
+                <th className="py-2 px-2 font-bold text-center border-r border-white/40 whitespace-nowrap text-[9px] md:text-[10px]">
+                  Hub. Langsung<br/>({countLangsung} Res)
+                </th>
+                <th className="py-2 px-2 font-bold text-center border-r border-white/40 whitespace-nowrap text-[9px] md:text-[10px]">
+                  Tak Langsung<br/>({countTidakLangsung} Res)
+                </th>
+                <th className="py-2 px-2 font-bold text-center border-r border-white/40 whitespace-nowrap text-[9px] md:text-[10px]">
+                  Hub. Langsung
+                </th>
+                <th className="py-2 px-2 font-bold text-center whitespace-nowrap text-[9px] md:text-[10px]">
+                  Tak Langsung
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white">
+              {DIMENSION_ORDER.map((dimId, idx) => {
+                const statsLangsung = getInteraksiStats(dimId, 'langsung');
+                const statsTidak = getInteraksiStats(dimId, 'tidak');
+                
+                const bmData = benchmarkInteraksiData.find(b => b.dimensi === dimId);
+                const bmLangsung = bmData ? bmData.dengan_pasien : 0;
+                const bmTidak = bmData ? bmData.tanpa_pasien : 0;
+
+                return (
+                  <tr key={`interaksi-dim-${dimId}`} className="border-b border-slate-200 hover:bg-slate-50 transition-all">
+                    <td className="py-2 px-2 text-center text-slate-500 font-medium border-r border-slate-200">{idx + 1}</td>
+                    <td className="py-2 px-3 font-bold text-slate-700 border-r border-slate-200 leading-tight">{DIMENSI_INFO[dimId].nama}</td>
+                    
+                    <td className="py-2 px-2 text-center border-r border-slate-200">
+                      {statsLangsung.percentage !== null ? (
+                        <span className={getCellColorClass(statsLangsung.percentage)}>{statsLangsung.percentage.toFixed(2)}%</span>
+                      ) : <span className="text-slate-400 font-medium italic text-[9px]">N/A</span>}
+                    </td>
+                    <td className="py-2 px-2 text-center border-r border-slate-200">
+                      {statsTidak.percentage !== null ? (
+                        <span className={getCellColorClass(statsTidak.percentage)}>{statsTidak.percentage.toFixed(2)}%</span>
+                      ) : <span className="text-slate-400 font-medium italic text-[9px]">N/A</span>}
+                    </td>
+
+                    <td className="py-2 px-2 text-center border-r border-slate-200 font-bold text-slate-600">
+                      {bmLangsung > 0 ? `${bmLangsung.toFixed(2)}%` : '-'}
+                    </td>
+                    <td className="py-2 px-2 text-center font-bold text-slate-600">
+                      {bmTidak > 0 ? `${bmTidak.toFixed(2)}%` : '-'}
+                    </td>
+                  </tr>
+                );
+              })}
+
+              {/* Rata-rata Keseluruhan Row */}
+              <tr className="bg-slate-50 font-black border-t border-slate-300">
+                <td colSpan={2} className="py-3 px-4 text-indigo-900 text-right border-r border-slate-300 uppercase text-[10px]">Rata-rata Keseluruhan</td>
+                <td className="py-3 px-2 text-center border-r border-slate-300">
+                  {(() => { const v = getAverageInteraksiStats('langsung'); return v !== null ? <span className={getCellColorClass(v)}>{v.toFixed(2)}%</span> : '-'; })()}
+                </td>
+                <td className="py-3 px-2 text-center border-r border-slate-300">
+                  {(() => { const v = getAverageInteraksiStats('tidak'); return v !== null ? <span className={getCellColorClass(v)}>{v.toFixed(2)}%</span> : '-'; })()}
+                </td>
+                <td className="py-3 px-2 text-center border-r border-slate-300 text-slate-600">
+                  {benchmarkInteraksiData.length > 0 ? (benchmarkInteraksiData.reduce((acc, b) => acc + b.dengan_pasien, 0) / benchmarkInteraksiData.length).toFixed(2) + '%' : '-'}
+                </td>
+                <td className="py-3 px-2 text-center text-slate-600">
+                  {benchmarkInteraksiData.length > 0 ? (benchmarkInteraksiData.reduce((acc, b) => acc + b.tanpa_pasien, 0) / benchmarkInteraksiData.length).toFixed(2) + '%' : '-'}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
+
     </div>
   );
 }
