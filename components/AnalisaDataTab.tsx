@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useEffect, Fragment } from 'react';
+import React, { useState, useMemo, useEffect, Fragment, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import CountUp from './CountUp';
 import { 
@@ -15,9 +15,11 @@ import {
   Filter,
   Award,
   BarChart,
+  BarChart3,
   ListChecks,
   HeartPulse,
   AlertTriangle,
+  TriangleAlert,
   BarChart2,
   ShieldAlert,
   HeartHandshake,
@@ -30,7 +32,8 @@ import {
   FileSpreadsheet,
   ClipboardCheck,
   ArrowRight,
-  Clock3
+  Clock3,
+  MessageSquareOff
 } from 'lucide-react';
 import { 
   BarChart as RechartsBarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LabelList 
@@ -274,6 +277,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     { id: 7, code: 'C7', text: 'Di unit ini, staf takut untuk bertanya ketika ada sesuatu yang tidak beres', dim: 'd6', isReversed: true }
   ], []);
 
+  const STATEMENTS_D = useMemo(() => [
+    { id: 1, code: 'D1', text: 'Ketika kesalahan diketahui dan diperbaiki sebelum sampai ke pasien, seberapa sering hal ini dilaporkan?', dim: 'd8' },
+    { id: 2, code: 'D2', text: 'Ketika suatu kesalahan sampai ke pasien dan dapat membahayakan pasien, tetapi tidak terjadi, seberapa sering hal ini dilaporkan?', dim: 'd8' }
+  ], []);
+
   const STATEMENTS_F = useMemo(() => [
     { id: 1, code: 'F1', text: 'Tindakan manajemen rumah sakit menunjukkan bahwa keselamatan pasien adalah prioritas utama', dim: 'd9' },
     { id: 2, code: 'F2', text: 'Manajemen rumah sakit menyediakan sumber daya yang memadai untuk meningkatkan keselamatan pasien', dim: 'd9' },
@@ -286,6 +294,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const hospitalSurveys = useMemo(() => {
     return actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun1);
   }, [actualSurveys, tahun1]);
+
+  const hospitalSurveys2 = useMemo(() => {
+    return actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun2);
+  }, [actualSurveys, tahun2]);
 
   const demografiStats = useMemo(() => {
     const total = hospitalSurveys.reduce((acc, s) => acc + (s.jumlahResponden || 1), 0);
@@ -338,17 +350,52 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     return computeDimensionScores(hospitalSurveys, masterBenchmarkData);
   }, [hospitalSurveys, masterBenchmarkData]);
 
-  const ALL_QUESTIONS = useMemo(() => [
+  const ALL_QUESTIONS = useMemo<{ id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[]>(() => [
     ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
     ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
     ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+    ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
     ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
-  ], [STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_F]);
+  ], [STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
 
-  const calculateQuestionStats = (q: any) => {
+  const calculateReportedEventsStats = useCallback((surveys: any[]) => {
+    const counts: Record<string, number> = {
+      'Tidak ada': 0,
+      '1 sampai 2': 0,
+      '3 sampai 5': 0,
+      '6 hingga 10': 0,
+      '11 atau lebih': 0
+    };
+    let total = 0;
+    surveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw) {
+        const val = raw.ansD?.[3];
+        if (val && counts[val] !== undefined) {
+          counts[val] += 1;
+          total += 1;
+        }
+      }
+    });
+    const getPct = (key: string) => total > 0 ? (counts[key] / total) * 100 : 0;
+    return {
+      total,
+      counts,
+      percentages: {
+        'Tidak ada': getPct('Tidak ada'),
+        '1 sampai 2': getPct('1 sampai 2'),
+        '3 sampai 5': getPct('3 sampai 5'),
+        '6 hingga 10': getPct('6 hingga 10'),
+        '11 atau lebih': getPct('11 atau lebih')
+      }
+    };
+  }, []);
+
+  const calculateQuestionStats = (q: any, surveysOverride?: any[]) => {
     let pos = 0, neu = 0, neg = 0, missing = 0;
+    const targetSurveys = surveysOverride || hospitalSurveys;
     
-    hospitalSurveys.forEach(s => {
+    targetSurveys.forEach(s => {
       const raw = (s.dimensiScores as any)?._rawAnswers || {};
       const ansKey = 'ans' + q.section;
       const val = raw[ansKey] ? raw[ansKey][q.id] : undefined;
@@ -369,7 +416,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       }
     });
     
-    const total = hospitalSurveys.length;
+    const total = targetSurveys.length;
     let posPercent = 0, neuPercent = 0, negPercent = 0, missingPercent = 0;
     
     if (total > 0) {
@@ -391,10 +438,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   };
 
   const perItemStats = useMemo(() => {
-    const allQuestions = [
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
       ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
       ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
       ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
       ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
     ];
 
@@ -411,6 +459,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
           if (q.section === 'A') ansVal = raw.ansA?.[q.id];
           else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
           else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+          else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
           else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
 
           if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
@@ -449,7 +498,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         totalValid
       };
     });
-  }, [hospitalSurveys, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_F]);
+  }, [hospitalSurveys, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
 
   const patientSafetyStats = useMemo(() => {
     const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
@@ -590,6 +639,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     });
   }, [actualSurveys, mode, tahun1, tahun2, filterUnit, filterProfesi, filterTenureRS, filterTenureUnit, filterInteraction]);
 
+  const reportedEventsStats1 = useMemo(() => calculateReportedEventsStats(hospitalSurveys), [calculateReportedEventsStats, hospitalSurveys]);
+  const reportedEventsStats2 = useMemo(() => calculateReportedEventsStats(hospitalSurveys2), [calculateReportedEventsStats, hospitalSurveys2]);
+
   const reportedEventsComparisonStats = useMemo(() => {
     const counts: Record<string, number> = {
       'Tidak ada': 0,
@@ -641,30 +693,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         });
       }
     });
-
-    if (list.length === 0) {
-      list.push({
-        id: 'mock-1',
-        text: 'Komunikasi serah terima pasien antar shift harus ditingkatkan medianya. Penggunaan SBAR digital sangat membantu mencegah miskomunikasi.',
-        unit: 'ICU (Semua Tipe Dewasa)',
-        position: 'Perawat Terdaftar (RN)',
-        date: `14 Juli ${tahun1}`
-      });
-      list.push({
-        id: 'mock-2',
-        text: 'Pelatihan keselamatan pasien perlu diadakan untuk seluruh staf baru agar pemahaman keselamatan pasien merata dari awal masuk kerja.',
-        unit: 'Unit Gawat Darurat',
-        position: 'Dokter, Perawat, Perawat Rumah Sakit',
-        date: `20 Juni ${tahun1}`
-      });
-      list.push({
-        id: 'mock-3',
-        text: 'Beban kerja terkadang sangat tinggi ketika jumlah pasien membludak. Tambahan asisten perawat di jam-jam sibuk akan membantu menjaga keselamatan pelayanan.',
-        unit: 'Unit Medis/Bedah Gabungan',
-        position: 'Perawat Praktik Lanjutan',
-        date: `02 Mei ${tahun1}`
-      });
-    }
 
     return list;
   }, [hospitalSurveys, tahun1]);
@@ -727,10 +755,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   }, [hospitalSurveys, demografiStats]);
 
   const positionItemScores = useMemo(() => {
-    const allQuestions = [
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
       ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
       ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
       ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
       ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
     ];
 
@@ -761,6 +790,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             if (q.section === 'A') ansVal = raw.ansA?.[q.id];
             else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
             else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
             else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
 
             if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
@@ -784,7 +814,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
       return result;
     });
-  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_F]);
+  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
 
   const positionSafetyScores = useMemo(() => {
     return demografiStats.posisiData.map(pos => {
@@ -919,10 +949,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   }, [hospitalSurveys, demografiStats]);
 
   const unitItemScores = useMemo(() => {
-    const allQuestions = [
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
       ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
       ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
       ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
       ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
     ];
 
@@ -946,6 +977,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             if (q.section === 'A') ansVal = raw.ansA?.[q.id];
             else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
             else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
             else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
 
             if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
@@ -969,7 +1001,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
       return result;
     });
-  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_F]);
+  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
 
   const unitSafetyScores = useMemo(() => {
     return demografiStats.unitData.map(u => {
@@ -1090,10 +1122,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   }, [hospitalSurveys, demografiStats]);
 
   const tenureItemScores = useMemo(() => {
-    const allQuestions = [
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
       ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
       ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
       ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
       ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
     ];
 
@@ -1123,6 +1156,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             if (q.section === 'A') ansVal = raw.ansA?.[q.id];
             else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
             else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
             else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
 
             if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
@@ -1142,7 +1176,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
       return result;
     });
-  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_F]);
+  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
 
   const tenureSafetyScores = useMemo(() => {
     return demografiStats.g1Data.map(g1 => {
@@ -1268,10 +1302,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   }, [hospitalSurveys, demografiStats]);
 
   const interactionItemScores = useMemo(() => {
-    const allQuestions = [
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
       ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
       ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
       ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
       ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
     ];
 
@@ -1301,6 +1336,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             if (q.section === 'A') ansVal = raw.ansA?.[q.id];
             else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
             else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
             else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
 
             if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
@@ -1320,7 +1356,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
       return result;
     });
-  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_F]);
+  }, [hospitalSurveys, demografiStats, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
 
   const interactionSafetyScores = useMemo(() => {
     return demografiStats.g4Data.map(g4 => {
@@ -1655,32 +1691,114 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
             {activeView === 'benchmark' ? (
               !benchmarkSubView ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mt-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto py-12 md:py-16 mt-4">
                   {[
-                    { title: 'Perbandingan Pengukuran Dimensi', icon: <BarChart className="w-8 h-8 text-indigo-600" /> },
-                    { title: 'Perbandingan Hasil Per Item', icon: <ListChecks className="w-8 h-8 text-teal-600" /> },
-                    { title: 'Perbandingan Penilaian Keselamatan Pasien', icon: <HeartPulse className="w-8 h-8 text-rose-600" /> },
-                    { title: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan', icon: <AlertTriangle className="w-8 h-8 text-amber-600" /> },
+                    { 
+                      title: <>Perbandingan<br/>Pengukuran Dimensi</>, 
+                      desc: 'Lihat perbandingan agregat dimensi.', 
+                      icon: <BarChart3 className="w-[38px] h-[38px] text-[#2563EB] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />,
+                      num: '01',
+                      quarterColor: 'bg-[#2563EB]',
+                      lineColor: 'bg-[#2563EB]',
+                      cardAlign: 'justify-start items-start',
+                      headerClasses: 'flex-row',
+                      quarterClasses: 'bottom-0 right-0 rounded-tl-full',
+                      quarterPadding: 'pt-8 pl-8',
+                      iconPos: 'right',
+                      textAlign: 'text-left',
+                      iconAlign: 'items-start',
+                      titleName: 'Perbandingan Pengukuran Dimensi'
+                    },
+                    { 
+                      title: <>Perbandingan Hasil<br/>Per Item</>, 
+                      desc: 'Modul Sedang Dalam Pengembangan', 
+                      icon: <ListChecks className="w-[38px] h-[38px] text-[#14B8A6] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />,
+                      num: '02',
+                      quarterColor: 'bg-[#14B8A6]',
+                      lineColor: 'bg-[#14B8A6]',
+                      cardAlign: 'justify-start items-end',
+                      headerClasses: 'flex-row-reverse',
+                      quarterClasses: 'bottom-0 left-0 rounded-tr-full',
+                      quarterPadding: 'pt-8 pr-8',
+                      iconPos: 'left',
+                      textAlign: 'text-right',
+                      iconAlign: 'items-end',
+                      titleName: 'Perbandingan Hasil Per Item'
+                    },
+                    { 
+                      title: <>Perbandingan Penilaian<br/>Keselamatan Pasien</>, 
+                      desc: 'Lihat perbandingan tingkat keselamatan pasien (E1).', 
+                      icon: <HeartPulse className="w-[38px] h-[38px] text-[#F97316] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />,
+                      num: '03',
+                      quarterColor: 'bg-[#F97316]',
+                      lineColor: 'bg-[#F97316]',
+                      cardAlign: 'justify-end items-start',
+                      headerClasses: 'flex-row',
+                      quarterClasses: 'top-0 right-0 rounded-bl-full',
+                      quarterPadding: 'pb-8 pl-8',
+                      iconPos: 'right',
+                      textAlign: 'text-left',
+                      iconAlign: 'items-start',
+                      titleName: 'Perbandingan Penilaian Keselamatan Pasien'
+                    },
+                    { 
+                      title: <>Perbandingan Jumlah<br/>Peristiwa Dilaporkan</>, 
+                      desc: 'Perbandingan distribusi jumlah kejadian keselamatan pasien.', 
+                      icon: <TriangleAlert className="w-[38px] h-[38px] text-[#10B981] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />,
+                      num: '04',
+                      quarterColor: 'bg-[#10B981]',
+                      lineColor: 'bg-[#10B981]',
+                      cardAlign: 'justify-end items-end',
+                      headerClasses: 'flex-row-reverse',
+                      quarterClasses: 'top-0 left-0 rounded-br-full',
+                      quarterPadding: 'pb-8 pr-8',
+                      iconPos: 'left',
+                      textAlign: 'text-right',
+                      iconAlign: 'items-end',
+                      titleName: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan'
+                    },
                   ].map((item, idx) => (
                     <motion.div
                       key={idx}
-                      whileHover={{ y: -5 }}
-                      onClick={() => setBenchmarkSubView(item.title)}
-                      className="bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all flex flex-col cursor-pointer items-center text-center group"
+                      whileHover={{ y: -6, scale: 1.02 }}
+                      onClick={() => setBenchmarkSubView(item.titleName)}
+                      className={`bg-white rounded-[40px] p-8 md:p-10 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08)] border border-slate-100 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.15)] transition-all duration-500 group min-h-[320px] flex flex-col ${item.cardAlign} cursor-pointer relative overflow-hidden`}
                     >
-                      <div className="p-4 bg-slate-50 rounded-2xl mb-4 group-hover:scale-110 transition-transform duration-300">
-                        {item.icon}
+                      {/* Mobile Badge */}
+                      <div className={`md:hidden absolute top-6 ${item.iconPos === 'right' ? 'right-6' : 'left-6'} w-12 h-12 rounded-full ${item.quarterColor} flex items-center justify-center font-black text-white text-lg shadow-lg z-20`}>
+                        {item.num}
                       </div>
-                      <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-indigo-600 transition-colors">{item.title}</h3>
-                      <p className="text-slate-500 text-sm font-medium">
-                        {item.title === 'Perbandingan Pengukuran Dimensi' 
-                          ? 'Lihat perbandingan agregat dimensi.' 
-                          : item.title === 'Perbandingan Penilaian Keselamatan Pasien'
-                          ? 'Lihat perbandingan tingkat keselamatan pasien (E1).'
-                          : item.title === 'Perbandingan Jumlah Peristiwa Yang Dilaporkan'
-                          ? 'Perbandingan distribusi jumlah kejadian keselamatan pasien.'
-                          : 'Modul Sedang Dalam Pengembangan'}
-                      </p>
+
+                      <div className="flex flex-col w-full relative z-10 gap-5">
+                        {/* Title and line */}
+                        <div className={`flex ${item.headerClasses} justify-between items-start w-full`}>
+                          <div className={`flex flex-col ${item.iconAlign}`}>
+                            <h3 className={`text-[20px] md:text-[22px] font-bold text-slate-800 leading-[1.3] uppercase ${item.textAlign}`}>
+                              {item.title}
+                            </h3>
+                            <div className={`w-16 h-[3px] ${item.lineColor} mt-4 group-hover:w-24 transition-all duration-500 rounded-full`}></div>
+                          </div>
+                          
+                          {/* Icon */}
+                          <div className={`hidden md:block ${item.iconPos === 'right' ? 'ml-4' : 'mr-4'} mt-1`}>
+                            {item.icon}
+                          </div>
+                        </div>
+
+                        {/* Description */}
+                        <p className={`text-[15px] text-slate-500 leading-[1.6] max-w-[90%] font-medium ${item.textAlign}`}>
+                          {item.desc}
+                        </p>
+                      </div>
+
+                      {/* Desktop Quarter Circle */}
+                      <div className={`hidden md:flex absolute ${item.quarterClasses} w-[160px] h-[160px] ${item.quarterColor} flex-col items-center justify-center z-0 origin-center group-hover:scale-105 transition-transform duration-500 ease-out`}>
+                        <div className={`flex flex-col items-center justify-center ${item.quarterPadding} w-full h-full`}>
+                          <span className="text-white/90 text-[11px] font-bold tracking-[0.2em] uppercase mb-0.5">Step</span>
+                          <span className="text-white font-black text-[42px] leading-none tracking-tight">{item.num}</span>
+                          <span className="text-white/90 text-[9px] font-bold tracking-[0.1em] mt-1.5 uppercase text-center leading-tight whitespace-nowrap">Menu<br/>Analisis</span>
+                        </div>
+                      </div>
                     </motion.div>
                   ))}
                 </div>
@@ -2268,6 +2386,262 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
                 </div>
+              ) : benchmarkSubView === 'Perbandingan Hasil Per Item' ? (
+                <div className="w-full flex flex-col gap-6">
+                  {/* Mode Selector and Filters */}
+                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-5 rounded-[24px] shadow-sm">
+                    <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                      <button 
+                        onClick={() => setMode('Tunggal')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Tunggal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        Periode Tunggal
+                      </button>
+                      <button 
+                        onClick={() => setMode('Perbandingan')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Perbandingan' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        Periode Perbandingan
+                      </button>
+                    </div>
+                    
+                    {mode === 'Tunggal' ? (
+                      <div className="flex items-center gap-3 mt-4 md:mt-0">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Tahun:</span>
+                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
+                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4 mt-4 md:mt-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahun 1:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahun 2:</span>
+                          <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Legend Info */}
+                  <div className="flex flex-wrap items-center justify-between gap-4 bg-slate-50 border border-slate-200 p-5 rounded-2xl">
+                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-emerald-500 shadow-sm"></div>
+                        <span className="text-[11px] font-bold text-slate-600">Positif</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-yellow-500 shadow-sm"></div>
+                        <span className="text-[11px] font-bold text-slate-600">Netral</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-rose-500 shadow-sm"></div>
+                        <span className="text-[11px] font-bold text-slate-600">Negatif</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-slate-400 shadow-sm"></div>
+                        <span className="text-[11px] font-bold text-slate-600">Tidak Menjawab / Tidak Tahu</span>
+                      </div>
+                    </div>
+                    <div className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg tracking-wider uppercase">
+                      Pembanding RS Percontohan (AHRQ)
+                    </div>
+                  </div>
+
+                  {/* Dimension Grid list */}
+                  <div className="grid grid-cols-1 gap-8">
+                    {DIMENSION_ORDER.map((dimId, index) => {
+                      const dimInfo = DIMENSI_INFO[dimId];
+                      const questions = ALL_QUESTIONS.filter(q => q.dim === dimId);
+                      
+                      let sumPosPercent = 0;
+                      let sumPosPercent2 = 0;
+                      const qStats = questions.map(q => {
+                        const stat = calculateQuestionStats(q);
+                        const stat2 = mode === 'Perbandingan' ? calculateQuestionStats(q, hospitalSurveys2) : null;
+                        sumPosPercent += stat.posPercent;
+                        if (stat2) sumPosPercent2 += stat2.posPercent;
+                        return { q, stat, stat2 };
+                      });
+                      const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
+                      const avgPosPercent2 = questions.length > 0 ? Math.round(sumPosPercent2 / questions.length) : 0;
+                      const status = getDimensionStatus(avgPosPercent);
+                      const status2 = getDimensionStatus(avgPosPercent2);
+
+                      const bMin = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
+                      const bMax = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
+
+                      return (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          whileInView={{ opacity: 1, y: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ duration: 0.5, delay: index * 0.05 }}
+                          key={dimId} 
+                          className="bg-white border border-slate-200 rounded-[28px] overflow-hidden shadow-sm hover:shadow-md transition-all group"
+                        >
+                          {/* Card Header */}
+                          <div className="p-6 bg-slate-50/50 border-b border-slate-150 relative flex items-center gap-5">
+                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-teal-400 to-indigo-600"></div>
+                            <div className="w-12 h-12 bg-white border border-slate-200 rounded-2xl flex items-center justify-center shrink-0 shadow-sm group-hover:scale-110 transition-transform">
+                              <span className="text-xl font-black text-indigo-600">{index + 1}</span>
+                            </div>
+                            <div>
+                              <h3 className="text-[17px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                              <p className="text-xs text-slate-500 mt-1 font-medium leading-relaxed max-w-3xl">{dimInfo.deskripsi}</p>
+                            </div>
+                          </div>
+
+                          {/* Questions Table */}
+                          <div className="p-0 overflow-x-auto">
+                            <table className="w-full text-left text-sm border-collapse min-w-[950px]">
+                              <thead>
+                                <tr className="border-b border-slate-150 text-slate-500 font-bold uppercase tracking-wider text-[10px] bg-slate-50/30">
+                                  <th className="p-4 w-16 text-center align-bottom">Item</th>
+                                  <th className="p-4 align-bottom">Pernyataan / Kuesioner</th>
+                                  <th className="p-4 align-bottom text-center">Persentase Respons Pasien (Positif/Netral/Negatif)</th>
+                                  <th className="p-4 w-44 text-center border-l border-slate-150 bg-slate-50/60">
+                                    <div>Rata-rata RS Percontohan<br/>(% Respons Positif)</div>
+                                    <div className="flex justify-between mt-2 pt-2 border-t border-slate-200 text-teal-600">
+                                      <span className="w-1/2 text-center text-[9px]">MIN</span>
+                                      <span className="w-1/2 text-center border-l border-slate-200 text-[9px]">MAX</span>
+                                    </div>
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {qStats.map(({ q, stat, stat2 }) => (
+                                  <tr key={q.id} className="hover:bg-slate-50/30 transition-colors group">
+                                    {/* Item Code */}
+                                    <td className="p-4 text-center align-top pt-5">
+                                      <span className="text-[14px] font-black text-indigo-600 leading-none">{q.code}{q.isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <div className="w-5 h-0.5 bg-indigo-500 mt-2 mx-auto rounded-full"></div>
+                                    </td>
+                                    {/* Item Text */}
+                                    <td className="p-4 font-semibold text-slate-700 text-xs align-top pt-5 pr-4 leading-relaxed max-w-[280px]">
+                                      {q.text}
+                                    </td>
+                                    {/* Bar charts (Tunggal or Perbandingan) */}
+                                    <td className="p-4 align-middle py-4">
+                                      <div className="flex flex-col gap-2 w-full">
+                                        <div className="flex items-center gap-3">
+                                          {mode === 'Perbandingan' && <span className="text-[10px] text-slate-400 w-12 shrink-0 font-bold text-right">Thn {tahun1}</span>}
+                                          <div className={`flex-1 ${mode === 'Tunggal' ? 'h-8' : 'h-6'} flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative`}>
+                                            <div
+                                              className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
+                                              style={{ width: `${stat.posPercent}%` }}
+                                            >
+                                              {stat.posPercent >= 10 && <span className="text-[9px] font-black text-white">{stat.posPercent}%</span>}
+                                            </div>
+                                            <div
+                                              className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              style={{ width: `${stat.neuPercent}%` }}
+                                            >
+                                              {stat.neuPercent >= 10 && <span className="text-[9px] font-black text-white">{stat.neuPercent}%</span>}
+                                            </div>
+                                            <div
+                                              className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              style={{ width: `${stat.negPercent}%` }}
+                                            >
+                                              {stat.negPercent >= 10 && <span className="text-[9px] font-black text-white">{stat.negPercent}%</span>}
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-1.5 min-w-[130px] shrink-0">
+                                            <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
+                                            <span className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Menjawab/Tahu <span className="text-slate-800 font-black">{stat.missingPercent}%</span></span>
+                                          </div>
+                                        </div>
+                                        {mode === 'Perbandingan' && stat2 && (
+                                          <div className="flex items-center gap-3">
+                                            <span className="text-[10px] text-slate-400 w-12 shrink-0 font-bold text-right">Thn {tahun2}</span>
+                                            <div className="flex-1 h-6 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative opacity-80">
+                                              <div
+                                                className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
+                                                style={{ width: `${stat2.posPercent}%` }}
+                                              >
+                                                {stat2.posPercent >= 10 && <span className="text-[9px] font-black text-white">{stat2.posPercent}%</span>}
+                                              </div>
+                                              <div
+                                                className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                                style={{ width: `${stat2.neuPercent}%` }}
+                                              >
+                                                {stat2.neuPercent >= 10 && <span className="text-[9px] font-black text-white">{stat2.neuPercent}%</span>}
+                                              </div>
+                                              <div
+                                                className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                                style={{ width: `${stat2.negPercent}%` }}
+                                              >
+                                                {stat2.negPercent >= 10 && <span className="text-[9px] font-black text-white">{stat2.negPercent}%</span>}
+                                              </div>
+                                            </div>
+                                            <div className="flex items-center gap-1.5 min-w-[130px] shrink-0">
+                                              <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
+                                              <span className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Menjawab/Tahu <span className="text-slate-800 font-black">{stat2.missingPercent}%</span></span>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </td>
+                                    {/* Benchmark MIN & MAX on the right */}
+                                    <td className="p-0 border-l border-slate-150 text-center font-bold text-slate-700 text-xs align-middle bg-slate-50/60 w-44">
+                                      <div className="flex h-full items-center justify-center min-h-[50px]">
+                                        <span className="w-1/2 py-2">{bMin}%</span>
+                                        <span className="w-1/2 py-2 border-l border-slate-150">{bMax}%</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
+                          {/* Summary Footer */}
+                          <div className="bg-slate-50 p-6 md:p-8 border-t border-slate-150 flex flex-col sm:flex-row justify-between items-center gap-6">
+                            <div className="flex flex-col sm:flex-row gap-8">
+                              <div className="flex flex-col gap-1">
+                                <p className="text-[11px] text-slate-400 font-black uppercase tracking-widest">RESPON POSITIF {mode === 'Perbandingan' ? `(${tahun1})` : 'DIMENSI'}</p>
+                                <div className="flex items-center gap-4">
+                                  <CountUp value={avgPosPercent} className="text-4xl font-black text-slate-800" />
+                                  <div className={`px-4 py-1.5 rounded-full text-xs font-black border ${status.bg} ${status.color} ${status.border} uppercase shadow-sm`}>
+                                    {status.label}
+                                  </div>
+                                </div>
+                              </div>
+                              {mode === 'Perbandingan' && (
+                                <div className="flex flex-col gap-1">
+                                  <p className="text-[11px] text-slate-400 font-black uppercase tracking-widest">RESPON POSITIF ({tahun2})</p>
+                                  <div className="flex items-center gap-4">
+                                    <CountUp value={avgPosPercent2} className="text-4xl font-black text-slate-800" />
+                                    <div className={`px-4 py-1.5 rounded-full text-xs font-black border ${status2.bg} ${status2.color} ${status2.border} uppercase shadow-sm`}>
+                                      {status2.label}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex items-center gap-4">
+                              <div className="px-5 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm text-center hidden md:block">
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mb-0.5 tracking-tight">Benchmark Dimensi (AHRQ)</p>
+                                <p className="text-[13px] font-black text-slate-700">{bMin}.0% - {bMax}.0%</p>
+                              </div>
+                              <div className="w-14 h-14 bg-teal-50 border border-teal-100 rounded-2xl flex items-center justify-center text-teal-500 shadow-sm shadow-teal-500/10">
+                                <TrendingUp className="w-7 h-7" />
+                              </div>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
               ) : (
                 <div className="flex-1 bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex items-center justify-center flex-col text-center">
                   <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mb-6">
@@ -2748,7 +3122,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <tr key={row.id} className="hover:bg-slate-50/50 transition-colors group">
                                   <td className="p-3 text-center font-bold text-slate-400 align-top pt-5">{i + 1}.</td>
                                   <td className="p-3 font-semibold text-slate-700 text-xs align-top pt-5 pr-4 leading-relaxed">
-                                    <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded mr-2">{row.kode}</span>
                                     {row.dimensiSingkat}
                                   </td>
                                   <td className="p-3 align-middle py-4">
@@ -2823,13 +3196,45 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
               ) : hospitalSubView === 'Hasil Per Item' ? (
                 <div className="w-full flex flex-col gap-6">
                   <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row items-center justify-end bg-white border border-slate-200 p-5 rounded-[24px] shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Tahun:</span>
-                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
+                    <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-5 rounded-[24px] shadow-sm">
+                      <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                        <button 
+                          onClick={() => setMode('Tunggal')}
+                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Tunggal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Periode Tunggal
+                        </button>
+                        <button 
+                          onClick={() => setMode('Perbandingan')}
+                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Perbandingan' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Periode Perbandingan
+                        </button>
                       </div>
+                      
+                      {mode === 'Tunggal' ? (
+                        <div className="flex items-center gap-3 mt-4 md:mt-0">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Tahun:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-4 mt-4 md:mt-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahun 1:</span>
+                            <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
+                              {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahun 2:</span>
+                            <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
+                              {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 gap-8">
@@ -2838,13 +3243,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         const questions = ALL_QUESTIONS.filter(q => q.dim === dimId);
                         
                         let sumPosPercent = 0;
+                        let sumPosPercent2 = 0;
                         const qStats = questions.map(q => {
                           const stat = calculateQuestionStats(q);
+                          const stat2 = mode === 'Perbandingan' ? calculateQuestionStats(q, hospitalSurveys2) : null;
                           sumPosPercent += stat.posPercent;
-                          return { q, stat };
+                          if (stat2) sumPosPercent2 += stat2.posPercent;
+                          return { q, stat, stat2 };
                         });
                         const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
+                        const avgPosPercent2 = questions.length > 0 ? Math.round(sumPosPercent2 / questions.length) : 0;
                         const status = getDimensionStatus(avgPosPercent);
+                        const status2 = getDimensionStatus(avgPosPercent2);
 
                         return (
                           <motion.div 
@@ -2890,7 +3300,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               </div>
                               
                               <div className="space-y-12">
-                                {qStats.map(({ q, stat }) => (
+                                {qStats.map(({ q, stat, stat2 }) => (
                                   <div key={q.id} className="flex flex-col lg:flex-row gap-6 lg:items-center">
                                     {/* Question Code & Text */}
                                     <div className="lg:w-[45%] flex gap-5">
@@ -2902,36 +3312,72 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     </div>
 
                                     {/* Bar Chart and N/A label */}
-                                    <div className="flex-1 flex items-center gap-4">
-                                      <div className="flex-1 h-10 flex rounded-2xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative">
-                                        <div 
-                                          className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
-                                          style={{ width: `${stat.posPercent}%` }}
-                                        >
-                                          {stat.posPercent >= 10 && <span className="text-[10px] font-black text-white">{stat.posPercent}%</span>}
+                                    <div className="flex-1 flex flex-col gap-3">
+                                      <div className="flex items-center gap-4">
+                                        {mode === 'Perbandingan' && <span className="text-[10px] text-slate-400 w-12 shrink-0 font-bold text-right">Thn {tahun1}</span>}
+                                        <div className={`flex-1 ${mode === 'Tunggal' ? 'h-10' : 'h-8'} flex rounded-2xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative`}>
+                                          <div 
+                                            className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
+                                            style={{ width: `${stat.posPercent}%` }}
+                                          >
+                                            {stat.posPercent >= 10 && <span className="text-[10px] font-black text-white">{stat.posPercent}%</span>}
+                                          </div>
+                                          <div 
+                                            className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                            style={{ width: `${stat.neuPercent}%` }}
+                                          >
+                                            {stat.neuPercent >= 10 && <span className="text-[10px] font-black text-white">{stat.neuPercent}%</span>}
+                                          </div>
+                                          <div 
+                                            className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                            style={{ width: `${stat.negPercent}%` }}
+                                          >
+                                            {stat.negPercent >= 10 && <span className="text-[10px] font-black text-white">{stat.negPercent}%</span>}
+                                          </div>
                                         </div>
-                                        <div 
-                                          className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
-                                          style={{ width: `${stat.neuPercent}%` }}
-                                        >
-                                          {stat.neuPercent >= 10 && <span className="text-[10px] font-black text-white">{stat.neuPercent}%</span>}
-                                        </div>
-                                        <div 
-                                          className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
-                                          style={{ width: `${stat.negPercent}%` }}
-                                        >
-                                          {stat.negPercent >= 10 && <span className="text-[10px] font-black text-white">{stat.negPercent}%</span>}
+
+                                        <div className="flex items-center gap-2 min-w-[140px] shrink-0">
+                                          <div className="w-2 h-4 bg-slate-400 rounded-full"></div>
+                                          <div className="leading-tight">
+                                            <p className="text-[10px] text-slate-400 font-bold leading-tight">Tidak Menjawab /</p>
+                                            <p className="text-[10px] text-slate-400 font-bold leading-tight">Tidak Tahu <span className="text-slate-800 font-black">{stat.missingPercent}%</span></p>
+                                          </div>
                                         </div>
                                       </div>
 
-                                      {/* N/A Side Label */}
-                                      <div className="flex items-center gap-2 min-w-[140px] shrink-0">
-                                        <div className="w-2 h-4 bg-slate-400 rounded-full"></div>
-                                        <div className="leading-tight">
-                                          <p className="text-[10px] text-slate-400 font-bold leading-tight">Tidak Menjawab /</p>
-                                          <p className="text-[10px] text-slate-400 font-bold leading-tight">Tidak Tahu <span className="text-slate-800 font-black">{stat.missingPercent}%</span></p>
+                                      {mode === 'Perbandingan' && stat2 && (
+                                        <div className="flex items-center gap-4">
+                                          <span className="text-[10px] text-slate-400 w-12 shrink-0 font-bold text-right">Thn {tahun2}</span>
+                                          <div className="flex-1 h-8 flex rounded-2xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative opacity-80">
+                                            <div 
+                                              className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
+                                              style={{ width: `${stat2.posPercent}%` }}
+                                            >
+                                              {stat2.posPercent >= 10 && <span className="text-[10px] font-black text-white">{stat2.posPercent}%</span>}
+                                            </div>
+                                            <div 
+                                              className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              style={{ width: `${stat2.neuPercent}%` }}
+                                            >
+                                              {stat2.neuPercent >= 10 && <span className="text-[10px] font-black text-white">{stat2.neuPercent}%</span>}
+                                            </div>
+                                            <div 
+                                              className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              style={{ width: `${stat2.negPercent}%` }}
+                                            >
+                                              {stat2.negPercent >= 10 && <span className="text-[10px] font-black text-white">{stat2.negPercent}%</span>}
+                                            </div>
+                                          </div>
+
+                                          <div className="flex items-center gap-2 min-w-[140px] shrink-0">
+                                            <div className="w-2 h-4 bg-slate-400 rounded-full"></div>
+                                            <div className="leading-tight">
+                                              <p className="text-[10px] text-slate-400 font-bold leading-tight">Tidak Menjawab /</p>
+                                              <p className="text-[10px] text-slate-400 font-bold leading-tight">Tidak Tahu <span className="text-slate-800 font-black">{stat2.missingPercent}%</span></p>
+                                            </div>
+                                          </div>
                                         </div>
-                                      </div>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -2940,14 +3386,27 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                             {/* Summary Footer */}
                             <div className="bg-white p-6 md:p-8 border-t border-slate-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-                              <div className="flex flex-col gap-1">
-                                <p className="text-[11px] text-slate-400 font-black uppercase tracking-widest">RESPON POSITIF DIMENSI</p>
-                                <div className="flex items-center gap-4">
-                                  <CountUp value={avgPosPercent} className="text-4xl font-black text-slate-800" />
-                                  <div className={`px-4 py-1.5 rounded-full text-xs font-black border ${status.bg} ${status.color} ${status.border} uppercase shadow-sm`}>
-                                    {status.label}
+                              <div className="flex flex-col md:flex-row gap-8">
+                                <div className="flex flex-col gap-1">
+                                  <p className="text-[11px] text-slate-400 font-black uppercase tracking-widest">RESPON POSITIF {mode === 'Perbandingan' ? `(${tahun1})` : 'DIMENSI'}</p>
+                                  <div className="flex items-center gap-4">
+                                    <CountUp value={avgPosPercent} className="text-4xl font-black text-slate-800" />
+                                    <div className={`px-4 py-1.5 rounded-full text-xs font-black border ${status.bg} ${status.color} ${status.border} uppercase shadow-sm`}>
+                                      {status.label}
+                                    </div>
                                   </div>
                                 </div>
+                                {mode === 'Perbandingan' && (
+                                  <div className="flex flex-col gap-1">
+                                    <p className="text-[11px] text-slate-400 font-black uppercase tracking-widest">RESPON POSITIF ({tahun2})</p>
+                                    <div className="flex items-center gap-4">
+                                      <CountUp value={avgPosPercent2} className="text-4xl font-black text-slate-800" />
+                                      <div className={`px-4 py-1.5 rounded-full text-xs font-black border ${status2.bg} ${status2.color} ${status2.border} uppercase shadow-sm`}>
+                                        {status2.label}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                               
                               <div className="flex items-center gap-4">
@@ -3052,13 +3511,45 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : hospitalSubView === 'Jumlah Peristiwa Yang Dilaporkan' ? (
                 <div className="w-full flex flex-col gap-6">
-                  <div className="flex flex-col md:flex-row items-center justify-end bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                      <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                        {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
+                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-5 rounded-[24px] shadow-sm">
+                    <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                      <button 
+                        onClick={() => setMode('Tunggal')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Tunggal' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        Periode Tunggal
+                      </button>
+                      <button 
+                        onClick={() => setMode('Perbandingan')}
+                        className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Perbandingan' ? 'bg-white text-purple-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                      >
+                        Periode Perbandingan
+                      </button>
                     </div>
+                    
+                    {mode === 'Tunggal' ? (
+                      <div className="flex items-center gap-3 mt-4 md:mt-0">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Tahun:</span>
+                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none w-32 cursor-pointer transition-all">
+                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-4 mt-4 md:mt-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahun 1:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none w-32 cursor-pointer transition-all">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahun 2:</span>
+                          <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none w-32 cursor-pointer transition-all">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Main Chart Card - Glassmorphism 2.0 style */}
@@ -3073,14 +3564,19 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <Activity className="w-8 h-8 text-white" />
                       </div>
                     </div>
-
                     <div className="p-6 md:p-8 space-y-8">
                       {/* Sub-header info */}
                       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 text-xs font-bold text-slate-500">
                         <div className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg border border-purple-100">
-                          <span>Total Responden Aktif:</span>
-                          <span className="text-sm font-extrabold text-purple-800">{reportedEventsComparisonStats.total}</span>
+                          <span>Total Responden {mode === 'Perbandingan' ? `(${tahun1})` : 'Aktif'}:</span>
+                          <span className="text-sm font-extrabold text-purple-800">{reportedEventsStats1.total}</span>
                         </div>
+                        {mode === 'Perbandingan' && (
+                          <div className="flex items-center gap-1.5 bg-orange-50 text-orange-700 px-3 py-1.5 rounded-lg border border-orange-100">
+                            <span>Total Responden ({tahun2}):</span>
+                            <span className="text-sm font-extrabold text-orange-800">{reportedEventsStats2?.total || 0}</span>
+                          </div>
+                        )}
                       </div>
 
                       {/* Chart Area */}
@@ -3090,28 +3586,48 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             data={[
                               {
                                 kategori: 'Tidak Pernah',
-                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['Tidak ada'],
-                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['Tidak ada'],
+                                'Rumah Sakit Anda': reportedEventsStats1.percentages['Tidak ada'],
+                                'Rumah Sakit Anda Count': reportedEventsStats1.counts['Tidak ada'],
+                                ...(mode === 'Perbandingan' && {
+                                  'Tahun 2': reportedEventsStats2?.percentages['Tidak ada'] || 0,
+                                  'Tahun 2 Count': reportedEventsStats2?.counts['Tidak ada'] || 0,
+                                })
                               },
                               {
                                 kategori: '1–2 Kejadian',
-                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['1 sampai 2'],
-                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['1 sampai 2'],
+                                'Rumah Sakit Anda': reportedEventsStats1.percentages['1 sampai 2'],
+                                'Rumah Sakit Anda Count': reportedEventsStats1.counts['1 sampai 2'],
+                                ...(mode === 'Perbandingan' && {
+                                  'Tahun 2': reportedEventsStats2?.percentages['1 sampai 2'] || 0,
+                                  'Tahun 2 Count': reportedEventsStats2?.counts['1 sampai 2'] || 0,
+                                })
                               },
                               {
                                 kategori: '3–5 Kejadian',
-                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['3 sampai 5'],
-                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['3 sampai 5'],
+                                'Rumah Sakit Anda': reportedEventsStats1.percentages['3 sampai 5'],
+                                'Rumah Sakit Anda Count': reportedEventsStats1.counts['3 sampai 5'],
+                                ...(mode === 'Perbandingan' && {
+                                  'Tahun 2': reportedEventsStats2?.percentages['3 sampai 5'] || 0,
+                                  'Tahun 2 Count': reportedEventsStats2?.counts['3 sampai 5'] || 0,
+                                })
                               },
                               {
                                 kategori: '6–10 Kejadian',
-                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['6 hingga 10'],
-                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['6 hingga 10'],
+                                'Rumah Sakit Anda': reportedEventsStats1.percentages['6 hingga 10'],
+                                'Rumah Sakit Anda Count': reportedEventsStats1.counts['6 hingga 10'],
+                                ...(mode === 'Perbandingan' && {
+                                  'Tahun 2': reportedEventsStats2?.percentages['6 hingga 10'] || 0,
+                                  'Tahun 2 Count': reportedEventsStats2?.counts['6 hingga 10'] || 0,
+                                })
                               },
                               {
                                 kategori: '≥11 Kejadian',
-                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['11 atau lebih'],
-                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['11 atau lebih'],
+                                'Rumah Sakit Anda': reportedEventsStats1.percentages['11 atau lebih'],
+                                'Rumah Sakit Anda Count': reportedEventsStats1.counts['11 atau lebih'],
+                                ...(mode === 'Perbandingan' && {
+                                  'Tahun 2': reportedEventsStats2?.percentages['11 atau lebih'] || 0,
+                                  'Tahun 2 Count': reportedEventsStats2?.counts['11 atau lebih'] || 0,
+                                })
                               },
                             ]} 
                             margin={{ top: 25, right: 10, left: -10, bottom: 20 }}
@@ -3124,6 +3640,17 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <filter id="re-shadow-purple" x="-15%" y="-15%" width="130%" height="140%">
                                 <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#0f172a" floodOpacity="0.35" />
                               </filter>
+                              {mode === 'Perbandingan' && (
+                                <>
+                                  <linearGradient id="orangeGrad2" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#f97316" />
+                                    <stop offset="100%" stopColor="#c2410c" />
+                                  </linearGradient>
+                                  <filter id="re-shadow-orange" x="-15%" y="-15%" width="130%" height="140%">
+                                    <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#7c2d12" floodOpacity="0.35" />
+                                  </filter>
+                                </>
+                              )}
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
                             <XAxis 
@@ -3152,6 +3679,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             />
                             <Bar 
                               isAnimationActive={false} 
+                              name={mode === 'Perbandingan' ? `Tahun ${tahun1}` : 'Rumah Sakit Anda'}
                               dataKey="Rumah Sakit Anda" 
                               fill="url(#purpleGrad)" 
                               radius={[6, 6, 0, 0]} 
@@ -3167,10 +3695,29 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 fontWeight="bold" 
                               />
                             </Bar>
+                            {mode === 'Perbandingan' && (
+                              <Bar 
+                                isAnimationActive={false} 
+                                name={`Tahun ${tahun2}`}
+                                dataKey="Tahun 2" 
+                                fill="url(#orangeGrad2)" 
+                                radius={[6, 6, 0, 0]} 
+                                maxBarSize={55} 
+                                filter="url(#re-shadow-orange)"
+                              >
+                                <LabelList 
+                                  dataKey="Tahun 2" 
+                                  position="top" 
+                                  formatter={(val: number) => `${val.toFixed(1)}%`} 
+                                  fill="#c2410c" 
+                                  fontSize={11} 
+                                  fontWeight="bold" 
+                                />
+                              </Bar>
+                            )}
                           </RechartsBarChart>
                         </ResponsiveContainer>
                       </div>
-
                     </div>
                   </div>
                 </div>
@@ -3192,24 +3739,34 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
 
                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                      {hospitalComments.map((comment, index) => (
-                        <div key={comment.id || index} className="p-5 bg-slate-50 rounded-2xl border-l-4 border-slate-500 space-y-3 relative">
-                          <p className="text-sm italic font-medium text-slate-700 leading-relaxed">
-                            &ldquo;{comment.text}&rdquo;
-                          </p>
-                          <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-slate-400 border-t border-slate-200/40 pt-2">
-                            <span className="text-slate-600 px-2 py-0.5 bg-slate-200/50 rounded-md truncate max-w-[200px]">
-                              {comment.position}
-                            </span>
-                            <span className="text-slate-500 font-medium">
-                              {comment.unit}
-                            </span>
-                            <span className="font-medium shrink-0">
-                              {comment.date}
-                            </span>
+                      {hospitalComments.length > 0 ? (
+                        hospitalComments.map((comment, index) => (
+                          <div key={comment.id || index} className="p-5 bg-slate-50 rounded-2xl border-l-4 border-slate-500 space-y-3 relative">
+                            <p className="text-sm italic font-medium text-slate-700 leading-relaxed">
+                              &ldquo;{comment.text}&rdquo;
+                            </p>
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-slate-400 border-t border-slate-200/40 pt-2">
+                              <span className="text-slate-600 px-2 py-0.5 bg-slate-200/50 rounded-md truncate max-w-[200px]">
+                                {comment.position}
+                              </span>
+                              <span className="text-slate-500 font-medium">
+                                {comment.unit}
+                              </span>
+                              <span className="font-medium shrink-0">
+                                {comment.date}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center gap-3">
+                          <MessageSquareOff className="w-10 h-10 text-slate-300" />
+                          <div>
+                            <p className="font-bold text-slate-700">Tidak ada komentar</p>
+                            <p className="text-xs mt-1">Belum ada saran atau masukan tertulis dari responden pada periode ini.</p>
                           </div>
                         </div>
-                      ))}
+                      )}
                     </div>
                   </div>
                 </div>
