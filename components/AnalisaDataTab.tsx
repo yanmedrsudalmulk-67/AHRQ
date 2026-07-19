@@ -24,7 +24,13 @@ import {
   Stethoscope,
   TrendingUp,
   TrendingDown,
-  ChevronDown
+  ChevronDown,
+  Printer,
+  FileText,
+  FileSpreadsheet,
+  ClipboardCheck,
+  ArrowRight,
+  Clock3
 } from 'lucide-react';
 import { 
   BarChart as RechartsBarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LabelList 
@@ -40,12 +46,57 @@ const E1Tooltip = ({ active, payload, label }: any) => {
         {payload.map((p: any, i: number) => (
           <div key={i} className="flex justify-between items-center" style={{ color: p.color }}>
             <span className="font-medium flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></span> 
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }}></span> 
               {p.name}:
             </span>
             <strong className="text-sm">{p.value.toFixed(1)}%</strong>
           </div>
         ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+const ReportedEventsTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    const rsData = payload.find((p: any) => p.dataKey === 'Rumah Sakit Anda');
+    const benchmarkData = payload.find((p: any) => p.dataKey === 'Rumah Sakit Percontohan');
+
+    return (
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl text-xs space-y-4 min-w-[260px] text-slate-200">
+        <p className="font-bold text-slate-100 border-b border-slate-800 pb-2 text-sm">{label}</p>
+        
+        {rsData && (
+          <div className="space-y-1">
+            <p className="font-bold text-blue-400 flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              Rumah Sakit Anda
+            </p>
+            <div className="pl-4 space-y-0.5 text-slate-300">
+              <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
+              <p>Persentase : <span className="font-semibold text-white">{rsData.value.toFixed(1)}%</span></p>
+              <p>Jumlah Responden : <span className="font-semibold text-white">{rsData.payload['Rumah Sakit Anda Count'] || 0}</span></p>
+            </div>
+          </div>
+        )}
+        
+        {benchmarkData && (
+          <>
+            <div className="border-t border-slate-800 my-2"></div>
+            <div className="space-y-1">
+              <p className="font-bold text-slate-400 flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-slate-300 border border-slate-500"></span>
+                Rumah Sakit Percontohan
+              </p>
+              <div className="pl-4 space-y-0.5 text-slate-300">
+                <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
+                <p>Persentase : <span className="font-semibold text-white">{benchmarkData.value.toFixed(1)}%</span></p>
+                <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload['Rumah Sakit Percontohan Count'] || 0).toLocaleString('id-ID')}</span></p>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     );
   }
@@ -84,7 +135,32 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   const [mode, setMode] = useState<'Tunggal' | 'Perbandingan'>('Tunggal');
   
+  const [filterUnit, setFilterUnit] = useState<string>('Semua');
+  const [filterProfesi, setFilterProfesi] = useState<string>('Semua');
+  const [filterTenureRS, setFilterTenureRS] = useState<string>('Semua');
+  const [filterTenureUnit, setFilterTenureUnit] = useState<string>('Semua');
+  const [filterInteraction, setFilterInteraction] = useState<string>('Semua');
+  
   const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
+
+  const uniqueUnits = useMemo(() => {
+    const units = new Set<string>();
+    actualSurveys.forEach(s => {
+      if (s.unitKerja) units.add(s.unitKerja);
+    });
+    return Array.from(units).sort();
+  }, [actualSurveys]);
+
+  const uniqueProfesi = useMemo(() => {
+    const positions = new Set<string>();
+    actualSurveys.forEach(s => {
+      const raw = (s.dimensiScores as any)?._rawAnswers;
+      if (raw?.posisiStaf) {
+        positions.add(raw.posisiStaf);
+      }
+    });
+    return Array.from(positions).sort();
+  }, [actualSurveys]);
   const actualDataYears = useMemo(() => {
     const years = new Set<string>();
     actualSurveys.forEach(s => years.add(extractYear(s.tanggalInput)));
@@ -465,6 +541,90 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
     return { d1Data, d2Data, d3Data, d1Total, d2Total, d3Total };
   }, [hospitalSurveys]);
+
+  const filteredSurveysForReportedEvents = useMemo(() => {
+    return actualSurveys.filter(survey => {
+      // 1. Filter by Year (depends on Mode: Tunggal vs Perbandingan)
+      const y = extractYear(survey.tanggalInput);
+      if (mode === 'Tunggal') {
+        if (y !== tahun1) return false;
+      } else {
+        if (y !== tahun1 && y !== tahun2) return false;
+      }
+
+      // Get raw answers
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (!raw) return false;
+
+      // 2. Filter by Unit Kerja
+      if (filterUnit !== 'Semua') {
+        const unit = survey.unitKerja || 'Instansi Umum';
+        if (unit !== filterUnit) return false;
+      }
+
+      // 3. Filter by Profesi/Jabatan
+      if (filterProfesi !== 'Semua') {
+        const pos = raw.posisiStaf || 'Lainnya';
+        if (pos !== filterProfesi) return false;
+      }
+
+      // 4. Filter by Lama Kerja di Rumah Sakit (G1)
+      if (filterTenureRS !== 'Semua') {
+        const g1 = raw.ansG?.[1] || 'Tidak diisi';
+        if (g1 !== filterTenureRS) return false;
+      }
+
+      // 5. Filter by Lama Kerja di Unit (G2)
+      if (filterTenureUnit !== 'Semua') {
+        const g2 = raw.ansG?.[2] || 'Tidak diisi';
+        if (g2 !== filterTenureUnit) return false;
+      }
+
+      // 6. Filter by Interaksi dengan Pasien (G4)
+      if (filterInteraction !== 'Semua') {
+        const g4 = raw.ansG?.[4] || 'Tidak diisi';
+        if (g4 !== filterInteraction) return false;
+      }
+
+      return true;
+    });
+  }, [actualSurveys, mode, tahun1, tahun2, filterUnit, filterProfesi, filterTenureRS, filterTenureUnit, filterInteraction]);
+
+  const reportedEventsComparisonStats = useMemo(() => {
+    const counts: Record<string, number> = {
+      'Tidak ada': 0,
+      '1 sampai 2': 0,
+      '3 sampai 5': 0,
+      '6 hingga 10': 0,
+      '11 atau lebih': 0
+    };
+    let total = 0;
+
+    filteredSurveysForReportedEvents.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw) {
+        const val = raw.ansD?.[3];
+        if (val && counts[val] !== undefined) {
+          counts[val] += 1;
+          total += 1;
+        }
+      }
+    });
+
+    const getPct = (key: string) => total > 0 ? (counts[key] / total) * 100 : 0;
+
+    return {
+      total,
+      counts,
+      percentages: {
+        'Tidak ada': getPct('Tidak ada'),
+        '1 sampai 2': getPct('1 sampai 2'),
+        '3 sampai 5': getPct('3 sampai 5'),
+        '6 hingga 10': getPct('6 hingga 10'),
+        '11 atau lebih': getPct('11 atau lebih')
+      }
+    };
+  }, [filteredSurveysForReportedEvents]);
 
   const hospitalComments = useMemo(() => {
     const list: { id: string; text: string; unit: string; position: string; date: string }[] = [];
@@ -1337,78 +1497,48 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       id: 'hospital',
       title: 'Hasil Survei Budaya Keselamatan Rumah Sakit Anda',
       description: 'Menampilkan seluruh hasil analisis berdasarkan data survei rumah sakit',
-      icon: <Hospital className="w-8 h-8 text-blue-600" />,
-      color: 'from-blue-500 to-indigo-600',
-      themeColor: 'blue',
-      shadowColor: 'shadow-blue-500/20',
-      borderColor: 'bg-blue-600',
-      titleColor: 'text-blue-700',
-      dataCount: surveys.length
+      icon: <ClipboardCheck />,
+      color: 'from-[#2563EB] to-[#1D4ED8]'
     },
     {
       id: 'benchmark',
       title: 'Hasil Perbandingan Dengan Rumah Sakit Percontohan',
       description: 'Analisis Perbandingan hasil survei dengan rumah sakit percontohan.',
-      icon: <Award className="w-8 h-8 text-indigo-600" />,
-      color: 'from-indigo-500 to-blue-700',
-      themeColor: 'indigo',
-      shadowColor: 'shadow-indigo-500/20',
-      borderColor: 'bg-indigo-600',
-      titleColor: 'text-indigo-700',
-      dataCount: 4 // Special case
+      icon: <Building2 />,
+      color: 'from-[#10B981] to-[#059669]'
     },
     {
       id: 'position',
       title: 'Hasil Perbandingan Berdasarkan Posisi Staf',
       description: 'Eksplorasi persepsi budaya keselamatan berdasarkan peran dan posisi staf.',
-      icon: <Users className="w-8 h-8 text-purple-600" />,
-      color: 'from-purple-500 to-fuchsia-600',
-      themeColor: 'purple',
-      shadowColor: 'shadow-purple-500/20',
-      borderColor: 'bg-purple-600',
-      titleColor: 'text-purple-700',
-      dataCount: new Set(surveys.map(s => (s.dimensiScores as any)?._rawAnswers?.posisiStaf)).size
+      icon: <Users />,
+      color: 'from-[#F59E0B] to-[#F97316]'
     },
     {
       id: 'unit',
       title: 'Hasil Perbandingan Berdasarkan Unit / Area Kerja',
       description: 'Analisis Perbandingan budaya keselamatan antar unit / area kerja di rumah sakit.',
-      icon: <Building2 className="w-8 h-8 text-teal-600" />,
-      color: 'from-teal-500 to-emerald-600',
-      themeColor: 'teal',
-      shadowColor: 'shadow-teal-500/20',
-      borderColor: 'bg-teal-600',
-      titleColor: 'text-teal-700',
-      dataCount: new Set(surveys.map(s => s.unitKerja)).size
+      icon: <Hospital />,
+      color: 'from-[#14B8A6] to-[#0D9488]'
     },
     {
       id: 'interaction',
       title: 'Hasil Perbandingan Berdasarkan Interaksi Dengan Pasien',
       description: 'Korelasi budaya keselamatan dengan tingkat interaksi langsung staf dengan pasien.',
-      icon: <HeartHandshake className="w-8 h-8 text-rose-600" />,
-      color: 'from-rose-500 to-red-600',
-      themeColor: 'rose',
-      shadowColor: 'shadow-rose-500/20',
-      borderColor: 'bg-rose-600',
-      titleColor: 'text-rose-700',
-      dataCount: new Set(surveys.map(s => (s.dimensiScores as any)?._rawAnswers?.ansG?.[4] || 'Tidak diisi')).size
+      icon: <HeartHandshake />,
+      color: 'from-[#7C3AED] to-[#6366F1]'
     },
     {
       id: 'tenure',
       title: 'Hasil Perbandingan Berdasarkan Masa Jabatan / Lama Kerja',
       description: 'Analisis tren budaya keselamatan dikaitkan dengan pengalaman masa kerja staf.',
-      icon: <Clock className="w-8 h-8 text-amber-600" />,
-      color: 'from-amber-500 to-orange-600',
-      themeColor: 'amber',
-      shadowColor: 'shadow-amber-500/20',
-      borderColor: 'bg-orange-600',
-      titleColor: 'text-orange-700',
-      dataCount: new Set(surveys.map(s => (s.dimensiScores as any)?._rawAnswers?.lamaBekerjaRs)).size
+      icon: <Clock3 />,
+      color: 'from-[#F97316] to-[#FB7185]'
     }
   ];
 
   return (
-    <div className="h-full w-full bg-slate-50 overflow-y-auto p-4 md:p-8 font-sans">
+    <div className="h-full w-full bg-slate-50 overflow-y-auto p-0 font-sans">
       <AnimatePresence mode="wait">
         {activeView === 'main' && (
           <motion.div
@@ -1435,35 +1565,47 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[32px]">
               {mainCards.map((card, idx) => (
                 <motion.div
                   key={card.id}
-                  whileHover={{ y: -5 }}
-                  className={`bg-white rounded-[24px] p-6 shadow-xl ${card.shadowColor} border border-slate-100 hover:shadow-2xl transition-all flex flex-col cursor-pointer group relative overflow-hidden`}
+                  whileHover={{ y: -12, scale: 1.03 }}
+                  className="bg-white rounded-[28px] p-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-slate-100 hover:shadow-[0_30px_60px_rgba(0,0,0,0.3)] transition-all duration-300 flex flex-col cursor-pointer group relative mt-[35px] backdrop-blur-md min-h-[300px]"
                   onClick={() => { setActiveView(card.id as any); setBenchmarkSubView(null); setPositionSubView(null); setUnitSubView(null); setTenureSubView(null); }}
                 >
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="p-4 bg-slate-50 rounded-2xl group-hover:scale-110 transition-transform duration-300">
-                      {card.icon}
+                  {/* Ribbon/Header */}
+                  <div className={`absolute top-0 left-0 right-0 h-[24px] bg-gradient-to-r ${card.color} rounded-t-[28px] opacity-90 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                  
+                  {/* Badge */}
+                  <div className="absolute top-[-35px] left-1/2 -translate-x-1/2 w-[70px] h-[70px] rounded-full bg-white/30 backdrop-blur-xl border-[4px] border-white shadow-[0_8px_16px_rgba(0,0,0,0.10)] flex items-center justify-center z-10 group-hover:rotate-[360deg] transition-transform duration-1000 ease-in-out">
+                    <div className={`w-[54px] h-[54px] rounded-full bg-gradient-to-br ${card.color} flex items-center justify-center text-white text-[24px] font-bold shadow-inner`}>
+                      {idx + 1}
                     </div>
                   </div>
-                  
-                  <h3 className={`text-xl font-bold ${card.titleColor} mb-2 leading-tight transition-colors`}>
-                    {card.title}
-                  </h3>
-                  
-                  <p className="text-slate-500 text-sm mb-6 flex-1 font-medium leading-relaxed">
-                    {card.description}
-                  </p>
-                  
-                  <div className={`flex items-center ${card.titleColor} font-bold text-sm mt-auto group-hover:translate-x-1 transition-transform`}>
-                    Lihat Analisa
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </div>
 
-                  {/* Bottom accent line */}
-                  <div className={`absolute bottom-0 left-0 right-0 h-1.5 ${card.borderColor}`}></div>
+                  {/* Content area offset for ribbon */}
+                  <div className="mt-6 z-10 flex flex-col flex-1">
+                    <h3 className="text-[24px] font-bold text-[#1F2937] mb-3 leading-tight group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-gray-800 group-hover:to-gray-600 transition-all font-['Poppins']">
+                      {card.title}
+                    </h3>
+                    
+                    <p className="text-[16px] font-normal text-[#6B7280] leading-[1.7] flex-1 mb-8">
+                      {card.description}
+                    </p>
+
+                    <div className="flex items-end justify-between mt-auto pt-4 border-t border-slate-100">
+                       {/* Left side button */}
+                       <div className="flex items-center gap-2 bg-[#2563EB] group-hover:bg-gradient-to-r group-hover:from-[#2563EB] group-hover:to-[#1D4ED8] text-white px-6 py-3 rounded-full text-sm font-semibold shadow-lg shadow-blue-500/20 group-hover:shadow-blue-500/40 transition-all duration-300">
+                          Lihat Analisa
+                          <ArrowRight className="w-4 h-4" />
+                       </div>
+                       
+                       {/* Right side Icon */}
+                       <div className="opacity-85 group-hover:scale-110 group-hover:rotate-6 transition-transform duration-300 origin-bottom-right">
+                          {React.cloneElement(card.icon as React.ReactElement<any>, { className: "w-[40px] h-[40px] text-gray-300 group-hover:text-[#1F2937] transition-colors duration-300" })}
+                       </div>
+                    </div>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -1535,6 +1677,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           ? 'Lihat perbandingan agregat dimensi.' 
                           : item.title === 'Perbandingan Penilaian Keselamatan Pasien'
                           ? 'Lihat perbandingan tingkat keselamatan pasien (E1).'
+                          : item.title === 'Perbandingan Jumlah Peristiwa Yang Dilaporkan'
+                          ? 'Perbandingan distribusi jumlah kejadian keselamatan pasien.'
                           : 'Modul Sedang Dalam Pengembangan'}
                       </p>
                     </motion.div>
@@ -1777,6 +1921,353 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </motion.div>
                 </div>
+              ) : benchmarkSubView === 'Perbandingan Jumlah Peristiwa Yang Dilaporkan' ? (
+                <div className="w-full flex flex-col gap-6">
+                  {/* Mode Selector and Filters */}
+                  <div className="flex flex-col gap-6 bg-white border border-slate-200 p-6 rounded-[20px] shadow-sm">
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                      <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                        <button 
+                          onClick={() => setMode('Tunggal')}
+                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Tunggal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Periode Tunggal
+                        </button>
+                        <button 
+                          onClick={() => setMode('Perbandingan')}
+                          className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${mode === 'Perbandingan' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Perbandingan (2 Periode)
+                        </button>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        {mode === 'Tunggal' ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
+                            <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                              {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold text-slate-600">Bandingkan:</span>
+                            <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                              {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                            <span className="text-slate-400 font-bold">VS</span>
+                            <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                              {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                            </select>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Filter Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                      {/* Unit Filter */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Unit Kerja</label>
+                        <select 
+                          value={filterUnit} 
+                          onChange={e => setFilterUnit(e.target.value)}
+                          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:border-blue-500 outline-none cursor-pointer transition-all truncate"
+                        >
+                          <option value="Semua">Semua Unit Kerja ({uniqueUnits.length})</option>
+                          {uniqueUnits.map(unit => (
+                            <option key={unit} value={unit}>{unit}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Profesi Filter */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Profesi / Jabatan</label>
+                        <select 
+                          value={filterProfesi} 
+                          onChange={e => setFilterProfesi(e.target.value)}
+                          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:border-blue-500 outline-none cursor-pointer transition-all truncate"
+                        >
+                          <option value="Semua">Semua Profesi ({uniqueProfesi.length})</option>
+                          {uniqueProfesi.map(pos => (
+                            <option key={pos} value={pos}>{pos}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Tenure RS Filter */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Masa Kerja RS</label>
+                        <select 
+                          value={filterTenureRS} 
+                          onChange={e => setFilterTenureRS(e.target.value)}
+                          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:border-blue-500 outline-none cursor-pointer transition-all truncate"
+                        >
+                          <option value="Semua">Semua Masa Kerja RS</option>
+                          <option value="Kurang dari 1 tahun">Kurang dari 1 tahun</option>
+                          <option value="1 hingga 5 tahun">1 hingga 5 tahun</option>
+                          <option value="6 hingga 10 tahun">6 hingga 10 tahun</option>
+                          <option value="11 tahun atau lebih">11 tahun atau lebih</option>
+                        </select>
+                      </div>
+
+                      {/* Tenure Unit Filter */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Masa Kerja Unit</label>
+                        <select 
+                          value={filterTenureUnit} 
+                          onChange={e => setFilterTenureUnit(e.target.value)}
+                          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:border-blue-500 outline-none cursor-pointer transition-all truncate"
+                        >
+                          <option value="Semua">Semua Masa Kerja Unit</option>
+                          <option value="Kurang dari 1 tahun">Kurang dari 1 tahun</option>
+                          <option value="1 hingga 5 tahun">1 hingga 5 tahun</option>
+                          <option value="6 hingga 10 tahun">6 hingga 10 tahun</option>
+                          <option value="11 tahun atau lebih">11 tahun atau lebih</option>
+                        </select>
+                      </div>
+
+                      {/* Interaction Filter */}
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Interaksi Pasien</label>
+                        <select 
+                          value={filterInteraction} 
+                          onChange={e => setFilterInteraction(e.target.value)}
+                          className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-700 focus:border-blue-500 outline-none cursor-pointer transition-all truncate"
+                        >
+                          <option value="Semua">Semua Interaksi</option>
+                          <option value="YA, saya melakukan interaksi atau kontak langsung dengan pasien">Hanya Interaksi Langsung</option>
+                          <option value="TIDAK, saya TIDAK melakukan interaksi atau kontak langsung dengan pasien">Tanpa Interaksi Langsung</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Main Chart Card - Glassmorphism 2.0 style */}
+                  <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(37,99,235,0.12)] border border-[rgba(37,99,235,0.10)] overflow-hidden">
+                    {/* Header Card */}
+                    <div className="bg-gradient-to-r from-blue-600 to-indigo-800 p-8 text-white flex items-center justify-between">
+                      <div className="space-y-1.5">
+                        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Perbandingan Jumlah Peristiwa yang Dilaporkan</h2>
+                        <p className="text-xs md:text-sm text-blue-100/80 font-medium">Membandingkan distribusi frekuensi pelaporan insiden keselamatan pasien dengan Rumah Sakit Percontohan</p>
+                      </div>
+                      <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl shrink-0 hidden sm:block">
+                        <Activity className="w-8 h-8 text-white" />
+                      </div>
+                    </div>
+
+                    <div className="p-6 md:p-8 space-y-8">
+                      {/* Sub-header info or reset filters */}
+                      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 text-xs font-bold text-slate-500">
+                        <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-100">
+                          <span>Total Responden Aktif:</span>
+                          <span className="text-sm font-extrabold text-blue-800">{reportedEventsComparisonStats.total}</span>
+                        </div>
+                        {(filterUnit !== 'Semua' || filterProfesi !== 'Semua' || filterTenureRS !== 'Semua' || filterTenureUnit !== 'Semua' || filterInteraction !== 'Semua') && (
+                          <button 
+                            onClick={() => {
+                              setFilterUnit('Semua');
+                              setFilterProfesi('Semua');
+                              setFilterTenureRS('Semua');
+                              setFilterTenureUnit('Semua');
+                              setFilterInteraction('Semua');
+                            }}
+                            className="text-red-500 hover:text-red-600 border border-red-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-all cursor-pointer"
+                          >
+                            Reset Semua Filter
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Chart Area */}
+                      <div className="h-[450px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart 
+                            data={[
+                              {
+                                kategori: 'Tidak Pernah',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['Tidak ada'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['Tidak ada'],
+                                'Rumah Sakit Percontohan': 45,
+                                'Rumah Sakit Percontohan Count': 4862,
+                              },
+                              {
+                                kategori: '1–2 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['1 sampai 2'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['1 sampai 2'],
+                                'Rumah Sakit Percontohan': 28,
+                                'Rumah Sakit Percontohan Count': 3025,
+                              },
+                              {
+                                kategori: '3–5 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['3 sampai 5'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['3 sampai 5'],
+                                'Rumah Sakit Percontohan': 15,
+                                'Rumah Sakit Percontohan Count': 1621,
+                              },
+                              {
+                                kategori: '6–10 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['6 hingga 10'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['6 hingga 10'],
+                                'Rumah Sakit Percontohan': 8,
+                                'Rumah Sakit Percontohan Count': 864,
+                              },
+                              {
+                                kategori: '≥11 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['11 atau lebih'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['11 atau lebih'],
+                                'Rumah Sakit Percontohan': 4,
+                                'Rumah Sakit Percontohan Count': 433,
+                              },
+                            ]} 
+                            margin={{ top: 25, right: 10, left: -10, bottom: 20 }}
+                          >
+                            <defs>
+                              <linearGradient id="royalBlueGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#2563EB" />
+                                <stop offset="100%" stopColor="#1D4ED8" />
+                              </linearGradient>
+                              <filter id="re-shadow" x="-5%" y="-10%" width="110%" height="120%">
+                                <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#2563eb" floodOpacity="0.15" />
+                              </filter>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                            <XAxis 
+                              dataKey="kategori" 
+                              stroke="#64748b" 
+                              tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }} 
+                              tickLine={false}
+                            />
+                            <YAxis 
+                              type="number" 
+                              domain={[0, 100]} 
+                              tickCount={11} 
+                              stroke="#64748b" 
+                              tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }}
+                              tickLine={false}
+                              tickFormatter={(val) => `${val}%`} 
+                            />
+                            <RechartsTooltip content={<ReportedEventsTooltip />} cursor={{ fill: 'rgba(37,99,235,0.02)' }} />
+                            <Legend 
+                              verticalAlign="top" 
+                              align="right"
+                              height={40} 
+                              iconType="circle"
+                              iconSize={10}
+                              wrapperStyle={{ fontSize: '12px', fontWeight: 'bold', paddingBottom: '20px' }} 
+                            />
+                            <Bar 
+                              isAnimationActive={false} 
+                              dataKey="Rumah Sakit Anda" 
+                              fill="url(#royalBlueGrad)" 
+                              radius={[6, 6, 0, 0]} 
+                              maxBarSize={55} 
+                              filter="url(#re-shadow)"
+                            >
+                              <LabelList 
+                                dataKey="Rumah Sakit Anda" 
+                                position="top" 
+                                formatter={(val: number) => `${val.toFixed(1)}%`} 
+                                fill="#1d4ed8" 
+                                fontSize={11} 
+                                fontWeight="bold" 
+                              />
+                            </Bar>
+                            <Bar 
+                              isAnimationActive={false} 
+                              dataKey="Rumah Sakit Percontohan" 
+                              fill="#E5E7EB" 
+                              stroke="#9CA3AF" 
+                              strokeWidth={1} 
+                              radius={[6, 6, 0, 0]} 
+                              maxBarSize={55}
+                            >
+                              <LabelList 
+                                dataKey="Rumah Sakit Percontohan" 
+                                position="top" 
+                                formatter={(val: number) => `${val}%`} 
+                                fill="#4b5563" 
+                                fontSize={11} 
+                                fontWeight="bold" 
+                              />
+                            </Bar>
+                          </RechartsBarChart>
+                        </ResponsiveContainer>
+                      </div>
+
+                      {/* Dynamic AI Analysis and Recommendations */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-slate-100 pt-8">
+                        {/* Dynamic AI Interpretation Card */}
+                        <div className="space-y-4 bg-blue-50/50 border border-blue-100 p-6 rounded-2xl relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
+                          <h4 className="text-sm font-extrabold text-blue-900 tracking-wider uppercase flex items-center gap-2">
+                            <Brain className="w-5 h-5 text-blue-600" /> Interpretasi & Analisis Otomatis AI
+                          </h4>
+                          <p className="text-xs md:text-sm text-slate-700 leading-relaxed font-medium">
+                            {(() => {
+                              const categories = [
+                                { key: 'Tidak ada', label: 'Tidak Pernah Melaporkan Kejadian', bm: 45 },
+                                { key: '1 sampai 2', label: 'Melaporkan 1-2 Kejadian', bm: 28 },
+                                { key: '3 sampai 5', label: 'Melaporkan 3-5 Kejadian', bm: 15 },
+                                { key: '6 hingga 10', label: 'Melaporkan 6-10 Kejadian', bm: 8 },
+                                { key: '11 atau lebih', label: 'Melaporkan 11 atau lebih Kejadian', bm: 4 }
+                              ];
+                              
+                              let maxCat = categories[0];
+                              let maxPct = 0;
+                              categories.forEach(c => {
+                                const pct = reportedEventsComparisonStats.percentages[c.key as keyof typeof reportedEventsComparisonStats.percentages];
+                                if (pct > maxPct) {
+                                  maxPct = pct;
+                                  maxCat = c;
+                                }
+                              });
+
+                              if (maxPct === 0) {
+                                return "Belum ada data survei keselamatan pasien yang terintegrasi untuk filter yang dipilih. Silakan isi data survei terlebih dahulu di menu Input Data atau sesuaikan filter Anda.";
+                              }
+
+                              const isTidakPernahMax = maxCat.key === 'Tidak ada';
+
+                              return (
+                                <span>
+                                  Berdasarkan hasil survei, mayoritas responden Rumah Sakit Anda berada pada kategori <strong>&ldquo;Tidak Pernah Melaporkan Kejadian&rdquo;</strong> sebesar <strong>{maxPct.toFixed(1)}%</strong>, sedangkan rata-rata Rumah Sakit Percontohan sebesar <strong>{maxCat.bm}%</strong>. {
+                                    isTidakPernahMax && maxPct > 45 
+                                      ? 'Hal ini menunjukkan adanya kecenderungan pelaporan insiden yang masih lebih rendah dibandingkan rumah sakit pembanding. Diperlukan penguatan budaya pelaporan yang non-punitif, peningkatan edukasi mengenai Incident Reporting, serta penyederhanaan mekanisme pelaporan agar seluruh staf terdorong untuk melaporkan setiap kejadian keselamatan pasien.'
+                                      : 'Hal ini menggambarkan dinamika pelaporan keselamatan pasien di lingkungan kerja Anda. Penting bagi manajemen untuk terus menjaga transparansi dan kemudahan pelaporan tanpa rasa takut akan sanksi (non-punitive culture) guna meningkatkan keselamatan pasien secara berkelanjutan.'
+                                  }
+                                </span>
+                              );
+                            })()}
+                          </p>
+                        </div>
+
+                        {/* Standard AHRQ sops 2.0 Recommendations */}
+                        <div className="space-y-4 bg-slate-50 border border-slate-200 p-6 rounded-2xl">
+                          <h4 className="text-sm font-extrabold text-slate-800 tracking-wider uppercase flex items-center gap-2">
+                            <ListChecks className="w-5 h-5 text-indigo-600" /> Rekomendasi Peningkatan Pelaporan
+                          </h4>
+                          <ul className="text-xs md:text-sm text-slate-600 space-y-3.5">
+                            {[
+                              { text: "Meningkatkan budaya pelaporan insiden tanpa menyalahkan individu (Non-Punitive Culture).", icon: "✨" },
+                              { text: "Melakukan sosialisasi pentingnya pelaporan IKP (Insiden Keselamatan Pasien) kepada seluruh staf.", icon: "📢" },
+                              { text: "Menyederhanakan proses pelaporan melalui sistem digital terintegrasi yang mudah diakses.", icon: "📱" },
+                              { text: "Melaksanakan monitoring tren pelaporan dan tindak lanjut insiden setiap bulan.", icon: "📈" },
+                              { text: "Membandingkan capaian pelaporan dengan benchmark Rumah Sakit Percontohan secara berkala.", icon: "🔍" },
+                              { text: "Menjadikan hasil analisis pelaporan sebagai dasar penyusunan program keselamatan pasien.", icon: "🛡️" }
+                            ].map((rec, i) => (
+                              <li key={i} className="flex gap-2.5 items-start">
+                                <span className="bg-white shadow-sm border border-slate-200 w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0">{rec.icon}</span>
+                                <span className="font-medium leading-relaxed text-slate-700">{rec.text}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <div className="flex-1 bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-8 flex items-center justify-center flex-col text-center">
                   <div className="w-20 h-20 bg-slate-50 rounded-2xl flex items-center justify-center mb-6">
@@ -1811,58 +2302,55 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         title: 'Demografi Responden', 
                         desc: 'Tinjau sebaran responden berdasarkan posisi, masa kerja, jam kerja, dan interaksi pasien.', 
                         icon: <Users className="w-8 h-8 text-blue-600" />, 
-                        colorClass: 'border-b-4 border-blue-500 hover:shadow-blue-100',
-                        badge: `${demografiStats.total} Responden`
+                        hoverClass: 'hover:shadow-blue-100 hover:border-blue-200',
+                        lineBg: 'bg-blue-500'
                       },
                       { 
                         title: 'Hasil Pengukuran Dimensi', 
                         desc: 'Lihat capaian skor rata-rata untuk setiap dimensi budaya keselamatan pasien secara komprehensif.', 
                         icon: <BarChart2 className="w-8 h-8 text-emerald-600" />, 
-                        colorClass: 'border-b-4 border-emerald-500 hover:shadow-emerald-100',
-                        badge: '10 Dimensi'
+                        hoverClass: 'hover:shadow-emerald-100 hover:border-emerald-200',
+                        lineBg: 'bg-emerald-500'
                       },
                       { 
                         title: 'Hasil Per Item', 
                         desc: 'Menganalisis persentase respon positif, netral, dan negatif untuk setiap butir pertanyaan kuesioner.', 
                         icon: <ListChecks className="w-8 h-8 text-orange-600" />, 
-                        colorClass: 'border-b-4 border-orange-500 hover:shadow-orange-100',
-                        badge: '30 Pertanyaan'
+                        hoverClass: 'hover:shadow-orange-100 hover:border-orange-200',
+                        lineBg: 'bg-orange-500'
                       },
                       { 
                         title: 'Penilaian Keselamatan Pasien', 
                         desc: 'Evaluasi peringkat keselamatan pasien secara umum berdasarkan persepsi langsung staf medis.', 
                         icon: <HeartPulse className="w-8 h-8 text-rose-600" />, 
-                        colorClass: 'border-b-4 border-rose-500 hover:shadow-rose-100',
-                        badge: `Skor ${patientSafetyStats.average.toFixed(2)}`
+                        hoverClass: 'hover:shadow-rose-100 hover:border-rose-200',
+                        lineBg: 'bg-rose-500'
                       },
                       { 
                         title: 'Jumlah Peristiwa Yang Dilaporkan', 
                         desc: 'Analisis frekuensi pelaporan kejadian keselamatan pasien oleh unit kerja dalam 12 bulan terakhir.', 
                         icon: <AlertTriangle className="w-8 h-8 text-purple-600" />, 
-                        colorClass: 'border-b-4 border-purple-500 hover:shadow-purple-100',
-                        badge: 'Data Laporan'
+                        hoverClass: 'hover:shadow-purple-100 hover:border-purple-200',
+                        lineBg: 'bg-purple-500'
                       },
                       { 
                         title: 'Komentar Survei', 
                         desc: 'Eksplorasi saran, masukan bebas, dan tanggapan tertulis langsung dari para responden.', 
                         icon: <ShieldAlert className="w-8 h-8 text-slate-600" />, 
-                        colorClass: 'border-b-4 border-slate-600 hover:shadow-slate-100',
-                        badge: `${hospitalComments.length} Komentar`
+                        hoverClass: 'hover:shadow-slate-200 hover:border-slate-300',
+                        lineBg: 'bg-slate-500'
                       }
                     ].map((item, idx) => (
                       <motion.div
                         key={idx}
                         whileHover={{ y: -5 }}
                         onClick={() => setHospitalSubView(item.title)}
-                        className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col cursor-pointer ${item.colorClass} group`}
+                        className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col cursor-pointer relative overflow-hidden ${item.hoverClass} group pb-8`}
                       >
                         <div className="flex items-start justify-between mb-4">
                           <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
                             {item.icon}
                           </div>
-                          <span className="px-2.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] font-extrabold rounded-full">
-                            {item.badge}
-                          </span>
                         </div>
                         <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">
                           {item.title}
@@ -1874,196 +2362,460 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           Lihat Detail
                           <ChevronRight className="w-3.5 h-3.5 ml-1" />
                         </div>
+                        {/* Dynamic identity line at the bottom */}
+                        <div className={`absolute bottom-0 left-0 right-0 h-1.5 ${item.lineBg} rounded-b-[20px] transition-all duration-300 group-hover:h-2.5`} />
                       </motion.div>
                     ))}
                   </div>
                 </div>
               ) : hospitalSubView === 'Demografi Responden' ? (
-                <div className="w-full flex flex-col gap-6">
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <Users className="w-5 h-5 text-blue-500" /> Demografi Responden ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                      <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                        {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
-                      <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                        <Users className="w-5 h-5 text-blue-500" /> Distribusi Posisi Staf / Jabatan
-                      </h3>
-                      {demografiStats.posisiData.length > 0 ? (
-                        <div className="h-[300px] w-full">
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RechartsBarChart layout="vertical" data={demografiStats.posisiData} margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
-                              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                              <XAxis type="number" stroke="#94a3b8" fontSize={11} fontWeight="bold" />
-                              <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={120} tickFormatter={(v) => v.length > 18 ? v.substring(0, 15) + '...' : v} />
-                              <RechartsTooltip contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                              <Bar dataKey="value" fill="#3b82f6" radius={[0, 4, 4, 0]}>
-                                <LabelList dataKey="value" position="right" fill="#1e3a8a" fontSize={11} fontWeight="bold" />
-                              </Bar>
-                            </RechartsBarChart>
-                          </ResponsiveContainer>
-                        </div>
-                      ) : (
-                        <p className="text-slate-500 text-sm py-8 text-center">Tidak ada data untuk tahun ini.</p>
-                      )}
-                    </div>
-
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
-                      <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                        <Clock className="w-5 h-5 text-indigo-500" /> Latar Belakang & Masa Kerja
-                      </h3>
-
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">Masa Kerja di Rumah Sakit ini</span>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {['Kurang dari 1 tahun', '1 hingga 5 tahun', '6 hingga 10 tahun', '11 tahun atau lebih'].map(label => {
-                              const item = demografiStats.g1Data.find(d => d.name === label);
-                              const val = item ? item.value : 0;
-                              return (
-                                <div key={label} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
-                                  <span className="text-[10px] font-bold text-slate-500 leading-tight">{label}</span>
-                                  <span className="text-base font-black text-blue-600 mt-1">{val} <span className="text-[9px] font-medium text-slate-400">staf</span></span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2">
-                          <span className="text-xs font-extrabold text-slate-500 uppercase tracking-wider block">Masa Kerja di Unit Saat Ini</span>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            {['Kurang dari 1 tahun', '1 hingga 5 tahun', '6 hingga 10 tahun', '11 tahun atau lebih'].map(label => {
-                              const item = demografiStats.g2Data.find(d => d.name === label);
-                              const val = item ? item.value : 0;
-                              return (
-                                <div key={label} className="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col justify-between">
-                                  <span className="text-[10px] font-bold text-slate-500 leading-tight">{label}</span>
-                                  <span className="text-base font-black text-indigo-600 mt-1">{val} <span className="text-[9px] font-medium text-slate-400">staf</span></span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-100/30 flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <Activity className="w-5 h-5 text-blue-600" />
-                            <div>
-                              <span className="text-xs font-bold text-blue-800">Interaksi Langsung dengan Pasien</span>
-                              <p className="text-[10px] text-blue-600">Persentase staf yang berinteraksi langsung dengan pasien.</p>
-                            </div>
-                          </div>
-                          <span className="text-lg font-black text-blue-700">
-                            {(() => {
-                              const ya = demografiStats.g4Data.find(d => d.name.toUpperCase().includes('YA'))?.value || 0;
-                              const tdk = demografiStats.g4Data.find(d => d.name.toUpperCase().includes('TIDAK'))?.value || 0;
-                              const totalG4 = ya + tdk;
-                              return totalG4 > 0 ? `${Math.round((ya / totalG4) * 100)}%` : '100%';
-                            })()}
-                          </span>
+                <div className="w-full flex flex-col gap-6 animate-in fade-in duration-500">
+                  {/* Laporan AHRQ V2 Style */}
+                  <div id="demografi-report" className="bg-white border border-slate-200 p-8 md:p-12 rounded-[24px] shadow-xl shadow-slate-200/50">
+                    
+                    {/* Header Laporan */}
+                    <div className="border-b-4 border-blue-600 pb-6 mb-8">
+                      <div className="mb-2">
+                        <div>
+                          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Demografi Responden Rumah Sakit</h1>
+                          <p className="text-sm font-medium text-slate-500 mt-1">Sistem Survei Budaya Keselamatan Pasien AHRQ 2.0</p>
                         </div>
                       </div>
+                    </div>
+
+                    {/* Info Card */}
+                    <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-100 mb-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center">
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Nama Rumah Sakit</span>
+                        <span className="block text-sm font-bold text-blue-900">{namaRs}</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Periode Survei</span>
+                        <span className="block text-sm font-bold text-blue-900">Tahun {tahun1}</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Total Responden</span>
+                        <span className="block text-sm font-bold text-blue-900">{demografiStats.total} Staf</span>
+                      </div>
+                      <div className="text-center">
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal Generate</span>
+                        <span className="block text-sm font-bold text-blue-900">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-10">
+                      
+                      {/* Section 1 */}
+                      <section>
+                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">1</span>
+                          Statistik Administrasi Survei
+                        </h3>
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                          <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-600 font-bold">
+                              <tr>
+                                <th className="p-3.5 border-b border-slate-200 text-center">Statistik</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center">Jumlah</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              <tr className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-3.5 text-slate-700 font-medium">Jumlah Survei Selesai</td>
+                                <td className="p-3.5 text-slate-800 font-bold text-center">{demografiStats.total}</td>
+                              </tr>
+                              <tr className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-3.5 text-slate-700 font-medium">Jumlah Link Survei Dibagikan</td>
+                                <td className="p-3.5 text-slate-800 font-bold text-center">{demografiStats.total}</td>
+                              </tr>
+                              <tr className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-3.5 text-slate-700 font-medium">Jumlah Responden</td>
+                                <td className="p-3.5 text-slate-800 font-bold text-center">{demografiStats.total}</td>
+                              </tr>
+                              <tr className="hover:bg-slate-50/50 transition-colors">
+                                <td className="p-3.5 text-slate-700 font-medium">Response Rate</td>
+                                <td className="p-3.5 text-slate-800 font-bold text-center">100%</td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+
+                      {/* Section 2 */}
+                      <section>
+                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">2</span>
+                          Posisi Staf di Rumah Sakit
+                        </h3>
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                          <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-600 font-bold">
+                              <tr>
+                                <th className="p-3.5 border-b border-slate-200 text-center">Jabatan / Kategori Staf</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center w-32">Jumlah</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center w-32">Persentase</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {demografiStats.posisiData.length > 0 ? (
+                                demografiStats.posisiData.map((item, idx) => (
+                                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="p-3.5 text-slate-700 font-medium">{item.name}</td>
+                                    <td className="p-3.5 text-slate-800 font-bold text-center">{item.value}</td>
+                                    <td className="p-3.5 text-slate-600 font-semibold text-center">
+                                      {demografiStats.total > 0 ? ((item.value / demografiStats.total) * 100).toFixed(1) : 0}%
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={3} className="p-4 text-center text-slate-400 italic">Data tidak tersedia</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+
+                      {/* Section 3 */}
+                      <section>
+                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">3</span>
+                          Unit / Area Kerja
+                        </h3>
+                        <div className="overflow-x-auto rounded-xl border border-slate-200">
+                          <table className="w-full text-left text-sm">
+                            <thead className="bg-slate-50 text-slate-600 font-bold">
+                              <tr>
+                                <th className="p-3.5 border-b border-slate-200 text-center">Unit Utama (Primary Work Area)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center w-32">Jumlah</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center w-32">Persentase</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {demografiStats.unitData.length > 0 ? (
+                                demografiStats.unitData.map((item, idx) => (
+                                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="p-3.5 text-slate-700 font-medium">{item.name}</td>
+                                    <td className="p-3.5 text-slate-800 font-bold text-center">{item.value}</td>
+                                    <td className="p-3.5 text-slate-600 font-semibold text-center">
+                                      {demografiStats.total > 0 ? ((item.value / demografiStats.total) * 100).toFixed(1) : 0}%
+                                    </td>
+                                  </tr>
+                                ))
+                              ) : (
+                                <tr>
+                                  <td colSpan={3} className="p-4 text-center text-slate-400 italic">Data tidak tersedia</td>
+                                </tr>
+                              )}
+                            </tbody>
+                          </table>
+                        </div>
+                      </section>
+
+                      {/* Section 4 & 5 (Lama Bekerja) Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <section>
+                          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">4</span>
+                            Lama Bekerja (RS Ini)
+                          </h3>
+                          <div className="overflow-x-auto rounded-xl border border-slate-200">
+                            <table className="w-full text-left text-sm">
+                              <thead className="bg-slate-50 text-slate-600 font-bold">
+                                <tr>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">Durasi (Tahun)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">N</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">%</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {demografiStats.g1Data.length > 0 ? (
+                                  demografiStats.g1Data.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                      <td className="p-3.5 text-slate-700 font-medium">{item.name}</td>
+                                      <td className="p-3.5 text-slate-800 font-bold text-center">{item.value}</td>
+                                      <td className="p-3.5 text-slate-600 font-semibold text-center">
+                                        {demografiStats.total > 0 ? ((item.value / demografiStats.total) * 100).toFixed(0) : 0}%
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan={3} className="p-4 text-center text-slate-400 italic">Data tidak tersedia</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">5</span>
+                            Lama Bekerja (Unit Saat Ini)
+                          </h3>
+                          <div className="overflow-x-auto rounded-xl border border-slate-200">
+                            <table className="w-full text-left text-sm">
+                              <thead className="bg-slate-50 text-slate-600 font-bold">
+                                <tr>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">Durasi (Tahun)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">N</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">%</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {demografiStats.g2Data.length > 0 ? (
+                                  demografiStats.g2Data.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                      <td className="p-3.5 text-slate-700 font-medium">{item.name}</td>
+                                      <td className="p-3.5 text-slate-800 font-bold text-center">{item.value}</td>
+                                      <td className="p-3.5 text-slate-600 font-semibold text-center">
+                                        {demografiStats.total > 0 ? ((item.value / demografiStats.total) * 100).toFixed(0) : 0}%
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan={3} className="p-4 text-center text-slate-400 italic">Data tidak tersedia</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </section>
+                      </div>
+
+                      {/* Section 6 & 7 (Jam & Interaksi) Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <section>
+                          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">6</span>
+                            Jam Kerja per Minggu
+                          </h3>
+                          <div className="overflow-x-auto rounded-xl border border-slate-200">
+                            <table className="w-full text-left text-sm">
+                              <thead className="bg-slate-50 text-slate-600 font-bold">
+                                <tr>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">Durasi (Jam)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">N</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">%</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {demografiStats.g3Data.length > 0 ? (
+                                  demografiStats.g3Data.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                      <td className="p-3.5 text-slate-700 font-medium">{item.name}</td>
+                                      <td className="p-3.5 text-slate-800 font-bold text-center">{item.value}</td>
+                                      <td className="p-3.5 text-slate-600 font-semibold text-center">
+                                        {demografiStats.total > 0 ? ((item.value / demografiStats.total) * 100).toFixed(0) : 0}%
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan={3} className="p-4 text-center text-slate-400 italic">Data tidak tersedia</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </section>
+
+                        <section>
+                          <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-black">7</span>
+                            Interaksi Langsung dgn Pasien
+                          </h3>
+                          <div className="overflow-x-auto rounded-xl border border-slate-200">
+                            <table className="w-full text-left text-sm">
+                              <thead className="bg-slate-50 text-slate-600 font-bold">
+                                <tr>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">Kategori</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">N</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center">%</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-slate-100">
+                                {demografiStats.g4Data.length > 0 ? (
+                                  demografiStats.g4Data.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                                      <td className="p-3.5 text-slate-700 font-medium">{item.name}</td>
+                                      <td className="p-3.5 text-slate-800 font-bold text-center">{item.value}</td>
+                                      <td className="p-3.5 text-slate-600 font-semibold text-center">
+                                        {demografiStats.total > 0 ? ((item.value / demografiStats.total) * 100).toFixed(0) : 0}%
+                                      </td>
+                                    </tr>
+                                  ))
+                                ) : (
+                                  <tr>
+                                    <td colSpan={3} className="p-4 text-center text-slate-400 italic">Data tidak tersedia</td>
+                                  </tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        </section>
+                      </div>
+
+                      {/* Section 8: Ringkasan Naratif Demografi */}
+                      <section className="bg-blue-50/40 border border-blue-100 p-6 rounded-[20px]">
+                        <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-full bg-blue-200 text-blue-800 flex items-center justify-center text-xs font-black">8</span>
+                          Ringkasan Naratif Demografi
+                        </h3>
+                        <p className="text-sm text-slate-700 leading-relaxed">
+                          Berdasarkan {demografiStats.total} responden dari {namaRs}, profil tenaga kesehatan didominasi oleh perawat dan tenaga medis yang bekerja penuh waktu dengan mayoritas berinteraksi langsung dengan pasien. Masa bakti rata-rata di rumah sakit dan unit menunjukkan komitmen yang kuat, meskipun terdapat rotasi staf yang terlihat dari persentase staf dengan masa kerja kurang dari setahun. Data ini menjadi landasan penting dalam menginterpretasikan respon survei budaya keselamatan pasien.
+                        </p>
+                      </section>
+
                     </div>
                   </div>
                 </div>
               ) : hospitalSubView === 'Hasil Pengukuran Dimensi' ? (
                 <div className="w-full flex flex-col gap-6">
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <BarChart2 className="w-5 h-5 text-emerald-500" /> Hasil Pengukuran Dimensi ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                      <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                        {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                      
+                      <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                        <button 
+                          onClick={() => setMode('Tunggal')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'Tunggal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Periode Tunggal
+                        </button>
+                        <button 
+                          onClick={() => setMode('Perbandingan')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'Perbandingan' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Perbandingan
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-4 mt-4 md:mt-0">
+                      {mode === 'Tunggal' ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-600">Bandingkan:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                          <span className="text-slate-400 font-bold">VS</span>
+                          <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
-                      <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
-                        <BarChart2 className="w-5 h-5 text-emerald-500" /> Persentase Respon Positif per Dimensi
-                      </h3>
-                      <div className="h-[450px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart layout="vertical" data={[...hospitalDimensionScores].sort((a,b) => b.percentage - a.percentage)} margin={{ left: 10, right: 30, top: 10, bottom: 10 }}>
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                            <XAxis type="number" stroke="#94a3b8" fontSize={11} fontWeight="bold" domain={[0, 100]} />
-                            <YAxis type="category" dataKey="kode" stroke="#94a3b8" fontSize={11} fontWeight="bold" width={30} />
-                            <RechartsTooltip contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} formatter={(val: number) => [`${val.toFixed(1)}%`, 'Respon Positif']} />
-                            <Bar dataKey="percentage" fill="#10b981" radius={[0, 4, 4, 0]}>
-                              <LabelList dataKey="percentage" position="right" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#047857" fontSize={10} fontWeight="bold" />
-                            </Bar>
-                          </RechartsBarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
 
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
-                      <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Ringkasan Dimensi</h3>
-                      
-                      <div className="space-y-3">
-                        <span className="text-xs font-extrabold text-emerald-600 uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" /> Top Kekuatan (≥75%)
-                        </span>
-                        <div className="space-y-2">
-                          {hospitalDimensionScores.filter(d => d.percentage >= 75).length > 0 ? (
-                            hospitalDimensionScores.filter(d => d.percentage >= 75).slice(0, 3).map(d => (
-                              <div key={d.id} className="p-3 bg-emerald-50/50 border border-emerald-100 rounded-xl flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-800 text-[9px] font-extrabold rounded">{d.kode}</span>
-                                    <span className="text-xs font-bold text-slate-800 truncate max-w-[150px]">{d.nama}</span>
-                                  </div>
-                                </div>
-                                <span className="text-sm font-black text-emerald-700">{d.percentage.toFixed(1)}%</span>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-slate-400 text-xs italic">Belum ada dimensi kekuatan di atas 75%.</p>
-                          )}
+
+                  {/* Duplicated Detailed Table without Benchmarks */}
+                  <div className="bg-white/80 backdrop-blur-md border border-slate-200 p-6 rounded-[24px] shadow-lg shadow-blue-500/5">
+                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                      <BarChart2 className="w-5 h-5 text-emerald-600" />
+                      Detail Pengukuran Dimensi Budaya Keselamatan Untuk {namaRs}
+                    </h3>
+                    <div className="w-full text-xs font-medium">
+                      <div className="overflow-x-auto w-full">
+                        <table className="w-full text-left text-sm border-collapse min-w-[600px]">
+                          <thead>
+                            <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
+                              <th className="p-3 w-12 text-center align-bottom">No.</th>
+                              <th className="p-3 w-80 align-bottom">Komponen Budaya Keselamatan Pasien</th>
+                              <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {combinedData.map((row, i) => {
+                              const getBarColor = (val: number) => {
+                                if (val >= 85) return 'bg-blue-500';
+                                if (val >= 70) return 'bg-emerald-500';
+                                if (val >= 50) return 'bg-yellow-500';
+                                return 'bg-red-500';
+                              };
+
+                              return (
+                                <tr key={row.id} className="hover:bg-slate-50/50 transition-colors group">
+                                  <td className="p-3 text-center font-bold text-slate-400 align-top pt-5">{i + 1}.</td>
+                                  <td className="p-3 font-semibold text-slate-700 text-xs align-top pt-5 pr-4 leading-relaxed">
+                                    <span className="inline-block px-1.5 py-0.5 bg-slate-100 text-slate-800 text-[10px] font-bold rounded mr-2">{row.kode}</span>
+                                    {row.dimensiSingkat}
+                                  </td>
+                                  <td className="p-3 align-middle py-4">
+                                    {mode === 'Tunggal' ? (
+                                      <div className="flex items-center gap-3 w-full">
+                                        <div className="flex-1 bg-slate-100 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
+                                          <motion.div 
+                                            initial={{ scaleX: 0 }}
+                                            animate={{ scaleX: 1 }}
+                                            transition={{ duration: 0.8, ease: "easeOut" }}
+                                            style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
+                                            className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                          >
+                                            <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                          </motion.div>
+                                        </div>
+                                        <span className="text-sm font-bold text-slate-700 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
+                                      </div>
+                                    ) : (
+                                      <div className="space-y-2 w-full pt-1">
+                                        {/* Bar Tahun 1 */}
+                                        <div className="flex items-center gap-3 w-full">
+                                          <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun1}</span>
+                                          <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
+                                            <motion.div 
+                                              initial={{ scaleX: 0 }}
+                                              animate={{ scaleX: 1 }}
+                                              transition={{ duration: 0.8, ease: "easeOut" }}
+                                              style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
+                                              className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all transform-gpu opacity-70 will-change-transform`}
+                                            >
+                                              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                            </motion.div>
+                                          </div>
+                                          <span className="text-xs font-bold text-slate-500 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
+                                        </div>
+                                        {/* Bar Tahun 2 */}
+                                        <div className="flex items-center gap-3 w-full">
+                                          <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun2}</span>
+                                          <div className="flex-1 bg-slate-100 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
+                                            <motion.div 
+                                              initial={{ scaleX: 0 }}
+                                              animate={{ scaleX: 1 }}
+                                              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                              style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
+                                              className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                            >
+                                              <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                            </motion.div>
+                                          </div>
+                                          <span className="text-sm font-bold text-slate-700 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                        
+                        <div className="mt-6 flex flex-wrap gap-4 items-center justify-center text-[11px] font-semibold text-slate-600 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-red-500 shadow-md"></div> &lt;50% (Perlu Perbaikan)</div>
+                          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-yellow-500 shadow-md"></div> 50-69% (Cukup)</div>
+                          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-md"></div> 70-84% (Baik)</div>
+                          <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-md"></div> &ge;85% (Sangat Baik)</div>
                         </div>
-                      </div>
-
-                      <div className="space-y-3">
-                        <span className="text-xs font-extrabold text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" /> Area Perbaikan (&lt;50%)
-                        </span>
-                        <div className="space-y-2">
-                          {hospitalDimensionScores.filter(d => d.percentage < 50).length > 0 ? (
-                            hospitalDimensionScores.filter(d => d.percentage < 50).slice(0, 3).map(d => (
-                              <div key={d.id} className="p-3 bg-rose-50/50 border border-rose-100 rounded-xl flex items-center justify-between">
-                                <div className="space-y-0.5">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="px-1.5 py-0.5 bg-rose-100 text-rose-800 text-[9px] font-extrabold rounded">{d.kode}</span>
-                                    <span className="text-xs font-bold text-slate-800 truncate max-w-[150px]">{d.nama}</span>
-                                  </div>
-                                </div>
-                                <span className="text-sm font-black text-rose-700">{d.percentage.toFixed(1)}%</span>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-slate-400 text-xs italic">Seluruh dimensi di atas batas perbaikan 50%!</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl text-[11px] text-slate-500 space-y-1">
-                        <p className="font-bold text-slate-700">Kode Dimensi Utama:</p>
-                        <p><strong className="text-slate-600">D1:</strong> Kerjasama Tim di Unit</p>
-                        <p><strong className="text-slate-600">D2:</strong> Staf & Beban Kerja</p>
-                        <p><strong className="text-slate-600">D3:</strong> Pembelajaran Organisasi</p>
-                        <p><strong className="text-slate-600">D4:</strong> Respon Non-Punitif Terhadap Error</p>
                       </div>
                     </div>
                   </div>
@@ -2071,15 +2823,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
               ) : hospitalSubView === 'Hasil Per Item' ? (
                 <div className="w-full flex flex-col gap-6">
                   <div className="space-y-6">
-                    <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-5 rounded-[24px] shadow-sm">
-                      <div>
-                        <h2 className="text-[17px] font-bold text-slate-800 flex items-center gap-2.5">
-                          <ListChecks className="w-6 h-6 text-orange-500" /> Hasil per Item Kuesioner ({tahun1})
-                        </h2>
-                        <p className="text-xs text-slate-500 font-medium mt-1">Detail distribusi respon positif, netral, dan negatif untuk setiap butir pertanyaan.</p>
-                      </div>
-                      <div className="flex items-center gap-3 mt-4 md:mt-0">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tahun:</span>
+                    <div className="flex flex-col md:flex-row items-center justify-end bg-white border border-slate-200 p-5 rounded-[24px] shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Tahun:</span>
                         <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none w-32 cursor-pointer transition-all">
                           {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
@@ -2223,60 +2969,90 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
               ) : hospitalSubView === 'Penilaian Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <HeartPulse className="w-5 h-5 text-rose-500" /> Penilaian Keselamatan Pasien ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                      <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                        {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm flex flex-col justify-center items-center text-center space-y-4">
-                      <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block">Skor Rata-rata</span>
-                      <div className="w-28 h-28 bg-rose-50 rounded-full flex items-center justify-center border border-rose-100">
-                        <span className="text-4xl font-black text-rose-600">{patientSafetyStats.average.toFixed(2)}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-bold text-slate-800">Persepsi Mutu Layanan</h4>
-                        <p className="text-xs text-slate-400">Skala penilaian 1 (Buruk) sampai dengan 5 (Luar Biasa).</p>
+                    <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+                      
+                      <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+                        <button 
+                          onClick={() => setMode('Tunggal')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'Tunggal' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Periode Tunggal
+                        </button>
+                        <button 
+                          onClick={() => setMode('Perbandingan')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${mode === 'Perbandingan' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                        >
+                          Perbandingan
+                        </button>
                       </div>
                     </div>
 
-                    <div className="md:col-span-2 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
-                      <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-2">
-                        <HeartPulse className="w-5 h-5 text-rose-500" /> Distribusi Pilihan Jawaban Responden (E1)
-                      </h3>
-
-                      <div className="space-y-4">
-                        {patientSafetyStats.data.map(item => (
-                          <div key={item.name} className="space-y-1.5">
-                            <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                              <span>{item.name}</span>
-                              <span>{item.value} responden ({item.rate.toFixed(1)}%)</span>
-                            </div>
-                            <div className="h-3 w-full bg-slate-50 border border-slate-100 rounded-full overflow-hidden">
-                              <div style={{ width: `${item.rate}%` }} className="bg-rose-500 h-full rounded-full transition-all" />
-                            </div>
-                          </div>
-                        ))}
-
-                        <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-xs text-rose-800 font-bold leading-normal">
-                          Secara keseluruhan, {patientSafetyStats.positiveRate.toFixed(1)}% staf menilai keselamatan pasien di unit mereka pada tingkat &quot;Sangat Baik&quot; atau &quot;Luar Biasa&quot;.
+                    <div className="flex items-center gap-4 mt-4 md:mt-0">
+                      {mode === 'Tunggal' ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
                         </div>
-                      </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-semibold text-slate-600">Bandingkan:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                          <span className="text-slate-400 font-bold">VS</span>
+                          <select value={tahun2} onChange={e => setTahun2(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer [&>option]:bg-white">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
+                      )}
                     </div>
                   </div>
+
+
+
+                  {/* Duplicated Penilaian Keselamatan Pasien Chart Card without Benchmarks */}
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="bg-white border border-slate-200 p-6 md:p-8 rounded-[24px] shadow-sm relative overflow-hidden"
+                  >
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
+                    <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                      <HeartPulse className="w-5 h-5 text-rose-600" />
+                      Grafik Penilaian Keselamatan Pasien
+                    </h3>
+                    <p className="text-sm text-slate-500 mb-8">Bagaimana Anda menilai tingkat keselamatan pasien di unit kerja Anda? (Butir E1)</p>
+                    
+                    <div className="h-[400px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <RechartsBarChart data={e1Stats} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
+                          <defs>
+                            <filter id="shadow-raised-rose" x="-10%" y="-15%" width="125%" height="135%">
+                              <feDropShadow dx="2" dy="5" stdDeviation="4" floodColor="#9f1239" floodOpacity="0.15" />
+                            </filter>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.7} />
+                          <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 12, fontWeight: 600 }} />
+                          <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
+                          <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
+                          <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
+                          <Bar isAnimationActive={false} dataKey="Rumah Sakit Anda" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised-rose)">
+                            <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#be123c" fontSize={11} fontWeight="bold" />
+                            {e1Stats.map((entry, index) => (
+                              <Cell key={`cell-rs-${index}`} fill="#f43f5e" />
+                            ))}
+                          </Bar>
+                        </RechartsBarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </motion.div>
                 </div>
               ) : hospitalSubView === 'Jumlah Peristiwa Yang Dilaporkan' ? (
                 <div className="w-full flex flex-col gap-6">
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-purple-500" /> Jumlah Peristiwa Yang Dilaporkan ({tahun1})
-                    </h2>
+                  <div className="flex flex-col md:flex-row items-center justify-end bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
                       <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
@@ -2285,78 +3061,122 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-1 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
-                      <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3 flex items-center gap-1.5">
-                        <Clock className="w-5 h-5 text-purple-500" /> Laporan dikirim (12 Bln Terakhir)
-                      </h3>
-
-                      <div className="space-y-4">
-                        {eventsReportedStats.d3Data.map(item => {
-                          const total = eventsReportedStats.d3Total;
-                          const rate = total > 0 ? (item.value / total) * 100 : 0;
-                          return (
-                            <div key={item.name} className="space-y-1">
-                              <div className="flex items-center justify-between text-xs font-bold text-slate-700">
-                                <span>{item.name}</span>
-                                <span>{item.value} orang ({rate.toFixed(0)}%)</span>
-                              </div>
-                              <div className="h-2 w-full bg-slate-50 border border-slate-100 rounded-full overflow-hidden">
-                                <div style={{ width: `${rate}%` }} className="bg-purple-500 h-full rounded-full" />
-                              </div>
-                            </div>
-                          );
-                        })}
+                  {/* Main Chart Card - Glassmorphism 2.0 style */}
+                  <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(139,92,246,0.12)] border border-[rgba(139,92,246,0.10)] overflow-hidden">
+                    {/* Header Card */}
+                    <div className="bg-gradient-to-r from-purple-600 to-indigo-800 p-8 text-white flex items-center justify-between">
+                      <div className="space-y-1.5">
+                        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Detail Distribusi Jumlah Peristiwa yang Dilaporkan</h2>
+                        <p className="text-xs md:text-sm text-purple-100/80 font-medium">Distribusi frekuensi pelaporan insiden keselamatan pasien berdasarkan data responden rumah sakit Anda</p>
+                      </div>
+                      <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl shrink-0 hidden sm:block">
+                        <Activity className="w-8 h-8 text-white" />
                       </div>
                     </div>
 
-                    <div className="lg:col-span-2 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
-                      <h3 className="text-base font-bold text-slate-800 border-b border-slate-100 pb-3">Seberapa Sering Insiden Dilaporkan</h3>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                          <h4 className="text-xs font-extrabold text-purple-700 uppercase tracking-wider block">1. Kejadian Nyaris Cedera (KNC / Near Miss)</h4>
-                          <p className="text-[11px] text-slate-500 leading-snug">Kesalahan diketahui dan diperbaiki sebelum mencapai pasien.</p>
-                          <div className="space-y-2">
-                            {eventsReportedStats.d1Data.map(item => {
-                              const total = eventsReportedStats.d1Total;
-                              const rate = total > 0 ? (item.value / total) * 100 : 0;
-                              return (
-                                <div key={item.name} className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                                  <span>{item.name}</span>
-                                  <span className="font-extrabold text-purple-600">{rate.toFixed(0)}%</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <h4 className="text-xs font-extrabold text-purple-700 uppercase tracking-wider block">2. Kejadian Tidak Cedera (KTC)</h4>
-                          <p className="text-[11px] text-slate-500 leading-snug">Kesalahan sampai ke pasien namun tidak membahayakan.</p>
-                          <div className="space-y-2">
-                            {eventsReportedStats.d2Data.map(item => {
-                              const total = eventsReportedStats.d2Total;
-                              const rate = total > 0 ? (item.value / total) * 100 : 0;
-                              return (
-                                <div key={item.name} className="flex items-center justify-between text-xs font-semibold text-slate-600">
-                                  <span>{item.name}</span>
-                                  <span className="font-extrabold text-purple-600">{rate.toFixed(0)}%</span>
-                                </div>
-                              );
-                            })}
-                          </div>
+                    <div className="p-6 md:p-8 space-y-8">
+                      {/* Sub-header info */}
+                      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4 text-xs font-bold text-slate-500">
+                        <div className="flex items-center gap-1.5 bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg border border-purple-100">
+                          <span>Total Responden Aktif:</span>
+                          <span className="text-sm font-extrabold text-purple-800">{reportedEventsComparisonStats.total}</span>
                         </div>
                       </div>
+
+                      {/* Chart Area */}
+                      <div className="h-[450px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart 
+                            data={[
+                              {
+                                kategori: 'Tidak Pernah',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['Tidak ada'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['Tidak ada'],
+                              },
+                              {
+                                kategori: '1–2 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['1 sampai 2'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['1 sampai 2'],
+                              },
+                              {
+                                kategori: '3–5 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['3 sampai 5'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['3 sampai 5'],
+                              },
+                              {
+                                kategori: '6–10 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['6 hingga 10'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['6 hingga 10'],
+                              },
+                              {
+                                kategori: '≥11 Kejadian',
+                                'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['11 atau lebih'],
+                                'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['11 atau lebih'],
+                              },
+                            ]} 
+                            margin={{ top: 25, right: 10, left: -10, bottom: 20 }}
+                          >
+                            <defs>
+                              <linearGradient id="purpleGrad" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#8b5cf6" />
+                                <stop offset="100%" stopColor="#6d28d9" />
+                              </linearGradient>
+                              <filter id="re-shadow-purple" x="-15%" y="-15%" width="130%" height="140%">
+                                <feDropShadow dx="0" dy="6" stdDeviation="5" floodColor="#0f172a" floodOpacity="0.35" />
+                              </filter>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
+                            <XAxis 
+                              dataKey="kategori" 
+                              stroke="#64748b" 
+                              tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }} 
+                              tickLine={false}
+                            />
+                            <YAxis 
+                              type="number" 
+                              domain={[0, 100]} 
+                              tickCount={11} 
+                              stroke="#64748b" 
+                              tick={{ fill: '#475569', fontSize: 11, fontWeight: 700 }}
+                              tickLine={false}
+                              tickFormatter={(val) => `${val}%`} 
+                            />
+                            <RechartsTooltip content={<ReportedEventsTooltip />} cursor={{ fill: 'rgba(139,92,246,0.02)' }} />
+                            <Legend 
+                              verticalAlign="top" 
+                              align="right"
+                              height={40} 
+                              iconType="circle"
+                              iconSize={10}
+                              wrapperStyle={{ fontSize: '12px', fontWeight: 'bold', paddingBottom: '20px' }} 
+                            />
+                            <Bar 
+                              isAnimationActive={false} 
+                              dataKey="Rumah Sakit Anda" 
+                              fill="url(#purpleGrad)" 
+                              radius={[6, 6, 0, 0]} 
+                              maxBarSize={55} 
+                              filter="url(#re-shadow-purple)"
+                            >
+                              <LabelList 
+                                dataKey="Rumah Sakit Anda" 
+                                position="top" 
+                                formatter={(val: number) => `${val.toFixed(1)}%`} 
+                                fill="#6d28d9" 
+                                fontSize={11} 
+                                fontWeight="bold" 
+                              />
+                            </Bar>
+                          </RechartsBarChart>
+                        </ResponsiveContainer>
+                      </div>
+
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="w-full flex flex-col gap-6">
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <ShieldAlert className="w-5 h-5 text-slate-500" /> Komentar dan Ulasan Survei ({tahun1})
-                    </h2>
+                  <div className="flex flex-col md:flex-row items-center justify-end bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
                       <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
