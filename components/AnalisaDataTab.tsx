@@ -1679,7 +1679,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div>
+              <div className="pt-0 pb-0 mt-0">
                 <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight">
                   {benchmarkSubView || hospitalSubView || positionSubView || unitSubView || tenureSubView || interactionSubView || mainCards.find(c => c.id === activeView)?.title}
                 </h1>
@@ -1691,7 +1691,21 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
             {activeView === 'benchmark' ? (
               !benchmarkSubView ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto py-12 md:py-16 mt-4">
+                <div className="w-full space-y-6">
+                  {/* Period selection */}
+                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
+                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                      <Hospital className="w-5 h-5 text-blue-600" /> Pilih Tahun Survei
+                    </h2>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
+                      <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
+                        {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto py-0 mt-0">
                   {[
                     { 
                       title: <>Perbandingan<br/>Pengukuran Dimensi</>, 
@@ -1707,7 +1721,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       iconPos: 'right',
                       textAlign: 'text-left',
                       iconAlign: 'items-start',
-                      titleName: 'Perbandingan Pengukuran Dimensi'
+                      titleName: 'Perbandingan Pengukuran Dimensi',
+                      iconAbsoluteClass: 'bottom-10 left-10'
                     },
                     { 
                       title: <>Perbandingan Hasil<br/>Per Item</>, 
@@ -1723,7 +1738,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       iconPos: 'left',
                       textAlign: 'text-right',
                       iconAlign: 'items-end',
-                      titleName: 'Perbandingan Hasil Per Item'
+                      titleName: 'Perbandingan Hasil Per Item',
+                      iconAbsoluteClass: 'bottom-10 right-10'
                     },
                     { 
                       title: <>Perbandingan Penilaian<br/>Keselamatan Pasien</>, 
@@ -1736,10 +1752,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       headerClasses: 'flex-row',
                       quarterClasses: 'top-0 right-0 rounded-bl-full',
                       quarterPadding: 'pb-8 pl-8',
-                      iconPos: 'right',
+                      iconPos: 'left',
                       textAlign: 'text-left',
                       iconAlign: 'items-start',
-                      titleName: 'Perbandingan Penilaian Keselamatan Pasien'
+                      titleName: 'Perbandingan Penilaian Keselamatan Pasien',
+                      iconAbsoluteClass: 'top-10 left-10',
+                      h3Classes: 'mr-[54px] ml-0 pt-0 text-left'
                     },
                     { 
                       title: <>Perbandingan Jumlah<br/>Peristiwa Dilaporkan</>, 
@@ -1748,14 +1766,16 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       num: '04',
                       quarterColor: 'bg-[#10B981]',
                       lineColor: 'bg-[#10B981]',
-                      cardAlign: 'justify-end items-end',
-                      headerClasses: 'flex-row-reverse',
+                      cardAlign: 'justify-end items-start',
+                      headerClasses: 'flex-row',
                       quarterClasses: 'top-0 left-0 rounded-br-full',
                       quarterPadding: 'pb-8 pr-8',
-                      iconPos: 'left',
-                      textAlign: 'text-right',
-                      iconAlign: 'items-end',
-                      titleName: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan'
+                      iconPos: 'right',
+                      textAlign: 'text-left',
+                      iconAlign: 'items-start',
+                      titleName: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan',
+                      iconAbsoluteClass: 'top-10 right-10',
+                      h3Classes: 'ml-[54px]'
                     },
                   ].map((item, idx) => (
                     <motion.div
@@ -1771,17 +1791,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                       <div className="flex flex-col w-full relative z-10 gap-5">
                         {/* Title and line */}
-                        <div className={`flex ${item.headerClasses} justify-between items-start w-full`}>
-                          <div className={`flex flex-col ${item.iconAlign}`}>
-                            <h3 className={`text-[20px] md:text-[22px] font-bold text-slate-800 leading-[1.3] uppercase ${item.textAlign}`}>
+                        <div className="flex justify-between items-start w-full">
+                          <div className={`flex flex-col ${item.iconAlign} w-full`}>
+                            <h3 className={`text-[20px] md:text-[22px] font-bold text-slate-800 leading-[1.3] uppercase ${item.textAlign} ${item.h3Classes || ''}`}>
                               {item.title}
                             </h3>
                             <div className={`w-16 h-[3px] ${item.lineColor} mt-4 group-hover:w-24 transition-all duration-500 rounded-full`}></div>
-                          </div>
-                          
-                          {/* Icon */}
-                          <div className={`hidden md:block ${item.iconPos === 'right' ? 'ml-4' : 'mr-4'} mt-1`}>
-                            {item.icon}
                           </div>
                         </div>
 
@@ -1791,10 +1806,15 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </p>
                       </div>
 
+                      {/* Desktop Absolute Icon */}
+                      <div className={`hidden md:block absolute ${item.iconAbsoluteClass} z-10`}>
+                        {item.icon}
+                      </div>
+
                       {/* Desktop Quarter Circle */}
                       <div className={`hidden md:flex absolute ${item.quarterClasses} w-[160px] h-[160px] ${item.quarterColor} flex-col items-center justify-center z-0 origin-center group-hover:scale-105 transition-transform duration-500 ease-out`}>
                         <div className={`flex flex-col items-center justify-center ${item.quarterPadding} w-full h-full`}>
-                          <span className="text-white/90 text-[11px] font-bold tracking-[0.2em] uppercase mb-0.5">Step</span>
+                          <span className="text-white/90 text-[11px] font-bold tracking-[0.2em] uppercase mb-0.5">Hasil</span>
                           <span className="text-white font-black text-[42px] leading-none tracking-tight">{item.num}</span>
                           <span className="text-white/90 text-[9px] font-bold tracking-[0.1em] mt-1.5 uppercase text-center leading-tight whitespace-nowrap">Menu<br/>Analisis</span>
                         </div>
@@ -1802,6 +1822,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </motion.div>
                   ))}
                 </div>
+              </div>
               ) : benchmarkSubView === 'Perbandingan Pengukuran Dimensi' ? (
                 <div className="w-full flex flex-col gap-6">
                   {/* Mode Selector and Filters */}
