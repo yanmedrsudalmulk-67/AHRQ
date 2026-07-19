@@ -23,8 +23,8 @@ import {
 } from 'lucide-react';
 import useSWR, { mutate as globalMutate } from 'swr';
 import InputDataTab from './InputDataTab';
-import GrafikTab from './GrafikTab';
 import LaporanTab from './LaporanTab';
+import AnalisaDataTab from './AnalisaDataTab';
 import PengaturanTab from './PengaturanTab';
 import PersetujuanTab from './PersetujuanTab';
 import DashboardTable from './DashboardTable';
@@ -68,7 +68,7 @@ export default function Dashboard({
   activeLogo,
   onUpdateLogo
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'input' | 'grafik' | 'laporan' | 'pengaturan' | 'persetujuan' | 'master-posisi' | 'master-unit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analisa-data' | 'input' | 'laporan' | 'pengaturan' | 'persetujuan' | 'master-posisi' | 'master-unit'>('dashboard');
   const mainContainerRef = useRef<HTMLElement | null>(null);
 
   // Reset scroll to top immediately whenever activeTab changes
@@ -303,11 +303,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('dashboard')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'dashboard' ? 'text-black' : 'text-blue-200'}`} /> 
+              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'dashboard' ? 'text-white' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[15px] leading-none">Dashboard</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Beranda</span>
             </button>
@@ -316,37 +316,37 @@ export default function Dashboard({
               onClick={() => setActiveTab('input')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'input'
-                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'input' ? 'text-black' : 'text-blue-200'}`} /> 
+              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'input' ? 'text-white' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Input Data Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Survei</span>
             </button>
 
             <button
-              onClick={() => setActiveTab('grafik')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                activeTab === 'grafik'
-                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+              onClick={() => setActiveTab('analisa-data')}
+              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+                activeTab === 'analisa-data'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <BarChart2 className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'grafik' ? 'text-black' : 'text-blue-200'}`} /> 
-              <span className="hidden md:block text-[14px] leading-none">Analisis Grafik</span>
-              <span className="md:hidden text-[10px] mt-1 tracking-wide">Grafik</span>
+              <Activity className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'analisa-data' ? 'text-white' : 'text-blue-200'}`} /> 
+              <span className="hidden md:block text-[14px] leading-none">Analisa Data</span>
+              <span className="md:hidden text-[10px] mt-1 tracking-wide">Analisa</span>
             </button>
 
             <button
               onClick={() => setActiveTab('laporan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'laporan'
-                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-black' : 'text-blue-200'}`} /> 
+              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-white' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Laporan Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
             </button>
@@ -355,11 +355,11 @@ export default function Dashboard({
               onClick={() => setActiveTab('pengaturan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'pengaturan'
-                  ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-black' : 'text-blue-200'}`} /> 
+              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-white' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Pengaturan</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
@@ -369,11 +369,11 @@ export default function Dashboard({
                 onClick={() => setActiveTab('persetujuan')}
                 className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
                   activeTab === 'persetujuan'
-                    ? 'text-black bg-white shadow-lg scale-105 md:scale-100'
+                    ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                     : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
                 }`}
               >
-                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'persetujuan' ? 'text-black' : 'text-blue-200'}`} /> 
+                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'persetujuan' ? 'text-white' : 'text-blue-200'}`} /> 
                 <span className="hidden md:block text-[14px] leading-none">Persetujuan Akun</span>
                 <span className="md:hidden text-[10px] mt-1 tracking-wide">Persetujuan</span>
                 
@@ -542,6 +542,16 @@ export default function Dashboard({
           </div>
         )}
 
+        {activeTab === 'analisa-data' && (
+          <AnalisaDataTab 
+            surveys={filteredSurveys}
+            role={role}
+            identifier={identifier}
+            hospitalId={hospitalId || ''}
+            namaRs={namaRs}
+          />
+        )}
+
         {activeTab === 'input' && (
           <InputDataTab 
             currentRsName={namaRs} 
@@ -551,12 +561,8 @@ export default function Dashboard({
           />
         )}
 
-        {activeTab === 'grafik' && (
-          <GrafikTab surveys={filteredSurveys} />
-        )}
-
         {activeTab === 'laporan' && (
-          <LaporanTab surveys={filteredSurveys} namaRs={namaRs} />
+          <LaporanTab />
         )}
 
         {activeTab === 'pengaturan' && (

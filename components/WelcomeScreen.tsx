@@ -58,10 +58,14 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       {/* 1. Header (Translucent Light Glass Bar) */}
       <header 
         id="welcome-header" 
-        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-white/40 backdrop-blur-xl rounded-2xl border border-white/50 shadow-[0_8px_32px_rgba(0,0,0,0.1)] ring-1 ring-white/20"
+        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-white/30 backdrop-blur-2xl rounded-2xl border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/30 relative overflow-hidden group"
       >
-        <div className="flex items-center gap-3">
-          <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-[0_8px_32px_rgba(37,99,235,0.25)] ring-1 ring-inset ring-white/30 flex items-center justify-center shrink-0 w-12 h-12">
+        {/* Shine effect overlay */}
+        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
+
+        <div className="flex items-center gap-3 relative z-10">
+          <div className="p-0.5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-xl border border-white/40 shadow-[0_8px_32px_rgba(37,99,235,0.3)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-12 h-12 overflow-hidden relative group/logo">
+            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
@@ -76,17 +80,17 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         </div>
 
         {/* Real-time Date and Clock Widget */}
-        <div className="flex items-center gap-2 md:gap-3">
+        <div className="flex items-center gap-2 md:gap-3 relative z-10">
           {/* Date pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/40 backdrop-blur-lg border border-white/50 shadow-[0_4px_12px_rgba(0,0,0,0.05)] ring-1 ring-white/20 text-slate-600">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-[0_10px_25px_rgba(0,0,0,0.05)] ring-1 ring-white/30 text-slate-700 transition-all hover:bg-white/30">
             <Calendar className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-            <span className="text-[11px] font-semibold tracking-wide">{dateString || 'Memuat...'}</span>
+            <span className="text-[11px] font-bold tracking-wide">{dateString || 'Memuat...'}</span>
           </div>
 
           {/* Clock pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/40 backdrop-blur-lg border border-white/50 shadow-[0_4px_12px_rgba(0,0,0,0.05)] ring-1 ring-white/20 text-teal-700 font-mono">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-[0_10px_25px_rgba(0,0,0,0.05)] ring-1 ring-white/30 text-teal-800 font-mono transition-all hover:bg-white/30">
             <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0 animate-pulse" />
-            <span className="text-xs font-bold tracking-wider">{timeString || '--:--:-- WIB'}</span>
+            <span className="text-xs font-black tracking-wider">{timeString || '--:--:-- WIB'}</span>
           </div>
         </div>
       </header>
@@ -105,7 +109,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-[36px] md:text-[56px] w-full md:w-[600px] font-black text-slate-900 tracking-tight leading-[1.1] font-sans text-left"
+              className="text-[36px] md:text-[56px] w-full md:w-[600px] font-black text-[#285378] tracking-tight leading-[1.1] font-sans text-left"
             >
               Sistem Survei <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600">
