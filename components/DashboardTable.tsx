@@ -712,10 +712,10 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId, s
         <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-sm">
           <table className="w-full text-left text-xs border-collapse">
             <thead>
-              <tr className="bg-[#f54900] text-white font-bold uppercase tracking-wider divide-x divide-orange-400/50">
-                <th className="p-4 text-center w-12 text-[12px]">No</th>
-                <th className="p-4 text-center text-[12px]">DIMENSI BUDAYA KESELAMATAN PASIEN</th>
-                <th className="p-4 text-center w-52 text-[12px]">Hasil Persentase (%)</th>
+              <tr className="text-white font-bold uppercase tracking-wider divide-x divide-teal-400/30">
+                <th className="p-4 text-center w-12 text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7' }}>No</th>
+                <th className="p-4 text-center text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7' }}>DIMENSI BUDAYA KESELAMATAN PASIEN</th>
+                <th className="p-4 text-center w-52 text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7' }}>Hasil Persentase (%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white text-slate-600">

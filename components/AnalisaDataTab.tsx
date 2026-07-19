@@ -135,6 +135,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [tenureSubView, setTenureSubView] = useState<string | null>(null);
   const [interactionSubView, setInteractionSubView] = useState<string | null>(null);
   const [selectedDimId, setSelectedDimId] = useState<string>('d1');
+  const activeDimIdForPosition = selectedDimId === 'd1' ? 'd7' : selectedDimId;
 
   const [mode, setMode] = useState<'Tunggal' | 'Perbandingan'>('Tunggal');
   
@@ -1452,6 +1453,20 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     return sum / DIMENSION_ORDER.length;
   }, [masterBenchmarkData]);
 
+  const positionAverageBenchmark = useMemo(() => {
+    let sum = 0;
+    let count = 0;
+    DIMENSION_ORDER.forEach(dimId => {
+      if (dimId !== 'd1') {
+        const bMin = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
+        const bMax = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
+        sum += (bMin + bMax) / 2;
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : 0;
+  }, [masterBenchmarkData]);
+
   const getAverageCompositeForUnit = (unit: string) => {
     let sum = 0;
     let count = 0;
@@ -1468,7 +1483,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     let sum = 0;
     let count = 0;
     positionDimensionScores.forEach(row => {
-      if (row[position] !== undefined && row[position] !== 0) {
+      if (row.id !== 'd1' && row[position] !== undefined && row[position] !== 0) {
         sum += row[position];
         count++;
       }
@@ -3808,53 +3823,101 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-12 w-full p-6">
                     {[
                       { 
                         title: 'Perbandingan Pengukuran Dimensi', 
                         desc: 'Analisis Perbandingan tingkat persentase respon positif untuk 10 dimensi budaya keselamatan berdasarkan unit / area kerja.', 
-                        icon: <BarChart2 className="w-8 h-8 text-emerald-600" />, 
-                        colorClass: 'border-b-4 border-emerald-500 hover:shadow-emerald-100'
+                        icon: <BarChart2 className="w-8 h-8 text-[#EE8B1B]" />, 
+                        textColor: 'text-[#EE8B1B]',
+                        badgeBg: 'bg-[#EE8B1B]',
+                        badgePos: 'right',
+                        accent: 'absolute -top-2.5 -left-2.5 w-32 h-20 bg-[#EE8B1B] rounded-[24px] -z-10'
                       },
                       { 
                         title: 'Perbandingan Hasil Per Item', 
                         desc: 'Mengevaluasi dan membandingkan tanggapan positif staf untuk setiap butir pertanyaan kuesioner SOPS di tiap unit.', 
-                        icon: <ListChecks className="w-8 h-8 text-orange-600" />, 
-                        colorClass: 'border-b-4 border-orange-500 hover:shadow-orange-100'
+                        icon: <ListChecks className="w-8 h-8 text-[#F05A28]" />, 
+                        textColor: 'text-[#F05A28]',
+                        badgeBg: 'bg-[#F05A28]',
+                        badgePos: 'right',
+                        accent: 'absolute -bottom-2.5 -left-2.5 w-32 h-20 bg-[#F05A28] rounded-[24px] -z-10'
                       },
                       { 
                         title: 'Perbandingan Penilaian Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) lintas berbagai unit / departemen kerja.', 
-                        icon: <HeartPulse className="w-8 h-8 text-rose-600" />, 
-                        colorClass: 'border-b-4 border-rose-500 hover:shadow-rose-100'
+                        icon: <HeartPulse className="w-8 h-8 text-[#22B573]" />, 
+                        textColor: 'text-[#22B573]',
+                        badgeBg: 'bg-[#22B573]',
+                        badgePos: 'left',
+                        accent: 'absolute -top-2.5 -right-2.5 w-32 h-20 bg-[#22B573] rounded-[24px] -z-10'
                       },
                       { 
                         title: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara berbagai unit / area kerja.', 
-                        icon: <AlertTriangle className="w-8 h-8 text-purple-600" />, 
-                        colorClass: 'border-b-4 border-purple-500 hover:shadow-purple-100'
+                        icon: <AlertTriangle className="w-8 h-8 text-[#00AEEF]" />, 
+                        textColor: 'text-[#00AEEF]',
+                        badgeBg: 'bg-[#00AEEF]',
+                        badgePos: 'left',
+                        accent: 'absolute -bottom-2.5 -right-2.5 w-32 h-20 bg-[#00AEEF] rounded-[24px] -z-10'
                       }
                     ].map((item, idx) => (
                       <motion.div
                         key={idx}
                         whileHover={{ y: -5 }}
                         onClick={() => setUnitSubView(item.title)}
-                        className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col cursor-pointer ${item.colorClass} group`}
+                        className="relative cursor-pointer group"
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                            {item.icon}
+                        {/* Accent shape behind the card */}
+                        <div className={item.accent} />
+
+                        {/* Main Card */}
+                        <div className={`bg-white rounded-[24px] shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] border border-slate-100 p-8 flex min-h-[220px] relative z-10 transition-all duration-300 ${
+                          item.badgePos === 'right' ? 'pr-24 pl-8' : 'pl-24 pr-8'
+                        }`}>
+                          
+                          {/* Circle Badge */}
+                          <div className={`absolute ${
+                            item.badgePos === 'right' ? 'right-6' : 'left-6'
+                          } top-1/2 -translate-y-1/2 flex items-center justify-center z-20`}>
+                            <div className="w-[52px] h-[52px] rounded-full bg-white shadow-[0_8px_20px_rgba(0,0,0,0.12)] flex items-center justify-center p-1 border border-slate-100">
+                              <div className={`w-full h-full rounded-full ${item.badgeBg} flex items-center justify-center text-white font-bold text-[16px]`}>
+                                0{idx + 1}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">
-                          {item.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6 flex-1">
-                          {item.desc}
-                        </p>
-                        <div className="flex items-center text-blue-600 font-bold text-xs group-hover:translate-x-1 transition-transform mt-auto">
-                          Lihat Detail Perbandingan
-                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+
+                          {/* Content */}
+                          {item.badgePos === 'right' ? (
+                            <div className="flex flex-col h-full justify-between text-left w-full">
+                              <div>
+                                <h3 className={`font-bold text-[15px] uppercase tracking-wider mb-2 ${item.textColor} leading-snug`}>
+                                  {item.title}
+                                </h3>
+                                <p className="text-slate-400 text-[11px] leading-[1.6]">
+                                  {item.desc}
+                                </p>
+                              </div>
+                              <div className="mt-4 p-2 bg-slate-50/50 rounded-xl w-fit group-hover:scale-110 transition-transform duration-300">
+                                {item.icon}
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col h-full justify-between text-right w-full">
+                              <div>
+                                <h3 className={`font-bold text-[15px] uppercase tracking-wider mb-2 ${item.textColor} leading-snug`}>
+                                  {item.title}
+                                </h3>
+                                <p className="text-slate-400 text-[11px] leading-[1.6]">
+                                  {item.desc}
+                                </p>
+                              </div>
+                              <div className="mt-4 p-2 bg-slate-50/50 rounded-xl w-fit self-end group-hover:scale-110 transition-transform duration-300">
+                                {item.icon}
+                              </div>
+                            </div>
+                          )}
+
                         </div>
                       </motion.div>
                     ))}
@@ -4330,53 +4393,56 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full p-4">
                     {[
                       { 
                         title: 'Perbandingan Pengukuran Dimensi', 
                         desc: 'Analisis Perbandingan tingkat persentase respon positif untuk 10 dimensi budaya keselamatan berdasarkan posisi staf.', 
-                        icon: <BarChart2 className="w-8 h-8 text-emerald-600" />, 
-                        colorClass: 'border-b-4 border-emerald-500 hover:shadow-emerald-100'
+                        icon: <BarChart2 className="w-10 h-10 text-slate-400 stroke-[1.2]" />, 
+                        color: 'bg-[#FF4D4D]'
                       },
                       { 
                         title: 'Perbandingan Hasil Per Item', 
                         desc: 'Mengevaluasi dan membandingkan tanggapan positif staf untuk setiap butir pertanyaan kuesioner SOPS.', 
-                        icon: <ListChecks className="w-8 h-8 text-orange-600" />, 
-                        colorClass: 'border-b-4 border-orange-500 hover:shadow-orange-100'
+                        icon: <ListChecks className="w-10 h-10 text-slate-400 stroke-[1.2]" />, 
+                        color: 'bg-[#175997]'
                       },
                       { 
                         title: 'Perbandingan Penilaian Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) lintas berbagai posisi dan peran jabatan.', 
-                        icon: <HeartPulse className="w-8 h-8 text-rose-600" />, 
-                        colorClass: 'border-b-4 border-rose-500 hover:shadow-rose-100'
+                        icon: <HeartPulse className="w-10 h-10 text-slate-400 stroke-[1.2]" />, 
+                        color: 'bg-[#F29F05]'
                       },
                       { 
                         title: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara berbagai posisi staf.', 
-                        icon: <AlertTriangle className="w-8 h-8 text-purple-600" />, 
-                        colorClass: 'border-b-4 border-purple-500 hover:shadow-purple-100'
+                        icon: <Users className="w-10 h-10 text-slate-400 stroke-[1.2]" />, 
+                        color: 'bg-[#5D20D2]'
                       }
                     ].map((item, idx) => (
                       <motion.div
                         key={idx}
                         whileHover={{ y: -5 }}
                         onClick={() => setPositionSubView(item.title)}
-                        className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col cursor-pointer ${item.colorClass} group`}
+                        className="bg-white rounded-[28px] shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.12)] transition-all duration-300 cursor-pointer relative flex min-h-[220px]"
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                        {/* Left colored tab */}
+                        <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-[70%] w-[80px] ${item.color} rounded-r-[20px] flex flex-col justify-center items-center text-white z-10 shadow-sm`}>
+                          <span className="text-[11px] font-bold tracking-widest uppercase opacity-90 mb-1">Step</span>
+                          <span className="text-[32px] font-bold leading-none">0{idx + 1}</span>
+                        </div>
+
+                        {/* Content area */}
+                        <div className="pl-[110px] pr-8 py-8 flex flex-col items-center text-center w-full justify-center">
+                          <div className="mb-4">
                             {item.icon}
                           </div>
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">
-                          {item.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6 flex-1">
-                          {item.desc}
-                        </p>
-                        <div className="flex items-center text-blue-600 font-bold text-xs group-hover:translate-x-1 transition-transform mt-auto">
-                          Lihat Detail Perbandingan
-                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+                          <h3 className="text-slate-500 font-bold text-[15px] uppercase tracking-widest mb-3 leading-snug">
+                            {item.title}
+                          </h3>
+                          <p className="text-slate-400 text-[11px] leading-[1.6] line-clamp-3">
+                            {item.desc}
+                          </p>
                         </div>
                       </motion.div>
                     ))}
@@ -4401,34 +4467,31 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                   {/* Main chart and detail */}
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4 lg:col-span-1">
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Pilih Dimensi Budaya</h3>
-                      <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
-                        {Object.keys(DIMENSI_INFO).map(dimId => {
-                          const info = DIMENSI_INFO[dimId];
-                          return (
-                            <button
-                              key={dimId}
-                              onClick={() => setSelectedDimId(dimId)}
-                              className={`w-full text-left p-3 rounded-xl transition-all text-xs font-semibold flex items-start gap-2.5 ${selectedDimId === dimId ? 'bg-emerald-50 text-emerald-700 border-l-4 border-emerald-500' : 'text-slate-600 hover:bg-slate-50'}`}
-                            >
-                              <span className="bg-slate-200/60 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-extrabold">{info.kode}</span>
-                              <span className="flex-1 leading-normal">{info.nama}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm lg:col-span-2 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-extrabold rounded-md">{DIMENSI_INFO[selectedDimId]?.kode}</span>
-                          {DIMENSI_INFO[selectedDimId]?.nama}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6">
-                          {DIMENSI_INFO[selectedDimId]?.deskripsi}
-                        </p>
+                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm lg:col-span-3 flex flex-col justify-between">
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                        <div>
+                          <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
+                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-extrabold rounded-md">{DIMENSI_INFO[activeDimIdForPosition]?.kode}</span>
+                            {DIMENSI_INFO[activeDimIdForPosition]?.nama}
+                          </h3>
+                          <p className="text-slate-500 text-xs font-medium leading-relaxed">
+                            {DIMENSI_INFO[activeDimIdForPosition]?.deskripsi}
+                          </p>
+                        </div>
+                        <div className="flex flex-col space-y-1.5 shrink-0 min-w-[240px]">
+                          <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Pilih Dimensi Budaya Keselamatan:</label>
+                          <select
+                            value={activeDimIdForPosition}
+                            onChange={(e) => setSelectedDimId(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-700 focus:border-emerald-500 outline-none cursor-pointer"
+                          >
+                            {Object.keys(DIMENSI_INFO).filter(dimId => dimId !== 'd1').map(dimId => (
+                              <option key={dimId} value={dimId}>
+                                [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
 
                       {/* Chart displaying positive response rate by staff position */}
@@ -4437,7 +4500,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <RechartsBarChart
                             layout="vertical"
                             data={demografiStats.posisiData.map(pos => {
-                              const scoreObj = positionDimensionScores.find(s => s.id === selectedDimId);
+                              const scoreObj = positionDimensionScores.find(s => s.id === activeDimIdForPosition);
                               const score = scoreObj ? scoreObj[pos.name] : 0;
                               return {
                                 name: pos.name,
@@ -4489,7 +4552,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white/30 text-slate-600">
-                          {DIMENSION_ORDER.map((dimId, idx) => {
+                          {DIMENSION_ORDER.filter(dimId => dimId !== 'd1').map((dimId, idx) => {
                             const bMin = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
                             const bMax = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
                             const bAvg = (bMin + bMax) / 2;
@@ -4556,7 +4619,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
                             {demografiStats.posisiData.map((pos, posIdx) => (
                               <td key={`pos-avg-pilot-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                <span className={getCellColorClass(averageBenchmark)}>{averageBenchmark.toFixed(1)}%</span>
+                                <span className={getCellColorClass(positionAverageBenchmark)}>{positionAverageBenchmark.toFixed(1)}%</span>
                               </td>
                             ))}
                           </tr>
@@ -4828,56 +4891,84 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full pt-[20px] pb-[20px] px-2">
                     {[
                       { 
                         title: 'Perbandingan Pengukuran Dimensi', 
                         desc: 'Analisis Perbandingan tingkat persentase respon positif untuk 10 dimensi budaya keselamatan berdasarkan masa jabatan / lama kerja staf.', 
-                        icon: <BarChart2 className="w-8 h-8 text-emerald-600" />, 
-                        colorClass: 'border-b-4 border-emerald-500 hover:shadow-emerald-100'
+                        icon: <BarChart2 className="w-7 h-7 text-amber-500 stroke-[1.5]" />
                       },
                       { 
                         title: 'Perbandingan Hasil Per Item', 
                         desc: 'Mengevaluasi dan membandingkan tanggapan positif staf untuk setiap butir pertanyaan kuesioner SOPS di tiap kelompok masa jabatan.', 
-                        icon: <ListChecks className="w-8 h-8 text-orange-600" />, 
-                        colorClass: 'border-b-4 border-orange-500 hover:shadow-orange-100'
+                        icon: <ListChecks className="w-7 h-7 text-orange-500 stroke-[1.5]" />
                       },
                       { 
-                        title: 'Perbandingan Penilaian Keselamatan Pasien', 
+                        title: 'Penilaian Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) berdasarkan masa jabatan atau lama kerja staf.', 
-                        icon: <HeartPulse className="w-8 h-8 text-rose-600" />, 
-                        colorClass: 'border-b-4 border-rose-500 hover:shadow-rose-100'
+                        icon: <HeartPulse className="w-7 h-7 text-sky-500 stroke-[1.5]" />
                       },
                       { 
-                        title: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan', 
+                        title: 'Jumlah Peristiwa Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara kelompok masa jabatan staf.', 
-                        icon: <AlertTriangle className="w-8 h-8 text-purple-600" />, 
-                        colorClass: 'border-b-4 border-purple-500 hover:shadow-purple-100'
+                        icon: <AlertTriangle className="w-7 h-7 text-slate-800 stroke-[1.5]" />
                       }
-                    ].map((item, idx) => (
-                      <motion.div
-                        key={idx}
-                        whileHover={{ y: -5 }}
-                        onClick={() => setTenureSubView(item.title)}
-                        className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col cursor-pointer ${item.colorClass} group`}
-                      >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                            {item.icon}
+                    ].map((item, idx) => {
+                      const colors = [
+                        { bg: 'bg-[#FDBA21]', text: 'text-white', pin: 'text-red-500' },
+                        { bg: 'bg-[#F27A54]', text: 'text-white', pin: 'text-red-500' },
+                        { bg: 'bg-[#009EDB]', text: 'text-white', pin: 'text-red-500' },
+                        { bg: 'bg-[#1A2B4C]', text: 'text-white', pin: 'text-red-500' }
+                      ];
+                      const color = colors[idx];
+                      
+                      return (
+                        <motion.div
+                          key={idx}
+                          whileHover={{ y: -5 }}
+                          onClick={() => setTenureSubView(item.title === 'Penilaian Keselamatan Pasien' ? 'Perbandingan Penilaian Keselamatan Pasien' : item.title === 'Jumlah Peristiwa Dilaporkan' ? 'Perbandingan Jumlah Peristiwa Yang Dilaporkan' : item.title)}
+                          className="relative cursor-pointer group pt-6 pr-2 pl-2 flex flex-col h-full"
+                          style={{ filter: 'drop-shadow(0 15px 20px rgba(0,0,0,0.08))' }}
+                        >
+                          {/* Top Left Tag */}
+                          <div className={`absolute top-0 left-0 ${color.bg} ${color.text} rounded-tl-[24px] rounded-br-[24px] rounded-tr-md rounded-bl-sm py-2 px-5 shadow-sm flex items-center gap-2 z-20`} style={{ minWidth: '110px' }}>
+                            <span className="text-[9px] font-bold uppercase opacity-90 mt-1">Step</span>
+                            <span className="text-[26px] font-bold leading-none">0{idx + 1}</span>
                           </div>
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">
-                          {item.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6 flex-1">
-                          {item.desc}
-                        </p>
-                        <div className="flex items-center text-blue-600 font-bold text-xs group-hover:translate-x-1 transition-transform mt-auto">
-                          Lihat Detail Perbandingan
-                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                        </div>
-                      </motion.div>
-                    ))}
+
+                          {/* Main Paper */}
+                          <div className="relative bg-white pt-14 pb-6 px-6 flex flex-col items-center text-center w-full flex-1 rounded-tr-md rounded-tl-md z-10" 
+                               style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 26px, #f1f5f9 26px, #f1f5f9 27px)', backgroundPosition: '0 40px' }}>
+                            
+                            {/* Red Pin */}
+                            <div className="absolute top-3 right-3 text-red-500 drop-shadow-sm z-30">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none" className="rotate-[30deg]">
+                                <path d="M16 9V4h1a1 1 0 0 0 0-2H7a1 1 0 0 0 0 2h1v5l-2 3v2h5v7a1 1 0 0 0 2 0v-7h5v-2l-2-3z"/>
+                              </svg>
+                            </div>
+
+                            <div className="mb-4 flex justify-center items-center bg-white p-2 rounded-full shadow-sm border border-slate-50">
+                              {item.icon}
+                            </div>
+                            
+                            <h3 className="text-slate-800 font-bold text-[13px] uppercase tracking-widest mb-3 bg-white px-2 rounded-sm">
+                              {item.title}
+                            </h3>
+                            
+                            <p className="text-slate-400 text-[10px] leading-[1.8] line-clamp-5 bg-white/70 px-2 rounded-sm">
+                              {item.desc}
+                            </p>
+                          </div>
+
+                          {/* Torn Bottom Edge SVG */}
+                          <div className="w-full text-white relative z-10" style={{ marginTop: '-1px' }}>
+                            <svg viewBox="0 0 100 6" preserveAspectRatio="none" className="w-full h-3 fill-current block">
+                              <polygon points="0,0 100,0 100,1 98,6 96,1 94,6 92,1 90,6 88,1 86,6 84,1 82,6 80,1 78,6 76,1 74,6 72,1 70,6 68,1 66,6 64,1 62,6 60,1 58,6 56,1 54,6 52,1 50,6 48,1 46,6 44,1 42,6 40,1 38,6 36,1 34,6 32,1 30,6 28,1 26,6 24,1 22,6 20,1 18,6 16,1 14,6 12,1 10,6 8,1 6,6 4,1 2,6 0,1" />
+                            </svg>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
                   </div>
                 </div>
               ) : tenureSubView === 'Perbandingan Pengukuran Dimensi' ? (
@@ -5259,53 +5350,59 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full pt-[20px] pb-[20px] pl-[8px] pr-2">
                     {[
                       { 
                         title: 'Perbandingan Pengukuran Dimensi', 
                         desc: 'Analisis Perbandingan tingkat persentase respon positif untuk 10 dimensi budaya keselamatan berdasarkan interaksi langsung staf dengan pasien.', 
-                        icon: <BarChart2 className="w-8 h-8 text-emerald-600" />, 
-                        colorClass: 'border-b-4 border-emerald-500 hover:shadow-emerald-100'
+                        icon: <BarChart2 className="w-8 h-8 text-slate-700 stroke-[1.2]" />, 
+                        color: 'bg-[#4F6BE3]'
                       },
                       { 
                         title: 'Perbandingan Hasil Per Item', 
                         desc: 'Mengevaluasi dan membandingkan tanggapan positif staf untuk setiap butir pertanyaan kuesioner SOPS di tiap kelompok interaksi pasien.', 
-                        icon: <ListChecks className="w-8 h-8 text-orange-600" />, 
-                        colorClass: 'border-b-4 border-orange-500 hover:shadow-orange-100'
+                        icon: <ListChecks className="w-8 h-8 text-slate-700 stroke-[1.2]" />, 
+                        color: 'bg-[#3CB3C6]'
                       },
                       { 
-                        title: 'Perbandingan Penilaian Keselamatan Pasien', 
+                        title: 'Penilaian Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) berdasarkan tingkat interaksi langsung staf dengan pasien.', 
-                        icon: <HeartPulse className="w-8 h-8 text-rose-600" />, 
-                        colorClass: 'border-b-4 border-rose-500 hover:shadow-rose-100'
+                        icon: <HeartPulse className="w-8 h-8 text-slate-700 stroke-[1.2]" />, 
+                        color: 'bg-[#8944B6]'
                       },
                       { 
-                        title: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan', 
+                        title: 'Jumlah Peristiwa Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara kelompok staf berdasarkan interaksi pasien.', 
-                        icon: <AlertTriangle className="w-8 h-8 text-purple-600" />, 
-                        colorClass: 'border-b-4 border-purple-500 hover:shadow-purple-100'
+                        icon: <AlertTriangle className="w-8 h-8 text-slate-700 stroke-[1.2]" />, 
+                        color: 'bg-[#DF4A98]'
                       }
                     ].map((item, idx) => (
                       <motion.div
                         key={idx}
                         whileHover={{ y: -5 }}
-                        onClick={() => setInteractionSubView(item.title)}
-                        className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col cursor-pointer ${item.colorClass} group`}
+                        onClick={() => setInteractionSubView(item.title === 'Penilaian Keselamatan Pasien' ? 'Perbandingan Penilaian Keselamatan Pasien' : item.title === 'Jumlah Peristiwa Dilaporkan' ? 'Perbandingan Jumlah Peristiwa Yang Dilaporkan' : item.title)}
+                        className="relative cursor-pointer flex flex-col group min-h-[260px]"
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                            {item.icon}
+                        {/* Colored rotated background */}
+                        <div className={`absolute top-0 bottom-0 right-0 w-[70%] rounded-[24px] ${item.color} transform origin-bottom-left -rotate-[4deg] translate-x-3 -translate-y-1 z-0 shadow-sm transition-transform duration-300 group-hover:-rotate-[6deg] group-hover:translate-x-4`}></div>
+
+                        {/* Content area - White Card */}
+                        <div className="relative bg-white rounded-[24px] shadow-[0_5px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] transition-all duration-300 p-6 flex flex-col items-center text-center w-full justify-between z-10 border border-slate-100 h-full">
+                          <div className="flex flex-col items-center w-full">
+                            <div className="mb-4 flex justify-center items-center">
+                              {item.icon}
+                            </div>
+                            <h3 className="text-slate-800 font-bold text-[14px] uppercase tracking-wider mb-3 leading-snug">
+                              {item.title}
+                            </h3>
+                            <p className="text-slate-400 text-[10px] leading-[1.6] line-clamp-4">
+                              {item.desc}
+                            </p>
                           </div>
-                        </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">
-                          {item.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6 flex-1">
-                          {item.desc}
-                        </p>
-                        <div className="flex items-center text-blue-600 font-bold text-xs group-hover:translate-x-1 transition-transform mt-auto">
-                          Lihat Detail Perbandingan
-                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
+
+                          <div className={`mt-5 w-[44px] h-[44px] rounded-full flex items-center justify-center text-white font-black text-[16px] ${item.color} shadow-sm group-hover:scale-110 transition-transform duration-300`}>
+                            0{idx + 1}
+                          </div>
                         </div>
                       </motion.div>
                     ))}

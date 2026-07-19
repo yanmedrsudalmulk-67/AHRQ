@@ -19,7 +19,10 @@ import {
   ArrowRight,
   Clock,
   X,
-  Trash2
+  Trash2,
+  UserCheck,
+  Briefcase,
+  Award
 } from 'lucide-react';
 import useSWR, { mutate as globalMutate } from 'swr';
 import InputDataTab from './InputDataTab';
@@ -481,57 +484,141 @@ export default function Dashboard({
             )}
 
             {/* Stats Summary Widgets */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 lg:gap-10 px-4 md:px-0">
               
+              {/* Card 1: Total Responden */}
               <div 
                 onClick={() => setShowRespondentsModal(true)}
-                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-slate-200/80 space-y-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] hover:border-teal-500/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
+                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-200/80 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
               >
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Total Responden</span>
-                  <div className="p-2 bg-teal-500/10 text-teal-600 rounded-lg border border-teal-200/30 group-hover:bg-teal-500/20 transition-all transform-gpu">
-                    <Users className="w-4 h-4" />
-                  </div>
+                {/* Top right shape */}
+                <div className="absolute top-6 right-0 w-14 h-7 bg-teal-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
+                
+                {/* Icon */}
+                <div className="flex justify-center mb-5 relative z-10">
+                  <Users className="w-10 h-10 text-slate-800 group-hover:text-teal-600 transition-colors" strokeWidth={1.5} />
                 </div>
-                <div>
-                  <h3 className="text-[40px] font-sans font-extrabold text-slate-800 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalRespondents}</h3>
-                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Staf Fasyankes Yang Mengisi Survei</p>
+
+                {/* Title */}
+                <h3 className="text-[20px] font-black text-slate-800 uppercase tracking-widest mb-3">
+                  Total Responden
+                </h3>
+
+                {/* Description */}
+                <p className="text-slate-500 text-[11px] leading-relaxed max-w-[90%] mx-auto mb-4 font-medium">
+                  Staf Fasyankes Yang Mengisi Survei
+                </p>
+
+                {/* Value */}
+                <div className="text-[35px] italic font-extrabold text-slate-800">
+                  {totalRespondents}
                 </div>
-                {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-teal-400 to-teal-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Ribbon Structure */}
+                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-teal-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
+                
+                {/* Left fold */}
+                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-teal-700 border-l-[12px] border-l-transparent z-0" />
+                {/* Right fold */}
+                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-teal-700 border-r-[12px] border-r-transparent z-0" />
+
+                {/* Center Hump */}
+                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-teal-500 rounded-full z-10 transition-colors" />
+                
+                {/* White Circle */}
+                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(20,184,166,0.5)] group-hover:shadow-[0_0_25px_rgba(20,184,166,0.9)] group-hover:-translate-y-1 transition-all duration-300">
+                  <div className="absolute inset-0 rounded-full bg-teal-400/50 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
+                  <UserCheck className="w-6 h-6 text-teal-600 drop-shadow-[0_0_8px_rgba(20,184,166,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
+                </div>
               </div>
 
+              {/* Card 2: Unit / Area Kerja Terdata */}
               <div 
                 onClick={() => setShowUnitsModal(true)}
-                className="cursor-pointer p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-slate-200/80 space-y-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] hover:border-blue-500/50 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group"
+                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-200/80 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
               >
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Unit / Area Kerja Terdata</span>
-                  <div className="p-2 bg-blue-500/10 text-blue-600 rounded-lg border border-blue-200/30 group-hover:bg-blue-500/20 transition-all transform-gpu">
-                    <Building2 className="w-4 h-4" />
-                  </div>
+                {/* Top right shape */}
+                <div className="absolute top-6 right-0 w-14 h-7 bg-blue-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
+                
+                {/* Icon */}
+                <div className="flex justify-center mb-5 relative z-10">
+                  <Building2 className="w-10 h-10 text-slate-800 group-hover:text-blue-600 transition-colors" strokeWidth={1.5} />
                 </div>
-                <div>
-                  <h3 className="text-[40px] font-sans font-extrabold text-slate-800 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{totalUnits}</h3>
-                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Total Unit / Area Kerja Yang Mengisi Survei</p>
+
+                {/* Title */}
+                <h3 className="text-[20px] font-black text-slate-800 uppercase tracking-widest mb-3">
+                  Area Kerja Terdata
+                </h3>
+
+                {/* Description */}
+                <p className="text-slate-500 text-[11px] leading-relaxed max-w-[90%] mx-auto mb-4 font-medium">
+                  Total Unit / Area Kerja Yang Mengisi Survei
+                </p>
+
+                {/* Value */}
+                <div className="text-[35px] italic font-extrabold text-slate-800">
+                  {totalUnits}
                 </div>
-                {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-blue-400 to-indigo-600 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Ribbon Structure */}
+                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-blue-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
+                
+                {/* Left fold */}
+                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-blue-800 border-l-[12px] border-l-transparent z-0" />
+                {/* Right fold */}
+                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-blue-800 border-r-[12px] border-r-transparent z-0" />
+
+                {/* Center Hump */}
+                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-blue-500 rounded-full z-10 transition-colors" />
+                
+                {/* White Circle */}
+                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(59,130,246,0.5)] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.9)] group-hover:-translate-y-1 transition-all duration-300">
+                  <div className="absolute inset-0 rounded-full bg-blue-400/50 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
+                  <Briefcase className="w-6 h-6 text-blue-600 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
+                </div>
               </div>
 
-              <div className="p-5 bg-white/85 backdrop-blur-md rounded-[22px] border border-slate-200/80 space-y-4 shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] hover:border-orange-500 hover:bg-white transition-all transform-gpu duration-300 relative overflow-hidden group">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-slate-500 uppercase tracking-wider font-sans">Rata-Rata Respon Positif</span>
-                  <div className="p-2 bg-orange-500/10 text-orange-600 rounded-lg border border-orange-200/30 group-hover:bg-orange-500/20 transition-all transform-gpu">
-                    <TrendingUp className="w-4 h-4" />
-                  </div>
+              {/* Card 3: Rata-Rata Respon Positif */}
+              <div className="bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-200/80 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group">
+                {/* Top right shape */}
+                <div className="absolute top-6 right-0 w-14 h-7 bg-orange-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
+                
+                {/* Icon */}
+                <div className="flex justify-center mb-5 relative z-10">
+                  <TrendingUp className="w-10 h-10 text-slate-800 group-hover:text-orange-600 transition-colors" strokeWidth={1.5} />
                 </div>
-                <div>
-                  <h3 className="text-[40px] font-sans font-extrabold text-orange-600 leading-none tracking-tight transition-transform duration-300 group-hover:translate-x-1">{overallScorePercent}%</h3>
-                  <p className="text-[10px] text-slate-500 mt-1 font-bold">Kategori: <strong className="text-orange-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong></p>
+
+                {/* Title */}
+                <h3 className="text-[20px] font-black text-slate-800 uppercase tracking-widest mb-3">
+                  Respon Positif
+                </h3>
+
+                {/* Description */}
+                <p className="text-[11px] leading-relaxed max-w-[90%] mx-auto mb-4 font-bold text-slate-500">
+                  Kategori: <strong className="text-orange-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong>
+                </p>
+
+                {/* Value */}
+                <div className="text-[35px] italic font-extrabold text-orange-600">
+                  {overallScorePercent}%
                 </div>
-                {/* Decorative Bottom Line Accent (Glassmorphism 2.0) */}
-                <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-gradient-to-r from-orange-400 to-amber-500 opacity-80 group-hover:opacity-100 transition-opacity duration-300" />
+
+                {/* Ribbon Structure */}
+                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-orange-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
+                
+                {/* Left fold */}
+                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-orange-700 border-l-[12px] border-l-transparent z-0" />
+                {/* Right fold */}
+                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-orange-700 border-r-[12px] border-r-transparent z-0" />
+
+                {/* Center Hump */}
+                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-orange-500 rounded-full z-10 transition-colors" />
+                
+                {/* White Circle */}
+                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(249,115,22,0.5)] group-hover:shadow-[0_0_25px_rgba(249,115,22,0.9)] group-hover:-translate-y-1 transition-all duration-300">
+                  <div className="absolute inset-0 rounded-full bg-orange-400/50 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
+                  <Award className="w-6 h-6 text-orange-600 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
+                </div>
               </div>
 
             </div>
