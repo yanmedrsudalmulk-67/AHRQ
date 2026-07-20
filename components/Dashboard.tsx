@@ -89,6 +89,7 @@ export default function Dashboard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [selectedRsFilter, setSelectedRsFilter] = useState<'all' | 'admin' | string>('admin');
+  const [selectedYear, setSelectedYear] = useState<string>('Semua Tahun');
 
   useEffect(() => {
     if (notification) {
@@ -116,6 +117,35 @@ export default function Dashboard({
   );
 
   const pendingAccountsCount = accounts.filter(a => a.status === 'Pending').length;
+
+  // Filter surveys: Admin sees all, RS sees only their own
+  const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
+
+  const availableYears = useMemo(() => {
+    const extractYear = (tanggalStr?: string) => {
+      if (!tanggalStr) return new Date().getFullYear().toString();
+      const match = tanggalStr.match(/\b(20\d{2}|19\d{2})\b/);
+      if (match) return match[1];
+      const partsBySpace = tanggalStr.trim().split(/\s+/);
+      const lastPart = partsBySpace[partsBySpace.length - 1];
+      if (lastPart && !isNaN(Number(lastPart)) && lastPart.length === 4) return lastPart;
+      const partsByDash = tanggalStr.split('-');
+      if (partsByDash[0] && !isNaN(Number(partsByDash[0])) && partsByDash[0].length === 4) return partsByDash[0];
+      return new Date().getFullYear().toString();
+    };
+    const years = new Set<string>();
+    // Pre-populate years for a wider selection as requested
+    for (let i = 2022; i <= 2030; i++) {
+      years.add(i.toString());
+    }
+    validSurveys.forEach(s => {
+      if (s.id !== 'MASTER_BENCHMARK') {
+        years.add(extractYear(s.tanggalInput));
+      }
+    });
+    const sortedYears = Array.from(years).sort((a, b) => b.localeCompare(a));
+    return ['Semua Tahun', ...sortedYears];
+  }, [validSurveys]);
 
   const handleSaveSurvey = async (newSurvey: SurveyData) => {
     try {
@@ -176,12 +206,26 @@ export default function Dashboard({
       setSurveyToDelete(null);
     }
   };
-
-  // Filter surveys: Admin sees all, RS sees only their own
-  const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
   
   const filteredSurveys = useMemo(() => {
     return validSurveys.filter(s => {
+      // Year Filter
+      if (selectedYear !== 'Semua Tahun') {
+        const extractYear = (tanggalStr?: string) => {
+          if (!tanggalStr) return new Date().getFullYear().toString();
+          const match = tanggalStr.match(/\b(20\d{2}|19\d{2})\b/);
+          if (match) return match[1];
+          const partsBySpace = tanggalStr.trim().split(/\s+/);
+          const lastPart = partsBySpace[partsBySpace.length - 1];
+          if (lastPart && !isNaN(Number(lastPart)) && lastPart.length === 4) return lastPart;
+          const partsByDash = tanggalStr.split('-');
+          if (partsByDash[0] && !isNaN(Number(partsByDash[0])) && partsByDash[0].length === 4) return partsByDash[0];
+          return new Date().getFullYear().toString();
+        };
+        const year = extractYear(s.tanggalInput);
+        if (year !== selectedYear) return false;
+      }
+
       if (role === 'admin') {
         if (selectedRsFilter === 'admin') {
           const surveyUser = (s.dimensiScores as any)?.username;
@@ -204,7 +248,7 @@ export default function Dashboard({
         return s.namaRs.toLowerCase() === namaRs.toLowerCase();
       }
     });
-  }, [validSurveys, role, identifier, namaRs, selectedRsFilter]);
+  }, [validSurveys, role, identifier, namaRs, selectedRsFilter, selectedYear]);
 
   // Statistics calculations
   const totalRespondents = filteredSurveys.reduce((acc, curr) => acc + curr.jumlahResponden, 0);
@@ -429,7 +473,14 @@ export default function Dashboard({
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             {/* Greeting */}
-            <DashboardHeader role={role} namaRs={namaRs} surveys={surveys} />
+            <DashboardHeader 
+              role={role} 
+              namaRs={namaRs} 
+              surveys={surveys} 
+              selectedYear={selectedYear}
+              availableYears={availableYears}
+              onYearChange={setSelectedYear}
+            />
 
             {/* Filter Fasyankes / Rumah Sakit - Khusus Admin Utama */}
             {role === 'admin' && (
@@ -489,7 +540,7 @@ export default function Dashboard({
               {/* Card 1: Total Responden */}
               <div 
                 onClick={() => setShowRespondentsModal(true)}
-                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-200/80 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
+                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-300 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
               >
                 {/* Top right shape */}
                 <div className="absolute top-6 right-0 w-14 h-7 bg-teal-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
@@ -535,7 +586,7 @@ export default function Dashboard({
               {/* Card 2: Unit / Area Kerja Terdata */}
               <div 
                 onClick={() => setShowUnitsModal(true)}
-                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-200/80 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
+                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-300 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
               >
                 {/* Top right shape */}
                 <div className="absolute top-6 right-0 w-14 h-7 bg-blue-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
@@ -579,7 +630,7 @@ export default function Dashboard({
               </div>
 
               {/* Card 3: Rata-Rata Respon Positif */}
-              <div className="bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-200/80 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group">
+              <div className="bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-300 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group">
                 {/* Top right shape */}
                 <div className="absolute top-6 right-0 w-14 h-7 bg-orange-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
                 

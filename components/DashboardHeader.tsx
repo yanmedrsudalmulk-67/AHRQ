@@ -29,9 +29,12 @@ interface DashboardHeaderProps {
   role: 'rs' | 'admin';
   namaRs: string;
   surveys: SurveyData[];
+  selectedYear: string;
+  availableYears: string[];
+  onYearChange: (year: string) => void;
 }
 
-export default function DashboardHeader({ role, namaRs, surveys }: DashboardHeaderProps) {
+export default function DashboardHeader({ role, namaRs, surveys, selectedYear, availableYears, onYearChange }: DashboardHeaderProps) {
   const [timeString, setTimeString] = useState<string>('');
   const [dateString, setDateString] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -47,16 +50,6 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const currentYear = new Date().getFullYear();
-  const availableYears = [
-    currentYear.toString(),
-    (currentYear - 1).toString(),
-    (currentYear - 2).toString(),
-    (currentYear - 3).toString(),
-    (currentYear - 4).toString(),
-    'Semua Tahun'
-  ];
 
   // Update dynamic clock every second
   useEffect(() => {
@@ -200,8 +193,50 @@ export default function DashboardHeader({ role, namaRs, surveys }: DashboardHead
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[22px] bg-white/80 backdrop-blur-md border border-slate-200 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] flex flex-col lg:flex-row justify-between items-start gap-8"
+      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[22px] bg-white/80 backdrop-blur-md border border-slate-200 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] flex flex-col justify-between items-start gap-8 pt-10 md:pt-8"
     >
+      {/* Top Right Year Selector */}
+      <div className="absolute top-4 right-4 md:top-6 md:right-8 z-10" ref={dropdownRef}>
+        <button
+          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+          className="bg-white/90 hover:bg-white text-slate-700 text-xs font-bold py-1 px-2.5 rounded-md border border-slate-200 shadow-sm flex items-center gap-1 transition-all cursor-pointer"
+        >
+          {selectedYear}
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <AnimatePresence>
+          {isDropdownOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -5, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -5, scale: 0.95 }}
+              transition={{ duration: 0.15 }}
+              className="absolute right-0 mt-1.5 w-32 bg-white rounded-lg shadow-lg border border-slate-200/60 overflow-hidden z-[100]"
+            >
+              <div className="max-h-48 overflow-y-auto">
+                {availableYears.map((year) => (
+                  <button
+                    key={year}
+                    onClick={() => {
+                      onYearChange(year);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 text-xs font-bold transition-colors cursor-pointer flex justify-between items-center ${
+                      selectedYear === year
+                        ? 'bg-teal-50 text-teal-700'
+                        : 'text-slate-700 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{year}</span>
+                    {selectedYear === year && <Check className="w-3.5 h-3.5 text-teal-600" />}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+
       {/* Decorative premium radial glow & gradient elements */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-teal-500/5 rounded-full filter blur-[100px] pointer-events-none -z-10" />
       <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-blue-500/5 rounded-full filter blur-[80px] pointer-events-none -z-10" />
