@@ -4390,66 +4390,208 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   </div>
                 </div>
               ) : unitSubView === 'Perbandingan Hasil Per Item' ? (
-                <div className="w-full flex flex-col gap-6">
-                  {/* Selector and Header */}
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <ListChecks className="w-5 h-5 text-orange-600" /> Perbandingan Hasil Per Item Berdasarkan Unit / Area Kerja ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                <div className="w-full flex flex-col gap-6 font-sans">
+                  {/* Summary Cards Row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {/* Card 1: Total Item */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ duration: 0.3 }}
+                      className="bg-white border border-slate-200/85 p-5 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0">
+                        <ListChecks className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-0.5 font-sans">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Item</span>
+                        <h4 className="text-2xl font-extrabold text-slate-800 tracking-tight">32</h4>
+                        <p className="text-[10px] font-medium text-slate-500">Butir Pernyataan Survei</p>
+                      </div>
+                    </motion.div>
+
+                    {/* Card 2: Avg Hospital */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ duration: 0.3, delay: 0.05 }}
+                      className="bg-white border border-slate-200/85 p-5 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600 shrink-0">
+                        <Hospital className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-0.5 font-sans">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata RS Anda</span>
+                        <h4 className="text-2xl font-extrabold text-sky-700 tracking-tight">
+                          {avgHospitalScore > 0 ? `${avgHospitalScore.toFixed(1)}%` : '0%'}
+                        </h4>
+                        <p className="text-[10px] font-medium text-slate-500">Respons Positif Keseluruhan</p>
+                      </div>
+                    </motion.div>
+
+                    {/* Card 3: Avg Pilot */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                      className="bg-white border border-slate-200/85 p-5 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                        <Award className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-0.5 font-sans">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Uji Coba</span>
+                        <h4 className="text-2xl font-extrabold text-emerald-700 tracking-tight">65.5%</h4>
+                        <p className="text-[10px] font-medium text-slate-500">Benchmark Nasional</p>
+                      </div>
+                    </motion.div>
+
+                    {/* Card 4: Total Respondents */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ duration: 0.3, delay: 0.15 }}
+                      className="bg-white border border-slate-200/85 p-5 rounded-[20px] shadow-[0_2px_8px_rgba(0,0,0,0.01)] flex items-center gap-4"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
+                        <Users className="w-6 h-6" />
+                      </div>
+                      <div className="space-y-0.5 font-sans">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Responden</span>
+                        <h4 className="text-2xl font-extrabold text-slate-800 tracking-tight">{demografiStats.total}</h4>
+                        <p className="text-[10px] font-medium text-slate-500">Partisipan Survei ({tahun1})</p>
+                      </div>
+                    </motion.div>
+                  </div>
+
+                  {/* Filter and Table Container */}
+                  <div className="bg-white border border-slate-200 rounded-[24px] shadow-[0_4px_24px_rgba(0,0,0,0.015)] overflow-hidden">
+                    {/* Filter Bar */}
+                    <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
+                      <div className="space-y-1 font-sans">
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Filter Tampilan Dimensi</h3>
+                        <p className="text-xs text-slate-500 font-medium">Saring butir pertanyaan berdasarkan dimensi spesifik atau tampilkan semua sekaligus.</p>
+                      </div>
+                      <div className="w-full md:w-96">
+                        <select
+                          value={selectedItemDimId}
+                          onChange={(e) => setSelectedItemDimId(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer transition-colors font-sans"
+                        >
+                          <option value="all">Semua Dimensi Budaya Keselamatan (32 Item)</option>
+                          {['d7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'].map(dimId => (
+                            <option key={dimId} value={dimId}>
+                              [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
+                            </option>
+                          ))}
                         </select>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Dimension selector to filter items */}
-                  <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
-                    <div className="flex flex-col space-y-2">
-                      <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pilih Dimensi Budaya Keselamatan:</label>
-                      <select
-                        value={selectedDimId}
-                        onChange={(e) => setSelectedDimId(e.target.value)}
-                        className="bg-white border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 focus:border-orange-500 outline-none cursor-pointer"
-                      >
-                        {Object.keys(DIMENSI_INFO).map(dimId => (
-                          <option key={dimId} value={dimId}>
-                            [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Interactive Table */}
+                    <div className="overflow-auto max-h-[70vh] rounded-t-xl relative border border-slate-200/60 shadow-sm">
+                      <table className="w-full border-collapse text-left">
+                        <thead>
+                          <tr className="bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] text-white">
+                            <th className="sticky top-0 z-10 py-5 px-4 text-xs font-bold tracking-wider uppercase text-center w-[5%] min-w-[60px] border-r border-white/10 font-sans bg-gradient-to-r from-[#1E3A8A] to-[#254BAF]">No</th>
+                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-auto border-r border-white/10 font-sans bg-[#254BAF]">Pernyataan (Item Survei)</th>
+                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] border-r border-white/10 font-sans bg-[#254BAF]">Rumah Sakit Anda</th>
+                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] font-sans bg-gradient-to-r from-[#254BAF] to-[#3B82F6]">Rumah Sakit Uji Coba</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200/60 bg-white">
+                          {['d7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'].filter(dimId => selectedItemDimId === 'all' || selectedItemDimId === dimId).map((dimId) => {
+                            const dimensionItems = hospitalItemScores.filter(item => item.dimId === dimId);
+                            const dimName = DIMENSI_INFO[dimId].nama;
 
-                    <div className="space-y-4">
-                      <h3 className="text-sm font-extrabold text-slate-800 border-b border-slate-100 pb-2">Daftar Pertanyaan &amp; Perbandingan Positif (% Setuju / Sangat Setuju)</h3>
-                      <div className="divide-y divide-slate-100 space-y-4">
-                        {unitItemScores.filter(item => item.dimId === selectedDimId).map(q => (
-                          <div key={q.id} className="pt-4 first:pt-0 space-y-3">
-                            <div className="flex items-start gap-2.5">
-                              <span className="bg-orange-50 text-orange-700 text-[10px] font-black px-2 py-0.5 rounded-md mt-0.5">{q.id}</span>
-                              <p className="text-xs font-bold text-slate-700 leading-relaxed">{q.text}</p>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                              {demografiStats.unitData.map(u => {
-                                const val = q[u.name] || 0;
-                                return (
-                                  <div key={u.name} className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                      <span className="text-[10px] font-extrabold text-slate-400 truncate max-w-[120px]">{u.name}</span>
-                                      <span className="text-xs font-semibold text-slate-500 mt-0.5">{u.value} Responden</span>
+                            return (
+                              <Fragment key={dimId}>
+                                {/* Dimension Group Banner */}
+                                <tr className="bg-slate-50 border-b border-slate-200/60">
+                                  <td colSpan={4} className="py-3 px-5">
+                                    <div className="flex items-center gap-2 font-sans">
+                                      <span className="text-[13px] font-semibold text-slate-800 tracking-tight font-sans">
+                                        {dimName}
+                                      </span>
+                                      <span className="text-[11px] text-slate-500 font-normal ml-1">
+                                        ({DIMENSI_INFO[dimId].deskripsi})
+                                      </span>
                                     </div>
-                                    <span className="text-sm font-black text-orange-600">{val}%</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                                  </td>
+                                </tr>
+
+                                {/* Dimension Items */}
+                                {dimensionItems.map((item) => {
+                                  const pilotVal = BENCHMARK_ITEMS[item.id] || 0;
+                                  const rsVal = item.score;
+                                  const diff = parseFloat((rsVal - pilotVal).toFixed(1));
+
+                                  // Get highlight styles
+                                  let highlightClass = "";
+                                  let badgeLabel = "";
+                                  let trendIcon = null;
+
+                                  if (rsVal > pilotVal) {
+                                    highlightClass = "bg-emerald-50 text-emerald-800 border-emerald-100";
+                                    badgeLabel = `+${diff}%`;
+                                    trendIcon = <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
+                                  } else if (rsVal < pilotVal) {
+                                    highlightClass = "bg-rose-50 text-rose-800 border-rose-100";
+                                    badgeLabel = `${diff}%`;
+                                    trendIcon = <TrendingDown className="w-3.5 h-3.5 text-rose-600 shrink-0" />;
+                                  } else {
+                                    highlightClass = "bg-amber-50 text-amber-800 border-amber-100";
+                                    badgeLabel = "Setara";
+                                  }
+
+                                  return (
+                                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
+                                      {/* No */}
+                                      <td className="py-5 px-4 text-center border-r border-slate-100/80 font-mono text-xs font-semibold text-indigo-600">
+                                        {item.id}
+                                      </td>
+
+                                      {/* Pernyataan */}
+                                      <td className="py-5 px-5 border-r border-slate-100">
+                                        <div className="space-y-1 font-sans">
+                                          <p className="text-[13px] font-normal text-slate-700 leading-relaxed">
+                                            {item.text}
+                                          </p>
+                                          {item.isReversed && (
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 uppercase tracking-wide border border-purple-100">
+                                              Reverse Score
+                                            </span>
+                                          )}
+                                        </div>
+                                      </td>
+
+                                      {/* Rumah Sakit Anda */}
+                                      <td className={`py-5 px-5 text-center border-r border-slate-100/80 transition-all ${highlightClass}`}>
+                                        <div className="flex flex-col items-center justify-center gap-1 font-sans">
+                                          <span className="text-[15px] font-semibold">{rsVal.toFixed(1)}%</span>
+                                          <div className="flex items-center gap-1 text-[10px]">
+                                            {trendIcon}
+                                            <span className="font-semibold">{badgeLabel}</span>
+                                          </div>
+                                          <span className="text-[9px] opacity-75 font-medium">({item.totalValid} Responden)</span>
+                                        </div>
+                                      </td>
+
+                                      {/* Rumah Sakit Uji Coba */}
+                                      <td className="py-5 px-5 text-center bg-slate-50/40 font-sans">
+                                        <div className="flex flex-col items-center justify-center">
+                                          <span className="text-[15px] font-semibold text-slate-700">{pilotVal.toFixed(1)}%</span>
+                                          <span className="text-[10px] text-slate-400 font-medium mt-1">Benchmark</span>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </Fragment>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
 
                     <DynamicAIAnalysisCards
@@ -4457,6 +4599,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
                       unitItemScores={unitItemScores}
+                      hospitalItemScores={hospitalItemScores}
                     />
 
                   </div>
@@ -4769,7 +4912,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 bg-white/30 text-slate-600">
-                          {DIMENSION_ORDER.filter(dimId => dimId !== 'd1').map((dimId, idx) => {
+                          {DIMENSION_ORDER.map((dimId, idx) => {
                             const bMin = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
                             const bMax = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
                             const bAvg = (bMin + bMax) / 2;
@@ -4906,7 +5049,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <div className="space-y-0.5 font-sans">
                         <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Uji Coba</span>
                         <h4 className="text-2xl font-extrabold text-emerald-700 tracking-tight">65.5%</h4>
-                        <p className="text-[10px] font-medium text-slate-500">Benchmark Nasional</p>
+                        <p className="text-[10px] font-medium text-slate-500">Benchmark Nasional AHRQ</p>
                       </div>
                     </motion.div>
 
@@ -4933,8 +5076,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     {/* Filter Bar */}
                     <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
                       <div className="space-y-1 font-sans">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Filter Tampilan Dimensi</h3>
-                        <p className="text-xs text-slate-500 font-medium">Saring butir pertanyaan berdasarkan dimensi spesifik atau tampilkan semua sekaligus.</p>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Matrix Perbandingan Per Item Berdasarkan Posisi Staf</h3>
+                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan posisi staf antara Rumah Sakit Anda dengan Hasil Uji Coba Nasional (AHRQ SOPS 2.0).</p>
                       </div>
                       <div className="w-full md:w-96">
                         <select
@@ -4943,7 +5086,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer transition-colors font-sans"
                         >
                           <option value="all">Semua Dimensi Budaya Keselamatan (32 Item)</option>
-                          {['d7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'].map(dimId => (
+                          {DIMENSION_ORDER.map(dimId => (
                             <option key={dimId} value={dimId}>
                               [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
                             </option>
@@ -4952,104 +5095,163 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     </div>
 
-                    {/* Interactive Table */}
-                    <div className="overflow-auto max-h-[70vh] rounded-t-xl relative border border-slate-200/60 shadow-sm">
-                      <table className="w-full border-collapse text-left">
+                    {/* Matrix Comparative Table matching AHRQ SOPS standard layout */}
+                    <div className="overflow-x-auto max-h-[75vh] relative custom-scrollbar border-t border-slate-200">
+                      <table className="w-full border-collapse text-left border border-slate-300">
                         <thead>
-                          <tr className="bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] text-white">
-                            <th className="sticky top-0 z-10 py-5 px-4 text-xs font-bold tracking-wider uppercase text-center w-[5%] min-w-[60px] border-r border-white/10 font-sans bg-gradient-to-r from-[#1E3A8A] to-[#254BAF]">No</th>
-                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-auto border-r border-white/10 font-sans bg-[#254BAF]">Pernyataan (Item Survei)</th>
-                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] border-r border-white/10 font-sans bg-[#254BAF]">Rumah Sakit Anda</th>
-                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] font-sans bg-gradient-to-r from-[#254BAF] to-[#3B82F6]">Rumah Sakit Uji Coba</th>
+                          {/* Main Header Row in Royal Blue */}
+                          <tr className="bg-[#1E3A8A] text-white text-xs font-bold uppercase tracking-wider divide-x divide-blue-800">
+                            <th rowSpan={2} className="py-4 px-3 text-center w-[60px] min-w-[60px] bg-[#1E3A8A] sticky left-0 z-20 shadow-md">Item</th>
+                            <th rowSpan={2} className="py-4 px-4 text-center min-w-[280px] bg-[#1E3A8A]">Pertanyaan Survei Berdasarkan Dimensi (Composite Measure)</th>
+                            <th rowSpan={2} className="py-4 px-3 text-center min-w-[130px] bg-[#1E3A8A]">Dataset</th>
+                            <th colSpan={Math.max(1, demografiStats.posisiData.length)} className="py-3 px-4 text-center bg-[#254BAF] border-b border-blue-700 tracking-widest text-[11px]">
+                              Posisi / Jabatan Staf (Staff Position)
+                            </th>
+                          </tr>
+
+                          {/* Position Names Header Row */}
+                          <tr className="bg-[#254BAF] text-white text-[11px] font-bold uppercase tracking-tight divide-x divide-blue-700 border-b border-blue-800">
+                            {demografiStats.posisiData.length > 0 ? (
+                              demografiStats.posisiData.map((pos) => (
+                                <th key={pos.name} className="py-3 px-3 text-center min-w-[120px] max-w-[180px] leading-tight font-sans">
+                                  <div className="flex flex-col items-center justify-center">
+                                    <span className="font-bold">{pos.name}</span>
+                                  </div>
+                                </th>
+                              ))
+                            ) : (
+                              <th className="py-3 px-3 text-center min-w-[120px]">Belum Ada Data Posisi</th>
+                            )}
+                          </tr>
+
+                          {/* Respondent Count Sub-Header Rows */}
+                          <tr className="bg-blue-50 text-slate-800 text-xs font-semibold border-b border-blue-200 divide-x divide-blue-200 font-sans">
+                            <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-blue-900 bg-blue-100/70">
+                              Rumah Sakit Anda: # Responden
+                            </td>
+                            <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
+                              {demografiStats.total}
+                            </td>
+                            {demografiStats.posisiData.length > 0 ? (
+                              demografiStats.posisiData.map((pos, pIdx) => (
+                                <td key={`cnt-rs-${pIdx}`} className="py-2 px-2 text-center font-extrabold text-blue-900 bg-blue-100/50">
+                                  {pos.value}
+                                </td>
+                              ))
+                            ) : (
+                              <td className="py-2 px-2 text-center text-slate-400">0</td>
+                            )}
+                          </tr>
+
+                          <tr className="bg-slate-50 text-slate-700 text-xs font-semibold border-b-2 border-slate-300 divide-x divide-slate-300 font-sans">
+                            <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-slate-600 bg-slate-50">
+                              RS Uji Coba: # Responden
+                            </td>
+                            <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
+                              3.789
+                            </td>
+                            {demografiStats.posisiData.length > 0 ? (
+                              demografiStats.posisiData.map((pos, idx) => (
+                                <td key={`cnt-pilot-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
+                                  3.789
+                                </td>
+                              ))
+                            ) : (
+                              <td className="py-2 px-2 text-center text-slate-400">-</td>
+                            )}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200/60 bg-white">
-                          {['d7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'].filter(dimId => selectedItemDimId === 'all' || selectedItemDimId === dimId).map((dimId) => {
+
+                        <tbody className="divide-y divide-slate-300 bg-white text-xs text-slate-800 font-sans">
+                          {DIMENSION_ORDER.filter(dimId => selectedItemDimId === 'all' || selectedItemDimId === dimId).map((dimId, dimIdx) => {
                             const dimensionItems = hospitalItemScores.filter(item => item.dimId === dimId);
-                            const dimName = DIMENSI_INFO[dimId].nama;
-                            const dimCode = DIMENSI_INFO[dimId].kode;
+                            const dimInfo = DIMENSI_INFO[dimId];
+                            if (!dimensionItems || dimensionItems.length === 0) return null;
+
+                            const colSpanTotal = 3 + Math.max(1, demografiStats.posisiData.length);
 
                             return (
                               <Fragment key={dimId}>
-                                {/* Dimension Group Banner */}
-                                <tr className="bg-slate-50 border-b border-slate-200/60">
-                                  <td colSpan={4} className="py-3 px-5">
-                                    <div className="flex items-center gap-2 font-sans">
-                                      <span className="text-[13px] font-semibold text-slate-800 tracking-tight font-sans">
-                                        {dimName}
-                                      </span>
-                                      <span className="text-[11px] text-slate-500 font-normal ml-1">
-                                        ({DIMENSI_INFO[dimId].deskripsi})
-                                      </span>
+                                {/* Section Header Row */}
+                                <tr className="bg-blue-100/80 text-blue-950 border-y-2 border-blue-300 font-bold">
+                                  <td colSpan={colSpanTotal} className="py-2.5 px-4 text-left font-sans text-xs tracking-wide">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-2 h-2 rounded-full bg-blue-700 shrink-0"></span>
+                                      <span className="text-blue-950 font-extrabold">{dimIdx + 1}. {dimInfo.nama}</span>
+                                      <span className="text-[11px] font-medium text-blue-800 ml-1">({dimInfo.deskripsi})</span>
                                     </div>
                                   </td>
                                 </tr>
 
-                                {/* Dimension Items */}
-                                {dimensionItems.map((item, itemIdx) => {
-                                  const pilotVal = BENCHMARK_ITEMS[item.id] || 0;
-                                  const rsVal = item.score;
-                                  const diff = parseFloat((rsVal - pilotVal).toFixed(1));
-
-                                  // Get highlight styles
-                                  let highlightClass = "";
-                                  let badgeLabel = "";
-                                  let trendIcon = null;
-
-                                  if (rsVal > pilotVal) {
-                                    highlightClass = "bg-emerald-50 text-emerald-800 border-emerald-100";
-                                    badgeLabel = `+${diff}%`;
-                                    trendIcon = <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
-                                  } else if (rsVal < pilotVal) {
-                                    highlightClass = "bg-rose-50 text-rose-800 border-rose-100";
-                                    badgeLabel = `${diff}%`;
-                                    trendIcon = <TrendingDown className="w-3.5 h-3.5 text-rose-600 shrink-0" />;
-                                  } else {
-                                    highlightClass = "bg-amber-50 text-amber-800 border-amber-100";
-                                    badgeLabel = "Setara";
-                                  }
+                                {/* Item Rows */}
+                                {dimensionItems.map((item) => {
+                                  const benchVal = BENCHMARK_ITEMS[item.id] || 65.5;
+                                  const pItemObj = positionItemScores.find(p => p.id === item.id);
 
                                   return (
-                                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
-                                      {/* No */}
-                                      <td className="py-5 px-4 text-center border-r border-slate-100/80 font-mono text-xs font-semibold text-indigo-600">
-                                        {item.id}
-                                      </td>
+                                    <Fragment key={item.id}>
+                                      {/* Row 1: RS Anda */}
+                                      <tr className="hover:bg-slate-50/80 transition-colors divide-x divide-slate-200 border-b border-slate-200">
+                                        {/* Item Code (Spans 2 sub-rows) */}
+                                        <td rowSpan={2} className="py-3 px-3 text-center font-mono font-bold text-blue-800 bg-blue-50/40 align-middle sticky left-0 z-10">
+                                          {item.id}
+                                        </td>
 
-                                      {/* Pernyataan */}
-                                      <td className="py-5 px-5 border-r border-slate-100">
-                                        <div className="space-y-1 font-sans">
-                                          <p className="text-[13px] font-normal text-slate-700 leading-relaxed">
-                                            {item.text}
-                                          </p>
-                                          {item.isReversed && (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 uppercase tracking-wide border border-purple-100">
-                                              Reverse Score
-                                            </span>
-                                          )}
-                                        </div>
-                                      </td>
-
-                                      {/* Rumah Sakit Anda */}
-                                      <td className={`py-5 px-5 text-center border-r border-slate-100/80 transition-all ${highlightClass}`}>
-                                        <div className="flex flex-col items-center justify-center gap-1 font-sans">
-                                          <span className="text-[15px] font-semibold">{rsVal.toFixed(1)}%</span>
-                                          <div className="flex items-center gap-1 text-[10px]">
-                                            {trendIcon}
-                                            <span className="font-semibold">{badgeLabel}</span>
+                                        {/* Question Text (Spans 2 sub-rows) */}
+                                        <td rowSpan={2} className="py-3 px-4 font-medium text-slate-800 align-middle">
+                                          <div className="space-y-1">
+                                            <p className="leading-relaxed text-[13px]">{item.text}</p>
+                                            {item.isReversed && (
+                                              <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                                                Reverse Score
+                                              </span>
+                                            )}
                                           </div>
-                                          <span className="text-[9px] opacity-75 font-medium">({item.totalValid} Responden)</span>
-                                        </div>
-                                      </td>
+                                        </td>
 
-                                      {/* Rumah Sakit Uji Coba */}
-                                      <td className="py-5 px-5 text-center bg-slate-50/40 font-sans">
-                                        <div className="flex flex-col items-center justify-center">
-                                          <span className="text-[15px] font-semibold text-slate-700">{pilotVal.toFixed(1)}%</span>
-                                          <span className="text-[10px] text-slate-400 font-medium mt-1">Benchmark</span>
-                                        </div>
-                                      </td>
-                                    </tr>
+                                        {/* Dataset Label Row 1 */}
+                                        <td className="py-2.5 px-3 font-semibold text-blue-800 text-center bg-blue-50/40 whitespace-nowrap text-[11px]">
+                                          Rumah Sakit Anda
+                                        </td>
+
+                                        {/* Positions Scores Row 1 (RS Anda) */}
+                                        {demografiStats.posisiData.length > 0 ? (
+                                          demografiStats.posisiData.map((pos, pIdx) => {
+                                            const val = pItemObj ? pItemObj[pos.name] : null;
+                                            return (
+                                              <td key={`rs-score-${item.id}-${pIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-800 bg-blue-50/20">
+                                                {val !== null && val !== undefined ? (
+                                                  <span className="text-blue-950 font-black">{val.toFixed(0)}%</span>
+                                                ) : (
+                                                  <span className="text-slate-400 font-normal">--</span>
+                                                )}
+                                              </td>
+                                            );
+                                          })
+                                        ) : (
+                                          <td className="py-2.5 px-2 text-center text-slate-400">--</td>
+                                        )}
+                                      </tr>
+
+                                      {/* Row 2: RS Uji Coba */}
+                                      <tr className="hover:bg-slate-50/50 transition-colors divide-x divide-slate-200 border-b-2 border-slate-300 bg-slate-50/50">
+                                        {/* Dataset Label Row 2 */}
+                                        <td className="py-2.5 px-3 font-semibold text-slate-600 italic text-center bg-slate-100/60 whitespace-nowrap text-[11px]">
+                                          RS Uji Coba
+                                        </td>
+
+                                        {/* Positions Scores Row 2 (Pilot Benchmark) */}
+                                        {demografiStats.posisiData.length > 0 ? (
+                                          demografiStats.posisiData.map((pos, pIdx) => (
+                                            <td key={`pilot-score-${item.id}-${pIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
+                                              {benchVal.toFixed(0)}%
+                                            </td>
+                                          ))
+                                        ) : (
+                                          <td className="py-2.5 px-2 text-center text-slate-400">--</td>
+                                        )}
+                                      </tr>
+                                    </Fragment>
                                   );
                                 })}
                               </Fragment>
