@@ -129,6 +129,10 @@ const BENCHMARK_ITEMS: Record<string, number> = {
   'A1': 82.0, 'A8': 84.0, 'A9': 74.0
 };
 
+const DIMENSION_ORDER = [
+  'd7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'
+];
+
 interface AnalisaDataTabProps {
   surveys: SurveyData[];
   role: 'rs' | 'admin';
@@ -749,7 +753,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     });
 
     return list;
-  }, [hospitalSurveys, tahun1]);
+  }, [hospitalSurveys]);
 
   const positionDimensionScores = useMemo(() => {
     return Object.keys(DIMENSI_INFO).map(dimId => {
@@ -916,6 +920,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         dimId: q.dim,
         isReversed: !!(q as any).isReversed,
         score: scoreValue,
+        positiveRate: scoreValue,
         totalValid
       };
     });
@@ -1766,10 +1771,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     });
   }, [hospitalSurveys, demografiStats]);
 
-  const DIMENSION_ORDER = [
-    'd7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'
-  ];
-
   const getCellColorClass = (val: number | null) => {
     if (val === null) return 'text-slate-500 font-medium';
     if (val >= 75) return 'text-emerald-700 bg-emerald-50 border border-emerald-200/60 rounded-lg px-2.5 py-1.5 font-bold inline-block whitespace-nowrap';
@@ -1874,7 +1875,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     return count > 0 ? sum / count : null;
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const countLangsung = useMemo(() => getInteraksiStats(DIMENSION_ORDER[0], 'langsung').count, [hospitalSurveys]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const countTidakLangsung = useMemo(() => getInteraksiStats(DIMENSION_ORDER[0], 'tidak').count, [hospitalSurveys]);
 
   const mainCards = [
@@ -2104,7 +2107,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       iconPos: 'left',
                       textAlign: 'text-left',
                       iconAlign: 'items-start',
-                      titleName: 'Perbandingan Penilaian Keselamatan Pasien',
+                      titleName: 'Perbandingan Penilaian Insiden Keselamatan Pasien',
                       iconAbsoluteClass: 'top-10 left-10',
                       h3Classes: 'mr-[54px] ml-0 pt-0 text-left'
                     },
@@ -2122,7 +2125,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       iconPos: 'right',
                       textAlign: 'text-left',
                       iconAlign: 'items-start',
-                      titleName: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan',
+                      titleName: 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan',
                       iconAbsoluteClass: 'top-10 right-10',
                       h3Classes: 'ml-[54px]'
                     },
@@ -2324,7 +2327,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
                 </div>
-              ) : benchmarkSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
+              ) : benchmarkSubView === 'Perbandingan Penilaian Insiden Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
                   {/* Mode Selector and Filters */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
@@ -2375,7 +2378,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
                     <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
                       <ShieldAlert className="w-5 h-5 text-teal-600" />
-                      Perbandingan Penilaian Keselamatan Pasien
+                      Perbandingan Penilaian Insiden Keselamatan Pasien
                     </h3>
                     <p className="text-sm text-slate-500 mb-8">Bagaimana Anda menilai tingkat keselamatan pasien di unit kerja Anda? (Butir E1)</p>
                     
@@ -2409,7 +2412,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </motion.div>
                 </div>
-              ) : benchmarkSubView === 'Perbandingan Jumlah Peristiwa Yang Dilaporkan' ? (
+              ) : benchmarkSubView === 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan' ? (
                 <div className="w-full flex flex-col gap-6">
                   {/* Mode Selector and Filters */}
                   <div className="flex flex-col gap-6 bg-white border border-slate-200 p-6 rounded-[20px] shadow-sm">
@@ -2537,7 +2540,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     {/* Header Card */}
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-800 p-8 text-white flex items-center justify-between">
                       <div className="space-y-1.5">
-                        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Perbandingan Jumlah Peristiwa yang Dilaporkan</h2>
+                        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Perbandingan Jumlah Insiden Keselamatan Pasien yang Dilaporkan</h2>
                         <p className="text-xs md:text-sm text-blue-100/80 font-medium">Membandingkan distribusi frekuensi pelaporan insiden keselamatan pasien dengan Rumah Sakit Uji Coba</p>
                       </div>
                       <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl shrink-0 hidden sm:block">
@@ -3064,14 +3067,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         lineBg: 'bg-orange-500'
                       },
                       { 
-                        title: 'Penilaian Keselamatan Pasien', 
+                        title: 'Penilaian Insiden Keselamatan Pasien', 
                         desc: 'Evaluasi peringkat keselamatan pasien secara umum berdasarkan persepsi langsung staf medis.', 
                         icon: <HeartPulse className="w-8 h-8 text-rose-600" />, 
                         hoverClass: 'hover:shadow-rose-100 hover:border-rose-200',
                         lineBg: 'bg-rose-500'
                       },
                       { 
-                        title: 'Jumlah Peristiwa Yang Dilaporkan', 
+                        title: 'Jumlah Insiden Keselamatan Pasien Yang Dilaporkan', 
                         desc: 'Analisis frekuensi pelaporan kejadian keselamatan pasien oleh unit kerja dalam 12 bulan terakhir.', 
                         icon: <AlertTriangle className="w-8 h-8 text-purple-600" />, 
                         hoverClass: 'hover:shadow-purple-100 hover:border-purple-200',
@@ -3818,7 +3821,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                   </div>
                 </div>
-              ) : hospitalSubView === 'Penilaian Keselamatan Pasien' ? (
+              ) : hospitalSubView === 'Penilaian Insiden Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
@@ -3864,7 +3867,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
 
 
-                  {/* Duplicated Penilaian Keselamatan Pasien Chart Card without Benchmarks */}
+                  {/* Duplicated Penilaian Insiden Keselamatan Pasien Chart Card without Benchmarks */}
                   <motion.div 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -3874,7 +3877,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="absolute top-0 right-0 w-64 h-64 bg-rose-500/5 rounded-full blur-3xl -z-10 -mr-20 -mt-20"></div>
                     <h3 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
                       <HeartPulse className="w-5 h-5 text-rose-600" />
-                      Grafik Penilaian Keselamatan Pasien
+                      Grafik Penilaian Insiden Keselamatan Pasien
                     </h3>
                     <p className="text-sm text-slate-500 mb-8">Bagaimana Anda menilai tingkat keselamatan pasien di unit kerja Anda? (Butir E1)</p>
                     
@@ -3910,7 +3913,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                   </motion.div>
                 </div>
-              ) : hospitalSubView === 'Jumlah Peristiwa Yang Dilaporkan' ? (
+              ) : hospitalSubView === 'Jumlah Insiden Keselamatan Pasien Yang Dilaporkan' ? (
                 <div className="w-full flex flex-col gap-6">
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-5 rounded-[24px] shadow-sm">
                     <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
@@ -3958,7 +3961,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     {/* Header Card */}
                     <div className="bg-gradient-to-r from-purple-600 to-indigo-800 p-8 text-white flex items-center justify-between">
                       <div className="space-y-1.5">
-                        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Detail Distribusi Jumlah Peristiwa yang Dilaporkan</h2>
+                        <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Detail Distribusi Jumlah Insiden Keselamatan Pasien yang Dilaporkan</h2>
                         <p className="text-xs md:text-sm text-purple-100/80 font-medium">Distribusi frekuensi pelaporan insiden keselamatan pasien berdasarkan data responden rumah sakit Anda</p>
                       </div>
                       <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl shrink-0 hidden sm:block">
@@ -4217,7 +4220,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         accent: 'absolute -bottom-2.5 -left-2.5 w-32 h-20 bg-[#F05A28] rounded-[24px] -z-10'
                       },
                       { 
-                        title: 'Perbandingan Penilaian Keselamatan Pasien', 
+                        title: 'Perbandingan Penilaian Insiden Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) lintas berbagai unit / departemen kerja.', 
                         icon: <HeartPulse className="w-8 h-8 text-[#22B573]" />, 
                         textColor: 'text-[#22B573]',
@@ -4226,7 +4229,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         accent: 'absolute -top-2.5 -right-2.5 w-32 h-20 bg-[#22B573] rounded-[24px] -z-10'
                       },
                       { 
-                        title: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan', 
+                        title: 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara berbagai unit / area kerja.', 
                         icon: <AlertTriangle className="w-8 h-8 text-[#00AEEF]" />, 
                         textColor: 'text-[#00AEEF]',
@@ -4486,12 +4489,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                   </div>
                 </div>
-              ) : unitSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
+              ) : unitSubView === 'Perbandingan Penilaian Insiden Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
                   {/* Selector and Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Keselamatan Pasien Berdasarkan Unit Kerja ({tahun1})
+                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Insiden Keselamatan Pasien Berdasarkan Unit Kerja ({tahun1})
                     </h2>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -4603,7 +4606,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   {/* Selector and Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-purple-600" /> Perbandingan Jumlah Peristiwa Yang Dilaporkan Berdasarkan Unit Kerja ({tahun1})
+                      <AlertTriangle className="w-5 h-5 text-purple-600" /> Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan Berdasarkan Unit Kerja ({tahun1})
                     </h2>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -4720,13 +4723,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         color: 'bg-[#175997]'
                       },
                       { 
-                        title: 'Perbandingan Penilaian Keselamatan Pasien', 
+                        title: 'Perbandingan Penilaian Insiden Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) lintas berbagai posisi dan peran jabatan.', 
                         icon: <HeartPulse className="w-10 h-10 text-slate-400 stroke-[1.2]" />, 
                         color: 'bg-[#F29F05]'
                       },
                       { 
-                        title: 'Perbandingan Jumlah Peristiwa Yang Dilaporkan', 
+                        title: 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara berbagai posisi staf.', 
                         icon: <Users className="w-10 h-10 text-slate-400 stroke-[1.2]" />, 
                         color: 'bg-[#5D20D2]'
@@ -5093,12 +5096,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                   </div>
                 </div>
-              ) : positionSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
+              ) : positionSubView === 'Perbandingan Penilaian Insiden Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
                   {/* Selector and Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Keselamatan Pasien Berdasarkan Posisi Staf ({tahun1})
+                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Insiden Keselamatan Pasien Berdasarkan Posisi Staf ({tahun1})
                     </h2>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -5114,7 +5117,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
                       <div>
-                        <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Penilaian Keselamatan Pasien</h3>
+                        <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Penilaian Insiden Keselamatan Pasien</h3>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
                           Menampilkan perbandingan distribusi penilaian keselamatan pasien berdasarkan posisi staf antara rumah sakit Anda dengan Rumah Sakit Uji Coba
                         </p>
@@ -5163,7 +5166,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <thead>
                           <tr className="bg-[#D8D4EC] text-slate-800 font-semibold uppercase tracking-wider text-[11px] md:text-xs">
                             <th rowSpan={2} className="sticky left-0 top-0 z-30 p-4 border-r border-b border-slate-300/60 w-[240px] min-w-[240px] bg-[#D8D4EC] align-bottom shadow-[2px_0_5px_rgba(0,0,0,0.02)] leading-tight">
-                              Penilaian Keselamatan Pasien<br/>(Patient Safety Rating)
+                              Penilaian Insiden Keselamatan Pasien<br/>(Patient Safety Rating)
                             </th>
                             <th rowSpan={2} className="sticky top-0 z-20 p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
                               Dataset
@@ -5407,7 +5410,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <thead>
                           <tr className="bg-[#D8D4EC] text-slate-800 font-semibold uppercase tracking-wider text-[11px] md:text-xs">
                             <th rowSpan={2} className="sticky left-0 top-0 z-30 p-4 border-r border-b border-slate-300/60 w-[200px] min-w-[200px] bg-[#D8D4EC] align-bottom shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Jumlah Peristiwa<br/>Yang Dilaporkan
+                              Jumlah Insiden Keselamatan Pasien<br/>Yang Dilaporkan
                             </th>
                             <th rowSpan={2} className="sticky top-0 z-20 p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
                               Dataset
@@ -5537,12 +5540,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         icon: <ListChecks className="w-7 h-7 text-orange-500 stroke-[1.5]" />
                       },
                       { 
-                        title: 'Penilaian Keselamatan Pasien', 
+                        title: 'Penilaian Insiden Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) berdasarkan masa jabatan atau lama kerja staf.', 
                         icon: <HeartPulse className="w-7 h-7 text-sky-500 stroke-[1.5]" />
                       },
                       { 
-                        title: 'Jumlah Peristiwa Dilaporkan', 
+                        title: 'Jumlah Insiden Keselamatan Pasien Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara kelompok masa jabatan staf.', 
                         icon: <AlertTriangle className="w-7 h-7 text-slate-800 stroke-[1.5]" />
                       }
@@ -5559,7 +5562,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <motion.div
                           key={idx}
                           whileHover={{ y: -5 }}
-                          onClick={() => setTenureSubView(item.title === 'Penilaian Keselamatan Pasien' ? 'Perbandingan Penilaian Keselamatan Pasien' : item.title === 'Jumlah Peristiwa Dilaporkan' ? 'Perbandingan Jumlah Peristiwa Yang Dilaporkan' : item.title)}
+                          onClick={() => setTenureSubView(item.title === 'Penilaian Insiden Keselamatan Pasien' ? 'Perbandingan Penilaian Insiden Keselamatan Pasien' : item.title === 'Jumlah Insiden Keselamatan Pasien Dilaporkan' ? 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan' : item.title)}
                           className="relative cursor-pointer group pt-6 pr-2 pl-2 flex flex-col h-full"
                           style={{ filter: 'drop-shadow(0 15px 20px rgba(0,0,0,0.08))' }}
                         >
@@ -5800,12 +5803,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                   </div>
                 </div>
-              ) : tenureSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
+              ) : tenureSubView === 'Perbandingan Penilaian Insiden Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
                   {/* Selector and Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Keselamatan Pasien Berdasarkan Masa Kerja ({tahun1})
+                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Insiden Keselamatan Pasien Berdasarkan Masa Kerja ({tahun1})
                     </h2>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -5919,7 +5922,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   {/* Selector and Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-purple-600" /> Perbandingan Jumlah Peristiwa Yang Dilaporkan Berdasarkan Masa Kerja ({tahun1})
+                      <AlertTriangle className="w-5 h-5 text-purple-600" /> Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan Berdasarkan Masa Kerja ({tahun1})
                     </h2>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -6030,13 +6033,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         color: 'bg-[#3CB3C6]'
                       },
                       { 
-                        title: 'Penilaian Keselamatan Pasien', 
+                        title: 'Penilaian Insiden Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) berdasarkan tingkat interaksi langsung staf dengan pasien.', 
                         icon: <HeartPulse className="w-8 h-8 text-slate-700 stroke-[1.2]" />, 
                         color: 'bg-[#8944B6]'
                       },
                       { 
-                        title: 'Jumlah Peristiwa Dilaporkan', 
+                        title: 'Jumlah Insiden Keselamatan Pasien Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara kelompok staf berdasarkan interaksi pasien.', 
                         icon: <AlertTriangle className="w-8 h-8 text-slate-700 stroke-[1.2]" />, 
                         color: 'bg-[#DF4A98]'
@@ -6045,7 +6048,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <motion.div
                         key={idx}
                         whileHover={{ y: -5 }}
-                        onClick={() => setInteractionSubView(item.title === 'Penilaian Keselamatan Pasien' ? 'Perbandingan Penilaian Keselamatan Pasien' : item.title === 'Jumlah Peristiwa Dilaporkan' ? 'Perbandingan Jumlah Peristiwa Yang Dilaporkan' : item.title)}
+                        onClick={() => setInteractionSubView(item.title === 'Penilaian Insiden Keselamatan Pasien' ? 'Perbandingan Penilaian Insiden Keselamatan Pasien' : item.title === 'Jumlah Insiden Keselamatan Pasien Dilaporkan' ? 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan' : item.title)}
                         className="relative cursor-pointer flex flex-col group min-h-[260px]"
                       >
                         {/* Colored rotated background */}
@@ -6255,12 +6258,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                   </div>
                 </div>
-              ) : interactionSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
+              ) : interactionSubView === 'Perbandingan Penilaian Insiden Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
                   {/* Selector and Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Keselamatan Pasien Berdasarkan Interaksi Pasien ({tahun1})
+                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Insiden Keselamatan Pasien Berdasarkan Interaksi Pasien ({tahun1})
                     </h2>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -6374,7 +6377,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   {/* Selector and Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-purple-600" /> Perbandingan Jumlah Peristiwa Yang Dilaporkan Berdasarkan Interaksi Pasien ({tahun1})
+                      <AlertTriangle className="w-5 h-5 text-purple-600" /> Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan Berdasarkan Interaksi Pasien ({tahun1})
                     </h2>
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
@@ -6684,17 +6687,24 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
 
     case 'hospital-item': {
       const items = hospitalItemScores && hospitalItemScores.length > 0 ? hospitalItemScores : [];
-      let highestItem = { id: 'A1', code: 'A1', text: 'Staf di unit ini saling mendukung', positiveRate: 80 };
-      let lowestItem = { id: 'A6', code: 'A6', text: 'Staf merasa bahwa kesalahan digunakan untuk menyalahkan mereka', positiveRate: 40 };
+      let highestItem = { id: 'A1', code: 'A1', text: 'Staf di unit ini saling mendukung', positiveRate: 80, score: 80 };
+      let lowestItem = { id: 'A6', code: 'A6', text: 'Staf merasa bahwa kesalahan digunakan untuk menyalahkan mereka', positiveRate: 40, score: 40 };
       if (items.length > 0) {
-        const sorted = [...items].sort((a: any, b: any) => b.positiveRate - a.positiveRate);
+        const sorted = [...items].sort((a: any, b: any) => {
+          const valA = a.positiveRate !== undefined ? a.positiveRate : (a.score !== undefined ? a.score : 0);
+          const valB = b.positiveRate !== undefined ? b.positiveRate : (b.score !== undefined ? b.score : 0);
+          return valB - valA;
+        });
         highestItem = sorted[0];
         lowestItem = sorted[sorted.length - 1];
       }
 
+      const highestVal = highestItem.positiveRate !== undefined ? highestItem.positiveRate : ((highestItem as any).score !== undefined ? (highestItem as any).score : 0);
+      const lowestVal = lowestItem.positiveRate !== undefined ? lowestItem.positiveRate : ((lowestItem as any).score !== undefined ? (lowestItem as any).score : 0);
+
       analysisText = (
         <span>
-          Melalui evaluasi butir pertanyaan survei tahun <strong>{tahun1}</strong>, aspek yang dinilai paling unggul oleh staf adalah item <strong>{highestItem.code || highestItem.id}</strong> (&ldquo;{highestItem.text}&rdquo;) dengan respons positif mencapai <strong>{highestItem.positiveRate.toFixed(1)}%</strong>. Di sisi lain, titik kritis yang menjadi kelemahan utama operasional harian adalah item <strong>{lowestItem.code || lowestItem.id}</strong> (&ldquo;{lowestItem.text}&rdquo;) yang hanya mengumpulkan respons positif sebesar <strong>{lowestItem.positiveRate.toFixed(1)}%</strong>. Kesenjangan skor ini menunjukkan adanya hambatan praktis di lapangan yang dirasakan langsung oleh staf saat menjalankan tugas.
+          Melalui evaluasi butir pertanyaan survei tahun <strong>{tahun1}</strong>, aspek yang dinilai paling unggul oleh staf adalah item <strong>{highestItem.code || highestItem.id}</strong> (&ldquo;{highestItem.text}&rdquo;) dengan respons positif mencapai <strong>{highestVal.toFixed(1)}%</strong>. Di sisi lain, titik kritis yang menjadi kelemahan utama operasional harian adalah item <strong>{lowestItem.code || lowestItem.id}</strong> (&ldquo;{lowestItem.text}&rdquo;) yang hanya mengumpulkan respons positif sebesar <strong>{lowestVal.toFixed(1)}%</strong>. Kesenjangan skor ini menunjukkan adanya hambatan praktis di lapangan yang dirasakan langsung oleh staf saat menjalankan tugas.
         </span>
       );
 

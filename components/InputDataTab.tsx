@@ -309,17 +309,21 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
   const [isCopied, setIsCopied] = useState(false);
 
   // States for Tanggal & Tahun Pengisian
-  const [tanggalPengisian, setTanggalPengisian] = useState(() => new Date().toISOString().split('T')[0]);
+  const [tanggalPengisian, setTanggalPengisian] = useState(() => {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  });
   const [tahunPengisian, setTahunPengisian] = useState(() => new Date().getFullYear().toString());
 
   const handleTanggalChange = (val: string) => {
     setTanggalPengisian(val);
     if (val) {
-      try {
-        const selectedYear = new Date(val).getFullYear().toString();
-        setTahunPengisian(selectedYear);
-      } catch (e) {
-        console.error("Gagal mendapatkan tahun dari tanggal yang dipilih:", e);
+      const parts = val.split('-');
+      if (parts.length === 3) {
+        setTahunPengisian(parts[0]);
       }
     }
   };
@@ -327,22 +331,21 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
   const handleTahunChange = (val: string) => {
     setTahunPengisian(val);
     if (val && val.length === 4 && !isNaN(Number(val))) {
-      try {
-        const d = new Date(tanggalPengisian);
-        if (!isNaN(d.getTime())) {
-          d.setFullYear(Number(val));
-          setTanggalPengisian(d.toISOString().split('T')[0]);
-        }
-      } catch (e) {
-        console.error("Gagal memperbarui tahun pada tanggal:", e);
+      const parts = tanggalPengisian.split('-');
+      if (parts.length === 3) {
+        setTanggalPengisian(`${val}-${parts[1]}-${parts[2]}`);
       }
     }
   };
 
   const handleResetTanggal = () => {
     const today = new Date();
-    setTanggalPengisian(today.toISOString().split('T')[0]);
-    setTahunPengisian(today.getFullYear().toString());
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${d}`;
+    setTanggalPengisian(dateStr);
+    setTahunPengisian(String(y));
   };
 
   // States for advanced configurations
@@ -548,6 +551,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
     if (showLinkModal && !surveyLinkConfig) {
       loadSurveyLink();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showLinkModal]);
 
   const [posisiStaf, setPosisiStaf] = useState('');
