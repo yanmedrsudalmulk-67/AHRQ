@@ -30,8 +30,9 @@ import LaporanTab from './LaporanTab';
 import AnalisaDataTab from './AnalisaDataTab';
 import PengaturanTab from './PengaturanTab';
 import PersetujuanTab from './PersetujuanTab';
+import PersetujuanBenchmarkTab from './PersetujuanBenchmarkTab';
 import DashboardTable from './DashboardTable';
-import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey } from '../lib/db';
+import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey, getBenchmarkRequests } from '../lib/db';
 import { computeDimensionScores } from '../lib/scoring';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
@@ -71,7 +72,7 @@ export default function Dashboard({
   activeLogo,
   onUpdateLogo
 }: DashboardProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'analisa-data' | 'input' | 'laporan' | 'pengaturan' | 'persetujuan' | 'master-posisi' | 'master-unit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'analisa-data' | 'input' | 'laporan' | 'pengaturan' | 'persetujuan' | 'master-posisi' | 'master-unit' | 'persetujuan-benchmark'>('dashboard');
   const mainContainerRef = useRef<HTMLElement | null>(null);
 
   // Reset scroll to top immediately whenever activeTab changes
@@ -109,12 +110,28 @@ export default function Dashboard({
     }
   );
 
-  // SWR for real-time hospital accounts with background polling (only for admin)
-  const { data: accounts = [], mutate: mutateAccounts, isLoading: accountsLoading } = useSWR(
-    role === 'admin' ? 'hospital_accounts' : null,
+  // SWR for real-time hospital accounts with background polling
+  const { data: accounts = [], mutate: mutateAccounts } = useSWR(
+    'hospital_accounts',
     getHospitalAccounts,
+    { refreshInterval: 5000 }
+  );
+
+  // SWR for real-time benchmark requests
+  const { data: benchmarkRequests = [], mutate: mutateBenchmarkRequests } = useSWR(
+    ['ahrq_benchmark_requests', hospitalId || identifier],
+    () => getBenchmarkRequests(hospitalId || identifier),
     { refreshInterval: 3000 }
   );
+
+  const pendingBenchmarkCount = useMemo(() => {
+    return benchmarkRequests.filter(r => {
+      const isTarget = r.target_id === (hospitalId || identifier) || 
+                       r.target_name?.toLowerCase() === namaRs?.toLowerCase() ||
+                       identifier === 'admin';
+      return isTarget && r.status === 'pending';
+    }).length;
+  }, [benchmarkRequests, hospitalId, identifier, namaRs]);
 
   const pendingAccountsCount = accounts.filter(a => a.status === 'Pending').length;
 
@@ -354,7 +371,7 @@ export default function Dashboard({
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'dashboard' ? 'text-white' : 'text-blue-200'}`} /> 
+              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'dashboard' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[15px] leading-none">Dashboard</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Beranda</span>
             </button>
@@ -367,7 +384,7 @@ export default function Dashboard({
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'input' ? 'text-white' : 'text-blue-200'}`} /> 
+              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'input' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Input Data Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Survei</span>
             </button>
@@ -380,35 +397,54 @@ export default function Dashboard({
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <Activity className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'analisa-data' ? 'text-white' : 'text-blue-200'}`} /> 
+              <Activity className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'analisa-data' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Analisa Data</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Analisa</span>
             </button>
 
             <button
               onClick={() => setActiveTab('laporan')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'laporan'
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'laporan' ? 'text-white' : 'text-blue-200'}`} /> 
+              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'laporan' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Laporan Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
             </button>
 
             <button
               onClick={() => setActiveTab('pengaturan')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'pengaturan'
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'pengaturan' ? 'text-white' : 'text-blue-200'}`} /> 
+              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'pengaturan' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
               <span className="hidden md:block text-[14px] leading-none">Pengaturan</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('persetujuan-benchmark')}
+              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-2 md:min-h-[39px] md:h-auto md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
+                activeTab === 'persetujuan-benchmark'
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
+              }`}
+            >
+              <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'persetujuan-benchmark' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+              <span className="hidden md:block text-[13.5px] leading-[1.5] text-left">Persetujuan Benchmark Data</span>
+              <span className="md:hidden text-[10px] mt-1 tracking-wide">Benchmark</span>
+
+              {pendingBenchmarkCount > 0 && (
+                <span className="absolute top-1 right-2 md:top-2 md:right-3 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-amber-950 shadow-md animate-pulse">
+                  {pendingBenchmarkCount}
+                </span>
+              )}
             </button>
 
             {role === 'admin' && (
@@ -420,7 +456,7 @@ export default function Dashboard({
                     : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
                 }`}
               >
-                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 ${activeTab === 'persetujuan' ? 'text-white' : 'text-blue-200'}`} /> 
+                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'persetujuan' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
                 <span className="hidden md:block text-[14px] leading-none">Persetujuan Akun</span>
                 <span className="md:hidden text-[10px] mt-1 tracking-wide">Persetujuan</span>
                 
@@ -687,6 +723,18 @@ export default function Dashboard({
             identifier={identifier}
             hospitalId={hospitalId || ''}
             namaRs={namaRs}
+            accounts={accounts}
+            requests={benchmarkRequests}
+            onRefreshRequests={mutateBenchmarkRequests}
+          />
+        )}
+
+        {activeTab === 'persetujuan-benchmark' && (
+          <PersetujuanBenchmarkTab 
+            currentHospitalId={hospitalId || identifier}
+            currentHospitalName={namaRs}
+            requests={benchmarkRequests}
+            onRefresh={mutateBenchmarkRequests}
           />
         )}
 

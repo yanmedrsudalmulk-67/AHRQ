@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useEffect, Fragment, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import CountUp from './CountUp';
+import { HospitalAccount, BenchmarkRequest, createBenchmarkRequest, getSurveys } from '../lib/db';
 import { 
   Building, 
   Building2,
@@ -33,6 +34,13 @@ import {
   ClipboardCheck,
   ArrowRight,
   Clock3,
+  Search,
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  RotateCcw,
+  Handshake,
+  Sparkles,
   MessageSquareOff
 } from 'lucide-react';
 import { 
@@ -139,6 +147,9 @@ interface AnalisaDataTabProps {
   identifier: string;
   namaRs: string;
   hospitalId: string;
+  accounts?: HospitalAccount[];
+  requests?: BenchmarkRequest[];
+  onRefreshRequests?: () => void;
 }
 
 function extractYear(tanggalStr?: string): string {
@@ -153,7 +164,7 @@ function extractYear(tanggalStr?: string): string {
   return new Date().getFullYear().toString();
 }
 
-export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hospitalId }: AnalisaDataTabProps) {
+export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hospitalId, accounts = [], requests = [], onRefreshRequests }: AnalisaDataTabProps) {
   const tabContentRef = useRef<HTMLDivElement>(null);
   const [activeView, setActiveView] = useState<'main' | 'hospital' | 'unit' | 'position' | 'tenure' | 'interaction' | 'benchmark'>('main');
   const [benchmarkSubView, setBenchmarkSubView] = useState<string | null>(null);
@@ -163,6 +174,84 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [tenureSubView, setTenureSubView] = useState<string | null>(null);
   const [interactionSubView, setInteractionSubView] = useState<string | null>(null);
   const [mode, setMode] = useState<'Tunggal' | 'Perbandingan'>('Tunggal');
+
+  // Benchmark Hospital Selection State
+  const [selectedBenchmarkHospitalId, setSelectedBenchmarkHospitalId] = useState<string>('default');
+  const [benchmarkSearchTerm, setBenchmarkSearchTerm] = useState<string>('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
+  const [targetHospitalSurveys, setTargetHospitalSurveys] = useState<SurveyData[]>([]);
+  const [isLoadingTargetSurveys, setIsLoadingTargetSurveys] = useState<boolean>(false);
+  const [isSendingBenchmarkReq, setIsSendingBenchmarkReq] = useState<boolean>(false);
+  const [benchmarkNotification, setBenchmarkNotification] = useState<string | null>(null);
+
+  // Target hospital account object
+  const selectedTargetHospital = useMemo(() => {
+    if (selectedBenchmarkHospitalId === 'default') return null;
+    return accounts.find(a => a.id === selectedBenchmarkHospitalId || a.username === selectedBenchmarkHospitalId || a.namaRs === selectedBenchmarkHospitalId);
+  }, [accounts, selectedBenchmarkHospitalId]);
+
+  // Request status for selected hospital
+  const currentRequestForSelectedHospital = useMemo(() => {
+    if (!selectedTargetHospital) return null;
+    return requests.find(r => 
+      (r.requester_id === hospitalId || r.requester_name.toLowerCase() === namaRs.toLowerCase()) &&
+      (r.target_id === selectedTargetHospital.id || r.target_name.toLowerCase() === selectedTargetHospital.namaRs.toLowerCase())
+    );
+  }, [requests, selectedTargetHospital, hospitalId, namaRs]);
+
+  const isSelectedTargetApproved = useMemo(() => {
+    if (selectedBenchmarkHospitalId === 'default') return true;
+    return currentRequestForSelectedHospital?.status === 'approved';
+  }, [selectedBenchmarkHospitalId, currentRequestForSelectedHospital]);
+
+  // Active benchmark hospital display name
+  const activeBenchmarkLabel = useMemo(() => {
+    if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
+      return selectedTargetHospital.namaRs;
+    }
+    return "RS Uji Coba";
+  }, [selectedBenchmarkHospitalId, selectedTargetHospital, currentRequestForSelectedHospital]);
+
+  // Fetch surveys of approved target benchmark hospital
+  useEffect(() => {
+    if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
+      setIsLoadingTargetSurveys(true);
+      getSurveys(selectedTargetHospital.id || selectedTargetHospital.username)
+        .then(res => setTargetHospitalSurveys(res || []))
+        .catch(err => {
+          console.warn("Failed to fetch target hospital surveys:", err);
+          setTargetHospitalSurveys([]);
+        })
+        .finally(() => setIsLoadingTargetSurveys(false));
+    } else {
+      setTargetHospitalSurveys([]);
+    }
+  }, [selectedBenchmarkHospitalId, selectedTargetHospital, currentRequestForSelectedHospital?.status]);
+
+  const handleSendBenchmarkRequest = async () => {
+    if (!selectedTargetHospital) return;
+    setIsSendingBenchmarkReq(true);
+    try {
+      const requesterAcc = accounts.find(a => a.id === hospitalId || a.username === identifier || a.namaRs === namaRs);
+      await createBenchmarkRequest({
+        requester_id: hospitalId || identifier,
+        requester_name: namaRs,
+        requester_email: requesterAcc?.emailRs || '',
+        target_id: selectedTargetHospital.id || selectedTargetHospital.username,
+        target_name: selectedTargetHospital.namaRs,
+        target_email: selectedTargetHospital.emailRs || '',
+        requested_year: new Date().getFullYear().toString(),
+        notes: `Permintaan benchmark dari ${namaRs}`
+      });
+      setBenchmarkNotification(`Permintaan izin benchmark data berhasil dikirim ke ${selectedTargetHospital.namaRs}! Menunggu persetujuan.`);
+      setTimeout(() => setBenchmarkNotification(null), 6000);
+      if (onRefreshRequests) onRefreshRequests();
+    } catch (err: any) {
+      alert("Gagal mengirim permintaan: " + (err?.message || 'Terjadi kesalahan'));
+    } finally {
+      setIsSendingBenchmarkReq(false);
+    }
+  };
 
   // Reset scroll to top when activeView, subviews, or mode change
   useEffect(() => {
@@ -252,9 +341,19 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [tahun2, setTahun2] = useState<string>(actualDataYears[1] || actualDataYears[0] || currentYear);
 
   const masterBenchmarkData = useMemo(() => {
+    if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
+      const targetScores = computeDimensionScores(targetHospitalSurveys);
+      const customMb: Record<string, { min: number; max: number; avg: number }> = {};
+      targetScores.forEach(ds => {
+        const val = parseFloat(ds.percentage.toFixed(1));
+        customMb[ds.id] = { min: val, max: val, avg: val };
+        customMb[ds.kode] = { min: val, max: val, avg: val };
+      });
+      return customMb;
+    }
     const mb = surveys.find(s => s.id === 'MASTER_BENCHMARK');
     return mb ? (mb.dimensiScores as any) : undefined;
-  }, [surveys]);
+  }, [surveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys]);
 
   const [benchmarkInteraksiData, setBenchmarkInteraksiData] = useState<BenchmarkInteraksi[]>([]);
 
@@ -1952,7 +2051,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             exit={{ opacity: 0, y: -20 }}
             className="max-w-7xl mx-auto"
           >
-            <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[32px] p-8 md:p-10 shadow-2xl shadow-blue-900/30 mb-12 border border-white/20 backdrop-blur-xl group">
+            <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[32px] p-8 md:p-10 shadow-2xl shadow-blue-900/30 mb-8 border border-white/20 backdrop-blur-xl group">
               {/* Decorative Glass Elements */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-3xl"></div>
@@ -1967,6 +2066,142 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   Analisis komprehensif hasil Survei Budaya Keselamatan Pasien AHRQ SOPS 2.0 secara interaktif, realtime, dan terintegrasi dengan seluruh data survei.
                 </p>
               </div>
+            </div>
+
+            {/* Card Benchmark dengan Rumah Sakit Lain */}
+            <div className="bg-white rounded-[28px] p-6 md:p-8 shadow-lg border border-slate-200/80 mb-10 relative">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div className="space-y-1 max-w-xl">
+                  <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
+                    <Building2 className="w-4 h-4" />
+                    <span>Fitur Benchmark Antar Rumah Sakit</span>
+                  </div>
+                  <h2 className="text-[17px] font-extrabold text-slate-800 tracking-tight">
+                    Benchmark dengan Rumah Sakit Lain
+                  </h2>
+                  <p className="text-[11px] text-left text-slate-500 font-medium leading-relaxed max-w-[367px]">
+                    Pilih rumah sakit terdaftar untuk melakukan perbandingan data. Akses perbandingan membutuhkan persetujuan dari rumah sakit pembanding demi keamanan data.
+                  </p>
+                </div>
+
+                {/* Dropdown & Actions */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                  <div className="relative min-w-[280px]">
+                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Pilih Rumah Sakit Pembanding:</label>
+                    
+                    {/* Custom Searchable Select Box */}
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                        className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-left text-xs font-bold text-slate-800 flex items-center justify-between transition-all cursor-pointer"
+                      >
+                        <span className="truncate">
+                          {selectedBenchmarkHospitalId === 'default' 
+                            ? 'RS Uji Coba (Benchmark Bawaan Aplikasi)' 
+                            : selectedTargetHospital?.namaRs || 'Pilih Rumah Sakit...'}
+                        </span>
+                        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
+                      </button>
+
+                      {isDropdownOpen && (
+                        <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 space-y-2 max-h-64 overflow-y-auto">
+                          <div className="relative px-1">
+                            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                            <input
+                              type="text"
+                              placeholder="Cari nama rumah sakit..."
+                              value={benchmarkSearchTerm}
+                              onChange={(e) => setBenchmarkSearchTerm(e.target.value)}
+                              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-sans"
+                            />
+                          </div>
+
+                          <div className="divide-y divide-slate-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedBenchmarkHospitalId('default');
+                                setIsDropdownOpen(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+                                selectedBenchmarkHospitalId === 'default' ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
+                              }`}
+                            >
+                              <span>RS Uji Coba (Benchmark Bawaan)</span>
+                              {selectedBenchmarkHospitalId === 'default' && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                            </button>
+
+                            {accounts
+                              .filter(a => a.status === 'Active' && a.id !== hospitalId && a.username !== identifier)
+                              .filter(a => a.namaRs.toLowerCase().includes(benchmarkSearchTerm.toLowerCase()))
+                              .map(acc => {
+                                const isSel = selectedBenchmarkHospitalId === acc.id || selectedBenchmarkHospitalId === acc.username;
+                                return (
+                                  <button
+                                    key={acc.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedBenchmarkHospitalId(acc.id || acc.username);
+                                      setIsDropdownOpen(false);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+                                      isSel ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
+                                    }`}
+                                  >
+                                    <span className="truncate">{acc.namaRs}</span>
+                                    {isSel && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                                  </button>
+                                );
+                              })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Button & Status Pill */}
+                  <div className="flex flex-col justify-end">
+                    <span className="text-[11px] font-bold text-slate-700 hidden sm:block mb-1">&nbsp;</span>
+                    {selectedBenchmarkHospitalId === 'default' ? (
+                      <div className="px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span>Benchmark Bawaan Aktif</span>
+                      </div>
+                    ) : isSelectedTargetApproved ? (
+                      <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Izin Disetujui (Data Realtime)</span>
+                      </div>
+                    ) : currentRequestForSelectedHospital?.status === 'pending' ? (
+                      <button
+                        disabled
+                        className="px-4 py-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 opacity-80 cursor-not-allowed"
+                      >
+                        <Clock className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+                        <span>Menunggu Persetujuan</span>
+                      </button>
+                    ) : (
+                      <button
+                        disabled={isSendingBenchmarkReq}
+                        onClick={handleSendBenchmarkRequest}
+                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                      >
+                        <Handshake className="w-4 h-4" />
+                        <span>{currentRequestForSelectedHospital?.status === 'rejected' ? 'Kirim Ulang Permintaan' : 'Kirim Permintaan Benchmark'}</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Notification Banner */}
+              {benchmarkNotification && (
+                <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{benchmarkNotification}</span>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[32px]">
@@ -4479,7 +4714,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer transition-colors font-sans"
                         >
                           <option value="all">Semua Dimensi Budaya Keselamatan (32 Item)</option>
-                          {['d7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'].map(dimId => (
+                          {DIMENSION_ORDER.map(dimId => (
                             <option key={dimId} value={dimId}>
                               [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
                             </option>
@@ -4488,103 +4723,163 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     </div>
 
-                    {/* Interactive Table */}
-                    <div className="overflow-auto max-h-[70vh] rounded-t-xl relative border border-slate-200/60 shadow-sm">
-                      <table className="w-full border-collapse text-left">
+                    {/* Interactive Matrix Comparative Table matching Posisi Staf layout */}
+                    <div className="overflow-x-auto max-h-[75vh] relative custom-scrollbar border-t border-slate-200">
+                      <table className="w-full border-collapse text-left border border-slate-300">
                         <thead>
-                          <tr className="bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] text-white">
-                            <th className="sticky top-0 z-10 py-5 px-4 text-xs font-bold tracking-wider uppercase text-center w-[5%] min-w-[60px] border-r border-white/10 font-sans bg-gradient-to-r from-[#1E3A8A] to-[#254BAF]">No</th>
-                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-auto border-r border-white/10 font-sans bg-[#254BAF]">Pernyataan (Item Survei)</th>
-                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] border-r border-white/10 font-sans bg-[#254BAF]">Rumah Sakit Anda</th>
-                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] font-sans bg-gradient-to-r from-[#254BAF] to-[#3B82F6]">Rumah Sakit Uji Coba</th>
+                          {/* Main Header Row in Royal Blue */}
+                          <tr className="bg-[#1E3A8A] text-white text-xs font-bold uppercase tracking-wider divide-x divide-blue-800">
+                            <th rowSpan={2} className="py-4 px-3 text-center w-[60px] min-w-[60px] bg-[#1E3A8A] sticky left-0 z-20 shadow-md">Item</th>
+                            <th rowSpan={2} className="py-4 px-4 text-center min-w-[280px] bg-[#1E3A8A]">Pertanyaan Survei Berdasarkan Dimensi (Composite Measure)</th>
+                            <th rowSpan={2} className="py-4 px-3 text-center min-w-[130px] bg-[#1E3A8A]">Dataset</th>
+                            <th colSpan={Math.max(1, demografiStats.unitData.length)} className="py-3 px-4 text-center bg-[#254BAF] border-b border-blue-700 tracking-widest text-[11px]">
+                              Unit / Area Kerja (Unit / Work Area)
+                            </th>
+                          </tr>
+
+                          {/* Unit Names Header Row */}
+                          <tr className="bg-[#254BAF] text-white text-[11px] font-bold uppercase tracking-tight divide-x divide-blue-700 border-b border-blue-800">
+                            {demografiStats.unitData.length > 0 ? (
+                              demografiStats.unitData.map((u) => (
+                                <th key={u.name} className="py-3 px-3 text-center min-w-[120px] max-w-[180px] leading-tight font-sans">
+                                  <div className="flex flex-col items-center justify-center">
+                                    <span className="font-bold">{u.name}</span>
+                                  </div>
+                                </th>
+                              ))
+                            ) : (
+                              <th className="py-3 px-3 text-center min-w-[120px]">Belum Ada Data Unit</th>
+                            )}
+                          </tr>
+
+                          {/* Respondent Count Sub-Header Rows */}
+                          <tr className="bg-blue-50 text-slate-800 text-xs font-semibold border-b border-blue-200 divide-x divide-blue-200 font-sans">
+                            <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-blue-900 bg-blue-100/70">
+                              Rumah Sakit Anda: # Responden
+                            </td>
+                            <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
+                              {demografiStats.total}
+                            </td>
+                            {demografiStats.unitData.length > 0 ? (
+                              demografiStats.unitData.map((u, uIdx) => (
+                                <td key={`cnt-rs-unit-${uIdx}`} className="py-2 px-2 text-center font-extrabold text-blue-900 bg-blue-100/50">
+                                  {u.value}
+                                </td>
+                              ))
+                            ) : (
+                              <td className="py-2 px-2 text-center text-slate-400">0</td>
+                            )}
+                          </tr>
+
+                          <tr className="bg-slate-50 text-slate-700 text-xs font-semibold border-b-2 border-slate-300 divide-x divide-slate-300 font-sans">
+                            <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-slate-600 bg-slate-50">
+                              RS Uji Coba: # Responden
+                            </td>
+                            <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
+                              3.789
+                            </td>
+                            {demografiStats.unitData.length > 0 ? (
+                              demografiStats.unitData.map((u, idx) => (
+                                <td key={`cnt-pilot-unit-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
+                                  3.789
+                                </td>
+                              ))
+                            ) : (
+                              <td className="py-2 px-2 text-center text-slate-400">-</td>
+                            )}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-200/60 bg-white">
-                          {['d7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'].filter(dimId => selectedItemDimId === 'all' || selectedItemDimId === dimId).map((dimId) => {
+
+                        <tbody className="divide-y divide-slate-300 bg-white text-xs text-slate-800 font-sans">
+                          {DIMENSION_ORDER.filter(dimId => selectedItemDimId === 'all' || selectedItemDimId === dimId).map((dimId, dimIdx) => {
                             const dimensionItems = hospitalItemScores.filter(item => item.dimId === dimId);
-                            const dimName = DIMENSI_INFO[dimId].nama;
+                            const dimInfo = DIMENSI_INFO[dimId];
+                            if (!dimensionItems || dimensionItems.length === 0) return null;
+
+                            const colSpanTotal = 3 + Math.max(1, demografiStats.unitData.length);
 
                             return (
                               <Fragment key={dimId}>
-                                {/* Dimension Group Banner */}
-                                <tr className="bg-slate-50 border-b border-slate-200/60">
-                                  <td colSpan={4} className="py-3 px-5">
-                                    <div className="flex items-center gap-2 font-sans">
-                                      <span className="text-[13px] font-semibold text-slate-800 tracking-tight font-sans">
-                                        {dimName}
-                                      </span>
-                                      <span className="text-[11px] text-slate-500 font-normal ml-1">
-                                        ({DIMENSI_INFO[dimId].deskripsi})
-                                      </span>
+                                {/* Section Header Row */}
+                                <tr className="bg-blue-100/80 text-blue-950 border-y-2 border-blue-300 font-bold">
+                                  <td colSpan={colSpanTotal} className="py-2.5 px-4 text-left font-sans text-xs tracking-wide">
+                                    <div className="flex items-center gap-2">
+                                      <span className="w-2 h-2 rounded-full bg-blue-700 shrink-0"></span>
+                                      <span className="text-blue-950 font-extrabold">{dimIdx + 1}. {dimInfo.nama}</span>
+                                      <span className="text-[11px] font-medium text-blue-800 ml-1">({dimInfo.deskripsi})</span>
                                     </div>
                                   </td>
                                 </tr>
 
-                                {/* Dimension Items */}
+                                {/* Item Rows */}
                                 {dimensionItems.map((item) => {
-                                  const pilotVal = BENCHMARK_ITEMS[item.id] || 0;
-                                  const rsVal = item.score;
-                                  const diff = parseFloat((rsVal - pilotVal).toFixed(1));
-
-                                  // Get highlight styles
-                                  let highlightClass = "";
-                                  let badgeLabel = "";
-                                  let trendIcon = null;
-
-                                  if (rsVal > pilotVal) {
-                                    highlightClass = "bg-emerald-50 text-emerald-800 border-emerald-100";
-                                    badgeLabel = `+${diff}%`;
-                                    trendIcon = <TrendingUp className="w-3.5 h-3.5 text-emerald-600 shrink-0" />;
-                                  } else if (rsVal < pilotVal) {
-                                    highlightClass = "bg-rose-50 text-rose-800 border-rose-100";
-                                    badgeLabel = `${diff}%`;
-                                    trendIcon = <TrendingDown className="w-3.5 h-3.5 text-rose-600 shrink-0" />;
-                                  } else {
-                                    highlightClass = "bg-amber-50 text-amber-800 border-amber-100";
-                                    badgeLabel = "Setara";
-                                  }
+                                  const benchVal = BENCHMARK_ITEMS[item.id] || 65.5;
+                                  const uItemObj = unitItemScores.find(u => u.id === item.id);
 
                                   return (
-                                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
-                                      {/* No */}
-                                      <td className="py-5 px-4 text-center border-r border-slate-100/80 font-mono text-xs font-semibold text-indigo-600">
-                                        {item.id}
-                                      </td>
+                                    <Fragment key={item.id}>
+                                      {/* Row 1: RS Anda */}
+                                      <tr className="hover:bg-slate-50/80 transition-colors divide-x divide-slate-200 border-b border-slate-200">
+                                        {/* Item Code (Spans 2 sub-rows) */}
+                                        <td rowSpan={2} className="py-3 px-3 text-center font-mono font-bold text-blue-800 bg-blue-50/40 align-middle sticky left-0 z-10">
+                                          {item.id}
+                                        </td>
 
-                                      {/* Pernyataan */}
-                                      <td className="py-5 px-5 border-r border-slate-100">
-                                        <div className="space-y-1 font-sans">
-                                          <p className="text-[13px] font-normal text-slate-700 leading-relaxed">
-                                            {item.text}
-                                          </p>
-                                          {item.isReversed && (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 uppercase tracking-wide border border-purple-100">
-                                              Reverse Score
-                                            </span>
-                                          )}
-                                        </div>
-                                      </td>
-
-                                      {/* Rumah Sakit Anda */}
-                                      <td className={`py-5 px-5 text-center border-r border-slate-100/80 transition-all ${highlightClass}`}>
-                                        <div className="flex flex-col items-center justify-center gap-1 font-sans">
-                                          <span className="text-[15px] font-semibold">{rsVal.toFixed(1)}%</span>
-                                          <div className="flex items-center gap-1 text-[10px]">
-                                            {trendIcon}
-                                            <span className="font-semibold">{badgeLabel}</span>
+                                        {/* Question Text (Spans 2 sub-rows) */}
+                                        <td rowSpan={2} className="py-3 px-4 font-medium text-slate-800 align-middle">
+                                          <div className="space-y-1">
+                                            <p className="leading-relaxed text-[13px]">{item.text}</p>
+                                            {item.isReversed && (
+                                              <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                                                Reverse Score
+                                              </span>
+                                            )}
                                           </div>
-                                          <span className="text-[9px] opacity-75 font-medium">({item.totalValid} Responden)</span>
-                                        </div>
-                                      </td>
+                                        </td>
 
-                                      {/* Rumah Sakit Uji Coba */}
-                                      <td className="py-5 px-5 text-center bg-slate-50/40 font-sans">
-                                        <div className="flex flex-col items-center justify-center">
-                                          <span className="text-[15px] font-semibold text-slate-700">{pilotVal.toFixed(1)}%</span>
-                                          <span className="text-[10px] text-slate-400 font-medium mt-1">Benchmark</span>
-                                        </div>
-                                      </td>
-                                    </tr>
+                                        {/* Dataset Label Row 1 */}
+                                        <td className="py-2.5 px-3 font-semibold text-blue-800 text-center bg-blue-50/40 whitespace-nowrap text-[11px]">
+                                          Rumah Sakit Anda
+                                        </td>
+
+                                        {/* Unit Scores Row 1 (RS Anda) */}
+                                        {demografiStats.unitData.length > 0 ? (
+                                          demografiStats.unitData.map((u, uIdx) => {
+                                            const val = uItemObj ? uItemObj[u.name] : null;
+                                            return (
+                                              <td key={`rs-score-unit-${item.id}-${uIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-800 bg-blue-50/20">
+                                                {val !== null && val !== undefined ? (
+                                                  <span className="text-blue-950 font-black">{val.toFixed(0)}%</span>
+                                                ) : (
+                                                  <span className="text-slate-400 font-normal">--</span>
+                                                )}
+                                              </td>
+                                            );
+                                          })
+                                        ) : (
+                                          <td className="py-2.5 px-2 text-center text-slate-400">--</td>
+                                        )}
+                                      </tr>
+
+                                      {/* Row 2: RS Uji Coba */}
+                                      <tr className="hover:bg-slate-50/50 transition-colors divide-x divide-slate-200 border-b-2 border-slate-300 bg-slate-50/50">
+                                        {/* Dataset Label Row 2 */}
+                                        <td className="py-2.5 px-3 font-semibold text-slate-600 italic text-center bg-slate-100/60 whitespace-nowrap text-[11px]">
+                                          RS Uji Coba
+                                        </td>
+
+                                        {/* Unit Scores Row 2 (Pilot Benchmark) */}
+                                        {demografiStats.unitData.length > 0 ? (
+                                          demografiStats.unitData.map((u, uIdx) => (
+                                            <td key={`pilot-score-unit-${item.id}-${uIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
+                                              {benchVal.toFixed(0)}%
+                                            </td>
+                                          ))
+                                        ) : (
+                                          <td className="py-2.5 px-2 text-center text-slate-400">--</td>
+                                        )}
+                                      </tr>
+                                    </Fragment>
                                   );
                                 })}
                               </Fragment>

@@ -176,17 +176,26 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
         let username = hospitalId;
 
         try {
-          const { data: accounts } = await supabase
+          const { data: accounts, error: accErr } = await supabase
             .from('hospital_accounts')
             .select('id, username')
             .or(`id.eq.${hospitalId},username.eq.${hospitalId}`)
             .limit(1);
 
+          if (accErr && (accErr.message?.includes('Failed to fetch') || accErr.details?.includes('Failed to fetch'))) {
+            console.warn("Koneksi Supabase tidak dapat dijangkau (Failed to fetch). Mengembalikan data kosong.");
+            return [];
+          }
+
           if (accounts && accounts.length > 0) {
             uuid = accounts[0].id;
             username = accounts[0].username;
           }
-        } catch (err) {
+        } catch (err: any) {
+          if (err?.message?.includes('Failed to fetch') || err?.details?.includes('Failed to fetch')) {
+            console.warn("Koneksi Supabase tidak dapat dijangkau (Failed to fetch).");
+            return [];
+          }
           console.warn("Gagal lookup hospital_accounts in getSurveys:", err);
         }
 
@@ -201,6 +210,10 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
             return data.map(mapToSurveyData);
           }
           if (error) {
+            if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
+              console.warn("Supabase ahrq_surveys query failed (Failed to fetch): Jaringan atau URL Supabase tidak dapat dijangkau.");
+              return [];
+            }
             const isColError = error.code === '42703' || 
                                error.code === 'PGRST204' ||
                                error.message?.includes('column') || 
@@ -210,21 +223,33 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
               throw error;
             }
             if (error.code !== 'PGRST125' && error.code !== 'PGRST116') {
-              console.warn("Supabase ahrq_surveys query failed:", error);
+              console.warn("Supabase ahrq_surveys query failed:", error.message || error);
             }
           }
-        } catch (innerErr) {
-          // Fallback query using only JSONB dimensi_scores keys (always safe, won't cause 42703 / PGRST204)
-          const { data, error } = await supabase
-            .from('ahrq_surveys')
-            .select('*')
-            .or(`dimensi_scores->>username.eq.${uuid},dimensi_scores->>username.eq.${username},dimensi_scores->>hospital_id.eq.${uuid},dimensi_scores->>hospital_id.eq.${username},dimensi_scores->>user_id.eq.${uuid},dimensi_scores->>user_id.eq.${username},unit_kerja.eq.${uuid},unit_kerja.eq.${username}`)
-            .order('created_at', { ascending: false });
-
-          if (!error && data) {
-            return data.map(mapToSurveyData);
+        } catch (innerErr: any) {
+          if (innerErr?.message?.includes('Failed to fetch') || innerErr?.details?.includes('Failed to fetch')) {
+            console.warn("Supabase ahrq_surveys query failed (Failed to fetch).");
+            return [];
           }
-          console.error("Fallback query failed:", error);
+          // Fallback query using only JSONB dimensi_scores keys (always safe, won't cause 42703 / PGRST204)
+          try {
+            const { data, error } = await supabase
+              .from('ahrq_surveys')
+              .select('*')
+              .or(`dimensi_scores->>username.eq.${uuid},dimensi_scores->>username.eq.${username},dimensi_scores->>hospital_id.eq.${uuid},dimensi_scores->>hospital_id.eq.${username},dimensi_scores->>user_id.eq.${uuid},dimensi_scores->>user_id.eq.${username},unit_kerja.eq.${uuid},unit_kerja.eq.${username}`)
+              .order('created_at', { ascending: false });
+
+            if (!error && data) {
+              return data.map(mapToSurveyData);
+            }
+            if (error && !error.message?.includes('Failed to fetch') && !error.details?.includes('Failed to fetch')) {
+              console.error("Fallback query failed:", error.message || error);
+            }
+          } catch (fbErr: any) {
+            if (!fbErr?.message?.includes('Failed to fetch')) {
+              console.warn("Fallback query error:", fbErr?.message || fbErr);
+            }
+          }
         }
       } else {
         const { data, error } = await supabase
@@ -235,12 +260,20 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
         if (!error && data) {
           return data.map(mapToSurveyData);
         }
-        if (error && error.code !== 'PGRST125' && error.code !== 'PGRST116') {
-          console.warn("Supabase ahrq_surveys query failed:", error);
+        if (error) {
+          if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
+            console.warn("Supabase ahrq_surveys query failed (Failed to fetch): Jaringan atau URL Supabase tidak dapat dijangkau.");
+            return [];
+          }
+          if (error.code !== 'PGRST125' && error.code !== 'PGRST116') {
+            console.warn("Supabase ahrq_surveys query failed:", error.message || error);
+          }
         }
       }
-    } catch (e) {
-      console.error("Supabase ahrq_surveys exception:", e);
+    } catch (e: any) {
+      if (!e?.message?.includes('Failed to fetch') && !e?.details?.includes('Failed to fetch')) {
+        console.error("Supabase ahrq_surveys exception:", e);
+      }
     }
   }
 
@@ -1327,6 +1360,274 @@ export async function saveMasterUnit(rsName: string, units: UnitKerja[]): Promis
     }
   }
 }
+
+export interface BenchmarkRequest {
+  id: string;
+  requester_id: string;
+  requester_name: string;
+  requester_email?: string;
+  target_id: string;
+  target_name: string;
+  target_email?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'revoked';
+  requested_year: string;
+  notes?: string;
+  created_at: string;
+  updated_at?: string;
+  decided_at?: string;
+  decided_by?: string;
+}
+
+// Local memory / storage cache key fallback for benchmark_requests
+const LOCAL_BENCHMARK_REQUESTS_KEY = 'ahrq_benchmark_requests_v1';
+
+export async function getBenchmarkRequests(hospitalId?: string): Promise<BenchmarkRequest[]> {
+  const supabase = getSupabaseClient();
+  let items: BenchmarkRequest[] = [];
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('benchmark_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        items = data as BenchmarkRequest[];
+      } else if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        // Table doesn't exist in Supabase yet, try fallback from ahrq_surveys config row
+        const { data: configRow } = await supabase
+          .from('ahrq_surveys')
+          .select('dimensi_scores')
+          .eq('id', 'MASTER_BENCHMARK_REQUESTS')
+          .single();
+        if (configRow && configRow.dimensi_scores && Array.isArray((configRow.dimensi_scores as any).requests)) {
+          items = (configRow.dimensi_scores as any).requests;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch benchmark requests from Supabase:", e);
+    }
+  }
+
+  // Fallback to localStorage if items empty or offline
+  if (items.length === 0 && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_BENCHMARK_REQUESTS_KEY);
+      if (stored) {
+        items = JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn("Failed reading benchmark_requests from localStorage:", err);
+    }
+  }
+
+  if (hospitalId && hospitalId !== 'admin') {
+    return items.filter(r => 
+      r.requester_id === hospitalId || 
+      r.target_id === hospitalId ||
+      r.requester_name.toLowerCase() === hospitalId.toLowerCase() ||
+      r.target_name.toLowerCase() === hospitalId.toLowerCase()
+    );
+  }
+
+  return items;
+}
+
+export async function createBenchmarkRequest(
+  reqData: Omit<BenchmarkRequest, 'id' | 'created_at' | 'status'>
+): Promise<BenchmarkRequest> {
+  const newReq: BenchmarkRequest = {
+    ...reqData,
+    id: `bm-req-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  };
+
+  const supabase = getSupabaseClient();
+  let savedInSupabase = false;
+
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('benchmark_requests')
+        .insert([newReq]);
+
+      if (!error) {
+        savedInSupabase = true;
+      } else if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        // Fallback store into ahrq_surveys config row
+        const allCurrent = await getBenchmarkRequests();
+        const updated = [newReq, ...allCurrent.filter(r => r.id !== newReq.id)];
+        await supabase.from('ahrq_surveys').upsert({
+          id: 'MASTER_BENCHMARK_REQUESTS',
+          nama_rs: '_MASTER_CONFIG_',
+          unit_kerja: 'BENCHMARK_REQUESTS',
+          jumlah_responden: updated.length,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: { requests: updated }
+        });
+        savedInSupabase = true;
+      }
+    } catch (e) {
+      console.warn("Error inserting benchmark_request to Supabase:", e);
+    }
+  }
+
+  // Always update localStorage fallback
+  if (typeof window !== 'undefined') {
+    try {
+      const current = await getBenchmarkRequests();
+      const updated = [newReq, ...current.filter(r => r.id !== newReq.id)];
+      localStorage.setItem(LOCAL_BENCHMARK_REQUESTS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Error saving benchmark_request to localStorage:", err);
+    }
+  }
+
+  // Trigger automated email notification simulation
+  if (newReq.target_email) {
+    await sendBenchmarkEmailNotification(
+      newReq.target_email,
+      `Permintaan Benchmark Data dari Rumah Sakit ${newReq.requester_name}`,
+      `Rumah Sakit ${newReq.requester_name} telah mengirimkan permintaan benchmark data untuk tahun ${newReq.requested_year}. Silakan masuk ke aplikasi dan buka menu "Persetujuan Benchmark Data" untuk menyetujui atau menolak permintaan ini.`
+    );
+  }
+
+  return newReq;
+}
+
+export async function updateBenchmarkRequestStatus(
+  requestId: string,
+  status: 'approved' | 'rejected' | 'revoked',
+  decidedBy: string,
+  notes?: string
+): Promise<BenchmarkRequest | null> {
+  const now = new Date().toISOString();
+  let updatedReq: BenchmarkRequest | null = null;
+
+  const currentRequests = await getBenchmarkRequests();
+  const targetIndex = currentRequests.findIndex(r => r.id === requestId);
+  if (targetIndex !== -1) {
+    updatedReq = {
+      ...currentRequests[targetIndex],
+      status,
+      notes: notes !== undefined ? notes : currentRequests[targetIndex].notes,
+      decided_at: now,
+      decided_by: decidedBy,
+      updated_at: now
+    };
+    currentRequests[targetIndex] = updatedReq;
+  }
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('benchmark_requests')
+        .update({
+          status,
+          notes,
+          decided_at: now,
+          decided_by: decidedBy,
+          updated_at: now
+        })
+        .eq('id', requestId);
+
+      if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        await supabase.from('ahrq_surveys').upsert({
+          id: 'MASTER_BENCHMARK_REQUESTS',
+          nama_rs: '_MASTER_CONFIG_',
+          unit_kerja: 'BENCHMARK_REQUESTS',
+          jumlah_responden: currentRequests.length,
+          tanggal_input: now,
+          dimensi_scores: { requests: currentRequests }
+        });
+      }
+    } catch (e) {
+      console.warn("Failed updating benchmark_request status in Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_BENCHMARK_REQUESTS_KEY, JSON.stringify(currentRequests));
+    } catch (err) {
+      console.warn("Failed saving updated benchmark_requests to localStorage:", err);
+    }
+  }
+
+  if (updatedReq && updatedReq.requester_email) {
+    const statusLabel = status === 'approved' ? 'Disetujui' : status === 'rejected' ? 'Ditolak' : 'Dicabut';
+    await sendBenchmarkEmailNotification(
+      updatedReq.requester_email,
+      `Keputusan Permintaan Benchmark Data dari ${updatedReq.target_name}`,
+      `Permintaan benchmark data Anda kepada Rumah Sakit ${updatedReq.target_name} telah ${statusLabel.toUpperCase()} oleh ${decidedBy}.${notes ? ` Catatan: ${notes}` : ''}`
+    );
+  }
+
+  return updatedReq;
+}
+
+export async function deleteBenchmarkRequest(requestId: string): Promise<void> {
+  const currentRequests = await getBenchmarkRequests();
+  const filtered = currentRequests.filter(r => r.id !== requestId);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('benchmark_requests')
+        .delete()
+        .eq('id', requestId);
+
+      if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        await supabase.from('ahrq_surveys').upsert({
+          id: 'MASTER_BENCHMARK_REQUESTS',
+          nama_rs: '_MASTER_CONFIG_',
+          unit_kerja: 'BENCHMARK_REQUESTS',
+          jumlah_responden: filtered.length,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: { requests: filtered }
+        });
+      }
+    } catch (e) {
+      console.warn("Failed deleting benchmark_request in Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_BENCHMARK_REQUESTS_KEY, JSON.stringify(filtered));
+    } catch (err) {
+      console.warn("Failed saving deleted benchmark_requests to localStorage:", err);
+    }
+  }
+}
+
+export async function sendBenchmarkEmailNotification(toEmail: string, subject: string, body: string): Promise<void> {
+  console.log(`[EMAIL AUTOMATION] Sending email to: ${toEmail}`);
+  console.log(`[EMAIL AUTOMATION] Subject: ${subject}`);
+  console.log(`[EMAIL AUTOMATION] Body: ${body}`);
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from('email_notifications').insert([{
+        id: `email-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        to_email: toEmail,
+        subject,
+        body,
+        type: 'approval',
+        created_at: new Date().toISOString()
+      }]);
+    } catch (e) {
+      // Ignore if table email_notifications doesn't exist
+    }
+  }
+}
+
 
 
 
