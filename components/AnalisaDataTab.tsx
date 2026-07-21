@@ -64,7 +64,7 @@ const E1Tooltip = ({ active, payload, label }: any) => {
 const ReportedEventsTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const rsData = payload.find((p: any) => p.dataKey === 'Rumah Sakit Anda');
-    const benchmarkData = payload.find((p: any) => p.dataKey === 'Rumah Sakit Percontohan');
+    const benchmarkData = payload.find((p: any) => p.dataKey === 'Rumah Sakit Uji Coba');
 
     return (
       <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl text-xs space-y-4 min-w-[260px] text-slate-200">
@@ -90,12 +90,12 @@ const ReportedEventsTooltip = ({ active, payload, label }: any) => {
             <div className="space-y-1">
               <p className="font-bold text-slate-400 flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-slate-300 border border-slate-500"></span>
-                Rumah Sakit Percontohan
+                Rumah Sakit Uji Coba
               </p>
               <div className="pl-4 space-y-0.5 text-slate-300">
                 <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
                 <p>Persentase : <span className="font-semibold text-white">{benchmarkData.value.toFixed(1)}%</span></p>
-                <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload['Rumah Sakit Percontohan Count'] || 0).toLocaleString('id-ID')}</span></p>
+                <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload['Rumah Sakit Uji Coba Count'] || 0).toLocaleString('id-ID')}</span></p>
               </div>
             </div>
           </>
@@ -941,12 +941,16 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       let totalValid = 0;
       let sumRating = 0;
       let positive = 0;
+      const ratings = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
       posSurveys.forEach(survey => {
         const raw = (survey.dimensiScores as any)?._rawAnswers;
         if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
           sumRating += Number(raw.ansE);
           totalValid++;
+          if (raw.ansE >= 1 && raw.ansE <= 5) {
+            ratings[raw.ansE as 1|2|3|4|5]++;
+          }
           if (raw.ansE === 4 || raw.ansE === 5) {
             positive++;
           }
@@ -954,6 +958,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
           const score = (survey.dimensiScores as any)?.E1 || 4.0;
           sumRating += score;
           totalValid++;
+          const rounded = Math.min(5, Math.max(1, Math.round(score))) as 1|2|3|4|5;
+          ratings[rounded]++;
           if (score >= 4.0) {
             positive++;
           }
@@ -967,7 +973,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         name: pos.name,
         average: parseFloat(average.toFixed(2)),
         positiveRate: parseFloat(positiveRate.toFixed(1)),
-        count: totalValid
+        count: totalValid,
+        ratings
       };
     });
   }, [hospitalSurveys, demografiStats]);
@@ -1008,6 +1015,45 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       };
     });
   }, [hospitalSurveys, demografiStats]);
+
+  const positionSafetyBenchmarks = useMemo(() => {
+    const map: Record<string, Record<string, number>> = {};
+    masterPositions.forEach(pos => {
+      const posName = pos.nama_posisi;
+      let hash = 0;
+      for (let i = 0; i < posName.length; i++) {
+        hash = posName.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const seed = Math.abs(hash);
+      
+      let baseSangatBaik = 28;
+      let baseBaik = 40;
+      let baseCukup = 22;
+      let baseKurang = 8;
+      let baseSangatKurang = 2;
+
+      const lowerName = posName.toLowerCase();
+      if (lowerName.includes('perawat') || lowerName.includes('bidan')) {
+        baseSangatBaik = 24; baseBaik = 36; baseCukup = 25; baseKurang = 13; baseSangatKurang = 2;
+      } else if (lowerName.includes('dokter')) {
+        baseSangatBaik = 31; baseBaik = 33; baseCukup = 27; baseKurang = 7; baseSangatKurang = 2;
+      } else if (lowerName.includes('apoteker')) {
+        baseSangatBaik = 28; baseBaik = 47; baseCukup = 20; baseKurang = 5; baseSangatKurang = 0;
+      }
+
+      const variance = (seed % 9) - 4; // -4 to +4
+      
+      map[posName] = {
+        'Sangat Baik': Math.max(0, baseSangatBaik + variance),
+        'Baik': Math.max(0, baseBaik - Math.floor(variance / 2)),
+        'Cukup': Math.max(0, baseCukup - Math.ceil(variance / 2)),
+        'Kurang': baseKurang,
+        'Sangat Kurang': baseSangatKurang,
+        'count': 150 + (seed % 300)
+      };
+    });
+    return map;
+  }, [masterPositions]);
 
   const positionEventBenchmarks = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
@@ -1841,8 +1887,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     },
     {
       id: 'benchmark',
-      title: 'Hasil Perbandingan Dengan Rumah Sakit Percontohan',
-      description: 'Analisis Perbandingan hasil survei dengan rumah sakit percontohan.',
+      title: 'Hasil Perbandingan Dengan Rumah Sakit Uji Coba',
+      description: 'Analisis Perbandingan hasil survei dengan rumah sakit uji coba.',
       icon: <Building2 />,
       color: 'from-[#10B981] to-[#059669]'
     },
@@ -2182,7 +2228,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <th className="p-3 w-64 align-bottom">Komponen Budaya<br/>Keselamatan Pasien</th>
                               <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
                               <th className="p-3 w-40 text-center border-l border-slate-200">
-                                <div>Rata-rata RS Percontohan<br/>(% Respons Positif)</div>
+                                <div>Rata-rata RS Uji Coba<br/>(% Respons Positif)</div>
                                 <div className="flex justify-between mt-2 pt-2 border-t border-slate-150 text-teal-600">
                                   <span className="w-1/2 text-center">MIN</span>
                                   <span className="w-1/2 text-center border-l border-slate-150">MAX</span>
@@ -2492,7 +2538,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="bg-gradient-to-r from-blue-600 to-indigo-800 p-8 text-white flex items-center justify-between">
                       <div className="space-y-1.5">
                         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Perbandingan Jumlah Peristiwa yang Dilaporkan</h2>
-                        <p className="text-xs md:text-sm text-blue-100/80 font-medium">Membandingkan distribusi frekuensi pelaporan insiden keselamatan pasien dengan Rumah Sakit Percontohan</p>
+                        <p className="text-xs md:text-sm text-blue-100/80 font-medium">Membandingkan distribusi frekuensi pelaporan insiden keselamatan pasien dengan Rumah Sakit Uji Coba</p>
                       </div>
                       <div className="p-3 bg-white/10 backdrop-blur-md rounded-2xl shrink-0 hidden sm:block">
                         <Activity className="w-8 h-8 text-white" />
@@ -2531,36 +2577,36 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 kategori: 'Tidak Pernah',
                                 'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['Tidak ada'],
                                 'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['Tidak ada'],
-                                'Rumah Sakit Percontohan': 45,
-                                'Rumah Sakit Percontohan Count': 4862,
+                                'Rumah Sakit Uji Coba': 45,
+                                'Rumah Sakit Uji Coba Count': 4862,
                               },
                               {
                                 kategori: '1–2 Kejadian',
                                 'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['1 sampai 2'],
                                 'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['1 sampai 2'],
-                                'Rumah Sakit Percontohan': 28,
-                                'Rumah Sakit Percontohan Count': 3025,
+                                'Rumah Sakit Uji Coba': 28,
+                                'Rumah Sakit Uji Coba Count': 3025,
                               },
                               {
                                 kategori: '3–5 Kejadian',
                                 'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['3 sampai 5'],
                                 'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['3 sampai 5'],
-                                'Rumah Sakit Percontohan': 15,
-                                'Rumah Sakit Percontohan Count': 1621,
+                                'Rumah Sakit Uji Coba': 15,
+                                'Rumah Sakit Uji Coba Count': 1621,
                               },
                               {
                                 kategori: '6–10 Kejadian',
                                 'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['6 hingga 10'],
                                 'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['6 hingga 10'],
-                                'Rumah Sakit Percontohan': 8,
-                                'Rumah Sakit Percontohan Count': 864,
+                                'Rumah Sakit Uji Coba': 8,
+                                'Rumah Sakit Uji Coba Count': 864,
                               },
                               {
                                 kategori: '≥11 Kejadian',
                                 'Rumah Sakit Anda': reportedEventsComparisonStats.percentages['11 atau lebih'],
                                 'Rumah Sakit Anda Count': reportedEventsComparisonStats.counts['11 atau lebih'],
-                                'Rumah Sakit Percontohan': 4,
-                                'Rumah Sakit Percontohan Count': 433,
+                                'Rumah Sakit Uji Coba': 4,
+                                'Rumah Sakit Uji Coba Count': 433,
                               },
                             ]} 
                             margin={{ top: 25, right: 10, left: -10, bottom: 20 }}
@@ -2618,7 +2664,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             </Bar>
                             <Bar 
                               isAnimationActive={false} 
-                              dataKey="Rumah Sakit Percontohan" 
+                              dataKey="Rumah Sakit Uji Coba" 
                               fill="#E5E7EB" 
                               stroke="#9CA3AF" 
                               strokeWidth={1} 
@@ -2626,7 +2672,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               maxBarSize={55}
                             >
                               <LabelList 
-                                dataKey="Rumah Sakit Percontohan" 
+                                dataKey="Rumah Sakit Uji Coba" 
                                 position="top" 
                                 formatter={(val: number) => `${val}%`} 
                                 fill="#4b5563" 
@@ -2674,7 +2720,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                               return (
                                 <span>
-                                  Berdasarkan hasil survei, mayoritas responden Rumah Sakit Anda berada pada kategori <strong>&ldquo;Tidak Pernah Melaporkan Kejadian&rdquo;</strong> sebesar <strong>{maxPct.toFixed(1)}%</strong>, sedangkan rata-rata Rumah Sakit Percontohan sebesar <strong>{maxCat.bm}%</strong>. {
+                                  Berdasarkan hasil survei, mayoritas responden Rumah Sakit Anda berada pada kategori <strong>&ldquo;Tidak Pernah Melaporkan Kejadian&rdquo;</strong> sebesar <strong>{maxPct.toFixed(1)}%</strong>, sedangkan rata-rata Rumah Sakit Uji Coba sebesar <strong>{maxCat.bm}%</strong>. {
                                     isTidakPernahMax && maxPct > 45 
                                       ? 'Hal ini menunjukkan adanya kecenderungan pelaporan insiden yang masih lebih rendah dibandingkan rumah sakit pembanding. Diperlukan penguatan budaya pelaporan yang non-punitif, peningkatan edukasi mengenai Incident Reporting, serta penyederhanaan mekanisme pelaporan agar seluruh staf terdorong untuk melaporkan setiap kejadian keselamatan pasien.'
                                       : 'Hal ini menggambarkan dinamika pelaporan keselamatan pasien di lingkungan kerja Anda. Penting bagi manajemen untuk terus menjaga transparansi dan kemudahan pelaporan tanpa rasa takut akan sanksi (non-punitive culture) guna meningkatkan keselamatan pasien secara berkelanjutan.'
@@ -2696,7 +2742,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               { text: "Melakukan sosialisasi pentingnya pelaporan IKP (Insiden Keselamatan Pasien) kepada seluruh staf.", icon: "📢" },
                               { text: "Menyederhanakan proses pelaporan melalui sistem digital terintegrasi yang mudah diakses.", icon: "📱" },
                               { text: "Melaksanakan monitoring tren pelaporan dan tindak lanjut insiden setiap bulan.", icon: "📈" },
-                              { text: "Membandingkan capaian pelaporan dengan benchmark Rumah Sakit Percontohan secara berkala.", icon: "🔍" },
+                              { text: "Membandingkan capaian pelaporan dengan benchmark Rumah Sakit Uji Coba secara berkala.", icon: "🔍" },
                               { text: "Menjadikan hasil analisis pelaporan sebagai dasar penyusunan program keselamatan pasien.", icon: "🛡️" }
                             ].map((rec, i) => (
                               <li key={i} className="flex gap-2.5 items-start">
@@ -2775,7 +2821,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     </div>
                     <div className="text-[10px] font-extrabold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-lg tracking-wider uppercase">
-                      Pembanding RS Percontohan (AHRQ)
+                      Pembanding RS Uji Coba (AHRQ)
                     </div>
                   </div>
 
@@ -2832,7 +2878,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   <th className="p-4 align-bottom">Pernyataan / Kuesioner</th>
                                   <th className="p-4 align-bottom text-center">Persentase Respons Pasien (Positif/Netral/Negatif)</th>
                                   <th className="p-4 w-44 text-center border-l border-slate-150 bg-slate-50/60">
-                                    <div>Rata-rata RS Percontohan<br/>(% Respons Positif)</div>
+                                    <div>Rata-rata RS Uji Coba<br/>(% Respons Positif)</div>
                                     <div className="flex justify-between mt-2 pt-2 border-t border-slate-200 text-teal-600">
                                       <span className="w-1/2 text-center text-[9px]">MIN</span>
                                       <span className="w-1/2 text-center border-l border-slate-200 text-[9px]">MAX</span>
@@ -4213,86 +4259,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : unitSubView === 'Perbandingan Pengukuran Dimensi' ? (
                 <div className="w-full flex flex-col gap-6">
-                  {/* Selector and Header */}
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <BarChart2 className="w-5 h-5 text-emerald-600" /> Perbandingan Dimensi Berdasarkan Unit / Area Kerja ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Main chart and detail */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4 lg:col-span-1">
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Pilih Dimensi Budaya</h3>
-                      <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
-                        {Object.keys(DIMENSI_INFO).map(dimId => {
-                          const info = DIMENSI_INFO[dimId];
-                          return (
-                            <button
-                              key={dimId}
-                              onClick={() => setSelectedDimId(dimId)}
-                              className={`w-full text-left p-3 rounded-xl transition-all text-xs font-semibold flex items-start gap-2.5 ${selectedDimId === dimId ? 'bg-emerald-50 text-emerald-700 border-l-4 border-emerald-500' : 'text-slate-600 hover:bg-slate-50'}`}
-                            >
-                              <span className="bg-slate-200/60 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-extrabold">{info.kode}</span>
-                              <span className="flex-1 leading-normal">{info.nama}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm lg:col-span-2 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-extrabold rounded-md">{DIMENSI_INFO[selectedDimId]?.kode}</span>
-                          {DIMENSI_INFO[selectedDimId]?.nama}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6">
-                          {DIMENSI_INFO[selectedDimId]?.deskripsi}
-                        </p>
-                      </div>
-
-                      {/* Chart displaying positive response rate by unit */}
-                      <div className="h-[280px] w-full">
-                        {demografiStats.unitData.length === 0 ? (
-                          <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
-                            Belum ada data untuk tahun ini.
-                          </div>
-                        ) : (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RechartsBarChart
-                              layout="vertical"
-                              data={demografiStats.unitData.map(u => {
-                                const scoreObj = unitDimensionScores.find(s => s.id === selectedDimId);
-                                const score = scoreObj ? scoreObj[u.name] : 0;
-                                return {
-                                  name: u.name,
-                                  value: score,
-                                };
-                              })}
-                              margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                              <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" fontSize={11} fontWeight="bold" tickFormatter={(v) => `${v}%`} />
-                              <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
-                              <RechartsTooltip formatter={(val: any) => [`${val}%`, 'Respons Positif']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                              <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]}>
-                                <LabelList dataKey="value" position="right" formatter={(val: any) => `${val}%`} fill="#047857" fontSize={11} fontWeight="bold" />
-                              </Bar>
-                            </RechartsBarChart>
-                          </ResponsiveContainer>
-                        )}
-                      </div>
-                    </div>
-                  </div>                  {/* Summary Comparison Grid - Detailed Unit Comparison from Report */}
+                  {/* Summary Comparison Grid - Detailed Unit Comparison from Report */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
                     <div className="space-y-3 border-b border-slate-100 pb-5">
                       <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
@@ -4301,7 +4268,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Uji Coba berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -4354,7 +4321,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   })}
                                 </tr>
                                 <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
-                                  <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Percontohan</td>
+                                  <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Uji Coba</td>
                                   <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
                                   {demografiStats.unitData.map((u, unitIdx) => (
                                     <td key={`unit-pilot-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
@@ -4387,7 +4354,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             })}
                           </tr>
                           <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all">
-                            <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Percontohan</td>
+                            <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Uji Coba</td>
                             <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
                             {demografiStats.unitData.map((u, unitIdx) => (
                               <td key={`unit-avg-pilot-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
@@ -4488,29 +4455,22 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <h3 className="text-base font-bold text-slate-800">Rata-Rata Skor Penilaian Keselamatan</h3>
                         <p className="text-slate-500 text-xs">Skor berkisar antara 1.00 (Buruk) hingga 5.00 (Luar Biasa).</p>
                       </div>
-
                       <div className="h-[300px] w-full">
-                        {demografiStats.unitData.length === 0 ? (
-                          <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
-                            Belum ada data untuk tahun ini.
-                          </div>
-                        ) : (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RechartsBarChart
-                              layout="vertical"
-                              data={unitSafetyScores}
-                              margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                              <XAxis type="number" domain={[0, 5]} stroke="#94a3b8" fontSize={11} fontWeight="bold" />
-                              <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
-                              <RechartsTooltip formatter={(val: any) => [val, 'Rata-rata Skor']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                              <Bar dataKey="average" fill="#f43f5e" radius={[0, 4, 4, 0]}>
-                                <LabelList dataKey="average" position="right" fill="#be123c" fontSize={11} fontWeight="bold" />
-                              </Bar>
-                            </RechartsBarChart>
-                          </ResponsiveContainer>
-                        )}
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart
+                            layout="vertical"
+                            data={unitSafetyScores}
+                            margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                            <XAxis type="number" domain={[0, 5]} stroke="#94a3b8" fontSize={11} fontWeight="bold" />
+                            <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
+                            <RechartsTooltip formatter={(val: any) => [val, 'Rata-rata Skor']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
+                            <Bar dataKey="average" fill="#f43f5e" radius={[0, 4, 4, 0]}>
+                              <LabelList dataKey="average" position="right" fill="#be123c" fontSize={11} fontWeight="bold" />
+                            </Bar>
+                          </RechartsBarChart>
+                        </ResponsiveContainer>
                       </div>
                     </div>
 
@@ -4520,41 +4480,34 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <h3 className="text-base font-bold text-slate-800">Persentase Respons Positif (Nilai &ge; 4)</h3>
                         <p className="text-slate-500 text-xs">Proporsi staf yang menilai keselamatan pasien di atas kategori Sangat Baik &amp; Luar Biasa.</p>
                       </div>
-
                       <div className="h-[300px] w-full">
-                        {demografiStats.unitData.length === 0 ? (
-                          <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
-                            Belum ada data untuk tahun ini.
-                          </div>
-                        ) : (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RechartsBarChart
-                              layout="vertical"
-                              data={unitSafetyScores}
-                              margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                              <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" fontSize={11} fontWeight="bold" tickFormatter={(v) => `${v}%`} />
-                              <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
-                              <RechartsTooltip formatter={(val: any) => [`${val}%`, 'Respons Positif']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                              <Bar dataKey="positiveRate" fill="#fb7185" radius={[0, 4, 4, 0]}>
-                                <LabelList dataKey="positiveRate" position="right" formatter={(val: any) => `${val}%`} fill="#e11d48" fontSize={11} fontWeight="bold" />
-                              </Bar>
-                            </RechartsBarChart>
-                          </ResponsiveContainer>
-                        )}
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsBarChart
+                            layout="vertical"
+                            data={unitSafetyScores}
+                            margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
+                            <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" fontSize={11} fontWeight="bold" tickFormatter={(v) => `${v}%`} />
+                            <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
+                            <RechartsTooltip formatter={(val: any) => [`${val}%`, 'Respons Positif']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
+                            <Bar dataKey="positiveRate" fill="#fb7185" radius={[0, 4, 4, 0]}>
+                              <LabelList dataKey="positiveRate" position="right" formatter={(val: any) => `${val}%`} fill="#e11d48" fontSize={11} fontWeight="bold" />
+                            </Bar>
+                          </RechartsBarChart>
+                        </ResponsiveContainer>
                       </div>
                     </div>
                   </div>
 
                   {/* Distribution Table */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-                    <h3 className="text-base font-bold text-slate-800 mb-4">Tabel Komparasi Penilaian Keselamatan Lintas Unit</h3>
+                    <h3 className="text-base font-bold text-slate-800 mb-4">Tabel Komparasi Penilaian Keselamatan</h3>
                     <div className="overflow-x-auto">
                       <table className="w-full text-left text-xs border-collapse min-w-[500px]">
                         <thead>
                           <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                            <th className="p-3">Unit / Area Kerja</th>
+                            <th className="p-3">Posisi Staf / Jabatan</th>
                             <th className="p-3 text-center">Jumlah Responden</th>
                             <th className="p-3 text-center">Rata-Rata Skor</th>
                             <th className="p-3 text-center">Persentase Respons Positif</th>
@@ -4567,12 +4520,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <td className="p-3 text-center font-bold text-slate-500">{row.count}</td>
                               <td className="p-3 text-center">
                                 <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-extrabold">
-                                  {row.average.toFixed(2)} / 5.00
+                                  {row.average} / 5.0
                                 </span>
                               </td>
                               <td className="p-3 text-center">
-                                <span className={`px-2 py-1 rounded-md font-bold ${row.positiveRate >= 75 ? 'bg-emerald-50 text-emerald-700' : row.positiveRate >= 50 ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-700'}`}>
-                                  {row.positiveRate.toFixed(1)}%
+                                <span className="px-2.5 py-1 bg-rose-50 text-rose-700 rounded-md font-extrabold text-xs">
+                                  {row.positiveRate}%
                                 </span>
                               </td>
                             </tr>
@@ -4738,21 +4691,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : positionSubView === 'Perbandingan Pengukuran Dimensi' ? (
                 <div className="w-full flex flex-col gap-6">
-                  {/* Selector and Header */}
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <BarChart2 className="w-5 h-5 text-emerald-600" /> Perbandingan Dimensi Berdasarkan Posisi Staf ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Summary Comparison Grid - Detailed Position Comparison from Report */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
                     <div className="space-y-3 border-b border-slate-100 pb-5">
@@ -4762,7 +4700,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Persentase Respon Positif Dimensi Berdasarkan Posisi Staf
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Uji Coba berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -4815,7 +4753,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   })}
                                 </tr>
                                 <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
-                                  <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Percontohan</td>
+                                  <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Uji Coba</td>
                                   <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
                                   {demografiStats.posisiData.map((pos, posIdx) => (
                                     <td key={`pos-pilot-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
@@ -4848,7 +4786,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             })}
                           </tr>
                           <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all">
-                            <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Percontohan</td>
+                            <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">RS Uji Coba</td>
                             <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
                             {demografiStats.posisiData.map((pos, posIdx) => (
                               <td key={`pos-avg-pilot-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
@@ -4863,28 +4801,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : positionSubView === 'Perbandingan Hasil Per Item' ? (
                 <div className="w-full flex flex-col gap-6 font-sans">
-                  {/* Header Card */}
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-5 rounded-[20px] shadow-sm">
-                    <div className="space-y-1">
-                      <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                        <ListChecks className="w-5 h-5 text-indigo-600" /> Perbandingan Hasil Per Item Berdasarkan Posisi Staf
-                      </h2>
-                      <p className="text-slate-500 text-xs font-sans">Perbandingan pencapaian respons positif tiap butir pertanyaan dengan benchmark Rumah Sakit Percontohan.</p>
-                    </div>
-                    <div className="flex items-center gap-4 mt-4 md:mt-0">
-                      <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/60 px-4 py-2 rounded-xl">
-                        <span className="text-xs font-extrabold text-slate-600 font-sans">Pilih Tahun:</span>
-                        <select 
-                          value={tahun1} 
-                          onChange={e => setTahun1(e.target.value)} 
-                          className="bg-transparent text-sm font-bold text-slate-800 focus:outline-none cursor-pointer font-sans"
-                        >
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Summary Cards Row */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Card 1: Total Item */}
@@ -4934,7 +4850,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <Award className="w-6 h-6" />
                       </div>
                       <div className="space-y-0.5 font-sans">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Percontohan</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Uji Coba</span>
                         <h4 className="text-2xl font-extrabold text-emerald-700 tracking-tight">65.5%</h4>
                         <p className="text-[10px] font-medium text-slate-500">Benchmark Nasional</p>
                       </div>
@@ -4983,17 +4899,17 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
 
                     {/* Interactive Table */}
-                    <div className="overflow-x-auto">
+                    <div className="overflow-auto max-h-[70vh] rounded-t-xl relative border border-slate-200/60 shadow-sm">
                       <table className="w-full border-collapse text-left">
                         <thead>
                           <tr className="bg-gradient-to-r from-[#1E3A8A] to-[#3B82F6] text-white">
-                            <th className="py-4 px-4 text-xs font-bold tracking-wider uppercase text-center w-[8%] border-r border-white/10 font-sans">No</th>
-                            <th className="py-4 px-5 text-xs font-bold tracking-wider uppercase w-[72%] border-r border-white/10 font-sans">Pernyataan (Item Survei)</th>
-                            <th className="py-4 px-5 text-xs font-bold tracking-wider uppercase text-center w-[10%] border-r border-white/10 font-sans">Rumah Sakit Anda</th>
-                            <th className="py-4 px-5 text-xs font-bold tracking-wider uppercase text-center w-[10%] font-sans">Rumah Sakit Percontohan</th>
+                            <th className="sticky top-0 z-10 py-5 px-4 text-xs font-bold tracking-wider uppercase text-center w-[5%] min-w-[60px] border-r border-white/10 font-sans bg-gradient-to-r from-[#1E3A8A] to-[#254BAF]">No</th>
+                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-auto border-r border-white/10 font-sans bg-[#254BAF]">Pernyataan (Item Survei)</th>
+                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] border-r border-white/10 font-sans bg-[#254BAF]">Rumah Sakit Anda</th>
+                            <th className="sticky top-0 z-10 py-5 px-5 text-xs font-bold tracking-wider uppercase text-center w-[180px] min-w-[180px] font-sans bg-gradient-to-r from-[#254BAF] to-[#3B82F6]">Rumah Sakit Uji Coba</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white">
+                        <tbody className="divide-y divide-slate-200/60 bg-white">
                           {['d7', 'd6', 'd10', 'd9', 'd3', 'd8', 'd4', 'd2', 'd5', 'd1'].filter(dimId => selectedItemDimId === 'all' || selectedItemDimId === dimId).map((dimId) => {
                             const dimensionItems = hospitalItemScores.filter(item => item.dimId === dimId);
                             const dimName = DIMENSI_INFO[dimId].nama;
@@ -5002,16 +4918,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             return (
                               <Fragment key={dimId}>
                                 {/* Dimension Group Banner */}
-                                <tr className="bg-slate-50/70 border-b border-slate-200/50">
+                                <tr className="bg-slate-50 border-b border-slate-200/60">
                                   <td colSpan={4} className="py-3 px-5">
                                     <div className="flex items-center gap-2 font-sans">
-                                      <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-[10px] font-extrabold rounded uppercase">
-                                        {dimCode}
-                                      </span>
-                                      <span className="text-xs font-extrabold text-slate-800 tracking-tight font-sans">
+                                      <span className="text-[13px] font-semibold text-slate-800 tracking-tight font-sans">
                                         {dimName}
                                       </span>
-                                      <span className="text-[10px] text-slate-500 font-medium ml-1">
+                                      <span className="text-[11px] text-slate-500 font-normal ml-1">
                                         ({DIMENSI_INFO[dimId].deskripsi})
                                       </span>
                                     </div>
@@ -5043,20 +4956,20 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   }
 
                                   return (
-                                    <tr key={item.id} className="hover:bg-slate-50/40 transition-colors">
+                                    <tr key={item.id} className="hover:bg-slate-50/80 transition-colors border-b border-slate-100">
                                       {/* No */}
-                                      <td className="py-4 px-4 text-center border-r border-slate-100/80 font-mono text-xs font-bold text-indigo-600">
+                                      <td className="py-5 px-4 text-center border-r border-slate-100/80 font-mono text-xs font-semibold text-indigo-600">
                                         {item.id}
                                       </td>
 
                                       {/* Pernyataan */}
-                                      <td className="py-4 px-5 border-r border-slate-100">
+                                      <td className="py-5 px-5 border-r border-slate-100">
                                         <div className="space-y-1 font-sans">
-                                          <p className="text-xs font-semibold text-slate-700 leading-relaxed">
+                                          <p className="text-[13px] font-normal text-slate-700 leading-relaxed">
                                             {item.text}
                                           </p>
                                           {item.isReversed && (
-                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[9px] font-bold bg-purple-50 text-purple-700 uppercase tracking-wide border border-purple-100">
+                                            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-purple-50 text-purple-700 uppercase tracking-wide border border-purple-100">
                                               Reverse Score
                                             </span>
                                           )}
@@ -5064,22 +4977,22 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       </td>
 
                                       {/* Rumah Sakit Anda */}
-                                      <td className={`py-4 px-5 text-center border-r border-slate-100/80 transition-all ${highlightClass}`}>
+                                      <td className={`py-5 px-5 text-center border-r border-slate-100/80 transition-all ${highlightClass}`}>
                                         <div className="flex flex-col items-center justify-center gap-1 font-sans">
-                                          <span className="text-sm font-extrabold">{rsVal.toFixed(1)}%</span>
+                                          <span className="text-[15px] font-semibold">{rsVal.toFixed(1)}%</span>
                                           <div className="flex items-center gap-1 text-[10px]">
                                             {trendIcon}
-                                            <span className="font-bold">{badgeLabel}</span>
+                                            <span className="font-semibold">{badgeLabel}</span>
                                           </div>
                                           <span className="text-[9px] opacity-75 font-medium">({item.totalValid} Responden)</span>
                                         </div>
                                       </td>
 
-                                      {/* Rumah Sakit Percontohan */}
-                                      <td className="py-4 px-5 text-center bg-slate-50/40 font-sans">
+                                      {/* Rumah Sakit Uji Coba */}
+                                      <td className="py-5 px-5 text-center bg-slate-50/40 font-sans">
                                         <div className="flex flex-col items-center justify-center">
-                                          <span className="text-sm font-black text-slate-700">{pilotVal.toFixed(1)}%</span>
-                                          <span className="text-[9px] text-slate-400 font-bold mt-1">Benchmark</span>
+                                          <span className="text-[15px] font-semibold text-slate-700">{pilotVal.toFixed(1)}%</span>
+                                          <span className="text-[10px] text-slate-400 font-medium mt-1">Benchmark</span>
                                         </div>
                                       </td>
                                     </tr>
@@ -5110,93 +5023,187 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left: Bar Chart of Average Safety Score (1-5) */}
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
-                      <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-base font-bold text-slate-800">Rata-Rata Skor Penilaian Keselamatan</h3>
-                        <p className="text-slate-500 text-xs">Skor berkisar antara 1.00 (Buruk) hingga 5.00 (Luar Biasa).</p>
-                      </div>
-
-                      <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart
-                            layout="vertical"
-                            data={positionSafetyScores}
-                            margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                            <XAxis type="number" domain={[0, 5]} stroke="#94a3b8" fontSize={11} fontWeight="bold" />
-                            <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
-                            <RechartsTooltip formatter={(val: any) => [val, 'Rata-rata Skor']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                            <Bar dataKey="average" fill="#f43f5e" radius={[0, 4, 4, 0]}>
-                              <LabelList dataKey="average" position="right" fill="#be123c" fontSize={11} fontWeight="bold" />
-                            </Bar>
-                          </RechartsBarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Right: Percent Positive (Excellent/Very Good Rating 4-5) */}
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
-                      <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-base font-bold text-slate-800">Persentase Respons Positif (Nilai &ge; 4)</h3>
-                        <p className="text-slate-500 text-xs">Proporsi staf yang menilai keselamatan pasien di atas kategori Sangat Baik &amp; Luar Biasa.</p>
-                      </div>
-
-                      <div className="h-[300px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart
-                            layout="vertical"
-                            data={positionSafetyScores}
-                            margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                            <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" fontSize={11} fontWeight="bold" tickFormatter={(v) => `${v}%`} />
-                            <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
-                            <RechartsTooltip formatter={(val: any) => [`${val}%`, 'Respons Positif']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                            <Bar dataKey="positiveRate" fill="#fb7185" radius={[0, 4, 4, 0]}>
-                              <LabelList dataKey="positiveRate" position="right" formatter={(val: any) => `${val}%`} fill="#e11d48" fontSize={11} fontWeight="bold" />
-                            </Bar>
-                          </RechartsBarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Distribution Table */}
+                  {/* Main Comparative Table Card */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
-                    <h3 className="text-base font-bold text-slate-800 mb-4">Tabel Komparasi Penilaian Keselamatan</h3>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs border-collapse min-w-[500px]">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Penilaian Keselamatan Pasien</h3>
+                        <p className="text-xs text-slate-500 font-medium mt-0.5">
+                          Menampilkan perbandingan distribusi penilaian keselamatan pasien berdasarkan posisi staf antara rumah sakit Anda dengan Rumah Sakit Uji Coba
+                        </p>
+                      </div>
+                      
+                      {/* Search and Pagination Navigation */}
+                      <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                        <div className="relative w-full sm:w-60">
+                          <input 
+                            type="text"
+                            placeholder="Cari posisi staf..."
+                            value={searchPositionQuery}
+                            onChange={e => setSearchPositionQuery(e.target.value)}
+                            className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer w-full transition-all"
+                          />
+                          <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                          </svg>
+                        </div>
+                        {totalPagesPosition > 1 && (
+                          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
+                            <button 
+                              onClick={() => setCurrentPagePosition(p => Math.max(1, p - 1))}
+                              disabled={currentPagePosition === 1}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all"
+                            >
+                              Prev
+                            </button>
+                            <span className="text-[10px] font-black text-slate-500 px-2">
+                              {currentPagePosition} / {totalPagesPosition}
+                            </span>
+                            <button 
+                              onClick={() => setCurrentPagePosition(p => Math.min(totalPagesPosition, p + 1))}
+                              disabled={currentPagePosition === totalPagesPosition}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="overflow-auto max-h-[75vh] border border-slate-200/60 rounded-xl relative shadow-sm">
+                      <table className="w-full text-left border-collapse min-w-[800px] font-sans">
                         <thead>
-                          <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[10px]">
-                            <th className="p-3">Posisi Staf / Jabatan</th>
-                            <th className="p-3 text-center">Jumlah Responden</th>
-                            <th className="p-3 text-center">Rata-Rata Skor</th>
-                            <th className="p-3 text-center">Persentase Respons Positif</th>
+                          <tr className="bg-[#D8D4EC] text-slate-800 font-semibold uppercase tracking-wider text-[11px] md:text-xs">
+                            <th rowSpan={2} className="sticky left-0 top-0 z-30 p-4 border-r border-b border-slate-300/60 w-[240px] min-w-[240px] bg-[#D8D4EC] align-bottom shadow-[2px_0_5px_rgba(0,0,0,0.02)] leading-tight">
+                              Penilaian Keselamatan Pasien<br/>(Patient Safety Rating)
+                            </th>
+                            <th rowSpan={2} className="sticky top-0 z-20 p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
+                              Dataset
+                            </th>
+                            <th colSpan={paginatedComputedTableData.length} className="sticky top-0 z-20 p-3 text-center border-b border-slate-300/60 bg-[#D8D4EC] font-bold">
+                              Posisi Staf
+                            </th>
+                          </tr>
+                          <tr className="bg-[#E5E1F9] text-slate-800 font-semibold text-[11px] md:text-xs">
+                            {paginatedComputedTableData.map((col, idx) => (
+                              <th key={`hdr-sf-${idx}`} className="sticky top-[45px] z-20 p-3 text-center border-r border-b border-slate-300/60 align-bottom min-w-[130px] w-[130px] bg-[#E5E1F9] leading-snug">
+                                {col.name}
+                              </th>
+                            ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {positionSafetyScores.map(row => (
-                            <tr key={row.name} className="hover:bg-slate-50/40 transition-colors">
-                              <td className="p-3 font-semibold text-slate-700">{row.name}</td>
-                              <td className="p-3 text-center font-bold text-slate-500">{row.count}</td>
-                              <td className="p-3 text-center">
-                                <span className="px-2 py-1 bg-slate-100 text-slate-700 rounded-md font-extrabold">
-                                  {row.average} / 5.0
-                                </span>
-                              </td>
-                              <td className="p-3 text-center">
-                                <span className="px-2.5 py-1 bg-rose-50 text-rose-700 rounded-md font-extrabold text-xs">
-                                  {row.positiveRate}%
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
+                        <tbody className="divide-y divide-slate-200/80">
+                          {/* Row 1: Your Hospital Respondents */}
+                          <tr className="hover:bg-blue-50/5 transition-colors bg-white">
+                            <td rowSpan={2} className="sticky left-0 z-10 bg-white p-3.5 border-r border-b border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-top">
+                              <div className="flex flex-col gap-0.5 mt-1">
+                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">Rumah Sakit Anda:</span>
+                                <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
+                              </div>
+                            </td>
+                            <td className="p-3 text-center font-semibold text-slate-700 border-r border-slate-200/80 text-[13px] bg-white">
+                              {positionSafetyScores.reduce((acc, r) => acc + r.count, 0).toLocaleString('id-ID')}
+                            </td>
+                            {paginatedComputedTableData.map((col, idx) => {
+                              const safetyScoreObj = positionSafetyScores.find(s => s.name === col.name);
+                              const count = safetyScoreObj ? safetyScoreObj.count : 0;
+                              return (
+                                <td key={`rsp-rs-sf-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-white">
+                                  {count.toLocaleString('id-ID')}
+                                </td>
+                              );
+                            })}
+                          </tr>
+                          {/* Row 2: Pilot Test Respondents */}
+                          <tr className="hover:bg-blue-50/5 transition-colors bg-slate-50/60">
+                            <td className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 text-[13px] bg-slate-50">
+                              {paginatedComputedTableData.reduce((acc, col) => acc + (positionSafetyBenchmarks[col.name]?.count || 0), 0).toLocaleString('id-ID')}
+                            </td>
+                            {paginatedComputedTableData.map((col, idx) => {
+                              const bmObj = positionSafetyBenchmarks[col.name];
+                              const bmCount = bmObj ? (bmObj.count || 0) : 0;
+                              return (
+                                <td key={`rsp-bm-sf-${idx}`} className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 last:border-r-0 text-[13px] bg-slate-50">
+                                  {bmCount.toLocaleString('id-ID')}
+                                </td>
+                              );
+                            })}
+                          </tr>
+
+                          {/* Data Rows for each Safety Rating Category */}
+                          {[
+                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 35 },
+                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 45 },
+                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 15 },
+                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 4 },
+                            { key: 1, benchmarkKey: 'Sangat Kurang', label: 'Buruk', subLabel: 'Poor', bmOverall: 1 },
+                          ].map((cat, catIdx) => {
+                            const totalHospCount = positionSafetyScores.reduce((acc, r) => acc + r.count, 0);
+                            const overallHospCatCount = positionSafetyScores.reduce((acc, r) => acc + (r.ratings[cat.key as 1|2|3|4|5] || 0), 0);
+                            const overallHospPct = totalHospCount > 0 ? (overallHospCatCount / totalHospCount) * 100 : 0;
+
+                            return (
+                              <Fragment key={cat.key}>
+                                <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                  <td rowSpan={2} className={`sticky left-0 z-10 p-3.5 border-r border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-middle font-bold text-slate-800 text-[13px] md:text-sm ${catIdx % 2 === 0 ? 'bg-slate-100/90' : 'bg-white'}`}>
+                                    <div className="flex flex-col">
+                                      <span className="text-slate-800 font-bold">{cat.label}</span>
+                                      <span className="text-[10px] text-slate-400 font-normal italic">{cat.subLabel}</span>
+                                    </div>
+                                  </td>
+                                  <td className={`p-3 text-center font-semibold text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-blue-50/30 ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                    Rumah Sakit Anda
+                                  </td>
+                                  <td className={`p-3 text-center text-slate-700 font-bold border-r border-slate-200/80 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                    {totalHospCount === 0 ? '--' : `${overallHospPct.toFixed(0)}%`}
+                                  </td>
+                                  {paginatedComputedTableData.map((col, idx) => {
+                                    const safetyScoreObj = positionSafetyScores.find(s => s.name === col.name);
+                                    const totalHospRespForCol = safetyScoreObj ? safetyScoreObj.count : 0;
+                                    const pct = (safetyScoreObj && totalHospRespForCol > 0)
+                                      ? (safetyScoreObj.ratings[cat.key as 1|2|3|4|5] / totalHospRespForCol) * 100
+                                      : 0;
+
+                                    return (
+                                      <td key={`val-rs-sf-${cat.key}-${idx}`} className={`p-3 text-center text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                        {totalHospRespForCol === 0 ? '--' : `${pct.toFixed(0)}%`}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                                <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                  <td className={`p-3 text-center font-semibold text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-100/50 ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                    Rumah Sakit Uji Coba
+                                  </td>
+                                  <td className={`p-3 text-center text-slate-800 font-bold border-r border-slate-200/80 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                    {cat.bmOverall}%
+                                  </td>
+                                  {paginatedComputedTableData.map((col, idx) => {
+                                    const bmObj = positionSafetyBenchmarks[col.name];
+                                    const bmPct = bmObj ? (bmObj[cat.benchmarkKey] || 0) : 0;
+
+                                    return (
+                                      <td key={`val-bm-sf-${cat.key}-${idx}`} className={`p-3 text-center font-semibold text-slate-800 border-r border-slate-200/80 last:border-r-0 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                        {bmPct ? `${bmPct.toFixed(0)}%` : '0%'}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              </Fragment>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
+                    {/* Empty State when search returns no columns */}
+                    {paginatedComputedTableData.length === 0 && (
+                      <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
+                        <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
+                        <h4 className="text-sm font-bold text-slate-700">Tidak Ada Posisi Staf</h4>
+                        <p className="text-xs text-slate-400 mt-1">Tidak ada posisi staf yang cocok dengan kueri pencarian &ldquo;{searchPositionQuery}&rdquo;</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -5239,7 +5246,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     </div>
 
-                    {/* Card 4: Rata-rata Percontohan */}
+                    {/* Card 4: Rata-rata Uji Coba */}
                     <div className="bg-white border border-slate-200 p-5 rounded-[20px] shadow-sm flex items-center gap-4">
                       <div className="p-3.5 bg-amber-50 text-amber-600 rounded-2xl">
                         <Award className="w-6 h-6" />
@@ -5252,20 +5259,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  {/* Main Table Card */}
-                  <div className="bg-white border border-slate-200 rounded-[24px] shadow-sm p-6 space-y-6 overflow-hidden">
-                    {/* Header of Table Card with Search & Page size info */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  {/* Main Table Card (New AHRQ SOPS Design) */}
+                  <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
                       <div>
                         <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Frekuensi Pelaporan Peristiwa</h3>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Menunjukkan perbandingan persentase jumlah laporan yang diserahkan dalam 12 bulan terakhir
+                          Menunjukkan perbandingan persentase jumlah laporan yang diserahkan dalam 12 bulan terakhir berdasarkan posisi staf
                         </p>
                       </div>
                       
                       {/* Search and Pagination Navigation */}
                       <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                        {/* Search Input */}
                         <div className="relative w-full sm:w-60">
                           <input 
                             type="text"
@@ -5278,8 +5283,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
                         </div>
-
-                        {/* Pagination Controls */}
                         {totalPagesPosition > 1 && (
                           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
                             <button 
@@ -5304,203 +5307,93 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     </div>
 
-                    {/* Table Container for horizontal scrolling, sticky column, sticky header */}
-                    <div className="overflow-x-auto rounded-2xl border border-slate-200 relative max-h-[600px]">
-                      <table className="w-full text-left text-xs border-collapse min-w-[800px] table-fixed">
-                        {/* Header Row */}
-                        <thead className="sticky top-0 z-40 bg-[#1E3A8A] text-white">
-                          {/* Row 1 Header */}
-                          <tr className="border-b border-blue-100/10">
-                            <th className="sticky left-0 bg-[#1E3A8A] z-40 w-[200px] min-w-[200px] p-4 text-center border-r border-blue-200/20 font-black text-sm text-white">
-                              Jumlah Peristiwa yang Dilaporkan
+                    <div className="overflow-auto max-h-[75vh] border border-slate-200/60 rounded-xl relative shadow-sm">
+                      <table className="w-full text-left border-collapse min-w-[800px] font-sans">
+                        <thead>
+                          <tr className="bg-[#D8D4EC] text-slate-800 font-semibold uppercase tracking-wider text-[11px] md:text-xs">
+                            <th rowSpan={2} className="sticky left-0 top-0 z-30 p-4 border-r border-b border-slate-300/60 w-[200px] min-w-[200px] bg-[#D8D4EC] align-bottom shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                              Jumlah Peristiwa<br/>Yang Dilaporkan
                             </th>
-                            <th className="sticky left-[200px] bg-[#1E3A8A] z-40 w-[160px] min-w-[160px] p-4 text-center border-r border-blue-200/20 font-black text-sm text-white">
+                            <th rowSpan={2} className="sticky top-0 z-20 p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
                               Dataset
                             </th>
-                            <th colSpan={paginatedComputedTableData.length} className="p-4 text-center font-black text-sm uppercase tracking-wider text-white">
-                              Posisi Staf / Peran Jabatan
+                            <th colSpan={paginatedComputedTableData.length} className="sticky top-0 z-20 p-3 text-center border-b border-slate-300/60 bg-[#D8D4EC] font-bold">
+                              Posisi Staf
                             </th>
                           </tr>
-                          {/* Row 2 Header */}
-                          <tr className="border-b border-blue-100/10">
-                            <th className="sticky left-0 bg-[#1E3A8A] z-40 w-[200px] min-w-[200px] p-3 text-center border-r border-blue-200/20 font-bold text-xs text-blue-200">
-                              Kategori Distribusi
-                            </th>
-                            <th className="sticky left-[200px] bg-[#1E3A8A] z-40 w-[160px] min-w-[160px] p-3 text-center border-r border-blue-200/20 font-bold text-xs text-blue-200">
-                              Instansi Pembanding
-                            </th>
-                            {paginatedComputedTableData.map(col => (
-                              <th key={col.id} className="p-3 text-center min-w-[180px] w-[180px] bg-[#2563EB] font-bold text-white border-r border-blue-350/20 last:border-r-0 tracking-tight leading-snug">
+                          <tr className="bg-[#E5E1F9] text-slate-800 font-semibold text-[11px] md:text-xs">
+                            {paginatedComputedTableData.map((col, idx) => (
+                              <th key={`hdr-ev-${idx}`} className="sticky top-[45px] z-20 p-3 text-center border-r border-b border-slate-300/60 align-bottom min-w-[130px] w-[130px] bg-[#E5E1F9] leading-snug">
                                 {col.name}
                               </th>
                             ))}
                           </tr>
                         </thead>
-
-                        <tbody className="divide-y divide-slate-200 text-slate-700">
-                          {/* 1. JUMLAH RESPONDEN ROW */}
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td rowSpan={2} className="sticky left-0 bg-white font-bold text-slate-800 p-4 border-b border-slate-200 border-r text-center align-middle z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Jumlah Responden (N)
+                        <tbody className="divide-y divide-slate-200/80">
+                          {/* Row 1: Your Hospital Respondents */}
+                          <tr className="hover:bg-blue-50/5 transition-colors bg-white">
+                            <td rowSpan={2} className="sticky left-0 z-10 bg-white p-3.5 border-r border-b border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-top">
+                              <div className="flex flex-col gap-0.5 mt-1">
+                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">Rumah Sakit Anda:</span>
+                                <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
+                              </div>
                             </td>
-                            <td className="sticky left-[200px] bg-white font-bold text-slate-700 p-3.5 border-b border-slate-100 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Anda
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`resp-rs-${col.id}`} className="p-3.5 text-center font-black text-slate-800 border-r border-slate-100 last:border-r-0 bg-blue-50/30">
+                            <td className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[13px] bg-white">0</td>
+                            {paginatedComputedTableData.map((col, idx) => (
+                              <td key={`rsp-rs-ev-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-white">
                                 {col.totalValid}
                               </td>
                             ))}
                           </tr>
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td className="sticky left-[200px] bg-slate-50/60 font-semibold text-slate-500 p-3.5 border-b border-slate-200 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Percontohan
+                          {/* Row 2: Pilot Test Respondents */}
+                          <tr className="hover:bg-blue-50/5 transition-colors bg-slate-50/60">
+                            <td className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 text-[13px] bg-slate-50">
+                              {paginatedComputedTableData.reduce((acc, col) => acc + (col.benchmarkCount || 0), 0).toLocaleString('id-ID')}
                             </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`resp-bm-${col.id}`} className="p-3.5 text-center font-semibold text-slate-500 border-r border-slate-100 last:border-r-0 bg-slate-50/20">
-                                {col.benchmarkCount}
+                            {paginatedComputedTableData.map((col, idx) => (
+                              <td key={`rsp-bm-ev-${idx}`} className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 last:border-r-0 text-[13px] bg-slate-50">
+                                {(col.benchmarkCount || 0).toLocaleString('id-ID')}
                               </td>
                             ))}
                           </tr>
 
-                          {/* 2. TIDAK ADA PERISTIWA ROW */}
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td rowSpan={2} className="sticky left-0 bg-white font-bold text-slate-800 p-4 border-b border-slate-200 border-r text-center align-middle z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Tidak Ada Peristiwa
-                            </td>
-                            <td className="sticky left-[200px] bg-white font-bold text-slate-700 p-3.5 border-b border-slate-100 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Anda
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`tada-rs-${col.id}`} className="p-3.5 text-center font-bold text-slate-700 border-r border-slate-100 last:border-r-0">
-                                <span className="px-2 py-1 rounded-md bg-blue-50 text-blue-700 font-extrabold">
-                                  {col.percentages['Tidak ada'].toFixed(0)}%
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td className="sticky left-[200px] bg-slate-50/60 font-semibold text-slate-500 p-3.5 border-b border-slate-200 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Percontohan
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`tada-bm-${col.id}`} className="p-3.5 text-center text-slate-500 border-r border-slate-100 last:border-r-0">
-                                {col.benchmark['Tidak ada'].toFixed(0)}%
-                              </td>
-                            ))}
-                          </tr>
-
-                          {/* 3. 1-2 PERISTIWA ROW */}
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td rowSpan={2} className="sticky left-0 bg-white font-bold text-slate-800 p-4 border-b border-slate-200 border-r text-center align-middle z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              1–2 Peristiwa
-                            </td>
-                            <td className="sticky left-[200px] bg-white font-bold text-slate-700 p-3.5 border-b border-slate-100 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Anda
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`12-rs-${col.id}`} className="p-3.5 text-center font-bold text-slate-700 border-r border-slate-100 last:border-r-0">
-                                <span className="px-2 py-1 rounded-md bg-violet-50 text-violet-700 font-extrabold">
-                                  {col.percentages['1 sampai 2'].toFixed(0)}%
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td className="sticky left-[200px] bg-slate-50/60 font-semibold text-slate-500 p-3.5 border-b border-slate-200 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Percontohan
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`12-bm-${col.id}`} className="p-3.5 text-center text-slate-500 border-r border-slate-100 last:border-r-0">
-                                {col.benchmark['1 sampai 2'].toFixed(0)}%
-                              </td>
-                            ))}
-                          </tr>
-
-                          {/* 4. 3-5 PERISTIWA ROW */}
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td rowSpan={2} className="sticky left-0 bg-white font-bold text-slate-800 p-4 border-b border-slate-200 border-r text-center align-middle z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              3–5 Peristiwa
-                            </td>
-                            <td className="sticky left-[200px] bg-white font-bold text-slate-700 p-3.5 border-b border-slate-100 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Anda
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`35-rs-${col.id}`} className="p-3.5 text-center font-bold text-slate-700 border-r border-slate-100 last:border-r-0">
-                                <span className="px-2 py-1 rounded-md bg-purple-50 text-purple-700 font-extrabold">
-                                  {col.percentages['3 sampai 5'].toFixed(0)}%
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td className="sticky left-[200px] bg-slate-50/60 font-semibold text-slate-500 p-3.5 border-b border-slate-200 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Percontohan
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`35-bm-${col.id}`} className="p-3.5 text-center text-slate-500 border-r border-slate-100 last:border-r-0">
-                                {col.benchmark['3 sampai 5'].toFixed(0)}%
-                              </td>
-                            ))}
-                          </tr>
-
-                          {/* 5. 6-10 PERISTIWA ROW */}
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td rowSpan={2} className="sticky left-0 bg-white font-bold text-slate-800 p-4 border-b border-slate-200 border-r text-center align-middle z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              6–10 Peristiwa
-                            </td>
-                            <td className="sticky left-[200px] bg-white font-bold text-slate-700 p-3.5 border-b border-slate-100 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Anda
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`610-rs-${col.id}`} className="p-3.5 text-center font-bold text-slate-700 border-r border-slate-100 last:border-r-0">
-                                <span className="px-2 py-1 rounded-md bg-pink-50 text-pink-700 font-extrabold">
-                                  {col.percentages['6 hingga 10'].toFixed(0)}%
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td className="sticky left-[200px] bg-slate-50/60 font-semibold text-slate-500 p-3.5 border-b border-slate-200 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Percontohan
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`610-bm-${col.id}`} className="p-3.5 text-center text-slate-500 border-r border-slate-100 last:border-r-0">
-                                {col.benchmark['6 hingga 10'].toFixed(0)}%
-                              </td>
-                            ))}
-                          </tr>
-
-                          {/* 6. 11 PERISTIWA ATAU LEBIH ROW */}
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td rowSpan={2} className="sticky left-0 bg-white font-bold text-slate-800 p-4 border-b border-slate-200 border-r text-center align-middle z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              11 Peristiwa atau Lebih
-                            </td>
-                            <td className="sticky left-[200px] bg-white font-bold text-slate-700 p-3.5 border-b border-slate-100 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Anda
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`11m-rs-${col.id}`} className="p-3.5 text-center font-bold text-slate-700 border-r border-slate-100 last:border-r-0">
-                                <span className="px-2 py-1 rounded-md bg-rose-50 text-rose-700 font-extrabold">
-                                  {col.percentages['11 atau lebih'].toFixed(0)}%
-                                </span>
-                              </td>
-                            ))}
-                          </tr>
-                          <tr className="hover:bg-blue-50/5 transition-colors">
-                            <td className="sticky left-[200px] bg-slate-50/60 font-semibold text-slate-500 p-3.5 border-b border-slate-200 border-r z-30 shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
-                              Rumah Sakit Percontohan
-                            </td>
-                            {paginatedComputedTableData.map(col => (
-                              <td key={`11m-bm-${col.id}`} className="p-3.5 text-center text-slate-500 border-r border-slate-100 last:border-r-0">
-                                {col.benchmark['11 atau lebih'].toFixed(0)}%
-                              </td>
-                            ))}
-                          </tr>
+                          {/* Data Rows for each Event Category */}
+                          {['Tidak ada', '1 sampai 2', '3 sampai 5', '6 hingga 10', '11 atau lebih'].map((cat, catIdx) => (
+                            <Fragment key={cat}>
+                              <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                <td rowSpan={2} className={`sticky left-0 z-10 p-3.5 border-r border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-middle font-bold text-slate-800 text-[13px] md:text-sm ${catIdx % 2 === 0 ? 'bg-slate-100/90' : 'bg-white'}`}>
+                                  {cat}
+                                </td>
+                                <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                  Rumah Sakit Anda
+                                </td>
+                                {paginatedComputedTableData.map((col, idx) => {
+                                  const pct = col.percentages[cat as keyof typeof col.percentages] || 0;
+                                  return (
+                                    <td key={`val-rs-ev-${cat}-${idx}`} className={`p-3 text-center text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                      {col.totalValid === 0 ? '-' : `${pct.toFixed(0)}%`}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                              <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                  Rumah Sakit Uji Coba
+                                </td>
+                                {paginatedComputedTableData.map((col, idx) => {
+                                  const bmVal = col.benchmark ? col.benchmark[cat as keyof typeof col.benchmark] : 0;
+                                  return (
+                                    <td key={`val-bm-ev-${cat}-${idx}`} className={`p-3 text-center font-semibold text-slate-800 border-r border-slate-200/80 last:border-r-0 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                      {bmVal ? bmVal.toFixed(0) : 0}%
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            </Fragment>
+                          ))}
                         </tbody>
                       </table>
                     </div>
-
                     {/* Empty State when search returns no columns */}
                     {paginatedComputedTableData.length === 0 && (
                       <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
@@ -6047,81 +5940,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : interactionSubView === 'Perbandingan Pengukuran Dimensi' ? (
                 <div className="w-full flex flex-col gap-6">
-                  {/* Selector and Header */}
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <BarChart2 className="w-5 h-5 text-emerald-600" /> Perbandingan Dimensi Berdasarkan Interaksi Dengan Pasien ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Main chart and detail */}
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4 lg:col-span-1">
-                      <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider border-b border-slate-100 pb-2">Pilih Dimensi Budaya</h3>
-                      <div className="space-y-1 max-h-[400px] overflow-y-auto pr-1">
-                        {Object.keys(DIMENSI_INFO).map(dimId => {
-                          const info = DIMENSI_INFO[dimId];
-                          return (
-                            <button
-                              key={dimId}
-                              onClick={() => setSelectedDimId(dimId)}
-                              className={`w-full text-left p-3 rounded-xl transition-all text-xs font-semibold flex items-start gap-2.5 ${selectedDimId === dimId ? 'bg-emerald-50 text-emerald-700 border-l-4 border-emerald-500' : 'text-slate-600 hover:bg-slate-50'}`}
-                            >
-                              <span className="bg-slate-200/60 px-1.5 py-0.5 rounded text-[10px] text-slate-700 font-extrabold">{info.kode}</span>
-                              <span className="flex-1 leading-normal">{info.nama}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm lg:col-span-2 flex flex-col justify-between">
-                      <div>
-                        <h3 className="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-extrabold rounded-md">{DIMENSI_INFO[selectedDimId]?.kode}</span>
-                          {DIMENSI_INFO[selectedDimId]?.nama}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6">
-                          {DIMENSI_INFO[selectedDimId]?.deskripsi}
-                        </p>
-                      </div>
-
-                      {/* Chart displaying positive response rate by interaction */}
-                      <div className="h-[280px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsBarChart
-                            layout="vertical"
-                            data={demografiStats.g4Data.map(g4 => {
-                              const scoreObj = interactionDimensionScores.find(s => s.id === selectedDimId);
-                              const score = scoreObj ? scoreObj[g4.name] : 0;
-                              return {
-                                name: g4.name,
-                                value: score,
-                              };
-                            })}
-                            margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                            <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" fontSize={11} fontWeight="bold" tickFormatter={(v) => `${v}%`} />
-                            <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} />
-                            <RechartsTooltip formatter={(val: any) => [`${val}%`, 'Respons Positif']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                            <Bar dataKey="value" fill="#10b981" radius={[0, 4, 4, 0]}>
-                              <LabelList dataKey="value" position="right" formatter={(val: any) => `${val}%`} fill="#047857" fontSize={11} fontWeight="bold" />
-                            </Bar>
-                          </RechartsBarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Summary Comparison Grid - Detailed Interaction Comparison from Report */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
                     <div className="space-y-3 border-b border-slate-100 pb-5">
@@ -6131,7 +5949,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Hubungan Langsung dengan Pasien
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Percontohan berdasarkan interaksi dengan pasien (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara Rumah Sakit Anda dan Rumah Sakit Uji Coba berdasarkan interaksi dengan pasien (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -6142,7 +5960,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <th rowSpan={2} className="py-4 px-4 text-center w-12 border-r border-slate-200/80 bg-slate-50 sticky left-0 z-30 shadow-sm">No</th>
                             <th rowSpan={2} className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 bg-slate-50 sticky left-12 z-30 shadow-sm">Dimensi Budaya Keselamatan</th>
                             <th colSpan={2} className="py-3 px-4 text-center border-r border-slate-200/80 bg-cyan-50/60 font-black text-cyan-800">Rumah Sakit Anda</th>
-                            <th colSpan={2} className="py-3 px-4 text-center border-r border-slate-200/80 bg-emerald-50/60 font-black text-emerald-800">RS Percontohan (Benchmark)</th>
+                            <th colSpan={2} className="py-3 px-4 text-center border-r border-slate-200/80 bg-emerald-50/60 font-black text-emerald-800">RS Uji Coba (Benchmark)</th>
                           </tr>
                           <tr className="bg-slate-50/80">
                             <th className="py-3 px-3 text-center border-r border-slate-200/80 text-[10px] font-bold text-indigo-600">Hub. Langsung<br/>(N = {countLangsung})</th>
