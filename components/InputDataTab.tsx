@@ -31,7 +31,8 @@ import {
   Share2,
   Copy,
   Link as LinkIcon,
-  ExternalLink
+  ExternalLink,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConnected, getSupabaseClient } from '../lib/supabase';
@@ -306,6 +307,43 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
   const [surveyLinkConfig, setSurveyLinkConfig] = useState<any>(null);
   const [isLoadingLink, setIsLoadingLink] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+
+  // States for Tanggal & Tahun Pengisian
+  const [tanggalPengisian, setTanggalPengisian] = useState(() => new Date().toISOString().split('T')[0]);
+  const [tahunPengisian, setTahunPengisian] = useState(() => new Date().getFullYear().toString());
+
+  const handleTanggalChange = (val: string) => {
+    setTanggalPengisian(val);
+    if (val) {
+      try {
+        const selectedYear = new Date(val).getFullYear().toString();
+        setTahunPengisian(selectedYear);
+      } catch (e) {
+        console.error("Gagal mendapatkan tahun dari tanggal yang dipilih:", e);
+      }
+    }
+  };
+
+  const handleTahunChange = (val: string) => {
+    setTahunPengisian(val);
+    if (val && val.length === 4 && !isNaN(Number(val))) {
+      try {
+        const d = new Date(tanggalPengisian);
+        if (!isNaN(d.getTime())) {
+          d.setFullYear(Number(val));
+          setTanggalPengisian(d.toISOString().split('T')[0]);
+        }
+      } catch (e) {
+        console.error("Gagal memperbarui tahun pada tanggal:", e);
+      }
+    }
+  };
+
+  const handleResetTanggal = () => {
+    const today = new Date();
+    setTanggalPengisian(today.toISOString().split('T')[0]);
+    setTahunPengisian(today.getFullYear().toString());
+  };
 
   // States for advanced configurations
   const [customDomain, setCustomDomain] = useState('');
@@ -911,7 +949,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       namaRs: currentRsName,
       unitKerja: finalUnit || 'Instansi Umum',
       jumlahResponden: 1,
-      tanggalInput: new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+      tanggalInput: new Date(tanggalPengisian).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
       dimensiScores: {
         ...finalScores,
         _rawAnswers: {
@@ -925,7 +963,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           posisiStaf: finalPosisi,
           unitKerja,
           namaRs: currentRsName,
-          tanggalInput: new Date().toISOString()
+          tanggalInput: new Date(tanggalPengisian).toISOString(),
+          tanggal_input: tanggalPengisian,
+          tahun_input: Number(tahunPengisian),
+          tanggal_survei: tanggalPengisian
         }
       } as any
     };
@@ -1049,15 +1090,69 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           {/* Top section: Title and Actions */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
             <div className="space-y-1">
-              <h1 className="text-xl md:text-2xl font-extrabold text-slate-800 leading-tight">
+              <h1 className="text-[19px] font-extrabold text-[#4c43c9] leading-tight">
                 Kuesioner Survei Budaya Keselamatan Pasien
               </h1>
-              <p className="text-[11px] md:text-xs text-slate-500 font-semibold tracking-wider uppercase">
+              <p className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase">
                 AHRQ Hospital Survey on Patient Safety Culture Version 2.0
               </p>
             </div>
             
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              {/* Card Tanggal & Tahun Pengisian */}
+              <div 
+                id="date-year-picker-card" 
+                className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1 shadow-[0_2px_8px_rgba(0,0,0,0.03)] h-[44px] hover:border-slate-300 hover:bg-slate-100/30 transition-all duration-300"
+              >
+                {/* Tanggal Picker */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 shrink-0">
+                    <Calendar className="w-4 h-4" />
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase leading-none tracking-wider font-sans">Tanggal</span>
+                    <input
+                      type="date"
+                      value={tanggalPengisian}
+                      onChange={(e) => handleTanggalChange(e.target.value)}
+                      className="bg-transparent border-none text-[11px] font-bold text-slate-700 focus:outline-none w-[105px] h-4 cursor-pointer p-0 font-sans"
+                    />
+                  </div>
+                </div>
+
+                <div className="h-6 w-px bg-slate-200" />
+
+                {/* Tahun Picker */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-emerald-600 shrink-0">
+                    <Clock className="w-4 h-4" />
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-[8px] font-bold text-slate-400 uppercase leading-none tracking-wider font-sans">Tahun</span>
+                    <select
+                      value={tahunPengisian}
+                      onChange={(e) => handleTahunChange(e.target.value)}
+                      className="bg-transparent border-none text-[11px] font-bold text-slate-700 focus:outline-none w-[55px] h-4 cursor-pointer p-0 font-sans"
+                    >
+                      {Array.from({ length: 15 }, (_, i) => {
+                        const y = new Date().getFullYear() - 10 + i;
+                        return <option key={y} value={y.toString()}>{y}</option>;
+                      })}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Reset button */}
+                <button
+                  type="button"
+                  onClick={handleResetTanggal}
+                  title="Gunakan Tanggal Hari Ini"
+                  className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 shrink-0 cursor-pointer"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
               <AnimatePresence>
                 {autoSavePulse && (
                   <motion.div 
@@ -1086,7 +1181,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           {/* Bottom section: Progress Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between w-full relative z-10 pt-2 gap-3 md:gap-6">
             <div className="shrink-0">
-              <h3 className="text-[10px] md:text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <h3 className="text-[10px] md:text-xs font-bold text-[#4c43c9] uppercase tracking-widest">
                 Progres Pengisian Kuesioner
               </h3>
             </div>

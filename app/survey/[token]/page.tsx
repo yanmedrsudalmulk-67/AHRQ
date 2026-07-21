@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { notFound, useParams } from 'next/navigation';
 import InputDataTab from '../../../components/InputDataTab';
 import { getSupabaseClient } from '../../../lib/supabase';
-import { SurveyData } from '../../../lib/db';
+import { SurveyData, convertIndoDateToISO } from '../../../lib/db';
 import { getLogo, LogoData } from '../../../lib/logo';
 
 export default function PublicSurveyPage() {
@@ -119,7 +119,7 @@ export default function PublicSurveyPage() {
       nama_rs: config.rsName,
       unit_kerja: survey.unitKerja,
       jumlah_responden: survey.jumlahResponden,
-      tanggal_input: survey.tanggalInput ? survey.tanggalInput.split('T')[0] : new Date().toISOString().split('T')[0],
+      tanggal_input: convertIndoDateToISO(survey.tanggalInput),
       dimensi_scores: {
         ...survey.dimensiScores,
         username: config.identifier,

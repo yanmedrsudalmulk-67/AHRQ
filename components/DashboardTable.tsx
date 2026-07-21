@@ -356,6 +356,18 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId, s
     if (parts.length >= 3) {
       return { month: parts[1], year: parts[2] };
     }
+    // If it's YYYY-MM-DD or standard Date ISO string
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      const year = match[1];
+      const monthNum = parseInt(match[2], 10);
+      const monthsIndo = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+      const month = monthsIndo[monthNum - 1] || 'Lainnya';
+      return { month, year };
+    }
     return { month: 'Lainnya', year: dateStr.slice(-4) || 'Lainnya' };
   };
 

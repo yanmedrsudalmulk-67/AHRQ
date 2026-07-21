@@ -247,6 +247,26 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
   return [];
 }
 
+export function convertIndoDateToISO(indoDate: string): string {
+  if (!indoDate) return new Date().toISOString().split('T')[0];
+  if (indoDate.includes('-')) return indoDate; // already YYYY-MM-DD
+  
+  const monthsIndo: Record<string, string> = {
+    'januari': '01', 'februari': '02', 'maret': '03', 'april': '04', 'mei': '05', 'juni': '06',
+    'juli': '07', 'agustus': '08', 'september': '09', 'oktober': '10', 'november': '11', 'desember': '12'
+  };
+  
+  const parts = indoDate.trim().toLowerCase().split(/\s+/);
+  if (parts.length >= 3) {
+    const day = parts[0].padStart(2, '0');
+    const monthName = parts[1];
+    const year = parts[2];
+    const month = monthsIndo[monthName] || '01';
+    return `${year}-${month}-${day}`;
+  }
+  return indoDate;
+}
+
 // 2. Save a survey to Supabase directly (no localStorage)
 export async function saveSurvey(
   survey: SurveyData,
@@ -263,7 +283,7 @@ export async function saveSurvey(
         nama_rs: survey.namaRs,
         unit_kerja: survey.unitKerja,
         jumlah_responden: survey.jumlahResponden,
-        tanggal_input: survey.tanggalInput,
+        tanggal_input: convertIndoDateToISO(survey.tanggalInput),
         dimensi_scores: {
           ...survey.dimensiScores,
           hospital_id: hospitalId || survey.dimensiScores?.hospital_id,

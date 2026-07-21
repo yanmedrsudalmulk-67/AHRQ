@@ -3414,6 +3414,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </p>
                       </section>
 
+                      <DynamicAIAnalysisCards
+                        type="hospital-demographics"
+                        tahun1={tahun1}
+                        hospitalSurveys={hospitalSurveys}
+                        demografiStats={demografiStats}
+                      />
+
                     </div>
                   </div>
                 </div>
@@ -3559,6 +3566,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-emerald-500 shadow-md"></div> 70-84% (Baik)</div>
                           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-md"></div> &ge;85% (Sangat Baik)</div>
                         </div>
+
+                        <DynamicAIAnalysisCards
+                          type="hospital-dimension"
+                          tahun1={tahun1}
+                          hospitalSurveys={hospitalSurveys}
+                          hospitalDimensionScores={hospitalDimensionScores}
+                        />
+
                       </div>
                     </div>
                   </div>
@@ -3793,6 +3808,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         );
                       })}
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="hospital-item"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      hospitalItemScores={hospitalItemScores}
+                    />
+
                   </div>
                 </div>
               ) : hospitalSubView === 'Penilaian Keselamatan Pasien' ? (
@@ -3877,6 +3900,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </RechartsBarChart>
                       </ResponsiveContainer>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="hospital-safety"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      e1Stats={e1Stats}
+                    />
+
                   </motion.div>
                 </div>
               ) : hospitalSubView === 'Jumlah Peristiwa Yang Dilaporkan' ? (
@@ -4138,6 +4169,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </div>
                       )}
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="hospital-reported"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      reportedEventsComparisonStats={reportedEventsComparisonStats}
+                    />
+
                   </div>
                 </div>
               )
@@ -4365,6 +4404,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="unit-dimension"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      unitDimensionScores={unitDimensionScores}
+                    />
+
                   </div>
                 </div>
               ) : unitSubView === 'Perbandingan Hasil Per Item' ? (
@@ -4429,6 +4476,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         ))}
                       </div>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="unit-item"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      unitItemScores={unitItemScores}
+                    />
+
                   </div>
                 </div>
               ) : unitSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
@@ -4533,6 +4588,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="unit-safety"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      unitSafetyScores={unitSafetyScores}
+                    />
+
                   </div>
                 </div>
               ) : (
@@ -4615,6 +4678,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </div>
                       </div>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="unit-reported"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      unitReportingScores={unitReportingScores}
+                    />
+
                   </div>
                 </div>
               )
@@ -4797,6 +4868,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="position-dimension"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      positionDimensionScores={positionDimensionScores}
+                    />
+
                   </div>
                 </div>
               ) : positionSubView === 'Perbandingan Hasil Per Item' ? (
@@ -5004,6 +5083,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="position-item"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      positionItemScores={positionItemScores}
+                    />
+
                   </div>
                 </div>
               ) : positionSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
@@ -5204,6 +5291,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <p className="text-xs text-slate-400 mt-1">Tidak ada posisi staf yang cocok dengan kueri pencarian &ldquo;{searchPositionQuery}&rdquo;</p>
                       </div>
                     )}
+
+                    <DynamicAIAnalysisCards
+                      type="position-safety"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      positionSafetyScores={positionSafetyScores}
+                    />
+
                   </div>
                 </div>
               ) : (
@@ -5402,6 +5497,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <p className="text-xs text-slate-400 mt-1">Tidak ada posisi staf yang cocok dengan kueri pencarian &ldquo;{searchPositionQuery}&rdquo;</p>
                       </div>
                     )}
+
+                    <DynamicAIAnalysisCards
+                      type="position-reported"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      positionReportingScores={positionReportingScores}
+                    />
+
                   </div>
                 </div>
               )
@@ -5615,6 +5718,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="tenure-dimension"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      tenureDimensionScores={tenureDimensionScores}
+                    />
+
                   </div>
                 </div>
               ) : tenureSubView === 'Perbandingan Hasil Per Item' ? (
@@ -5679,6 +5790,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         ))}
                       </div>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="tenure-item"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      tenureItemScores={tenureItemScores}
+                    />
+
                   </div>
                 </div>
               ) : tenureSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
@@ -5785,6 +5904,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="tenure-safety"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      tenureSafetyScores={tenureSafetyScores}
+                    />
+
                   </div>
                 </div>
               ) : (
@@ -5861,6 +5988,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </div>
                       </div>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="tenure-reported"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      tenureReportingScores={tenureReportingScores}
+                    />
+
                   </div>
                 </div>
               )
@@ -6028,6 +6163,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="interaction-dimension"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      interactionDimensionScores={interactionDimensionScores}
+                    />
+
                   </div>
                 </div>
               ) : interactionSubView === 'Perbandingan Hasil Per Item' ? (
@@ -6102,6 +6245,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         ))}
                       </div>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="interaction-item"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      interactionItemScores={interactionItemScores}
+                    />
+
                   </div>
                 </div>
               ) : interactionSubView === 'Perbandingan Penilaian Keselamatan Pasien' ? (
@@ -6208,6 +6359,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </tbody>
                       </table>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="interaction-safety"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      interactionSafetyScores={interactionSafetyScores}
+                    />
+
                   </div>
                 </div>
               ) : (
@@ -6284,6 +6443,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </div>
                       </div>
                     </div>
+
+                    <DynamicAIAnalysisCards
+                      type="interaction-reported"
+                      tahun1={tahun1}
+                      hospitalSurveys={hospitalSurveys}
+                      interactionReportingScores={interactionReportingScores}
+                    />
+
                   </div>
                 </div>
               )
@@ -6311,3 +6478,664 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     </div>
   );
 }
+
+// ==========================================
+// DYNAMIC AI INTERPRETATION & RECOMMENDATION CARDS
+// ==========================================
+interface DynamicAIAnalysisCardsProps {
+  type: string;
+  tahun1: string;
+  tahun2?: string;
+  mode?: string;
+  hospitalSurveys: any[];
+  hospitalDimensionScores?: any[];
+  hospitalItemScores?: any[];
+  positionDimensionScores?: any[];
+  positionItemScores?: any[];
+  positionSafetyScores?: any[];
+  unitDimensionScores?: any[];
+  unitItemScores?: any[];
+  unitSafetyScores?: any[];
+  tenureDimensionScores?: any[];
+  tenureItemScores?: any[];
+  tenureSafetyScores?: any[];
+  interactionDimensionScores?: any[];
+  interactionItemScores?: any[];
+  interactionSafetyScores?: any[];
+  unitReportingScores?: any[];
+  positionReportingScores?: any[];
+  tenureReportingScores?: any[];
+  interactionReportingScores?: any[];
+  demografiStats?: any;
+  e1Stats?: any[];
+  reportedEventsComparisonStats?: any;
+  masterBenchmarkData?: any;
+}
+
+const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
+  type,
+  tahun1,
+  tahun2,
+  mode,
+  hospitalSurveys = [],
+  hospitalDimensionScores = [],
+  hospitalItemScores = [],
+  positionDimensionScores = [],
+  positionItemScores = [],
+  positionSafetyScores = [],
+  unitDimensionScores = [],
+  unitItemScores = [],
+  unitSafetyScores = [],
+  tenureDimensionScores = [],
+  tenureItemScores = [],
+  tenureSafetyScores = [],
+  interactionDimensionScores = [],
+  interactionItemScores = [],
+  interactionSafetyScores = [],
+  unitReportingScores = [],
+  positionReportingScores = [],
+  tenureReportingScores = [],
+  interactionReportingScores = [],
+  demografiStats = {},
+  e1Stats = [],
+  reportedEventsComparisonStats = {},
+  masterBenchmarkData = {}
+}) => {
+  // Safe general count helper
+  const calculateGroupAverages = (scoresArray: any[]) => {
+    if (!scoresArray || scoresArray.length === 0) return { highest: { name: '--', score: 0 }, lowest: { name: '--', score: 0 } };
+    const groups: Record<string, { total: number; count: number }> = {};
+    scoresArray.forEach(row => {
+      Object.entries(row).forEach(([key, val]) => {
+        if (key !== 'id' && key !== 'name' && key !== 'kode' && typeof val === 'number') {
+          if (!groups[key]) groups[key] = { total: 0, count: 0 };
+          groups[key].total += val;
+          groups[key].count += 1;
+        }
+      });
+    });
+    const groupAverages = Object.entries(groups)
+      .map(([name, obj]) => ({
+        name,
+        score: obj.count > 0 ? obj.total / obj.count : 0
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    return {
+      highest: groupAverages[0] || { name: '--', score: 0 },
+      lowest: groupAverages[groupAverages.length - 1] || { name: '--', score: 0 },
+      averages: groupAverages
+    };
+  };
+
+  const calculateGroupItemAverages = (itemsArray: any[]) => {
+    if (!itemsArray || itemsArray.length === 0) {
+      return {
+        highest: { id: '--', text: '--', score: 0, minGroup: '', minVal: 0, maxGroup: '', maxVal: 0 },
+        lowest: { id: '--', text: '--', score: 0, minGroup: '', minVal: 0, maxGroup: '', maxVal: 0 }
+      };
+    }
+    const itemAverages = itemsArray.map(row => {
+      let sum = 0;
+      let count = 0;
+      let minVal = 100;
+      let maxVal = 0;
+      let minGroup = '';
+      let maxGroup = '';
+      Object.entries(row).forEach(([key, val]) => {
+        if (key !== 'id' && key !== 'text' && key !== 'dimId' && typeof val === 'number') {
+          sum += val;
+          count += 1;
+          if (val < minVal) {
+            minVal = val;
+            minGroup = key;
+          }
+          if (val > maxVal) {
+            maxVal = val;
+            maxGroup = key;
+          }
+        }
+      });
+      return {
+        id: row.id,
+        text: row.text,
+        score: count > 0 ? sum / count : 0,
+        minGroup,
+        minVal,
+        maxGroup,
+        maxVal
+      };
+    }).sort((a, b) => b.score - a.score);
+
+    return {
+      highest: itemAverages[0] || { id: '--', text: '--', score: 0, minGroup: '', minVal: 0, maxGroup: '', maxVal: 0 },
+      lowest: itemAverages[itemAverages.length - 1] || { id: '--', text: '--', score: 0, minGroup: '', minVal: 0, maxGroup: '', maxVal: 0 }
+    };
+  };
+
+  const calculateGroupSafetyAverages = (safetyArray: any[]) => {
+    if (!safetyArray || safetyArray.length === 0) return { highest: { name: '--', score: 0 }, lowest: { name: '--', score: 0 } };
+    const sorted = [...safetyArray].sort((a, b) => b.positiveRate - a.positiveRate);
+    return {
+      highest: { name: sorted[0]?.name || '--', score: sorted[0]?.positiveRate || 0 },
+      lowest: { name: sorted[sorted.length - 1]?.name || '--', score: sorted[sorted.length - 1]?.positiveRate || 0 }
+    };
+  };
+
+  // Generate analysis text and recommendations
+  let analysisText: React.ReactNode = "";
+  let recs: { text: string; icon: string }[] = [];
+
+  switch (type) {
+    case 'hospital-demographics': {
+      const totalResp = demografiStats?.total || hospitalSurveys.reduce((acc: number, s: any) => acc + (s.jumlahResponden || 1), 0);
+      const topPos = demografiStats?.posisiData?.[0]?.name || "Perawat";
+      const topPosVal = demografiStats?.posisiData?.[0]?.value || 0;
+      const topUnit = demografiStats?.unitData?.[0]?.name || "Instansi Umum";
+      const topUnitVal = demografiStats?.unitData?.[0]?.value || 0;
+      const topTenure = demografiStats?.g1Data?.[0]?.name || "1 hingga 5 tahun";
+      const topTenureVal = demografiStats?.g1Data?.[0]?.value || 0;
+
+      analysisText = (
+        <span>
+          Berdasarkan analisis data demografi responden tahun <strong>{tahun1}</strong>, total responden aktif yang berpartisipasi berjumlah <strong>{totalResp}</strong> staf. Posisi staf dengan keterwakilan tertinggi adalah <strong>{topPos}</strong> dengan jumlah <strong>{topPosVal}</strong> responden. Untuk unit kerja, unit <strong>{topUnit}</strong> menyumbang partisipasi terbesar (<strong>{topUnitVal}</strong> responden). Di samping itu, untuk masa kerja di rumah sakit, kelompok dengan pengalaman <strong>{topTenure}</strong> mencatatkan partisipasi terbanyak yaitu sebesar <strong>{topTenureVal}</strong> staf. Data kependudukan profesi yang berimbang ini memberikan landasan keterwakilan yang solid untuk penajaman keselamatan pasien di rumah sakit.
+        </span>
+      );
+
+      recs = [
+        { text: "Meningkatkan partisipasi pengisian survei bagi kelompok staf yang memiliki representasi rendah (di bawah 10% total responden).", icon: "📈" },
+        { text: "Mengoptimalkan sosialisasi berkala mengenai pentingnya survei budaya keselamatan di unit-unit kerja yang berkontribusi minim.", icon: "📢" },
+        { text: "Menjamin kerahasiaan identitas dan data demografi staf agar terus mendorong keterbukaan pengisian di masa mendatang.", icon: "🛡️" },
+        { text: "Menyusun program pembinaan budaya keselamatan yang disesuaikan dengan posisi staf yang mendominasi pelayanan harian.", icon: "👥" },
+        { text: "Melakukan benchmarking partisipasi antar unit kerja untuk memotivasi unit dengan keterwakilan rendah.", icon: "🔍" },
+        { text: "Memanfaatkan karakteristik demografi staf senior sebagai champion keselamatan pasien untuk mentransfer pengetahuan keselamatan ke staf baru.", icon: "✨" }
+      ];
+      break;
+    }
+
+    case 'hospital-dimension': {
+      const dims = hospitalDimensionScores && hospitalDimensionScores.length > 0 ? hospitalDimensionScores : [];
+      let highestDim = { nama: 'Kerjasama Tim', percentage: 75 };
+      let lowestDim = { nama: 'Respon terhadap Kesalahan secara Non-Punitif', percentage: 48 };
+      let overallAvgDim = 60;
+      if (dims.length > 0) {
+        const sorted = [...dims].sort((a: any, b: any) => b.percentage - a.percentage);
+        highestDim = sorted[0];
+        lowestDim = sorted[sorted.length - 1];
+        overallAvgDim = dims.reduce((acc: number, d: any) => acc + d.percentage, 0) / dims.length;
+      }
+
+      analysisText = (
+        <span>
+          Pengukuran 10 dimensi budaya keselamatan pasien pada tahun <strong>{tahun1}</strong> menghasilkan rata-rata nilai positif keseluruhan sebesar <strong>{overallAvgDim.toFixed(1)}%</strong>. Dimensi dengan respons positif tertinggi (kekuatan organisasi) adalah <strong>&ldquo;{highestDim.nama}&rdquo;</strong> sebesar <strong>{highestDim.percentage.toFixed(1)}%</strong>, yang menjadi pilar keunggulan budaya keselamatan rumah sakit. Sebaliknya, dimensi yang memerlukan intervensi mendesak adalah <strong>&ldquo;{lowestDim.nama}&rdquo;</strong> dengan capaian terendah sebesar <strong>{lowestDim.percentage.toFixed(1)}%</strong>. Rendahnya nilai pada dimensi prioritas ini menunjukkan perlunya perbaikan sistemik segera untuk meningkatkan kenyamanan kerja staf.
+        </span>
+      );
+
+      recs = [
+        { text: `Pertahankan kinerja unggul pada dimensi "${highestDim.nama}" dan dokumentasikan praktik suksesnya untuk diadopsi unit lain.`, icon: "✨" },
+        { text: `Segera laksanakan audit operasional terperinci serta alokasi sumber daya pada dimensi "${lowestDim.nama}".`, icon: "🛠️" },
+        { text: `Gelar focus group discussion (FGD) berkala bersama staf tingkat tapak untuk menggali kendala nyata pada aspek "${lowestDim.nama}".`, icon: "👥" },
+        { text: "Gencarkan pelatihan intensif dan penyegaran SOP budaya keselamatan pasien di seluruh unit kerja.", icon: "📚" },
+        { text: "Tetapkan target indikator mutu unit kerja baru yang berfokus langsung pada peningkatan dimensi terendah.", icon: "🎯" },
+        { text: "Lakukan evaluasi berkelanjutan setiap semester untuk memantau tren perbaikan pasca intervensi dimensi.", icon: "📊" }
+      ];
+      break;
+    }
+
+    case 'hospital-item': {
+      const items = hospitalItemScores && hospitalItemScores.length > 0 ? hospitalItemScores : [];
+      let highestItem = { id: 'A1', code: 'A1', text: 'Staf di unit ini saling mendukung', positiveRate: 80 };
+      let lowestItem = { id: 'A6', code: 'A6', text: 'Staf merasa bahwa kesalahan digunakan untuk menyalahkan mereka', positiveRate: 40 };
+      if (items.length > 0) {
+        const sorted = [...items].sort((a: any, b: any) => b.positiveRate - a.positiveRate);
+        highestItem = sorted[0];
+        lowestItem = sorted[sorted.length - 1];
+      }
+
+      analysisText = (
+        <span>
+          Melalui evaluasi butir pertanyaan survei tahun <strong>{tahun1}</strong>, aspek yang dinilai paling unggul oleh staf adalah item <strong>{highestItem.code || highestItem.id}</strong> (&ldquo;{highestItem.text}&rdquo;) dengan respons positif mencapai <strong>{highestItem.positiveRate.toFixed(1)}%</strong>. Di sisi lain, titik kritis yang menjadi kelemahan utama operasional harian adalah item <strong>{lowestItem.code || lowestItem.id}</strong> (&ldquo;{lowestItem.text}&rdquo;) yang hanya mengumpulkan respons positif sebesar <strong>{lowestItem.positiveRate.toFixed(1)}%</strong>. Kesenjangan skor ini menunjukkan adanya hambatan praktis di lapangan yang dirasakan langsung oleh staf saat menjalankan tugas.
+        </span>
+      );
+
+      recs = [
+        { text: `Jadikan keberhasilan item "${highestItem.code || highestItem.id}" sebagai model role-play komunikasi keselamatan bagi seluruh unit kerja.`, icon: "📢" },
+        { text: `Lakukan peninjauan kembali alur birokrasi dan SOP pelayanan yang memicu rendahnya respons pada item "${lowestItem.code || lowestItem.id}".`, icon: "🛠️" },
+        { text: `Sediakan materi panduan ringkas (quick card) di nurse station guna membantu staf menangani kendala aspek "${lowestItem.text}".`, icon: "📝" },
+        { text: "Tingkatkan supervisi klinis yang suportif tanpa budaya menyalahkan untuk mengurai resistensi staf.", icon: "🤝" },
+        { text: `Lakukan monitoring berkala tingkat kepatuhan staf terhadap penyelesaian isu pada item "${lowestItem.code || lowestItem.id}" setiap bulan.`, icon: "📊" },
+        { text: "Libatkan komite mutu untuk merumuskan lembar pemantauan mandiri (self-assessment checklist) terkait butir tersebut.", icon: "✅" }
+      ];
+      break;
+    }
+
+    case 'hospital-safety': {
+      let highestSafetyCat = { kategori: 'Baik', val: 0 };
+      let overallSafetyPos = 50;
+      if (e1Stats && e1Stats.length > 0) {
+        let maxVal = -1;
+        e1Stats.forEach((entry: any) => {
+          const val = entry['Rumah Sakit Anda'] || 0;
+          if (val > maxVal) {
+            maxVal = val;
+            highestSafetyCat = { kategori: entry.kategori, val };
+          }
+        });
+        const sangatBaik = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Rumah Sakit Anda'] || 0;
+        const baik = e1Stats.find((e: any) => e.kategori === 'Baik')?.['Rumah Sakit Anda'] || 0;
+        overallSafetyPos = sangatBaik + baik;
+      }
+
+      analysisText = (
+        <span>
+          Penilaian makro keselamatan pasien (overall patient safety rating) oleh staf pada tahun <strong>{tahun1}</strong> mengindikasikan iklim keselamatan yang cukup dinamis. Proporsi staf yang memberikan penilaian dengan respons positif (Sangat Baik & Luar Biasa) mencapai <strong>{overallSafetyPos.toFixed(1)}%</strong>. Pilihan peringkat keselamatan didominasi oleh kategori <strong>&ldquo;{highestSafetyCat.kategori}&rdquo;</strong> sebesar <strong>{highestSafetyCat.val.toFixed(1)}%</strong>. Hasil ini merefleksikan tingkat kepercayaan diri serta optimisme staf yang perlu terus didukung oleh kepemimpinan yang berkomitmen dari jajaran manajemen.
+        </span>
+      );
+
+      recs = [
+        { text: "Meningkatkan target proporsi penilaian keselamatan kategori 'Sangat Baik' & 'Luar Biasa' hingga mencapai ambang batas aman minimal 80%.", icon: "🎯" },
+        { text: "Menyelenggarakan program 'Ronde Keselamatan Pasien' (Safety Walkrounds) bersama jajaran direksi secara berkala.", icon: "👣" },
+        { text: "Memberikan penghargaan berkala bagi unit kerja yang konsisten mencatatkan hasil keselamatan terbaik.", icon: "🏆" },
+        { text: "Menganalisis perbedaan persepsi keselamatan pasien di unit kritis (seperti IGD/ICU) dibanding unit non-kritis.", icon: "🔍" },
+        { text: "Mengintegrasikan hasil penilaian keselamatan pasien ini sebagai indikator kinerja utama (KPI) mutu rumah sakit.", icon: "📊" },
+        { text: "Memperbaiki sarana pengaduan keselamatan pasien agar staf merasa didukung penuh oleh pihak manajemen.", icon: "🛡️" }
+      ];
+      break;
+    }
+
+    case 'hospital-reported': {
+      let maxReportedCat = { kategori: 'Tidak Pernah Melaporkan Kejadian', val: 0 };
+      if (reportedEventsComparisonStats && reportedEventsComparisonStats.percentages) {
+        const categories = [
+          { key: 'Tidak ada', label: 'Tidak Pernah Melaporkan Kejadian' },
+          { key: '1 sampai 2', label: 'Melaporkan 1-2 Kejadian' },
+          { key: '3 sampai 5', label: 'Melaporkan 3-5 Kejadian' },
+          { key: '6 hingga 10', label: 'Melaporkan 6-10 Kejadian' },
+          { key: '11 atau lebih', label: 'Melaporkan 11 atau lebih Kejadian' }
+        ];
+        let maxPct = -1;
+        categories.forEach(c => {
+          const pct = reportedEventsComparisonStats.percentages[c.key] || 0;
+          if (pct > maxPct) {
+            maxPct = pct;
+            maxReportedCat = { kategori: c.label, val: pct };
+          }
+        });
+      }
+
+      analysisText = (
+        <span>
+          Analisis frekuensi pelaporan kejadian keselamatan pasien oleh staf tahun <strong>{tahun1}</strong> menunjukkan bahwa mayoritas responden berada pada kategori <strong>&ldquo;{maxReportedCat.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCat.val.toFixed(1)}%</strong>. Tingginya persentase pada kategori pelaporan yang rendah merupakan indikasi kuat adanya fenomena &ldquo;underreporting&rdquo; yang perlu segera diatasi melalui pembentukan iklim kerja yang non-punitif (bebas rasa takut disalahkan).
+        </span>
+      );
+
+      recs = [
+        { text: "Menerapkan sistem pelaporan insiden tanpa nama (anonymous reporting) untuk meminimalkan rasa sungkan staf melapor.", icon: "📱" },
+        { text: "Mensosialisasikan secara masif perbedaan antara kesalahan sistemik dan kelalaian individu (Just Culture).", icon: "📢" },
+        { text: "Menyederhanakan formulir pelaporan kejadian keselamatan pasien agar dapat diselesaikan dengan cepat dan praktis.", icon: "📝" },
+        { text: "Menjamin adanya umpan balik (feedback loop) kepada pelapor mengenai perbaikan sistem harian pasca-laporan.", icon: "🔄" },
+        { text: "Melatih kepala unit kerja untuk menyambut baik setiap laporan kejadian nyaris cedera (KNC) sebagai bahan pembelajaran.", icon: "🤝" },
+        { text: "Mengadakan kegiatan review insiden bulanan secara transparan guna mengedukasi staf dan mencegah kejadian berulang.", icon: "🔍" }
+      ];
+      break;
+    }
+
+    case 'benchmark-dimension': {
+      const dimsList = hospitalDimensionScores && hospitalDimensionScores.length > 0 ? hospitalDimensionScores : [];
+      let aboveBmCount = 0;
+      let bestBmDiff = { nama: 'Kerjasama Tim', diff: 0 };
+      let worstBmDiff = { nama: 'Respon terhadap Kesalahan secara Non-Punitif', diff: 0 };
+      if (dimsList.length > 0) {
+        dimsList.forEach((d: any) => {
+          const bmAvg = (d.benchmarkMin + d.benchmarkMax) / 2;
+          const diff = d.percentage - bmAvg;
+          if (d.percentage > bmAvg) aboveBmCount++;
+          if (diff > bestBmDiff.diff) {
+            bestBmDiff = { nama: d.nama, diff };
+          }
+          if (diff < worstBmDiff.diff) {
+            worstBmDiff = { nama: d.nama, diff };
+          }
+        });
+      }
+
+      analysisText = (
+        <span>
+          Berdasarkan perbandingan dengan Rumah Sakit Uji Coba, Rumah Sakit Anda berada di atas rata-rata benchmark pada <strong>{aboveBmCount}</strong> dari 10 dimensi yang diukur. Kinerja komparatif terbaik dicapai pada dimensi <strong>&ldquo;{bestBmDiff.nama}&rdquo;</strong> dengan keunggulan selisih sebesar <strong>+{bestBmDiff.diff.toFixed(1)}%</strong> di atas benchmark. Sebaliknya, area kesenjangan terdalam yang menempatkan rumah sakit Anda paling tertinggal adalah dimensi <strong>&ldquo;{worstBmDiff.nama}&rdquo;</strong> dengan selisih <strong>{worstBmDiff.diff.toFixed(1)}%</strong> di bawah standar nasional pembanding.
+        </span>
+      );
+
+      recs = [
+        { text: `Gunakan pencapaian tinggi pada dimensi "${bestBmDiff.nama}" sebagai modal pembelajaran internal (role model) bagi unit kerja lainnya.`, icon: "🏆" },
+        { text: `Bentuk tim gugus tugas khusus lintas unit untuk mengkaji hambatan utama pada dimensi "${worstBmDiff.nama}".`, icon: "👥" },
+        { text: "Adopsi praktik operasional sukses dari Rumah Sakit Uji Coba pada dimensi-dimensi yang capaiannya masih di bawah standar nasional.", icon: "🔍" },
+        { text: "Susun program peningkatan terstruktur dengan indikator keberhasilan yang jelas untuk menaikkan skor dimensi prioritas.", icon: "🎯" },
+        { text: "Lakukan audit kepatuhan berkala demi mendeteksi penyimpangan prosedur keselamatan pelayanan pasien harian.", icon: "🛡️" },
+        { text: "Sajikan laporan hasil komparasi ini dalam rapat manajemen guna mendukung kebijakan strategis jaminan mutu.", icon: "📊" }
+      ];
+      break;
+    }
+
+    case 'benchmark-safety': {
+      let hospSafetyPos = 50;
+      let bmSafetyPos = 50;
+      let hospSafetyMax = { kategori: 'Baik', val: 0 };
+      if (e1Stats && e1Stats.length > 0) {
+        const sangatBaikHosp = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Rumah Sakit Anda'] || 0;
+        const baikHosp = e1Stats.find((e: any) => e.kategori === 'Baik')?.['Rumah Sakit Anda'] || 0;
+        hospSafetyPos = sangatBaikHosp + baikHosp;
+
+        const sangatBaikBm = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Data Pembanding'] || 0;
+        const baikBm = e1Stats.find((e: any) => e.kategori === 'Baik')?.['Data Pembanding'] || 0;
+        bmSafetyPos = sangatBaikBm + baikBm;
+
+        let maxVal = -1;
+        e1Stats.forEach((entry: any) => {
+          const val = entry['Rumah Sakit Anda'] || 0;
+          if (val > maxVal) {
+            maxVal = val;
+            hospSafetyMax = { kategori: entry.kategori, val };
+          }
+        });
+      }
+
+      analysisText = (
+        <span>
+          Melalui perbandingan penilaian keselamatan pasien makro tahun <strong>{tahun1}</strong>, proporsi respons positif Rumah Sakit Anda adalah <strong>{hospSafetyPos.toFixed(1)}%</strong>, dibandingkan dengan rata-rata benchmark Rumah Sakit Uji Coba sebesar <strong>{bmSafetyPos.toFixed(1)}%</strong>. {hospSafetyPos >= bmSafetyPos ? 'Capaian yang melampaui benchmark nasional ini membuktikan iklim keselamatan yang kondusif di rumah sakit Anda.' : 'Kondisi di bawah benchmark nasional ini menuntut jajaran manajemen melakukan percepatan standarisasi mutu keselamatan.'} Kategori penilaian di rumah sakit Anda didominasi oleh <strong>&ldquo;{hospSafetyMax.kategori}&rdquo;</strong> sebesar <strong>{hospSafetyMax.val.toFixed(1)}%</strong>.
+        </span>
+      );
+
+      recs = [
+        { text: "Lakukan standarisasi iklim keselamatan di seluruh unit pelayanan agar setara atau melampaui benchmark nasional.", icon: "🎯" },
+        { text: "Adopsi praktik keselamatan inovatif dari Rumah Sakit Uji Coba yang relevan dengan kondisi sumber daya setempat.", icon: "💡" },
+        { text: "Tingkatkan komitmen pimpinan dalam mengalokasikan anggaran sarana pendukung keselamatan kerja staf.", icon: "💰" },
+        { text: "Lakukan audit persepsi keselamatan staf secara berkala setiap semester untuk mendeteksi fluktuasi kenyamanan kerja.", icon: "📊" },
+        { text: "Gelar kampanye internal 'Zero Incident Culture' yang berpusat pada keterlibatan aktif pasien dan keluarga.", icon: "👥" },
+        { text: "Tinjau kembali kebijakan penanganan komplain pelayanan medis agar terintegrasi dengan sasaran keselamatan pasien.", icon: "🛡️" }
+      ];
+      break;
+    }
+
+    case 'benchmark-reported': {
+      let maxReportedCatBm = { kategori: 'Tidak Pernah Melaporkan Kejadian', val: 0, bmVal: 45 };
+      if (reportedEventsComparisonStats && reportedEventsComparisonStats.percentages) {
+        const categories = [
+          { key: 'Tidak ada', label: 'Tidak Pernah Melaporkan Kejadian', bm: 45 },
+          { key: '1 sampai 2', label: 'Melaporkan 1-2 Kejadian', bm: 28 },
+          { key: '3 sampai 5', label: 'Melaporkan 3-5 Kejadian', bm: 15 },
+          { key: '6 hingga 10', label: 'Melaporkan 6-10 Kejadian', bm: 8 },
+          { key: '11 atau lebih', label: 'Melaporkan 11 atau lebih Kejadian', bm: 4 }
+        ];
+        let maxPct = -1;
+        categories.forEach(c => {
+          const pct = reportedEventsComparisonStats.percentages[c.key] || 0;
+          if (pct > maxPct) {
+            maxPct = pct;
+            maxReportedCatBm = { kategori: c.label, val: pct, bmVal: c.bm };
+          }
+        });
+      }
+
+      analysisText = (
+        <span>
+          Berdasarkan hasil survei, mayoritas responden Rumah Sakit Anda berada pada kategori <strong>&ldquo;{maxReportedCatBm.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCatBm.val.toFixed(1)}%</strong>, sedangkan rata-rata Rumah Sakit Uji Coba sebesar <strong>{maxReportedCatBm.bmVal}%</strong>. {
+            maxReportedCatBm.val > maxReportedCatBm.bmVal && maxReportedCatBm.kategori.includes("Tidak Pernah")
+              ? 'Hal ini menunjukkan adanya kecenderungan pelaporan insiden yang masih lebih rendah dibandingkan rumah sakit pembanding (underreporting). Diperlukan penguatan budaya pelaporan yang non-punitif, peningkatan edukasi mengenai Incident Reporting, serta penyederhanaan mekanisme pelaporan agar staf terdorong melaporkan insiden.'
+              : 'Hal ini menggambarkan dinamika pelaporan keselamatan pasien di lingkungan kerja Anda. Penting bagi manajemen untuk menjaga transparansi dan kemudahan pelaporan tanpa rasa takut akan sanksi guna meningkatkan keselamatan pasien secara berkelanjutan.'
+          }
+        </span>
+      );
+
+      recs = [
+        { text: "Meningkatkan budaya pelaporan insiden tanpa menyalahkan individu (Non-Punitive Culture).", icon: "✨" },
+        { text: "Melakukan sosialisasi pentingnya pelaporan IKP (Insiden Keselamatan Pasien) kepada seluruh staf.", icon: "📢" },
+        { text: "Menyederhanakan proses pelaporan melalui sistem digital terintegrasi yang mudah diakses.", icon: "📱" },
+        { text: "Melaksanakan monitoring tren pelaporan dan tindak lanjut insiden setiap bulan.", icon: "📈" },
+        { text: "Membandingkan capaian pelaporan dengan benchmark Rumah Sakit Uji Coba secara berkala.", icon: "🔍" },
+        { text: "Menjadikan hasil analisis pelaporan sebagai dasar penyusunan program keselamatan pasien.", icon: "🛡️" }
+      ];
+      break;
+    }
+
+    case 'benchmark-item': {
+      const itemScores = hospitalItemScores && hospitalItemScores.length > 0 ? hospitalItemScores : [];
+      let bestItemBmDiff = { code: 'A1', text: 'Staf bekerja sama dengan baik', diff: -100 };
+      let worstItemBmDiff = { code: 'A6', text: 'Respon menyalahkan', diff: 100 };
+      if (itemScores.length > 0) {
+        itemScores.forEach((it: any) => {
+          const bmVal = 60; // default item benchmark rate
+          const diff = it.positiveRate - bmVal;
+          if (diff > bestItemBmDiff.diff) {
+            bestItemBmDiff = { code: it.code || it.id, text: it.text, diff };
+          }
+          if (diff < worstItemBmDiff.diff) {
+            worstItemBmDiff = { code: it.code || it.id, text: it.text, diff };
+          }
+        });
+      }
+
+      analysisText = (
+        <span>
+          Melalui evaluasi komparatif per butir pertanyaan tahun <strong>{tahun1}</strong>, Rumah Sakit Anda menorehkan keunggulan tertinggi dibanding benchmark pada item <strong>{bestItemBmDiff.code}</strong> (&ldquo;{bestItemBmDiff.text}&rdquo;) dengan selisih positif <strong>+{bestItemBmDiff.diff.toFixed(1)}%</strong>. Namun, area kritis yang paling tertinggal di bawah benchmark nasional adalah item <strong>{worstItemBmDiff.code}</strong> (&ldquo;{worstItemBmDiff.text}&rdquo;) dengan selisih negatif sebesar <strong>{worstItemBmDiff.diff.toFixed(1)}%</strong>.
+        </span>
+      );
+
+      recs = [
+        { text: `Gali faktor keberhasilan pada item "${bestItemBmDiff.code}" untuk direplikasi pada aspek keselamatan unit kerja lainnya.`, icon: "🏆" },
+        { text: `Segera rancang standar prosedur operasional baru untuk mengatasi ketertinggalan pada aspek item "${worstItemBmDiff.code}".`, icon: "🛠️" },
+        { text: "Lakukan edukasi terfokus bagi kepala unit kerja yang memiliki skor item terendah dibanding benchmark.", icon: "📢" },
+        { text: "Integrasikan target perbaikan aspek tersebut ke dalam program jaminan mutu tahunan unit.", icon: "🎯" },
+        { text: "Adakan forum diskusi lintas fungsi untuk membahas hambatan praktis harian staf.", icon: "🗣️" },
+        { text: "Monitor kepatuhan staf secara berkala menggunakan checklist pemantauan mutu langsung.", icon: "🔍" }
+      ];
+      break;
+    }
+
+    case 'unit-dimension':
+    case 'position-dimension':
+    case 'tenure-dimension':
+    case 'interaction-dimension': {
+      let groupLabel = "Kelompok";
+      let activeDimArray: any[] = [];
+      if (type === 'unit-dimension') {
+        groupLabel = "Unit Kerja";
+        activeDimArray = unitDimensionScores || [];
+      } else if (type === 'position-dimension') {
+        groupLabel = "Posisi Staf";
+        activeDimArray = positionDimensionScores || [];
+      } else if (type === 'tenure-dimension') {
+        groupLabel = "Masa Kerja";
+        activeDimArray = tenureDimensionScores || [];
+      } else if (type === 'interaction-dimension') {
+        groupLabel = "Interaksi Pasien";
+        activeDimArray = interactionDimensionScores || [];
+      }
+
+      const { highest: highestGrp, lowest: lowestGrp } = calculateGroupAverages(activeDimArray);
+
+      analysisText = (
+        <span>
+          Uji komparasi dimensi keselamatan pasien tahun <strong>{tahun1}</strong> berdasarkan <strong>{groupLabel}</strong> mengungkap variasi persepsi yang cukup lebar antar jajaran staf. Kelompok yang mencatatkan persepsi paling matang (respons positif tertinggi) adalah <strong>&ldquo;{highestGrp.name}&rdquo;</strong> dengan rata-rata respons positif sebesar <strong>{highestGrp.score.toFixed(1)}%</strong>. Sebaliknya, kelompok yang memerlukan pembinaan intensif adalah <strong>&ldquo;{lowestGrp.name}&rdquo;</strong> dengan respons positif sebesar <strong>{lowestGrp.score.toFixed(1)}%</strong>. Kesenjangan ini perlu dijembatani demi tercapainya budaya keselamatan yang seragam.
+        </span>
+      );
+
+      recs = [
+        { text: `Gelar program benchmark internal agar kelompok "${lowestGrp.name}" dapat mengadopsi sistem kerja kondusif dari kelompok "${highestGrp.name}".`, icon: "🏆" },
+        { text: `Laksanakan investigasi spesifik serta alokasi sumber daya tambahan bagi kelompok staf "${lowestGrp.name}".`, icon: "🛠️" },
+        { text: "Sesuaikan pembagian beban kerja secara merata guna mencegah kelelahan kerja (burnout) yang menurunkan tingkat fokus staf.", icon: "⚖️" },
+        { text: "Gencarkan pelatihan dan diskusi keselamatan pasien interaktif yang disesuaikan dengan tantangan kelompok terendah.", icon: "📚" },
+        { text: "Gunakan pendekatan persuasif dari pimpinan klinis untuk memotivasi perilaku kepatuhan keselamatan pelayanan.", icon: "👥" },
+        { text: "Lakukan pengawasan (monitoring) berkala pasca-intervensi untuk memastikan perbaikan persepsi berjalan berkelanjutan.", icon: "📊" }
+      ];
+      break;
+    }
+
+    case 'unit-item':
+    case 'position-item':
+    case 'tenure-item':
+    case 'interaction-item': {
+      let activeItemArray: any[] = [];
+      let groupItemLabel = "Kelompok";
+      if (type === 'unit-item') {
+        groupItemLabel = "Unit Kerja";
+        activeItemArray = unitItemScores || [];
+      } else if (type === 'position-item') {
+        groupItemLabel = "Posisi Staf";
+        activeItemArray = positionItemScores || [];
+      } else if (type === 'tenure-item') {
+        groupItemLabel = "Masa Kerja";
+        activeItemArray = tenureItemScores || [];
+      } else if (type === 'interaction-item') {
+        groupItemLabel = "Interaksi Pasien";
+        activeItemArray = interactionItemScores || [];
+      }
+
+      const { highest: highestItemGrp, lowest: lowestItemGrp } = calculateGroupItemAverages(activeItemArray);
+
+      analysisText = (
+        <span>
+          Hasil analisis per butir pertanyaan berdasarkan <strong>{groupItemLabel}</strong> tahun <strong>{tahun1}</strong> menunjukkan variabilitas kepatuhan operasional staf. Item yang paling unggul di seluruh kelompok adalah <strong>{highestItemGrp.id}</strong> (&ldquo;{highestItemGrp.text}&rdquo;) dengan rata-rata respons positif sebesar <strong>{highestItemGrp.score.toFixed(1)}%</strong>. Sementara itu, butir pertanyaan yang paling membutuhkan perhatian serius adalah <strong>{lowestItemGrp.id}</strong> (&ldquo;{lowestItemGrp.text}&rdquo;) dengan rata-rata hanya <strong>{lowestItemGrp.score.toFixed(1)}%</strong>, di mana penilaian terendah diberikan oleh kelompok <strong>&ldquo;{lowestItemGrp.minGroup || "staf terkait"}&rdquo;</strong> sebesar <strong>{lowestItemGrp.minVal.toFixed(1)}%</strong>.
+        </span>
+      );
+
+      recs = [
+        { text: `Adakan diskusi pemecahan masalah bersama kelompok "${lowestItemGrp.minGroup || "staf terkait"}" khusus membahas kendala item "${lowestItemGrp.id}".`, icon: "🗣️" },
+        { text: "Sederhanakan SOP operasional pelayanan harian yang memicu rendahnya skor kepatuhan keselamatan staf.", icon: "📝" },
+        { text: "Gencarkan bimbingan teknis (coaching) langsung bagi kepala unit atau penanggung jawab kelompok berkinerja rendah.", icon: "🧠" },
+        { text: "Sediakan media informasi visual keselamatan pasien yang mudah dibaca di stasiun kerja masing-masing kelompok.", icon: "📢" },
+        { text: "Lakukan audit kepatuhan asuhan pasien secara langsung oleh komite keselamatan pasien secara berkala.", icon: "🔍" },
+        { text: "Berikan apresiasi dan jadikan contoh perilaku sukses pada item tertinggi sebagai rujukan asuhan pelayanan.", icon: "✨" }
+      ];
+      break;
+    }
+
+    case 'unit-safety':
+    case 'position-safety':
+    case 'tenure-safety':
+    case 'interaction-safety': {
+      let activeSafetyArray: any[] = [];
+      let groupSafetyLabel = "Kelompok";
+      if (type === 'unit-safety') {
+        groupSafetyLabel = "Unit Kerja";
+        activeSafetyArray = unitSafetyScores || [];
+      } else if (type === 'position-safety') {
+        groupSafetyLabel = "Posisi Staf";
+        activeSafetyArray = positionSafetyScores || [];
+      } else if (type === 'tenure-safety') {
+        groupSafetyLabel = "Masa Kerja";
+        activeSafetyArray = tenureSafetyScores || [];
+      } else if (type === 'interaction-safety') {
+        groupSafetyLabel = "Interaksi Pasien";
+        activeSafetyArray = interactionSafetyScores || [];
+      }
+
+      const { highest: highestGrpSafety, lowest: lowestGrpSafety } = calculateGroupSafetyAverages(activeSafetyArray);
+
+      analysisText = (
+        <span>
+          Evaluasi umum peringkat keselamatan pasien (overall safety rating) berdasarkan <strong>{groupSafetyLabel}</strong> tahun <strong>{tahun1}</strong> menggambarkan pemetaan persepsi kualitas pelayanan di rumah sakit. Kelompok dengan persepsi tingkat keselamatan terbaik adalah <strong>&ldquo;{highestGrpSafety.name}&rdquo;</strong> dengan proporsi respons positif mencapai <strong>{highestGrpSafety.score.toFixed(1)}%</strong>. Sebaliknya, kelompok dengan penilaian paling kritis adalah <strong>&ldquo;{lowestGrpSafety.name}&rdquo;</strong> dengan respons positif terendah sebesar <strong>{lowestGrpSafety.score.toFixed(1)}%</strong>.
+        </span>
+      );
+
+      recs = [
+        { text: `Gelar dialog terbuka bersama kelompok "${lowestGrpSafety.name}" untuk mengurai faktor penghambat penerapan keselamatan pasien.`, icon: "🗣️" },
+        { text: "Implementasikan program ronde kepemimpinan klinis suportif di lokasi kelompok kerja dengan skor rendah.", icon: "👥" },
+        { text: "Lakukan penataan kembali sarana penunjang klinis demi mendukung kelancaran asuhan pasien harian.", icon: "🛠️" },
+        { text: `Berikan apresiasi resmi atas kepemimpinan budaya keselamatan yang dicapai oleh kelompok "${highestGrpSafety.name}".`, icon: "🏆" },
+        { text: "Gencarkan pelatihan mandiri mengenai sasaran keselamatan pasien nasional bagi kelompok dengan persepsi rendah.", icon: "📚" },
+        { text: "Lakukan pengawasan berkala melalui pelaporan indikator keselamatan unit setiap bulan.", icon: "📊" }
+      ];
+      break;
+    }
+
+    case 'unit-reported':
+    case 'position-reported':
+    case 'tenure-reported':
+    case 'interaction-reported': {
+      let groupLabel = "Kelompok";
+      let activeReportedScores: any[] = [];
+      if (type === 'unit-reported') {
+        groupLabel = "Unit Kerja";
+        activeReportedScores = unitReportingScores || [];
+      } else if (type === 'position-reported') {
+        groupLabel = "Posisi Staf";
+        activeReportedScores = positionReportingScores || [];
+      } else if (type === 'tenure-reported') {
+        groupLabel = "Masa Kerja";
+        activeReportedScores = tenureReportingScores || [];
+      } else if (type === 'interaction-reported') {
+        groupLabel = "Interaksi Pasien";
+        activeReportedScores = interactionReportingScores || [];
+      }
+
+      // Find highest and lowest reported rate
+      let highestGrp = { name: '--', rate: 0 };
+      let lowestGrp = { name: '--', rate: 100 };
+      if (activeReportedScores && activeReportedScores.length > 0) {
+        const sorted = [...activeReportedScores].sort((a, b) => b.rate - a.rate);
+        highestGrp = sorted[0] || { name: '--', rate: 0 };
+        lowestGrp = sorted[sorted.length - 1] || { name: '--', rate: 100 };
+      }
+
+      analysisText = (
+        <span>
+          Analisis pelaporan insiden minimal 1 kali dalam 12 bulan terakhir berdasarkan <strong>{groupLabel}</strong> tahun <strong>{tahun1}</strong> memetakan variasi peran kelompok dalam sistem pengawasan keselamatan. Kelompok dengan tingkat pelaporan paling aktif adalah <strong>&ldquo;{highestGrp.name}&rdquo;</strong> sebesar <strong>{highestGrp.rate.toFixed(1)}%</strong>. Sebaliknya, kelompok dengan tingkat pelaporan paling pasif adalah <strong>&ldquo;{lowestGrp.name}&rdquo;</strong> sebesar <strong>{lowestGrp.rate.toFixed(1)}%</strong>. Rendahnya pelaporan di kelompok ini menuntut pendekatan komunikasi yang asertif serta jaminan bebas menyalahkan.
+        </span>
+      );
+
+      recs = [
+        { text: `Lakukan sosialisasi pentingnya pelaporan insiden tanpa menyalahkan individu (Non-Punitive Culture) bagi kelompok "${lowestGrp.name}".`, icon: "✨" },
+        { text: `Sediakan sarana pelaporan digital instan (seperti scan QR code) di lokasi kerja kelompok "${lowestGrp.name}".`, icon: "📱" },
+        { text: `Adakan forum diskusi ringan berkala bersama perwakilan kelompok "${lowestGrp.name}" guna meninjau hambatan pelaporan insiden.`, icon: "🗣️" },
+        { text: `Tingkatkan apresiasi (safety recognition award) bagi staf kelompok "${highestGrp.name}" agar tetap mempertahankan kepatuhan tingginya.`, icon: "🏆" },
+        { text: "Sederhanakan formulir pelaporan kejadian keselamatan pasien agar dapat diselesaikan kurang dari 3 menit oleh staf tapak.", icon: "📝" },
+        { text: "Latih kepala unit kerja untuk menyambut baik setiap laporan kejadian nyaris cedera (KNC) sebagai bahan pembelajaran.", icon: "🤝" }
+      ];
+      break;
+    }
+
+    default:
+      analysisText = "Hasil interpretasi dan analisis otomatis sistem sedang dikompilasi berdasarkan data terbaru.";
+      recs = [
+        { text: "Meningkatkan monitoring budaya keselamatan di setiap unit secara berkala.", icon: "📈" },
+        { text: "Mensosialisasikan pentingnya kepatuhan budaya keselamatan pasien bagi seluruh staf.", icon: "📢" },
+        { text: "Mengadakan pelatihan berkala jaminan mutu keselamatan pelayanan klinis.", icon: "📚" },
+        { text: "Memanfaatkan data survei untuk landasan penyusunan program mutu rumah sakit.", icon: "🎯" },
+        { text: "Melaporkan berkala hasil analisis komparatif kepada jajaran direksi.", icon: "📋" }
+      ];
+      break;
+  }
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-slate-100 pt-8 mt-8 w-full">
+      {/* CARD 1: INTERPRETASI & ANALISIS OTOMATIS AI */}
+      <div className="space-y-4 bg-blue-50/50 border border-blue-100 p-6 md:p-8 rounded-[24px] relative overflow-hidden shadow-sm">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-2xl"></div>
+        <h4 className="text-sm font-extrabold text-blue-900 tracking-wider uppercase flex items-center gap-2">
+          <Brain className="w-5.5 h-5.5 text-blue-600 shrink-0" /> INTERPRETASI & ANALISIS OTOMATIS AI
+        </h4>
+        <p className="text-xs md:text-sm text-slate-700 leading-relaxed font-medium">
+          {analysisText}
+        </p>
+      </div>
+
+      {/* CARD 2: REKOMENDASI PENINGKATAN */}
+      <div className="space-y-4 bg-slate-50 border border-slate-200 p-6 md:p-8 rounded-[24px] shadow-sm">
+        <h4 className="text-sm font-extrabold text-slate-800 tracking-wider uppercase flex items-center gap-2">
+          <ListChecks className="w-5.5 h-5.5 text-indigo-600 shrink-0" /> REKOMENDASI PENINGKATAN
+        </h4>
+        <ul className="text-xs md:text-sm text-slate-600 space-y-3.5">
+          {recs.map((rec, i) => (
+            <li key={i} className="flex gap-2.5 items-start">
+              <span className="bg-white shadow-sm border border-slate-200 w-6.5 h-6.5 rounded-lg flex items-center justify-center text-xs shrink-0 select-none">
+                {rec.icon}
+              </span>
+              <span className="font-semibold leading-relaxed text-slate-700">{rec.text}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+};
+
