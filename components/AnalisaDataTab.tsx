@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useMemo, useEffect, Fragment, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, Fragment, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import CountUp from './CountUp';
 import { 
@@ -154,6 +154,7 @@ function extractYear(tanggalStr?: string): string {
 }
 
 export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hospitalId }: AnalisaDataTabProps) {
+  const tabContentRef = useRef<HTMLDivElement>(null);
   const [activeView, setActiveView] = useState<'main' | 'hospital' | 'unit' | 'position' | 'tenure' | 'interaction' | 'benchmark'>('main');
   const [benchmarkSubView, setBenchmarkSubView] = useState<string | null>(null);
   const [hospitalSubView, setHospitalSubView] = useState<string | null>(null);
@@ -161,11 +162,26 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [unitSubView, setUnitSubView] = useState<string | null>(null);
   const [tenureSubView, setTenureSubView] = useState<string | null>(null);
   const [interactionSubView, setInteractionSubView] = useState<string | null>(null);
+  const [mode, setMode] = useState<'Tunggal' | 'Perbandingan'>('Tunggal');
+
+  // Reset scroll to top when activeView, subviews, or mode change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    const mains = document.getElementsByTagName('main');
+    for (let i = 0; i < mains.length; i++) {
+      mains[i].scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    const wrapper = document.getElementById('dashboard-main-scroll');
+    if (wrapper) {
+      wrapper.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    if (tabContentRef.current) {
+      tabContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [activeView, benchmarkSubView, hospitalSubView, positionSubView, unitSubView, tenureSubView, interactionSubView, mode]);
   const [selectedDimId, setSelectedDimId] = useState<string>('d1');
   const [selectedItemDimId, setSelectedItemDimId] = useState<string>('all');
   const activeDimIdForPosition = selectedDimId === 'd1' ? 'd7' : selectedDimId;
-
-  const [mode, setMode] = useState<'Tunggal' | 'Perbandingan'>('Tunggal');
   
   const [filterUnit, setFilterUnit] = useState<string>('Semua');
   const [filterProfesi, setFilterProfesi] = useState<string>('Semua');
@@ -1926,7 +1942,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   ];
 
   return (
-    <div className="h-full w-full bg-slate-50 overflow-y-auto p-0 font-sans">
+    <div ref={tabContentRef} className="h-full w-full bg-slate-50 overflow-y-auto p-0 font-sans">
       <AnimatePresence mode="wait">
         {activeView === 'main' && (
           <motion.div
