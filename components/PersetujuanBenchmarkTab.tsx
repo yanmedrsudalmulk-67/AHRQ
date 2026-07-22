@@ -171,12 +171,8 @@ export default function PersetujuanBenchmarkTab({
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-200 border border-blue-400/30 text-xs font-semibold">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              Keamanan & Tata Kelola Data Supabase
-            </div>
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Persetujuan Benchmark Data</h1>
-            <p className="text-slate-300 text-xs md:text-sm max-w-2xl leading-relaxed">
+            <p className="text-slate-300 text-sm max-w-[668px] w-full leading-relaxed" style={{ fontSize: '14px', width: '668px' }}>
               Kelola izin berbagi data hasil survei budaya keselamatan pasien secara realtime. Data rumah sakit Anda aman dan hanya dapat dibandingkan oleh rumah sakit lain setelah disetujui.
             </p>
           </div>

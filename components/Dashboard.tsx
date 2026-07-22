@@ -22,7 +22,9 @@ import {
   Trash2,
   UserCheck,
   Briefcase,
-  Award
+  Award,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import useSWR, { mutate as globalMutate } from 'swr';
 import InputDataTab from './InputDataTab';
@@ -90,7 +92,8 @@ export default function Dashboard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [selectedRsFilter, setSelectedRsFilter] = useState<'all' | 'admin' | string>('admin');
-  const [selectedYear, setSelectedYear] = useState<string>('Semua Tahun');
+  const [selectedYear, setSelectedYear] = useState<string>(() => new Date().getFullYear().toString());
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (notification) {
@@ -328,27 +331,46 @@ export default function Dashboard({
       </header>
 
       {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-      <aside className="w-full fixed bottom-0 left-0 z-50 md:relative md:w-64 bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 md:bg-gradient-to-b md:from-blue-800 md:to-indigo-950 text-white border-t border-blue-500/30 md:border-t-0 md:border-r md:border-blue-900/50 md:pt-12 md:px-5 md:pb-5 flex flex-col justify-between shrink-0 no-print shadow-2xl md:h-full md:overflow-hidden pb-safe">
+      <aside className={`w-full fixed bottom-0 left-0 z-50 md:relative ${isSidebarCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-5'} bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 md:bg-gradient-to-b md:from-blue-800 md:to-indigo-950 text-white border-t border-blue-500/30 md:border-t-0 md:border-r md:border-blue-900/50 md:pt-12 md:pb-5 flex flex-col justify-between shrink-0 no-print shadow-2xl md:h-full md:overflow-visible transition-all duration-300 ease-in-out pb-safe`}>
+        
+        {/* Tombol Collapse / Hide Sidebar - Terletak di Tengah Sisi Kanan Menu Side Bar */}
+        <button
+          type="button"
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          title={isSidebarCollapsed ? "Tampilkan Menu Sidebar" : "Sembunyikan Menu Sidebar"}
+          className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 items-center justify-center w-7 h-7 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-full border-2 border-white shadow-xl cursor-pointer transition-all duration-200 group hover:scale-110 ring-2 ring-blue-900/40"
+          aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isSidebarCollapsed ? (
+            <ChevronRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-0.5" />
+          ) : (
+            <ChevronLeft className="w-4 h-4 text-white transition-transform group-hover:-translate-x-0.5" />
+          )}
+        </button>
         
         <div className="md:space-y-6 flex-1 flex flex-col justify-center md:justify-start">
           
           {/* Brand/Title - Hidden on Mobile */}
-          <div className="hidden md:flex items-center gap-2.5 px-2">
-            <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-md flex items-center justify-center shrink-0 w-12 h-12">
+          <div className={`hidden md:flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'gap-2.5 px-2'}`}>
+            <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-md flex items-center justify-center shrink-0 w-11 h-11">
               {activeLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
               ) : (
-                <ShieldCheck className="w-8 h-8" />
+                <ShieldCheck className="w-7 h-7" />
               )}
             </div>
-            <div>
-              <span className="font-sans font-extrabold text-[15px] text-white tracking-tight">AHRQ SOPS v2.0</span>
-              <p className="text-[10px] text-blue-200 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</p>
-            </div>
+            {!isSidebarCollapsed && (
+              <div className="overflow-hidden transition-all duration-200">
+                <span className="font-sans font-extrabold text-[15px] text-white tracking-tight whitespace-nowrap">AHRQ SOPS v2.0</span>
+                <p className="text-[10px] text-blue-200 font-mono tracking-wider font-bold block leading-tight">
+                  Agency for Healthcare<br />Research and Quality
+                </p>
+              </div>
+            )}
           </div>
 
-          <div className="hidden md:block px-4">
+          <div className={`hidden md:block ${isSidebarCollapsed ? 'px-1' : 'px-4'}`}>
             <motion.div 
               animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -365,7 +387,8 @@ export default function Dashboard({
             
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+              title={isSidebarCollapsed ? "Dashboard" : undefined}
+              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'dashboard'
                   ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
@@ -374,13 +397,14 @@ export default function Dashboard({
               <LayoutDashboard 
                 className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'dashboard' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
               /> 
-              <span className="hidden md:block text-[15px] leading-none">Dashboard</span>
+              {!isSidebarCollapsed && <span className="hidden md:block text-[15px] leading-none whitespace-nowrap">Dashboard</span>}
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Beranda</span>
             </button>
 
             <button
               onClick={() => setActiveTab('input')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+              title={isSidebarCollapsed ? "Input Data Survei" : undefined}
+              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'input'
                   ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
@@ -389,13 +413,14 @@ export default function Dashboard({
               <ClipboardCheck 
                 className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'input' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
               /> 
-              <span className="hidden md:block text-[14px] leading-none">Input Data Survei</span>
+              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Input Data Survei</span>}
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Survei</span>
             </button>
 
             <button
               onClick={() => setActiveTab('analisa-data')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+              title={isSidebarCollapsed ? "Analisa Data" : undefined}
+              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'analisa-data'
                   ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
@@ -404,13 +429,14 @@ export default function Dashboard({
               <Activity 
                 className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'analisa-data' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
               /> 
-              <span className="hidden md:block text-[14px] leading-none">Analisa Data</span>
+              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Analisa Data</span>}
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Analisa</span>
             </button>
 
             <button
               onClick={() => setActiveTab('laporan')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+              title={isSidebarCollapsed ? "Laporan Survei" : undefined}
+              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'laporan'
                   ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
@@ -419,13 +445,14 @@ export default function Dashboard({
               <FileText 
                 className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'laporan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
               /> 
-              <span className="hidden md:block text-[14px] leading-none">Laporan Survei</span>
+              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Laporan Survei</span>}
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
             </button>
 
             <button
               onClick={() => setActiveTab('pengaturan')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
+              title={isSidebarCollapsed ? "Pengaturan" : undefined}
+              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'pengaturan'
                   ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
@@ -434,13 +461,14 @@ export default function Dashboard({
               <Settings 
                 className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'pengaturan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
               /> 
-              <span className="hidden md:block text-[14px] leading-none">Pengaturan</span>
+              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Pengaturan</span>}
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
 
             <button
               onClick={() => setActiveTab('persetujuan-benchmark')}
-              className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-2 md:min-h-[39px] md:h-auto md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
+              title={isSidebarCollapsed ? "Persetujuan Benchmark Data" : undefined}
+              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-2 md:min-h-[39px] md:h-auto md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
                 activeTab === 'persetujuan-benchmark'
                   ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
@@ -449,11 +477,11 @@ export default function Dashboard({
               <ShieldCheck 
                 className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'persetujuan-benchmark' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
               /> 
-              <span className="hidden md:block text-[13.5px] leading-[1.5] text-left">Persetujuan Benchmark Data</span>
+              {!isSidebarCollapsed && <span className="hidden md:block text-[13.5px] leading-[1.5] text-left">Persetujuan Benchmark Data</span>}
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Benchmark</span>
 
               {pendingBenchmarkCount > 0 && (
-                <span className="absolute top-1 right-2 md:top-2 md:right-3 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-amber-950 shadow-md animate-pulse">
+                <span className={`absolute ${isSidebarCollapsed ? 'top-0 right-1' : 'top-1 right-2 md:top-2 md:right-3'} flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-amber-950 shadow-md animate-pulse z-10`}>
                   {pendingBenchmarkCount}
                 </span>
               )}
@@ -462,7 +490,8 @@ export default function Dashboard({
             {role === 'admin' && (
               <button
                 onClick={() => setActiveTab('persetujuan')}
-                className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
+                title={isSidebarCollapsed ? "Persetujuan Akun" : undefined}
+                className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
                   activeTab === 'persetujuan'
                     ? 'glass-menu-active text-white scale-105 md:scale-100'
                     : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
@@ -471,11 +500,11 @@ export default function Dashboard({
                 <ShieldCheck 
                   className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'persetujuan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
                 /> 
-                <span className="hidden md:block text-[14px] leading-none">Persetujuan Akun</span>
+                {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Persetujuan Akun</span>}
                 <span className="md:hidden text-[10px] mt-1 tracking-wide">Persetujuan</span>
                 
                 {pendingAccountsCount > 0 && (
-                  <span className="absolute top-1 right-2 md:top-2 md:right-3 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white shadow-md">
+                  <span className={`absolute ${isSidebarCollapsed ? 'top-0 right-1' : 'top-1 right-2 md:top-2 md:right-3'} flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white shadow-md z-10`}>
                     {pendingAccountsCount}
                   </span>
                 )}
@@ -484,7 +513,7 @@ export default function Dashboard({
 
             {/* Logout Button - Integrated inside menu list, positioned slightly downwards */}
             <div className="hidden md:block pt-4 mt-8 w-full">
-              <div className="px-4 mb-4">
+              <div className={`${isSidebarCollapsed ? 'px-1' : 'px-4'} mb-4`}>
                 <motion.div 
                   animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -497,9 +526,11 @@ export default function Dashboard({
               </div>
               <button
                 onClick={onLogout}
-                className="w-full py-2.5 px-4 text-blue-200 hover:text-white hover:bg-white/10 rounded-xl text-[14px] font-bold flex items-center gap-3 transition-all transform-gpu cursor-pointer"
+                title={isSidebarCollapsed ? "Log Out Akun" : undefined}
+                className={`w-full py-2.5 ${isSidebarCollapsed ? 'px-0 justify-center' : 'px-4 gap-3'} text-blue-200 hover:text-white hover:bg-white/10 rounded-xl text-[14px] font-bold flex items-center transition-all transform-gpu cursor-pointer`}
               >
-                <LogOut className="w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all text-blue-200" /> Log Out Akun
+                <LogOut className="w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all text-blue-200" />
+                {!isSidebarCollapsed && <span className="whitespace-nowrap">Log Out Akun</span>}
               </button>
             </div>
             
@@ -696,7 +727,7 @@ export default function Dashboard({
 
                 {/* Description */}
                 <p className="text-[11px] leading-relaxed max-w-[90%] mx-auto mb-4 font-bold text-slate-500">
-                  Kategori: <strong className="text-orange-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong>
+                  Kategori : <strong className="text-orange-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong>
                 </p>
 
                 {/* Value */}

@@ -1340,9 +1340,22 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   const filteredComputedTableData = useMemo(() => {
     return computedTableData.filter(row => 
-      row.name.toLowerCase().includes(searchPositionQuery.toLowerCase())
+      row.totalValid > 0 && row.name.toLowerCase().includes(searchPositionQuery.toLowerCase())
     );
   }, [computedTableData, searchPositionQuery]);
+
+  const activePositionSafetyScores = useMemo(() => {
+    return positionSafetyScores.filter(s => s.count > 0 && s.name.toLowerCase().includes(searchPositionQuery.toLowerCase()));
+  }, [positionSafetyScores, searchPositionQuery]);
+
+  const totalPagesPositionSafety = useMemo(() => {
+    return Math.ceil(activePositionSafetyScores.length / itemsPerPagePosition) || 1;
+  }, [activePositionSafetyScores, itemsPerPagePosition]);
+
+  const paginatedPositionSafetyScores = useMemo(() => {
+    const startIndex = (currentPagePosition - 1) * itemsPerPagePosition;
+    return activePositionSafetyScores.slice(startIndex, startIndex + itemsPerPagePosition);
+  }, [activePositionSafetyScores, currentPagePosition, itemsPerPagePosition]);
 
   const totalPagesPosition = useMemo(() => {
     return Math.ceil(filteredComputedTableData.length / itemsPerPagePosition);
@@ -2836,8 +2849,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         )}
                       </div>
 
-                      {/* Chart Area */}
-                      <div className="h-[450px]">
+                      {/* Chart Area with 3D Depth & Dark Shadow */}
+                      <div className="h-[460px] p-4 rounded-2xl bg-gradient-to-b from-slate-50/80 to-white border border-slate-100 shadow-[inset_0_2px_8px_rgba(0,0,0,0.02)]" style={{ filter: 'drop-shadow(0px 12px 28px rgba(15, 23, 42, 0.12))' }}>
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsBarChart 
                             data={[
@@ -2880,12 +2893,32 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             margin={{ top: 25, right: 10, left: -10, bottom: 20 }}
                           >
                             <defs>
-                              <linearGradient id="royalBlueGrad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#2563EB" />
-                                <stop offset="100%" stopColor="#1D4ED8" />
+                              {/* 3D Royal Blue Gradient for Rumah Sakit Anda */}
+                              <linearGradient id="royalBlueGrad3D" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#3B82F6" />
+                                <stop offset="35%" stopColor="#2563EB" />
+                                <stop offset="80%" stopColor="#1D4ED8" />
+                                <stop offset="100%" stopColor="#1E3A8A" />
                               </linearGradient>
-                              <filter id="re-shadow" x="-5%" y="-10%" width="110%" height="120%">
-                                <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#2563eb" floodOpacity="0.15" />
+
+                              {/* 3D Grey Gradient for Rumah Sakit Uji Coba */}
+                              <linearGradient id="greyGrad3D" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#F3F4F6" />
+                                <stop offset="40%" stopColor="#D1D5DB" />
+                                <stop offset="85%" stopColor="#9CA3AF" />
+                                <stop offset="100%" stopColor="#4B5563" />
+                              </linearGradient>
+
+                              {/* Dark 3D Shadow Filter for Blue Bar */}
+                              <filter id="dark3DShadowBlue" x="-30%" y="-20%" width="160%" height="160%">
+                                <feDropShadow dx="4" dy="8" stdDeviation="5" floodColor="#0f172a" floodOpacity="0.45" />
+                                <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#1e293b" floodOpacity="0.25" />
+                              </filter>
+
+                              {/* Dark 3D Shadow Filter for Grey Bar */}
+                              <filter id="dark3DShadowGrey" x="-30%" y="-20%" width="160%" height="160%">
+                                <feDropShadow dx="4" dy="8" stdDeviation="5" floodColor="#0f172a" floodOpacity="0.35" />
+                                <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#334155" floodOpacity="0.2" />
                               </filter>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.6} />
@@ -2916,10 +2949,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <Bar 
                               isAnimationActive={false} 
                               dataKey="Rumah Sakit Anda" 
-                              fill="url(#royalBlueGrad)" 
-                              radius={[6, 6, 0, 0]} 
+                              fill="url(#royalBlueGrad3D)" 
+                              radius={[8, 8, 0, 0]} 
                               maxBarSize={55} 
-                              filter="url(#re-shadow)"
+                              filter="url(#dark3DShadowBlue)"
                             >
                               <LabelList 
                                 dataKey="Rumah Sakit Anda" 
@@ -2933,11 +2966,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <Bar 
                               isAnimationActive={false} 
                               dataKey="Rumah Sakit Uji Coba" 
-                              fill="#E5E7EB" 
-                              stroke="#9CA3AF" 
-                              strokeWidth={1} 
-                              radius={[6, 6, 0, 0]} 
+                              fill="url(#greyGrad3D)" 
+                              stroke="#6B7280" 
+                              strokeWidth={0.5} 
+                              radius={[8, 8, 0, 0]} 
                               maxBarSize={55}
+                              filter="url(#dark3DShadowGrey)"
                             >
                               <LabelList 
                                 dataKey="Rumah Sakit Uji Coba" 
@@ -5567,21 +5601,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : positionSubView === 'Perbandingan Penilaian Insiden Keselamatan Pasien' ? (
                 <div className="w-full flex flex-col gap-6">
-                  {/* Selector and Header */}
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <HeartPulse className="w-5 h-5 text-rose-600" /> Perbandingan Penilaian Insiden Keselamatan Pasien Berdasarkan Posisi Staf ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Main Comparative Table Card */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
@@ -5606,7 +5625,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                           </svg>
                         </div>
-                        {totalPagesPosition > 1 && (
+                        {totalPagesPositionSafety > 1 && (
                           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
                             <button 
                               onClick={() => setCurrentPagePosition(p => Math.max(1, p - 1))}
@@ -5616,11 +5635,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               Prev
                             </button>
                             <span className="text-[10px] font-black text-slate-500 px-2">
-                              {currentPagePosition} / {totalPagesPosition}
+                              {currentPagePosition} / {totalPagesPositionSafety}
                             </span>
                             <button 
-                              onClick={() => setCurrentPagePosition(p => Math.min(totalPagesPosition, p + 1))}
-                              disabled={currentPagePosition === totalPagesPosition}
+                              onClick={() => setCurrentPagePosition(p => Math.min(totalPagesPositionSafety, p + 1))}
+                              disabled={currentPagePosition === totalPagesPositionSafety}
                               className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all"
                             >
                               Next
@@ -5630,23 +5649,26 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     </div>
 
-                    <div className="overflow-auto max-h-[75vh] border border-slate-200/60 rounded-xl relative shadow-sm">
+                    <div className="overflow-auto max-h-[75vh] border border-orange-200/60 rounded-xl relative shadow-sm">
                       <table className="w-full text-left border-collapse min-w-[800px] font-sans">
                         <thead>
-                          <tr className="bg-[#D8D4EC] text-slate-800 font-semibold uppercase tracking-wider text-[11px] md:text-xs">
-                            <th rowSpan={2} className="sticky left-0 top-0 z-30 p-4 border-r border-b border-slate-300/60 w-[240px] min-w-[240px] bg-[#D8D4EC] align-bottom shadow-[2px_0_5px_rgba(0,0,0,0.02)] leading-tight">
+                          <tr className="bg-orange-500 text-white font-semibold uppercase tracking-wider text-[11px] md:text-xs">
+                            <th rowSpan={2} className="p-4 border-r border-b border-orange-600/40 w-[220px] min-w-[220px] bg-orange-500 text-white text-center align-middle leading-tight font-extrabold text-[10px]">
                               Penilaian Insiden Keselamatan Pasien<br/>(Patient Safety Rating)
                             </th>
-                            <th rowSpan={2} className="sticky top-0 z-20 p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
+                            <th rowSpan={2} className="p-4 border-r border-b border-orange-600/40 text-center w-36 bg-orange-500 text-white align-middle font-extrabold">
                               Dataset
                             </th>
-                            <th colSpan={paginatedComputedTableData.length} className="sticky top-0 z-20 p-3 text-center border-b border-slate-300/60 bg-[#D8D4EC] font-bold">
+                            <th rowSpan={2} className="p-4 border-r border-b border-orange-600/40 text-center w-28 bg-orange-500 text-white align-middle font-extrabold">
+                              Keseluruhan RS
+                            </th>
+                            <th colSpan={paginatedPositionSafetyScores.length} className="p-3 text-center border-b border-orange-600/40 bg-orange-500 text-white font-extrabold">
                               Posisi Staf
                             </th>
                           </tr>
-                          <tr className="bg-[#E5E1F9] text-slate-800 font-semibold text-[11px] md:text-xs">
-                            {paginatedComputedTableData.map((col, idx) => (
-                              <th key={`hdr-sf-${idx}`} className="sticky top-[45px] z-20 p-3 text-center border-r border-b border-slate-300/60 align-bottom min-w-[130px] w-[130px] bg-[#E5E1F9] leading-snug">
+                          <tr className="bg-orange-400 text-white font-semibold text-[11px] md:text-xs">
+                            {paginatedPositionSafetyScores.map((col, idx) => (
+                              <th key={`hdr-sf-${idx}`} className="p-3 text-center border-r border-b border-orange-500/40 align-middle min-w-[130px] w-[130px] bg-orange-400 text-white leading-snug font-bold">
                                 {col.name}
                               </th>
                             ))}
@@ -5654,36 +5676,37 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </thead>
                         <tbody className="divide-y divide-slate-200/80">
                           {/* Row 1: Your Hospital Respondents */}
-                          <tr className="hover:bg-blue-50/5 transition-colors bg-white">
-                            <td rowSpan={2} className="sticky left-0 z-10 bg-white p-3.5 border-r border-b border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-top">
-                              <div className="flex flex-col gap-0.5 mt-1">
-                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">Rumah Sakit Anda:</span>
-                                <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
+                          <tr className="hover:bg-orange-50/30 transition-colors bg-slate-100/70">
+                            <td rowSpan={2} className="bg-slate-50 p-3.5 border-r border-b border-slate-200/80 align-middle text-center">
+                              <div className="flex flex-col items-center justify-center gap-0.5 text-center">
+                                <span className="text-sm font-bold italic text-slate-900 text-center">Jumlah Responden</span>
                               </div>
                             </td>
-                            <td className="p-3 text-center font-semibold text-slate-700 border-r border-slate-200/80 text-[13px] bg-white">
-                              {positionSafetyScores.reduce((acc, r) => acc + r.count, 0).toLocaleString('id-ID')}
+                            <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[12px] italic bg-slate-200/60">
+                              Rumah Sakit Anda
                             </td>
-                            {paginatedComputedTableData.map((col, idx) => {
-                              const safetyScoreObj = positionSafetyScores.find(s => s.name === col.name);
-                              const count = safetyScoreObj ? safetyScoreObj.count : 0;
-                              return (
-                                <td key={`rsp-rs-sf-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-white">
-                                  {count.toLocaleString('id-ID')}
-                                </td>
-                              );
-                            })}
+                            <td className="p-3 text-center font-bold text-slate-900 border-r border-slate-200/80 text-[13px] bg-slate-100/70">
+                              {activePositionSafetyScores.reduce((acc, r) => acc + r.count, 0).toLocaleString('id-ID')}
+                            </td>
+                            {paginatedPositionSafetyScores.map((col, idx) => (
+                              <td key={`rsp-rs-sf-${idx}`} className="p-3 text-center font-bold text-slate-900 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-slate-100/70">
+                                {col.count.toLocaleString('id-ID')}
+                              </td>
+                            ))}
                           </tr>
                           {/* Row 2: Pilot Test Respondents */}
-                          <tr className="hover:bg-blue-50/5 transition-colors bg-slate-50/60">
-                            <td className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 text-[13px] bg-slate-50">
-                              {paginatedComputedTableData.reduce((acc, col) => acc + (positionSafetyBenchmarks[col.name]?.count || 0), 0).toLocaleString('id-ID')}
+                          <tr className="hover:bg-orange-50/20 transition-colors bg-white">
+                            <td className="p-3 text-center font-medium text-slate-600 border-r border-b border-slate-200/80 text-[12px] italic bg-slate-50/80">
+                              Rumah Sakit Uji Coba
                             </td>
-                            {paginatedComputedTableData.map((col, idx) => {
+                            <td className="p-3 text-center font-semibold text-slate-700 border-r border-b border-slate-200/80 text-[13px] bg-white">
+                              {activePositionSafetyScores.reduce((acc, col) => acc + (positionSafetyBenchmarks[col.name]?.count || 0), 0).toLocaleString('id-ID')}
+                            </td>
+                            {paginatedPositionSafetyScores.map((col, idx) => {
                               const bmObj = positionSafetyBenchmarks[col.name];
                               const bmCount = bmObj ? (bmObj.count || 0) : 0;
                               return (
-                                <td key={`rsp-bm-sf-${idx}`} className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 last:border-r-0 text-[13px] bg-slate-50">
+                                <td key={`rsp-bm-sf-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-b border-slate-200/80 last:border-r-0 text-[13px] bg-white">
                                   {bmCount.toLocaleString('id-ID')}
                                 </td>
                               );
@@ -5698,52 +5721,53 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 4 },
                             { key: 1, benchmarkKey: 'Sangat Kurang', label: 'Buruk', subLabel: 'Poor', bmOverall: 1 },
                           ].map((cat, catIdx) => {
-                            const totalHospCount = positionSafetyScores.reduce((acc, r) => acc + r.count, 0);
-                            const overallHospCatCount = positionSafetyScores.reduce((acc, r) => acc + (r.ratings[cat.key as 1|2|3|4|5] || 0), 0);
+                            const totalHospCount = activePositionSafetyScores.reduce((acc, r) => acc + r.count, 0);
+                            const overallHospCatCount = activePositionSafetyScores.reduce((acc, r) => acc + (r.ratings[cat.key as 1|2|3|4|5] || 0), 0);
                             const overallHospPct = totalHospCount > 0 ? (overallHospCatCount / totalHospCount) * 100 : 0;
 
                             return (
                               <Fragment key={cat.key}>
-                                <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
-                                  <td rowSpan={2} className={`sticky left-0 z-10 p-3.5 border-r border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-middle font-bold text-slate-800 text-[13px] md:text-sm ${catIdx % 2 === 0 ? 'bg-slate-100/90' : 'bg-white'}`}>
-                                    <div className="flex flex-col">
-                                      <span className="text-slate-800 font-bold">{cat.label}</span>
-                                      <span className="text-[10px] text-slate-400 font-normal italic">{cat.subLabel}</span>
+                                {/* Rumah Sakit Anda: Abu Halus (bg-slate-100/70) */}
+                                <tr className="hover:bg-orange-50/30 transition-colors bg-slate-100/70">
+                                  <td rowSpan={2} className="p-3.5 border-r border-slate-200/80 align-middle text-center font-bold text-slate-800 text-[13px] md:text-sm bg-slate-50">
+                                    <div className="flex flex-col items-center justify-center text-center">
+                                      <span className="text-slate-800 font-bold text-center">{cat.label}</span>
+                                      <span className="text-[10px] text-[#56595b] font-normal italic text-center">{cat.subLabel}</span>
                                     </div>
                                   </td>
-                                  <td className={`p-3 text-center font-semibold text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-blue-50/30 ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                  <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-200/60">
                                     Rumah Sakit Anda
                                   </td>
-                                  <td className={`p-3 text-center text-slate-700 font-bold border-r border-slate-200/80 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                  <td className="p-3 text-center text-slate-900 font-bold border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                                     {totalHospCount === 0 ? '--' : `${overallHospPct.toFixed(0)}%`}
                                   </td>
-                                  {paginatedComputedTableData.map((col, idx) => {
-                                    const safetyScoreObj = positionSafetyScores.find(s => s.name === col.name);
-                                    const totalHospRespForCol = safetyScoreObj ? safetyScoreObj.count : 0;
-                                    const pct = (safetyScoreObj && totalHospRespForCol > 0)
-                                      ? (safetyScoreObj.ratings[cat.key as 1|2|3|4|5] / totalHospRespForCol) * 100
+                                  {paginatedPositionSafetyScores.map((col, idx) => {
+                                    const totalHospRespForCol = col.count;
+                                    const pct = totalHospRespForCol > 0
+                                      ? (col.ratings[cat.key as 1|2|3|4|5] / totalHospRespForCol) * 100
                                       : 0;
 
                                     return (
-                                      <td key={`val-rs-sf-${cat.key}-${idx}`} className={`p-3 text-center text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
+                                      <td key={`val-rs-sf-${cat.key}-${idx}`} className="p-3 text-center font-bold text-slate-900 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-slate-100/70">
                                         {totalHospRespForCol === 0 ? '--' : `${pct.toFixed(0)}%`}
                                       </td>
                                     );
                                   })}
                                 </tr>
-                                <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
-                                  <td className={`p-3 text-center font-semibold text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-100/50 ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                {/* Rumah Sakit Uji Coba: Putih (bg-white) */}
+                                <tr className="hover:bg-orange-50/20 transition-colors bg-white">
+                                  <td className="p-3 text-center font-medium text-slate-600 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-50/80">
                                     Rumah Sakit Uji Coba
                                   </td>
-                                  <td className={`p-3 text-center text-slate-800 font-bold border-r border-slate-200/80 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                  <td className="p-3 text-center text-slate-700 font-semibold border-r border-slate-200/80 text-[13px] bg-white">
                                     {cat.bmOverall}%
                                   </td>
-                                  {paginatedComputedTableData.map((col, idx) => {
+                                  {paginatedPositionSafetyScores.map((col, idx) => {
                                     const bmObj = positionSafetyBenchmarks[col.name];
                                     const bmPct = bmObj ? (bmObj[cat.benchmarkKey] || 0) : 0;
 
                                     return (
-                                      <td key={`val-bm-sf-${cat.key}-${idx}`} className={`p-3 text-center font-semibold text-slate-800 border-r border-slate-200/80 last:border-r-0 text-[13px] ${catIdx % 2 === 0 ? 'bg-slate-200/40' : 'bg-slate-50/60'}`}>
+                                      <td key={`val-bm-sf-${cat.key}-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-white">
                                         {bmPct ? `${bmPct.toFixed(0)}%` : '0%'}
                                       </td>
                                     );
@@ -5756,11 +5780,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
                     {/* Empty State when search returns no columns */}
-                    {paginatedComputedTableData.length === 0 && (
+                    {paginatedPositionSafetyScores.length === 0 && (
                       <div className="text-center py-12 bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
                         <Users className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-                        <h4 className="text-sm font-bold text-slate-700">Tidak Ada Posisi Staf</h4>
-                        <p className="text-xs text-slate-400 mt-1">Tidak ada posisi staf yang cocok dengan kueri pencarian &ldquo;{searchPositionQuery}&rdquo;</p>
+                        <h4 className="text-sm font-bold text-slate-700">Tidak Ada Data Posisi Staf</h4>
+                        <p className="text-xs text-slate-400 mt-1">Belum ada data survei untuk posisi staf atau tidak cocok dengan kueri pencarian &ldquo;{searchPositionQuery}&rdquo;</p>
                       </div>
                     )}
 

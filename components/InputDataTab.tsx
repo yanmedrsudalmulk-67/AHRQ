@@ -234,15 +234,15 @@ const getFeedbackCategory = (val: number | undefined, isReversed: boolean = fals
 
 const getCardBgClass = (category: string) => {
   if (category === 'positive') {
-    return 'bg-white border-emerald-200 shadow-md ring-1 ring-emerald-500/10 text-slate-800';
+    return 'bg-white border-emerald-200 shadow-xl shadow-slate-900/10 ring-1 ring-emerald-500/10 text-slate-800';
   }
   if (category === 'neutral') {
-    return 'bg-white border-amber-200 shadow-md ring-1 ring-amber-500/10 text-slate-800';
+    return 'bg-white border-amber-200 shadow-xl shadow-slate-900/10 ring-1 ring-amber-500/10 text-slate-800';
   }
   if (category === 'negative') {
-    return 'bg-white border-rose-200 shadow-md ring-1 ring-rose-500/10 text-slate-800';
+    return 'bg-white border-rose-200 shadow-xl shadow-slate-900/10 ring-1 ring-rose-500/10 text-slate-800';
   }
-  return 'bg-white border-slate-200 shadow-sm hover:border-slate-300 text-slate-800';
+  return 'bg-white border-slate-200 shadow-xl shadow-slate-900/10 hover:border-slate-300 text-slate-800';
 };
 
 const getBadgeClass = (category: string) => {
@@ -1004,13 +1004,13 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
   const getCardBgClass = (category: string) => {
     switch (category) {
       case 'positive':
-        return 'bg-white/95 backdrop-blur-md border-emerald-500/30 shadow-[0_12px_30px_-5px_rgba(16,185,129,0.06)]';
+        return 'bg-white/95 backdrop-blur-md border-emerald-500/30 shadow-xl shadow-slate-900/10 ring-1 ring-emerald-500/10';
       case 'neutral':
-        return 'bg-white/95 backdrop-blur-md border-amber-500/30 shadow-[0_12px_30px_-5px_rgba(245,158,11,0.06)]';
+        return 'bg-white/95 backdrop-blur-md border-amber-500/30 shadow-xl shadow-slate-900/10 ring-1 ring-amber-500/10';
       case 'negative':
-        return 'bg-white/95 backdrop-blur-md border-rose-500/30 shadow-[0_12px_30px_-5px_rgba(239,68,68,0.06)]';
+        return 'bg-white/95 backdrop-blur-md border-rose-500/30 shadow-xl shadow-slate-900/10 ring-1 ring-rose-500/10';
       default:
-        return 'bg-white/95 backdrop-blur-md border-slate-200 shadow-[0_10px_25px_-6px_rgba(0,0,0,0.04)] hover:shadow-[0_12px_30px_-4px_rgba(0,0,0,0.06)] hover:border-slate-300';
+        return 'bg-white/95 backdrop-blur-md border-slate-200/80 shadow-xl shadow-slate-900/10 hover:border-slate-300';
     }
   };
 
@@ -1086,7 +1086,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       <div className="sticky top-0 z-30 p-4 md:p-6 pb-2">
         <header 
           id="survey-sticky-header" 
-          className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.02)] rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
+          className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-xl shadow-slate-900/10 rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
         >
           {/* Subtle gradient background effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 pointer-events-none" />
@@ -1224,7 +1224,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
             >
               {/* Header card for the current section */}
               {step > 0 && step < 9 && (
-                <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-3 relative overflow-hidden">
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-xl shadow-slate-900/10 space-y-3 relative overflow-hidden">
                   <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-500 to-teal-400" />
                   <span className="inline-flex items-center px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-extrabold rounded-full tracking-wide">
                     {SECTIONS[step].label}
@@ -1238,7 +1238,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {step === 0 && (
                 <div className="space-y-6">
                   {/* PETUNJUK CARD (PREMIUM & MODERN) */}
-                  <div className="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-sm relative overflow-hidden space-y-6">
+                  <div className="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-xl shadow-slate-900/10 relative overflow-hidden space-y-6">
                     <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
                     
                     <div className="flex items-center gap-3">
@@ -1275,7 +1275,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
                   {/* IDENTIFIKASI PROFIL RESPONDEN */}
                   <div
-                    className={`rounded-3xl border p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 ${
                       posisiStaf && unitKerja 
                         ? 'bg-white border-emerald-300 ring-1 ring-emerald-500/10' 
                         : 'bg-white border-slate-200 hover:border-slate-300'
@@ -1397,7 +1397,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`A-${st.id}`] = el; }}
-                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1481,7 +1481,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`B-${st.id}`] = el; }}
-                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1555,7 +1555,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`C-${st.id}`] = el; }}
-                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1630,7 +1630,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key="D-1"
                         ref={(el) => { questionRefs.current[`D-1`] = el; }}
-                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1698,7 +1698,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key="D-2"
                         ref={(el) => { questionRefs.current[`D-2`] = el; }}
-                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1766,7 +1766,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key="D-3"
                         ref={(el) => { questionRefs.current[`D-3`] = el; }}
-                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1838,7 +1838,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     return (
                       <div
                         ref={(el) => { questionRefs.current[`E-1`] = el; }}
-                        className={`rounded-3xl border p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1916,7 +1916,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       <div
                         key={st.id}
                         ref={(el) => { questionRefs.current[`F-${st.id}`] = el; }}
-                        className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
+                        className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${getCardBgClass(category)}`}
                       >
                         {category === 'positive' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 to-teal-400" />}
                         {category === 'neutral' && <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-amber-500 to-yellow-400" />}
@@ -1986,7 +1986,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G1 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-1`] = el; }}
-                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[1] 
                         ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
                         : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
@@ -2023,7 +2023,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G2 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-2`] = el; }}
-                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[2] 
                         ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
                         : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
@@ -2060,7 +2060,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G3 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-3`] = el; }}
-                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[3] 
                         ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
                         : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
@@ -2097,7 +2097,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   {/* G4 */}
                   <div
                     ref={(el) => { questionRefs.current[`G-4`] = el; }}
-                    className={`rounded-3xl border p-6 md:p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-6 md:p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 ${
                       ansG[4] 
                         ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
                         : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
@@ -2140,7 +2140,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {step === 8 && (
                 <div
                   ref={(el) => { questionRefs.current[`H-1`] = el; }}
-                  className={`rounded-3xl border p-8 shadow-sm transition-all transform-gpu duration-300 space-y-6 ${
+                  className={`rounded-3xl border p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 ${
                     komentar.trim() 
                       ? 'bg-emerald-50/50 border-emerald-500/30 shadow-md shadow-emerald-500/5 ring-1 ring-emerald-500/5' 
                       : 'bg-white/95 border-slate-200 shadow-sm hover:border-slate-300'
@@ -2180,7 +2180,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
               {/* STEP 9: REVIEW SECTION */}
               {step === 9 && (
-                <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-sm space-y-8">
+                <div className="bg-white rounded-3xl border border-slate-200 p-8 shadow-xl shadow-slate-900/10 space-y-8">
                   <div className="space-y-2">
                     <span className="text-xs font-bold text-emerald-600 tracking-wider font-mono">KOMPILASI</span>
                     <h2 className="text-2xl font-bold text-slate-800">Review Sebelum Kirim Kuesioner</h2>
@@ -2220,7 +2220,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
               {/* STEP 10: SUCCESS SCREEN */}
               {step === 10 && (
-                <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-sm space-y-6 max-w-xl mx-auto my-6">
+                <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center shadow-xl shadow-slate-900/10 space-y-6 max-w-xl mx-auto my-6">
                   <div className="w-20 h-20 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full flex items-center justify-center mx-auto shadow-inner animate-bounce">
                     <CheckCircle2 className="w-10 h-10" />
                   </div>

@@ -330,7 +330,7 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId, s
   const [filterUnit, setFilterUnit] = useState('Semua Unit');
   const [filterProfesi, setFilterProfesi] = useState('Semua Profesi');
   const [filterJabatan, setFilterJabatan] = useState('Semua Jabatan');
-  const [filterTahun, setFilterTahun] = useState('Semua Tahun');
+  const [filterTahun, setFilterTahun] = useState(() => new Date().getFullYear().toString());
 
   // Trigger SWR Manual Refresh
   const [isRefreshing, setIsRefreshing] = useState(false);
