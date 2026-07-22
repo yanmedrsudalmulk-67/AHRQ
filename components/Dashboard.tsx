@@ -367,11 +367,13 @@ export default function Dashboard({
               onClick={() => setActiveTab('dashboard')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'dashboard'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                  ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <LayoutDashboard className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'dashboard' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+              <LayoutDashboard 
+                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'dashboard' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
+              /> 
               <span className="hidden md:block text-[15px] leading-none">Dashboard</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Beranda</span>
             </button>
@@ -380,11 +382,13 @@ export default function Dashboard({
               onClick={() => setActiveTab('input')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'input'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                  ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <ClipboardCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'input' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+              <ClipboardCheck 
+                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'input' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
+              /> 
               <span className="hidden md:block text-[14px] leading-none">Input Data Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Survei</span>
             </button>
@@ -393,11 +397,13 @@ export default function Dashboard({
               onClick={() => setActiveTab('analisa-data')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'analisa-data'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                  ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <Activity className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'analisa-data' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+              <Activity 
+                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'analisa-data' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
+              /> 
               <span className="hidden md:block text-[14px] leading-none">Analisa Data</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Analisa</span>
             </button>
@@ -406,11 +412,13 @@ export default function Dashboard({
               onClick={() => setActiveTab('laporan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'laporan'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                  ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <FileText className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'laporan' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+              <FileText 
+                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'laporan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
+              /> 
               <span className="hidden md:block text-[14px] leading-none">Laporan Survei</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
             </button>
@@ -419,11 +427,13 @@ export default function Dashboard({
               onClick={() => setActiveTab('pengaturan')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
                 activeTab === 'pengaturan'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                  ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <Settings className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'pengaturan' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+              <Settings 
+                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'pengaturan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
+              /> 
               <span className="hidden md:block text-[14px] leading-none">Pengaturan</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
             </button>
@@ -432,11 +442,13 @@ export default function Dashboard({
               onClick={() => setActiveTab('persetujuan-benchmark')}
               className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-2 md:min-h-[39px] md:h-auto md:px-4 md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
                 activeTab === 'persetujuan-benchmark'
-                  ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                  ? 'glass-menu-active text-white scale-105 md:scale-100'
                   : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
               }`}
             >
-              <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'persetujuan-benchmark' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+              <ShieldCheck 
+                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'persetujuan-benchmark' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
+              /> 
               <span className="hidden md:block text-[13.5px] leading-[1.5] text-left">Persetujuan Benchmark Data</span>
               <span className="md:hidden text-[10px] mt-1 tracking-wide">Benchmark</span>
 
@@ -452,11 +464,13 @@ export default function Dashboard({
                 onClick={() => setActiveTab('persetujuan')}
                 className={`flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:px-4 rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
                   activeTab === 'persetujuan'
-                    ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg shadow-blue-500/30 scale-105 md:scale-100'
+                    ? 'glass-menu-active text-white scale-105 md:scale-100'
                     : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
                 }`}
               >
-                <ShieldCheck className={`w-[22px] h-[22px] md:w-4 md:h-4 shrink-0 transition-all ${activeTab === 'persetujuan' ? 'text-white animate-pulse scale-110' : 'text-blue-200'}`} /> 
+                <ShieldCheck 
+                  className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'persetujuan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
+                /> 
                 <span className="hidden md:block text-[14px] leading-none">Persetujuan Akun</span>
                 <span className="md:hidden text-[10px] mt-1 tracking-wide">Persetujuan</span>
                 
@@ -485,7 +499,7 @@ export default function Dashboard({
                 onClick={onLogout}
                 className="w-full py-2.5 px-4 text-blue-200 hover:text-white hover:bg-white/10 rounded-xl text-[14px] font-bold flex items-center gap-3 transition-all transform-gpu cursor-pointer"
               >
-                <LogOut className="w-4 h-4 text-blue-200" /> Log Out Akun
+                <LogOut className="w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all text-blue-200" /> Log Out Akun
               </button>
             </div>
             
