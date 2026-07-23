@@ -462,16 +462,16 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           user_id: identifier,
           created_by: identifier,
           hospital_name: currentRsName
-        },
-        hospital_id: hospitalId || identifier,
-        user_id: identifier,
-        created_by: identifier,
-        hospital_name: currentRsName
+        }
       };
 
-      await supabase
+      const { error: genError } = await supabase
         .from('ahrq_surveys')
         .insert([newConfig]);
+
+      if (genError) {
+        console.error("Gagal generate config link:", genError);
+      }
       
       setSurveyLinkConfig({
         token: token,
@@ -518,11 +518,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           user_id: identifier,
           created_by: identifier,
           hospital_name: currentRsName
-        },
-        hospital_id: hospitalId || identifier,
-        user_id: identifier,
-        created_by: identifier,
-        hospital_name: currentRsName
+        }
       };
 
       const { error } = await supabase
@@ -533,7 +529,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
         setSurveyLinkConfig(mergedConfig);
       } else {
         console.error("Gagal melakukan update config link", error);
-        alert("Gagal menyimpan pengaturan link.");
+        alert(`Gagal menyimpan pengaturan link: ${error.message || 'Kesalahan database'}`);
       }
     } catch (e) {
       console.error("Kesalahan saat mengupdate link config", e);

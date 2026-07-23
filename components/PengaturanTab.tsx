@@ -1564,7 +1564,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
             <div>
               <h3 className="text-[16px] font-semibold text-slate-800 flex items-center gap-1.5">
-                <BarChart2 className="w-4 h-4 text-emerald-600" /> Master Benchmark Rumah Sakit Uji Coba (Interaksi)
+                <BarChart2 className="w-4 h-4 text-emerald-600" /> Master Benchmark Bawaan (Interaksi)
               </h3>
               <p className="text-[12px] text-slate-500 mt-1">Atur nilai persentase rata-rata rumah sakit uji coba untuk perbandingan interaksi dengan pasien.</p>
             </div>

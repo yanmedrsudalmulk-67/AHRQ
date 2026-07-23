@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { notFound, useParams } from 'next/navigation';
+import { ShieldCheck } from 'lucide-react';
 import InputDataTab from '../../../components/InputDataTab';
 import { getSupabaseClient } from '../../../lib/supabase';
 import { SurveyData, convertIndoDateToISO } from '../../../lib/db';
@@ -197,37 +198,43 @@ export default function PublicSurveyPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#020918] flex items-center justify-center">
-        <div className="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-400 rounded-full animate-spin"></div>
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-emerald-500/30 border-t-emerald-600 rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (error || !config) {
     return (
-      <div className="min-h-screen bg-[#020918] flex items-center justify-center p-6 text-center">
-        <div className="bg-[#0c1a36] border border-[#00244d] p-10 rounded-3xl max-w-lg w-full space-y-6 shadow-2xl">
-          <div className="w-20 h-20 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-full flex items-center justify-center mx-auto shadow-inner">
+      <div className="min-h-screen bg-white flex items-center justify-center p-6 text-center font-sans">
+        <div className="bg-white border border-slate-200 p-10 rounded-3xl max-w-lg w-full space-y-6 shadow-2xl">
+          <div className="w-20 h-20 bg-rose-50 text-rose-600 border border-rose-200 rounded-full flex items-center justify-center mx-auto shadow-inner">
             <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
           </div>
-          <h2 className="text-2xl font-bold text-slate-100">Survei Tidak Tersedia</h2>
-          <p className="text-slate-400 text-sm">{error}</p>
+          <h2 className="text-2xl font-bold text-slate-900">Survei Tidak Tersedia</h2>
+          <p className="text-slate-600 text-sm leading-relaxed">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#020918] p-0 md:p-6 lg:p-8">
+    <div className="min-h-screen bg-white p-4 md:p-6 lg:p-8 font-sans">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-4">
-            {logo && (
-              <img src={logo.url} alt="Logo RS" className="h-12 w-auto object-contain" />
+            {logo ? (
+              <div className="p-1.5 bg-white border border-slate-300 rounded-2xl shadow-xs flex items-center justify-center shrink-0 h-12 min-w-[48px] max-w-[200px]">
+                <img src={logo.url} alt="Logo RS" className="h-full w-auto object-contain brightness-0 filter" />
+              </div>
+            ) : (
+              <div className="p-2.5 bg-white border border-slate-300 text-black rounded-2xl shadow-xs flex items-center justify-center shrink-0 w-12 h-12">
+                <ShieldCheck className="w-7 h-7 text-black" />
+              </div>
             )}
             <div>
-              <h2 className="text-xl font-bold text-slate-100">{config.rsName}</h2>
-              <p className="text-sm text-slate-400">Portal Survei Budaya Keselamatan Pasien</p>
+              <h2 className="text-xl font-extrabold text-black tracking-tight">{config.rsName}</h2>
+              <p className="text-sm font-medium text-slate-600">Portal Survei Budaya Keselamatan Pasien</p>
             </div>
           </div>
         </div>

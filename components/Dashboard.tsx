@@ -301,245 +301,193 @@ export default function Dashboard({
     return Math.round(sum / calculatedDims.length);
   }, [filteredSurveys]);
 
-  return (
-    <div className="h-[100dvh] md:h-screen w-full bg-slate-50 text-slate-800 flex flex-col md:flex-row font-sans overflow-hidden relative">
-      
-      {/* Mobile Top Header (Sticky on Mobile) */}
-      <header className="md:hidden flex-none w-full z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="p-0.5 bg-teal-500 text-white rounded-lg border border-teal-400 shadow-sm flex items-center justify-center shrink-0 w-8 h-8">
-            {activeLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
-            ) : (
-              <ShieldCheck className="w-6 h-6 animate-pulse" />
-            )}
-          </div>
-          <div>
-            <span className="font-sans font-bold text-sm text-slate-800 tracking-tight">AHRQ SOPS v2.0</span>
-            <p className="text-[9px] text-teal-600 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</p>
-          </div>
-        </div>
-        {/* Optional Mobile Header Logout */}
-        <button
-          onClick={onLogout}
-          className="text-slate-500 hover:text-rose-600 p-1 rounded-lg transition-colors border border-transparent hover:bg-slate-100"
-          aria-label="Logout"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
-      </header>
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', mobileLabel: 'Beranda', icon: LayoutDashboard },
+    { id: 'input', label: 'Input Data Survei', mobileLabel: 'Survei', icon: ClipboardCheck },
+    { id: 'analisa-data', label: 'Analisa Data', mobileLabel: 'Analisa', icon: Activity },
+    { id: 'laporan', label: 'Laporan Survei', mobileLabel: 'Laporan', icon: FileText },
+    { id: 'pengaturan', label: 'Pengaturan', mobileLabel: 'Setelan', icon: Settings },
+    { 
+      id: 'persetujuan-benchmark', 
+      label: 'Persetujuan Benchmark Data', 
+      mobileLabel: 'Benchmark', 
+      icon: ShieldCheck, 
+      badge: pendingBenchmarkCount 
+    },
+    ...(role === 'admin' ? [{
+      id: 'persetujuan',
+      label: 'Persetujuan Akun',
+      mobileLabel: 'Persetujuan',
+      icon: ShieldCheck,
+      badge: pendingAccountsCount,
+      badgeColor: 'bg-red-500 text-white'
+    }] : [])
+  ];
 
-      {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-      <aside className={`w-full fixed bottom-0 left-0 z-50 md:relative ${isSidebarCollapsed ? 'md:w-20 md:px-2.5' : 'md:w-64 md:px-5'} bg-gradient-to-r from-blue-700 via-blue-800 to-indigo-900 md:bg-gradient-to-b md:from-blue-800 md:to-indigo-950 text-white border-t border-blue-500/30 md:border-t-0 md:border-r md:border-blue-900/50 md:pt-12 md:pb-5 flex flex-col justify-between shrink-0 no-print shadow-2xl md:h-full md:overflow-visible transition-all duration-300 ease-in-out pb-safe`}>
-        
-        {/* Tombol Collapse / Hide Sidebar - Terletak di Tengah Sisi Kanan Menu Side Bar */}
-        <button
-          type="button"
-          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          title={isSidebarCollapsed ? "Tampilkan Menu Sidebar" : "Sembunyikan Menu Sidebar"}
-          className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 items-center justify-center w-7 h-7 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-full border-2 border-white shadow-xl cursor-pointer transition-all duration-200 group hover:scale-110 ring-2 ring-blue-900/40"
-          aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isSidebarCollapsed ? (
-            <ChevronRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-0.5" />
-          ) : (
-            <ChevronLeft className="w-4 h-4 text-white transition-transform group-hover:-translate-x-0.5" />
-          )}
-        </button>
-        
-        <div className="md:space-y-6 flex-1 flex flex-col justify-center md:justify-start">
-          
-          {/* Brand/Title - Hidden on Mobile */}
-          <div className={`hidden md:flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'gap-2.5 px-2'}`}>
-            <div className="p-0.5 bg-blue-600 text-white rounded-xl border border-blue-400 shadow-md flex items-center justify-center shrink-0 w-11 h-11">
+  return (
+    <div className="h-[100dvh] md:h-screen w-full bg-[#E2E8F0] md:p-3 lg:p-4 text-slate-800 flex flex-col font-sans overflow-hidden relative">
+      
+      {/* Floating Outer Card Frame */}
+      <div className="w-full h-full bg-[#FAFBFB] rounded-none md:rounded-[28px] lg:rounded-[32px] shadow-2xl border border-slate-200/80 flex flex-col md:flex-row overflow-hidden relative">
+
+        {/* Mobile Top Header (Sticky on Mobile) */}
+        <header className="md:hidden flex-none w-full z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="p-0.5 bg-blue-600 text-white rounded-lg border border-blue-400 shadow-sm flex items-center justify-center shrink-0 w-8 h-8">
               {activeLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
               ) : (
-                <ShieldCheck className="w-7 h-7" />
+                <ShieldCheck className="w-6 h-6 text-white" />
               )}
             </div>
-            {!isSidebarCollapsed && (
-              <div className="overflow-hidden transition-all duration-200">
-                <span className="font-sans font-extrabold text-[15px] text-white tracking-tight whitespace-nowrap">AHRQ SOPS v2.0</span>
-                <p className="text-[10px] text-blue-200 font-mono tracking-wider font-bold block leading-tight">
-                  Agency for Healthcare<br />Research and Quality
-                </p>
-              </div>
+            <div>
+              <span className="font-sans font-bold text-sm text-slate-800 tracking-tight">AHRQ SOPS v2.0</span>
+              <p className="text-[9px] text-blue-600 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</p>
+            </div>
+          </div>
+          <button
+            onClick={onLogout}
+            className="text-slate-500 hover:text-rose-600 p-1 rounded-lg transition-colors border border-transparent hover:bg-slate-100"
+            aria-label="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
+        </header>
+
+        {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
+        <aside className={`w-full fixed bottom-0 left-0 z-50 md:relative ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} bg-gradient-to-b from-blue-800 via-blue-900 to-indigo-950 text-white flex flex-col shrink-0 no-print shadow-2xl md:h-full transition-all duration-300 ease-in-out pb-safe pt-0 md:pt-5 md:pb-5 z-30`}>
+          
+          {/* Tombol Collapse / Hide Sidebar - Terletak di Tengah Sisi Kanan Menu Side Bar */}
+          <button
+            type="button"
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            title={isSidebarCollapsed ? "Tampilkan Menu Sidebar" : "Sembunyikan Menu Sidebar"}
+            className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 items-center justify-center w-7 h-7 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-full border-2 border-white shadow-xl cursor-pointer transition-all duration-200 group hover:scale-110 ring-2 ring-blue-900/40"
+            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isSidebarCollapsed ? (
+              <ChevronRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-0.5" />
+            ) : (
+              <ChevronLeft className="w-4 h-4 text-white transition-transform group-hover:-translate-x-0.5" />
             )}
-          </div>
-
-          <div className={`hidden md:block ${isSidebarCollapsed ? 'px-1' : 'px-4'}`}>
-            <motion.div 
-              animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              style={{
-                backgroundSize: "200% 100%",
-                backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.4), rgba(255,255,255,0.1))"
-              }}
-              className="h-px w-full rounded-full shadow-xs" 
-            />
-          </div>
-
-          {/* Navigation Links */}
-          <nav className="flex flex-row md:flex-col justify-around md:justify-start items-center md:items-stretch w-full px-2 py-2 md:p-0 md:space-y-1.5 h-[80px] md:h-auto gap-1">
+          </button>
+          
+          <div className="flex-1 flex flex-col justify-start md:overflow-y-auto md:overflow-x-hidden no-scrollbar max-h-full space-y-4 py-1">
             
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              title={isSidebarCollapsed ? "Dashboard" : undefined}
-              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                activeTab === 'dashboard'
-                  ? 'glass-menu-active text-white scale-105 md:scale-100'
-                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
-              }`}
-            >
-              <LayoutDashboard 
-                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'dashboard' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
-              /> 
-              {!isSidebarCollapsed && <span className="hidden md:block text-[15px] leading-none whitespace-nowrap">Dashboard</span>}
-              <span className="md:hidden text-[10px] mt-1 tracking-wide">Beranda</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('input')}
-              title={isSidebarCollapsed ? "Input Data Survei" : undefined}
-              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                activeTab === 'input'
-                  ? 'glass-menu-active text-white scale-105 md:scale-100'
-                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
-              }`}
-            >
-              <ClipboardCheck 
-                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'input' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
-              /> 
-              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Input Data Survei</span>}
-              <span className="md:hidden text-[10px] mt-1 tracking-wide">Survei</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('analisa-data')}
-              title={isSidebarCollapsed ? "Analisa Data" : undefined}
-              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                activeTab === 'analisa-data'
-                  ? 'glass-menu-active text-white scale-105 md:scale-100'
-                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
-              }`}
-            >
-              <Activity 
-                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'analisa-data' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
-              /> 
-              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Analisa Data</span>}
-              <span className="md:hidden text-[10px] mt-1 tracking-wide">Analisa</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('laporan')}
-              title={isSidebarCollapsed ? "Laporan Survei" : undefined}
-              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                activeTab === 'laporan'
-                  ? 'glass-menu-active text-white scale-105 md:scale-100'
-                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
-              }`}
-            >
-              <FileText 
-                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'laporan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
-              /> 
-              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Laporan Survei</span>}
-              <span className="md:hidden text-[10px] mt-1 tracking-wide">Laporan</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('pengaturan')}
-              title={isSidebarCollapsed ? "Pengaturan" : undefined}
-              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer ${
-                activeTab === 'pengaturan'
-                  ? 'glass-menu-active text-white scale-105 md:scale-100'
-                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
-              }`}
-            >
-              <Settings 
-                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'pengaturan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
-              /> 
-              {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Pengaturan</span>}
-              <span className="md:hidden text-[10px] mt-1 tracking-wide">Setelan</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('persetujuan-benchmark')}
-              title={isSidebarCollapsed ? "Persetujuan Benchmark Data" : undefined}
-              className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-2 md:min-h-[39px] md:h-auto md:mb-[6px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
-                activeTab === 'persetujuan-benchmark'
-                  ? 'glass-menu-active text-white scale-105 md:scale-100'
-                  : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
-              }`}
-            >
-              <ShieldCheck 
-                className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'persetujuan-benchmark' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
-              /> 
-              {!isSidebarCollapsed && <span className="hidden md:block text-[13.5px] leading-[1.5] text-left">Persetujuan Benchmark Data</span>}
-              <span className="md:hidden text-[10px] mt-1 tracking-wide">Benchmark</span>
-
-              {pendingBenchmarkCount > 0 && (
-                <span className={`absolute ${isSidebarCollapsed ? 'top-0 right-1' : 'top-1 right-2 md:top-2 md:right-3'} flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-amber-400 text-[9px] font-black text-amber-950 shadow-md animate-pulse z-10`}>
-                  {pendingBenchmarkCount}
-                </span>
-              )}
-            </button>
-
-            {role === 'admin' && (
-              <button
-                onClick={() => setActiveTab('persetujuan')}
-                title={isSidebarCollapsed ? "Persetujuan Akun" : undefined}
-                className={`flex flex-col md:flex-row items-center ${isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-4'} justify-center gap-1 md:gap-3 flex-1 md:flex-none py-2 md:py-0 md:h-[39px] rounded-2xl md:rounded-xl font-bold transition-all transform-gpu cursor-pointer relative ${
-                  activeTab === 'persetujuan'
-                    ? 'glass-menu-active text-white scale-105 md:scale-100'
-                    : 'text-blue-100 hover:text-white md:hover:bg-white/10 border border-transparent'
-                }`}
-              >
-                <ShieldCheck 
-                  className={`w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all ${activeTab === 'persetujuan' ? 'text-white scale-110 animate-icon-bounce-3s' : 'text-blue-200'}`} 
-                /> 
-                {!isSidebarCollapsed && <span className="hidden md:block text-[14px] leading-none whitespace-nowrap">Persetujuan Akun</span>}
-                <span className="md:hidden text-[10px] mt-1 tracking-wide">Persetujuan</span>
-                
-                {pendingAccountsCount > 0 && (
-                  <span className={`absolute ${isSidebarCollapsed ? 'top-0 right-1' : 'top-1 right-2 md:top-2 md:right-3'} flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-500 text-[9px] font-extrabold text-white shadow-md z-10`}>
-                    {pendingAccountsCount}
+            {/* Header / Brand Logo & Title - Centered Logo with Text Underneath */}
+            <div className={`hidden md:flex flex-col items-center text-center pt-1 pb-1 ${isSidebarCollapsed ? 'px-1' : 'px-4'}`}>
+              <div className="relative mb-2 shrink-0">
+                <div className="p-0.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl border border-white/40 shadow-[0_8px_24px_rgba(37,99,235,0.35)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-14 h-14 overflow-hidden relative">
+                  {activeLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
+                  ) : (
+                    <ShieldCheck className="w-8 h-8 text-white" />
+                  )}
+                </div>
+              </div>
+              {!isSidebarCollapsed && (
+                <div className="w-full overflow-hidden text-center transition-all duration-200">
+                  <span className="font-sans font-extrabold text-[14px] text-white tracking-wider block whitespace-nowrap">
+                    AHRQ SOPS v2.0
                   </span>
-                )}
-              </button>
-            )}
-
-            {/* Logout Button - Integrated inside menu list, positioned slightly downwards */}
-            <div className="hidden md:block pt-4 mt-8 w-full">
-              <div className={`${isSidebarCollapsed ? 'px-1' : 'px-4'} mb-4`}>
-                <motion.div 
-                  animate={{ backgroundPosition: ["0% 0%", "100% 0%", "0% 0%"] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  style={{
-                    backgroundSize: "200% 100%",
-                    backgroundImage: "linear-gradient(to right, rgba(255,255,255,0.1), rgba(255,255,255,0.4), rgba(255,255,255,0.1))"
-                  }}
-                  className="h-px w-full rounded-full shadow-xs" 
-                />
-              </div>
-              <button
-                onClick={onLogout}
-                title={isSidebarCollapsed ? "Log Out Akun" : undefined}
-                className={`w-full py-2.5 ${isSidebarCollapsed ? 'px-0 justify-center' : 'px-4 gap-3'} text-blue-200 hover:text-white hover:bg-white/10 rounded-xl text-[14px] font-bold flex items-center transition-all transform-gpu cursor-pointer`}
-              >
-                <LogOut className="w-[22px] h-[22px] md:w-5 md:h-5 shrink-0 transition-all text-blue-200" />
-                {!isSidebarCollapsed && <span className="whitespace-nowrap">Log Out Akun</span>}
-              </button>
+                  <p className="text-[10px] text-blue-200 font-mono tracking-wider font-bold block leading-tight mt-0.5">
+                    Agency for Healthcare<br />Research and Quality
+                  </p>
+                </div>
+              )}
             </div>
-            
-          </nav>
-        </div>
-      </aside>
 
-      {/* Main Container - Independently Scrollable */}
-      <main id="dashboard-main-scroll" ref={mainContainerRef} className="flex-grow p-4 md:p-8 max-w-7xl mx-auto w-full overflow-y-auto md:h-full pb-24 md:pb-8">
+            <div className={`hidden md:block ${isSidebarCollapsed ? 'px-2' : 'px-4'} my-1`}>
+              <div className="h-px w-full bg-white/15 rounded-full" />
+            </div>
+
+            {/* Navigation Links */}
+            <nav className="flex flex-row md:flex-col justify-around md:justify-start items-center md:items-stretch w-full px-2 py-2 md:py-0 md:pl-3 md:pr-0 h-[70px] md:h-auto gap-1.5">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as any)}
+                    title={isSidebarCollapsed ? item.label : undefined}
+                    className={`relative flex flex-col md:flex-row items-center justify-center ${
+                      isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-3.5'
+                    } flex-1 md:flex-none py-2 md:py-2.5 w-full font-bold transition-all cursor-pointer ${
+                      isActive
+                        ? 'bg-white/20 md:bg-[#FAFBFB] text-white md:text-blue-900 md:rounded-l-2xl md:rounded-r-none rounded-xl z-20 shadow-xs md:mr-0'
+                        : 'text-blue-100 hover:text-white md:hover:bg-white/10 rounded-xl md:mr-3 border border-transparent'
+                    }`}
+                  >
+                    {/* Top Inverted Curve Cutout on Desktop */}
+                    {isActive && (
+                      <div className="hidden md:block absolute -top-4 right-0 w-4 h-4 pointer-events-none z-10">
+                        <svg className="w-full h-full text-[#FAFBFB] fill-current" viewBox="0 0 16 16" shapeRendering="geometricPrecision">
+                          <path d="M 0 16 A 16 16 0 0 0 16 0 L 16 16 Z" />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Bottom Inverted Curve Cutout on Desktop */}
+                    {isActive && (
+                      <div className="hidden md:block absolute -bottom-4 right-0 w-4 h-4 pointer-events-none z-10">
+                        <svg className="w-full h-full text-[#FAFBFB] fill-current" viewBox="0 0 16 16" shapeRendering="geometricPrecision">
+                          <path d="M 0 0 A 16 16 0 0 1 16 16 L 16 0 Z" />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Icon */}
+                    <div className={`p-1 rounded-lg shrink-0 ${isActive ? 'text-amber-300 md:text-blue-700' : 'text-blue-200'}`}>
+                      <Icon className={`w-[18px] h-[18px] md:w-5 md:h-5 shrink-0 transition-all ${isActive ? 'scale-110' : ''}`} />
+                    </div>
+
+                    {!isSidebarCollapsed && (
+                      item.id === 'persetujuan-benchmark' ? (
+                        <span className="hidden md:block text-[15.5px] font-bold leading-[20.25px] text-left ml-2">
+                          Persetujuan<br />Benchmark Data
+                        </span>
+                      ) : (
+                        <span className="hidden md:block text-[15.5px] font-bold leading-normal whitespace-nowrap ml-2 text-left">
+                          {item.label}
+                        </span>
+                      )
+                    )}
+                    <span className="md:hidden text-[10px] mt-0.5 tracking-wide font-medium">{item.mobileLabel}</span>
+
+                    {item.badge && item.badge > 0 ? (
+                      <span className={`absolute ${isSidebarCollapsed ? 'top-0 right-1' : 'top-1 right-2 md:top-2 md:right-3'} flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full ${item.badgeColor || 'bg-amber-400 text-amber-950'} text-[9px] font-black shadow-md z-30`}>
+                        {item.badge}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+
+              {/* Logout Button */}
+              <div className="hidden md:block pt-2 mt-2 w-full pr-3">
+                <div className="px-3 mb-2">
+                  <div className="h-px w-full bg-white/15 rounded-full" />
+                </div>
+                <button
+                  onClick={onLogout}
+                  title={isSidebarCollapsed ? "Log Out Akun" : undefined}
+                  className={`w-full py-2 ${isSidebarCollapsed ? 'px-0 justify-center' : 'px-3 gap-2.5'} text-blue-200 hover:text-white hover:bg-white/10 rounded-xl text-[15px] font-bold flex items-center transition-all cursor-pointer`}
+                >
+                  <LogOut className="w-4.5 h-4.5 shrink-0 transition-all text-blue-200" />
+                  {!isSidebarCollapsed && <span className="whitespace-nowrap font-bold text-[15px]">Log Out Akun</span>}
+                </button>
+              </div>
+            </nav>
+          </div>
+        </aside>
+
+        {/* Main Container - Independently Scrollable */}
+        <main id="dashboard-main-scroll" ref={mainContainerRef} className="flex-grow p-4 md:p-8 w-full overflow-y-auto md:h-full pb-24 md:pb-8 bg-[#FAFBFB]">
+          <div className="max-w-7xl mx-auto w-full">
         
         {/* Dynamic View rendering */}
         <AnimatePresence mode="wait">
@@ -1080,7 +1028,9 @@ export default function Dashboard({
           )}
         </AnimatePresence>
 
-      </main>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
