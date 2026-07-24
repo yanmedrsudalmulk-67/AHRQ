@@ -42,7 +42,11 @@ import {
   Handshake,
   RotateCcw,
   Sparkles,
-  MessageSquareOff
+  MessageSquareOff,
+  Lightbulb,
+  Settings,
+  Rocket,
+  Target
 } from 'lucide-react';
 import { 
   BarChart as RechartsBarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LabelList 
@@ -6677,75 +6681,93 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       { 
                         title: 'Perbandingan Pengukuran Dimensi', 
                         desc: 'Analisis Perbandingan tingkat persentase respon positif untuk 10 dimensi budaya keselamatan berdasarkan masa jabatan / lama kerja staf.', 
-                        icon: <BarChart2 className="w-7 h-7 text-amber-500 stroke-[1.5]" />
+                        bottomIcon: <Lightbulb className="w-7 h-7 stroke-[2]" />
                       },
                       { 
                         title: 'Perbandingan Hasil Per Item', 
                         desc: 'Mengevaluasi dan membandingkan tanggapan positif staf untuk setiap butir pertanyaan kuesioner SOPS di tiap kelompok masa jabatan.', 
-                        icon: <ListChecks className="w-7 h-7 text-orange-500 stroke-[1.5]" />
+                        bottomIcon: <Settings className="w-7 h-7 stroke-[2]" />
                       },
                       { 
                         title: 'Penilaian Insiden Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) berdasarkan masa jabatan atau lama kerja staf.', 
-                        icon: <HeartPulse className="w-7 h-7 text-sky-500 stroke-[1.5]" />
+                        bottomIcon: <Rocket className="w-7 h-7 stroke-[2]" />
                       },
                       { 
                         title: 'Jumlah Insiden Keselamatan Pasien Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara kelompok masa jabatan staf.', 
-                        icon: <AlertTriangle className="w-7 h-7 text-slate-800 stroke-[1.5]" />
+                        bottomIcon: <Target className="w-7 h-7 stroke-[2]" />
                       }
                     ].map((item, idx) => {
-                      const colors = [
-                        { bg: 'bg-[#FDBA21]', text: 'text-white', pin: 'text-red-500' },
-                        { bg: 'bg-[#F27A54]', text: 'text-white', pin: 'text-red-500' },
-                        { bg: 'bg-[#009EDB]', text: 'text-white', pin: 'text-red-500' },
-                        { bg: 'bg-[#1A2B4C]', text: 'text-white', pin: 'text-red-500' }
+                      const themes = [
+                        {
+                          bgBackplate: 'bg-blue-600',
+                          pillBg: 'bg-blue-600',
+                          arrowColor: 'text-blue-600',
+                          titleColor: 'text-blue-700',
+                          bottomIconColor: 'text-blue-600'
+                        },
+                        {
+                          bgBackplate: 'bg-teal-500',
+                          pillBg: 'bg-teal-500',
+                          arrowColor: 'text-teal-600',
+                          titleColor: 'text-teal-700',
+                          bottomIconColor: 'text-teal-600'
+                        },
+                        {
+                          bgBackplate: 'bg-orange-500',
+                          pillBg: 'bg-orange-500',
+                          arrowColor: 'text-orange-500',
+                          titleColor: 'text-orange-600',
+                          bottomIconColor: 'text-orange-500'
+                        },
+                        {
+                          bgBackplate: 'bg-slate-500',
+                          pillBg: 'bg-slate-500',
+                          arrowColor: 'text-slate-500',
+                          titleColor: 'text-slate-700',
+                          bottomIconColor: 'text-slate-500'
+                        }
                       ];
-                      const color = colors[idx];
+                      const theme = themes[idx];
                       
                       return (
                         <motion.div
                           key={idx}
-                          whileHover={{ y: -5 }}
+                          whileHover={{ y: -6, scale: 1.02 }}
                           onClick={() => setTenureSubView(item.title === 'Penilaian Insiden Keselamatan Pasien' ? 'Perbandingan Penilaian Insiden Keselamatan Pasien' : item.title === 'Jumlah Insiden Keselamatan Pasien Dilaporkan' ? 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan' : item.title)}
-                          className="relative cursor-pointer group pt-6 pr-2 pl-2 flex flex-col h-full"
-                          style={{ filter: 'drop-shadow(0 15px 20px rgba(0,0,0,0.08))' }}
+                          className="relative cursor-pointer group flex flex-col h-full select-none"
                         >
-                          {/* Top Left Tag */}
-                          <div className={`absolute top-0 left-0 ${color.bg} ${color.text} rounded-tl-[24px] rounded-br-[24px] rounded-tr-md rounded-bl-sm py-2 px-5 shadow-sm flex items-center gap-2 z-20`} style={{ minWidth: '110px' }}>
-                            <span className="text-[9px] font-bold uppercase opacity-90 mt-1">HASIL</span>
-                            <span className="text-[26px] font-bold leading-none">0{idx + 1}</span>
-                          </div>
+                          {/* Colored Backplate Layer (3D Offset Shadow on Bottom & Right) */}
+                          <div className={`absolute inset-0 translate-x-2 translate-y-2 ${theme.bgBackplate} rounded-tl-[16px] rounded-tr-[36px] rounded-bl-[16px] rounded-br-[16px] z-0 opacity-90 transition-all duration-300 group-hover:translate-x-2.5 group-hover:translate-y-2.5`} />
 
-                          {/* Main Paper */}
-                          <div className="relative bg-white pt-14 pb-6 px-6 flex flex-col items-center text-center w-full flex-1 rounded-tr-md rounded-tl-md z-10" 
-                               style={{ backgroundImage: 'repeating-linear-gradient(transparent, transparent 26px, #f1f5f9 26px, #f1f5f9 27px)', backgroundPosition: '0 40px' }}>
+                          {/* Front Main White Card Layer */}
+                          <div className="relative z-10 bg-white border border-slate-200/90 rounded-tl-[16px] rounded-tr-[36px] rounded-bl-[16px] rounded-br-[16px] shadow-sm p-5 flex flex-col justify-between h-full w-full">
                             
-                            {/* Red Pin */}
-                            <div className="absolute top-3 right-3 text-red-500 drop-shadow-sm z-30">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none" className="rotate-[30deg]">
-                                <path d="M16 9V4h1a1 1 0 0 0 0-2H7a1 1 0 0 0 0 2h1v5l-2 3v2h5v7a1 1 0 0 0 2 0v-7h5v-2l-2-3z"/>
-                              </svg>
+                            {/* Top Header Row with Pill Badge & Chevron */}
+                            <div className="w-full flex items-center justify-between pb-3.5 mb-3 border-b border-slate-100">
+                              <div className={`${theme.pillBg} text-white font-extrabold text-[12px] tracking-wider px-4 py-2 rounded-full flex items-center gap-1.5 shadow-sm`}>
+                                <span>HASIL</span>
+                                <span className="text-[14px]">0{idx + 1}</span>
+                              </div>
+                              <ChevronRight className={`w-6 h-6 stroke-[3.5] ${theme.arrowColor} mr-1`} />
                             </div>
 
-                            <div className="mb-4 flex justify-center items-center bg-white p-2 rounded-full shadow-sm border border-slate-50">
-                              {item.icon}
+                            {/* Title & Description Content */}
+                            <div className="flex flex-col items-center text-center flex-1 my-2 space-y-2.5">
+                              <h3 className={`font-extrabold text-[13px] uppercase tracking-wider ${theme.titleColor} px-1 leading-snug`}>
+                                {item.title}
+                              </h3>
+                              <p className="text-slate-500 text-[11px] leading-relaxed text-center font-medium line-clamp-6 px-1">
+                                {item.desc}
+                              </p>
                             </div>
-                            
-                            <h3 className="text-slate-800 font-bold text-[13px] uppercase tracking-widest mb-3 bg-white px-2 rounded-sm">
-                              {item.title}
-                            </h3>
-                            
-                            <p className="text-slate-400 text-[10px] leading-[1.8] line-clamp-5 bg-white/70 px-2 rounded-sm">
-                              {item.desc}
-                            </p>
-                          </div>
 
-                          {/* Torn Bottom Edge SVG */}
-                          <div className="w-full text-white relative z-10" style={{ marginTop: '-1px' }}>
-                            <svg viewBox="0 0 100 6" preserveAspectRatio="none" className="w-full h-3 fill-current block">
-                              <polygon points="0,0 100,0 100,1 98,6 96,1 94,6 92,1 90,6 88,1 86,6 84,1 82,6 80,1 78,6 76,1 74,6 72,1 70,6 68,1 66,6 64,1 62,6 60,1 58,6 56,1 54,6 52,1 50,6 48,1 46,6 44,1 42,6 40,1 38,6 36,1 34,6 32,1 30,6 28,1 26,6 24,1 22,6 20,1 18,6 16,1 14,6 12,1 10,6 8,1 6,6 4,1 2,6 0,1" />
-                            </svg>
+                            {/* Bottom Theme Icon */}
+                            <div className={`mt-4 pt-2 flex justify-center items-center ${theme.bottomIconColor}`}>
+                              {item.bottomIcon}
+                            </div>
+
                           </div>
                         </motion.div>
                       );
