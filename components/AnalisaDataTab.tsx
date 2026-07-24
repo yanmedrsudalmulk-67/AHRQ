@@ -2571,37 +2571,34 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   </div>
 
                   {/* Button & Status Pill */}
-                  <div className="flex flex-col justify-end">
-                    <span className="text-[11px] font-bold text-slate-700 hidden sm:block mb-1">&nbsp;</span>
-                    {selectedBenchmarkHospitalId === 'default' ? (
-                      <div className="px-4 py-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />
-                        <span>Benchmark Bawaan Aktif</span>
-                      </div>
-                    ) : isSelectedTargetApproved ? (
-                      <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                        <span>Izin Disetujui (Data Realtime)</span>
-                      </div>
-                    ) : currentRequestForSelectedHospital?.status === 'pending' ? (
-                      <button
-                        disabled
-                        className="px-4 py-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 opacity-80 cursor-not-allowed"
-                      >
-                        <Clock className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
-                        <span>Menunggu Persetujuan</span>
-                      </button>
-                    ) : (
-                      <button
-                        disabled={isSendingBenchmarkReq}
-                        onClick={handleSendBenchmarkRequest}
-                        className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                      >
-                        <Handshake className="w-4 h-4" />
-                        <span>{currentRequestForSelectedHospital?.status === 'rejected' ? 'Kirim Ulang Permintaan' : 'Kirim Permintaan Benchmark'}</span>
-                      </button>
-                    )}
-                  </div>
+                  {selectedBenchmarkHospitalId !== 'default' && (
+                    <div className="flex flex-col justify-end">
+                      <span className="text-[11px] font-bold text-slate-700 hidden sm:block mb-1">&nbsp;</span>
+                      {isSelectedTargetApproved ? (
+                        <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>Izin Disetujui (Data Realtime)</span>
+                        </div>
+                      ) : currentRequestForSelectedHospital?.status === 'pending' ? (
+                        <button
+                          disabled
+                          className="px-4 py-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 opacity-80 cursor-not-allowed"
+                        >
+                          <Clock className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+                          <span>Menunggu Persetujuan</span>
+                        </button>
+                      ) : (
+                        <button
+                          disabled={isSendingBenchmarkReq}
+                          onClick={handleSendBenchmarkRequest}
+                          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                        >
+                          <Handshake className="w-4 h-4" />
+                          <span>{currentRequestForSelectedHospital?.status === 'rejected' ? 'Kirim Ulang Permintaan' : 'Kirim Permintaan Benchmark'}</span>
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -5630,21 +5627,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : (
                 <div className="w-full flex flex-col gap-6">
-                  {/* Selector and Header */}
-                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                      <AlertTriangle className="w-5 h-5 text-purple-600" /> Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan Berdasarkan Unit Kerja ({tahun1})
-                    </h2>
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                        <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
-                          {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Main Table Card for Unit Kerja (Duplicated from Posisi Staf) */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm mb-6">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
@@ -5657,6 +5639,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       
                       {/* Search and Pagination Navigation */}
                       <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className="text-xs font-semibold text-slate-600">Pilih Tahun:</span>
+                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:border-blue-500 outline-none cursor-pointer">
+                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
+                          </select>
+                        </div>
                         <div className="relative w-full sm:w-60">
                           <input 
                             type="text"
@@ -5792,78 +5780,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Left side: Bar Chart showing percentage of reporting >= 1 times */}
-                    <div className="lg:col-span-2 bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4">
-                      <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-base font-bold text-slate-800">Persentase Staf Yang Melaporkan Minimal 1 Insiden</h3>
-                        <p className="text-slate-500 text-xs">Menunjukkan keaktifan unit dalam melaporkan insiden keselamatan pasien dalam 12 bulan terakhir.</p>
-                      </div>
-
-                      <div className="h-[300px] w-full">
-                        {demografiStats.unitData.length === 0 ? (
-                          <div className="h-full flex items-center justify-center text-slate-400 text-xs italic">
-                            Belum ada data untuk tahun ini.
-                          </div>
-                        ) : (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RechartsBarChart
-                              layout="vertical"
-                              data={unitReportingScores}
-                              margin={{ left: 10, right: 30, top: 10, bottom: 10 }}
-                            >
-                              <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#f1f5f9" />
-                              <XAxis type="number" domain={[0, 100]} stroke="#94a3b8" fontSize={11} fontWeight="bold" tickFormatter={(val) => `${val}%`} />
-                              <YAxis type="category" dataKey="name" stroke="#94a3b8" fontSize={10} width={130} tickFormatter={(v) => v.length > 20 ? v.substring(0, 18) + '...' : v} />
-                              <RechartsTooltip formatter={(val: any) => [`${val}%`, 'Persentase Pelaporan']} contentStyle={{ background: '#0f172a', borderRadius: '12px', border: 'none', color: '#f8fafc' }} />
-                              <Bar dataKey="rate" fill="#8b5cf6" radius={[0, 4, 4, 0]}>
-                                <LabelList dataKey="rate" position="right" formatter={(val: any) => `${val}%`} fill="#6d28d9" fontSize={11} fontWeight="bold" />
-                              </Bar>
-                            </RechartsBarChart>
-                          </ResponsiveContainer>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right column: Info/Stats Summary */}
-                    <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-4 lg:col-span-1">
-                      <div className="border-b border-slate-100 pb-3">
-                        <h3 className="text-base font-bold text-slate-800">Ikhtisar Pelaporan Unit</h3>
-                        <p className="text-slate-500 text-xs">Pelajaran kualitatif dari pola pelaporan insiden di tingkat unit.</p>
-                      </div>
-
-                      <div className="space-y-4">
-                        <div className="p-4 bg-purple-50 rounded-2xl border border-purple-100/40">
-                          <span className="text-xs font-bold text-purple-700 block mb-1">Rekomendasi Utama</span>
-                          <p className="text-[11px] font-medium text-purple-600 leading-relaxed">
-                            Mendorong komunikasi terbuka tanpa rasa takut disalahkan (just culture) di seluruh unit kerja untuk memfasilitasi deteksi dini dan pembelajaran berkelanjutan dari kejadian nyaris cedera (KNC).
-                          </p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <span className="text-xs font-bold text-slate-500">Pola Lintas Unit</span>
-                          <ul className="text-[11px] text-slate-600 space-y-2 font-medium">
-                            <li className="flex items-start gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1 shrink-0"></span>
-                              <span>Unit intensif (IGD, ICU, OK) memiliki paparan insiden lebih tinggi sehingga membutuhkan kepatuhan pelaporan yang lebih responsif.</span>
-                            </li>
-                            <li className="flex items-start gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1 shrink-0"></span>
-                              <span>Unit penunjang medis membutuhkan integrasi sistem pelaporan digital yang cepat dan mudah diakses.</span>
-                            </li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-
-                    <DynamicAIAnalysisCards
-                      type="unit-reported"
-                      tahun1={tahun1}
-                      hospitalSurveys={hospitalSurveys}
-                      unitReportingScores={unitReportingScores}
-                    />
-
-                  </div>
+                  <DynamicAIAnalysisCards
+                    type="unit-reported"
+                    tahun1={tahun1}
+                    hospitalSurveys={hospitalSurveys}
+                    unitReportingScores={unitReportingScores}
+                  />
                 </div>
               )
             ) : activeView === 'position' ? (
@@ -6791,7 +6713,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         >
                           {/* Top Left Tag */}
                           <div className={`absolute top-0 left-0 ${color.bg} ${color.text} rounded-tl-[24px] rounded-br-[24px] rounded-tr-md rounded-bl-sm py-2 px-5 shadow-sm flex items-center gap-2 z-20`} style={{ minWidth: '110px' }}>
-                            <span className="text-[9px] font-bold uppercase opacity-90 mt-1">Step</span>
+                            <span className="text-[9px] font-bold uppercase opacity-90 mt-1">HASIL</span>
                             <span className="text-[26px] font-bold leading-none">0{idx + 1}</span>
                           </div>
 

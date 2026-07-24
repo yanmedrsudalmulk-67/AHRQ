@@ -358,12 +358,12 @@ export default function Dashboard({
         {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
         <aside className={`w-full fixed bottom-0 left-0 z-50 md:relative ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} bg-gradient-to-b from-blue-800 via-blue-900 to-indigo-950 text-white flex flex-col shrink-0 no-print shadow-2xl md:h-full transition-all duration-300 ease-in-out pb-safe pt-0 md:pt-5 md:pb-5 z-30`}>
           
-          {/* Tombol Collapse / Hide Sidebar - Terletak di Tengah Sisi Kanan Menu Side Bar */}
+          {/* Tombol Collapse / Hide Sidebar - Terletak Sejajar Dengan Tulisan AHRQ SOPS v2.0 */}
           <button
             type="button"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             title={isSidebarCollapsed ? "Tampilkan Menu Sidebar" : "Sembunyikan Menu Sidebar"}
-            className="hidden md:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 items-center justify-center w-7 h-7 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-full border-2 border-white shadow-xl cursor-pointer transition-all duration-200 group hover:scale-110 ring-2 ring-blue-900/40"
+            className="hidden md:flex absolute -right-3.5 top-[88px] z-50 items-center justify-center w-7 h-7 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-full border-2 border-white shadow-xl cursor-pointer transition-all duration-200 group hover:scale-110 ring-2 ring-blue-900/40"
             aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isSidebarCollapsed ? (

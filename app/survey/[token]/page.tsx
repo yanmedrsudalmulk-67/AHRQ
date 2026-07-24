@@ -223,15 +223,6 @@ export default function PublicSurveyPage() {
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-4">
-            {logo ? (
-              <div className="p-1.5 bg-white border border-slate-300 rounded-2xl shadow-xs flex items-center justify-center shrink-0 h-12 min-w-[48px] max-w-[200px]">
-                <img src={logo.url} alt="Logo RS" className="h-full w-auto object-contain brightness-0 filter" />
-              </div>
-            ) : (
-              <div className="p-2.5 bg-white border border-slate-300 text-black rounded-2xl shadow-xs flex items-center justify-center shrink-0 w-12 h-12">
-                <ShieldCheck className="w-7 h-7 text-black" />
-              </div>
-            )}
             <div>
               <h2 className="text-xl font-extrabold text-black tracking-tight">{config.rsName}</h2>
               <p className="text-sm font-medium text-slate-600">Portal Survei Budaya Keselamatan Pasien</p>
