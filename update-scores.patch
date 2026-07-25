@@ -1,0 +1,35 @@
+--- components/AnalisaDataTab.tsx
++++ components/AnalisaDataTab.tsx
+@@ -939,6 +939,7 @@
+       let totalValid = 0;
+       let sumRating = 0;
+       let positive = 0;
++      const ratings = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+ 
+       posSurveys.forEach(survey => {
+         const raw = (survey.dimensiScores as any)?._rawAnswers;
+@@ -946,12 +947,15 @@
+           sumRating += Number(raw.ansE);
+           totalValid++;
++          if (raw.ansE >= 1 && raw.ansE <= 5) {
++            ratings[raw.ansE as 1|2|3|4|5]++;
++          }
+           if (raw.ansE === 4 || raw.ansE === 5) {
+             positive++;
+           }
+         } else {
+           const score = (survey.dimensiScores as any)?.E1 || 4.0;
+           sumRating += score;
+           totalValid++;
++          const rounded = Math.min(5, Math.max(1, Math.round(score))) as 1|2|3|4|5;
++          ratings[rounded]++;
+           if (score >= 4.0) {
+@@ -963,6 +967,7 @@
+       return {
+         name: pos.name,
+         average: parseFloat(average.toFixed(2)),
+         positiveRate: parseFloat(positiveRate.toFixed(1)),
+-        count: totalValid
++        count: totalValid,
++        ratings
+       };
