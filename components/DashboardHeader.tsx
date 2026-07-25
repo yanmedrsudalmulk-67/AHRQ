@@ -440,7 +440,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
                 variants={sapaanVariants}
                 className="text-[22px] md:text-[36px] font-bold text-slate-800 leading-tight md:leading-none tracking-tight whitespace-normal break-words"
               >
-                {greeting.text},
+                {greeting.text}
               </motion.div>
               
               <div className="relative inline-flex items-center justify-center shrink-0">

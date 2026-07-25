@@ -43,8 +43,8 @@ export function computeDimensionScores(targetSurveys: SurveyData[], masterBenchm
     let totalResponden = 0;
 
     targetSurveys.forEach(survey => {
-      // Exclude the MASTER_BENCHMARK row if it accidentally gets passed
-      if (survey.id === 'MASTER_BENCHMARK') return;
+      // Exclude MASTER_BENCHMARK, LINK_CONFIG_, or token metadata rows
+      if (!survey || !survey.id || survey.id === 'MASTER_BENCHMARK' || survey.id.startsWith('LINK_CONFIG_') || ('token' in ((survey.dimensiScores as any) || {}))) return;
       totalResponden += survey.jumlahResponden || 1;
       const raw = (survey.dimensiScores as any)?._rawAnswers;
       if (raw) {
@@ -69,9 +69,9 @@ export function computeDimensionScores(targetSurveys: SurveyData[], masterBenchm
             else if (val === 1 || val === 2) totalNegative++;
           }
         });
-      } else {
+      } else if (typeof (survey.dimensiScores as any)?.[dimId] === 'number') {
         // Fallback or legacy mapping
-        const score = survey.dimensiScores?.[dimId] || 3.0;
+        const score = (survey.dimensiScores as any)[dimId];
         const posRate = scoreToPercent(score) / 100;
         const neutRate = Math.max(0.05, 0.25 - Math.abs(score - 3.0) * 0.08);
         const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);

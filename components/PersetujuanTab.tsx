@@ -627,7 +627,7 @@ NOTIFY pgrst, reload_schema;`;
                     rows={4}
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
-                    placeholder="cth: Mohon lampirkan data penanggung jawab yang sah, atau verifikasi nomor email resmi RS Anda."
+                    placeholder="cth: Mohon lampirkan data penanggung jawab yang sah, atau verifikasi nomor email resmi rumah sakit Anda."
                     className="w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all transform-gpu outline-none text-slate-800"
                   />
                 </div>

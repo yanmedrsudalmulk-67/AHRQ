@@ -976,7 +976,19 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
     try {
       await onSaveSurvey(finalSurvey);
       try {
-        await mutate('ahrq_surveys');
+        await mutate(
+          (key) => {
+            if (typeof key === 'string') {
+              return key === 'ahrq_surveys_all' || key === 'ahrq_surveys';
+            }
+            if (Array.isArray(key)) {
+              return key[0] === 'ahrq_surveys';
+            }
+            return false;
+          },
+          undefined,
+          { revalidate: true }
+        );
       } catch (mutateErr) {
         console.warn("SWR mutation failed after survey submission:", mutateErr);
       }
@@ -986,14 +998,12 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       if (typeof window !== 'undefined') {
         
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Kesalahan menyimpan kuesioner:", err);
-      // Fallback: make sure we still proceed but notify
       setIsSubmitting(false);
       setShowConfirmModal(false);
-      setStep(10);
       if (typeof window !== 'undefined') {
-        
+        alert("Gagal menyimpan kuesioner: " + (err.message || "Terjadi kesalahan sistem"));
       }
     }
   };

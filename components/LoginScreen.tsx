@@ -234,7 +234,7 @@ export default function LoginScreen({
                   onClick={onGoToRegister}
                   className="text-blue-800 hover:text-indigo-900 text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer bg-white/50 hover:bg-white/80 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/60 shadow-sm hover:shadow-md inline-block"
                 >
-                  Daftar Akun RS Anda
+                  Daftar Akun Rumah Sakit
                 </button>
               </div>
             </form>

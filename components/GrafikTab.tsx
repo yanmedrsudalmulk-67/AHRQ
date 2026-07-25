@@ -15,6 +15,8 @@ import { computeDimensionScores } from '../lib/scoring';
 
 interface GrafikTabProps {
   surveys: SurveyData[];
+  namaRs?: string;
+  activeBenchmarkLabel?: string;
 }
 
 function extractYear(tanggalStr?: string): string {
@@ -152,7 +154,8 @@ function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan
   return { analisis, rekomendasi };
 }
 
-export default function GrafikTab({ surveys }: GrafikTabProps) {
+export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS Uji Coba atau Rumah Sakit Uji Coba" }: GrafikTabProps) {
+  const rsName = namaRs || 'Rumah Sakit';
   const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
 
   const actualDataYears = useMemo(() => {
@@ -235,13 +238,13 @@ export default function GrafikTab({ surveys }: GrafikTabProps) {
     const getPct = (val: number) => totalValid > 0 ? (val / totalValid) * 100 : 0;
 
     return [
-      { kategori: 'Sangat Baik', 'Rumah Sakit Anda': getPct(counts[5]), 'Data Pembanding': 35 },
-      { kategori: 'Baik', 'Rumah Sakit Anda': getPct(counts[4]), 'Data Pembanding': 45 },
-      { kategori: 'Cukup', 'Rumah Sakit Anda': getPct(counts[3]), 'Data Pembanding': 15 },
-      { kategori: 'Kurang', 'Rumah Sakit Anda': getPct(counts[2]), 'Data Pembanding': 4 },
-      { kategori: 'Sangat Kurang', 'Rumah Sakit Anda': getPct(counts[1]), 'Data Pembanding': 1 },
+      { kategori: 'Sangat Baik', [rsName]: getPct(counts[5]), [activeBenchmarkLabel]: 35 },
+      { kategori: 'Baik', [rsName]: getPct(counts[4]), [activeBenchmarkLabel]: 45 },
+      { kategori: 'Cukup', [rsName]: getPct(counts[3]), [activeBenchmarkLabel]: 15 },
+      { kategori: 'Kurang', [rsName]: getPct(counts[2]), [activeBenchmarkLabel]: 4 },
+      { kategori: 'Sangat Kurang', [rsName]: getPct(counts[1]), [activeBenchmarkLabel]: 1 },
     ];
-  }, [actualSurveys, tahun1, tahun2, mode]);
+  }, [actualSurveys, tahun1, tahun2, mode, rsName, activeBenchmarkLabel]);
 
   const E1Tooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -262,8 +265,6 @@ export default function GrafikTab({ surveys }: GrafikTabProps) {
     }
     return null;
   };
-
-  const rsName = actualSurveys.length > 0 ? actualSurveys[0].namaRs : "Rumah Sakit";
 
   const CustomBarTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -491,14 +492,14 @@ export default function GrafikTab({ surveys }: GrafikTabProps) {
               <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
               <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-              <Bar isAnimationActive={false} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
-                <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
+              <Bar isAnimationActive={false} dataKey={rsName} fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+                <LabelList dataKey={rsName} position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-rs-${index}`} fill="#10b981" />
                 ))}
               </Bar>
-              <Bar isAnimationActive={false} dataKey="Data Pembanding" fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
-                <LabelList dataKey="Data Pembanding" position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
+              <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+                <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-bp-${index}`} fill="#64748b" />
                 ))}
@@ -529,7 +530,7 @@ export default function GrafikTab({ surveys }: GrafikTabProps) {
           <div className="prose prose-sm max-w-none text-slate-600">
             <div className="space-y-4 text-xs">
               <p className="font-semibold text-slate-700 flex items-center justify-between gap-2 m-0 p-0">
-                <span>Berdasarkan hasil kuesioner budaya keselamatan pasien RS Anda (AHRQ SOPS 2.0), berikut rekomendasi tindak lanjut strategis:</span>
+                <span>Berdasarkan hasil kuesioner budaya keselamatan pasien {rsName} (AHRQ SOPS 2.0), berikut rekomendasi tindak lanjut strategis:</span>
               </p>
               <div className="p-4 bg-emerald-50/50 rounded-2xl border border-emerald-100">
                 <ul className="space-y-3 text-slate-600 list-none m-0 p-0">

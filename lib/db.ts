@@ -171,15 +171,16 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
   if (supabase) {
     try {
       if (hospitalId && hospitalId !== 'admin') {
-        // Resolve both UUID and username
+        // Resolve both UUID, username, and hospital_name
         let uuid = hospitalId;
         let username = hospitalId;
+        let hospitalNameResolved = hospitalId;
 
         try {
           const { data: accounts, error: accErr } = await supabase
             .from('hospital_accounts')
-            .select('id, username')
-            .or(`id.eq.${hospitalId},username.eq.${hospitalId}`)
+            .select('id, username, nama_rs')
+            .or(`id.eq."${hospitalId}",username.eq."${hospitalId}",nama_rs.eq."${hospitalId}"`)
             .limit(1);
 
           if (accErr && (accErr.message?.includes('Failed to fetch') || accErr.details?.includes('Failed to fetch'))) {
@@ -190,6 +191,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
           if (accounts && accounts.length > 0) {
             uuid = accounts[0].id;
             username = accounts[0].username;
+            hospitalNameResolved = accounts[0].nama_rs || hospitalId;
           }
         } catch (err: any) {
           if (err?.message?.includes('Failed to fetch') || err?.details?.includes('Failed to fetch')) {
@@ -203,11 +205,11 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
           const { data, error } = await supabase
             .from('ahrq_surveys')
             .select('*')
-            .or(`hospital_id.eq.${uuid},hospital_id.eq.${username},user_id.eq.${uuid},user_id.eq.${username},created_by.eq.${uuid},created_by.eq.${username},dimensi_scores->>username.eq.${uuid},dimensi_scores->>username.eq.${username},dimensi_scores->>hospital_id.eq.${uuid},dimensi_scores->>hospital_id.eq.${username},dimensi_scores->>user_id.eq.${uuid},dimensi_scores->>user_id.eq.${username}`)
+            .or(`hospital_id.eq."${uuid}",hospital_id.eq."${username}",user_id.eq."${uuid}",user_id.eq."${username}",created_by.eq."${uuid}",created_by.eq."${username}",dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",nama_rs.eq."${hospitalNameResolved}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}"`)
             .order('created_at', { ascending: false });
 
           if (!error && data) {
-            return data.map(mapToSurveyData);
+            return data.map(mapToSurveyData).filter((s: any) => s && s.id && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
           }
           if (error) {
             if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
@@ -236,11 +238,11 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
             const { data, error } = await supabase
               .from('ahrq_surveys')
               .select('*')
-              .or(`dimensi_scores->>username.eq.${uuid},dimensi_scores->>username.eq.${username},dimensi_scores->>hospital_id.eq.${uuid},dimensi_scores->>hospital_id.eq.${username},dimensi_scores->>user_id.eq.${uuid},dimensi_scores->>user_id.eq.${username},unit_kerja.eq.${uuid},unit_kerja.eq.${username}`)
+              .or(`dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",unit_kerja.eq."${uuid}",unit_kerja.eq."${username}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}",nama_rs.eq."${hospitalNameResolved}"`)
               .order('created_at', { ascending: false });
 
             if (!error && data) {
-              return data.map(mapToSurveyData);
+              return data.map(mapToSurveyData).filter((s: any) => s && s.id && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
             }
             if (error && !error.message?.includes('Failed to fetch') && !error.details?.includes('Failed to fetch')) {
               console.error("Fallback query failed:", error.message || error);
@@ -258,7 +260,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          return data.map(mapToSurveyData);
+          return data.map(mapToSurveyData).filter((s: any) => s && s.id && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
         }
         if (error) {
           if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {

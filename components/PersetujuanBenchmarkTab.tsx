@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
@@ -29,7 +29,7 @@ interface PersetujuanBenchmarkTabProps {
   currentHospitalName: string;
   currentHospitalEmail?: string;
   requests: BenchmarkRequest[];
-  onRefresh: () => void;
+  onRefresh: (newData?: BenchmarkRequest[]) => void;
 }
 
 export default function PersetujuanBenchmarkTab({
@@ -46,21 +46,35 @@ export default function PersetujuanBenchmarkTab({
   const [isProcessing, setIsProcessing] = useState(false);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  // Custom states for Glassmorphism 2.0 confirmation popups
+  const [revokeTarget, setRevokeTarget] = useState<BenchmarkRequest | null>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+
   const showNotification = (text: string, type: 'success' | 'error') => {
     setNotification({ text, type });
     setTimeout(() => setNotification(null), 4000);
   };
 
+  // Check if current logged-in hospital is the target (not requester) of the benchmark request
+  const isTargetOfReq = useCallback((req: BenchmarkRequest) => {
+    if (currentHospitalId === 'admin') return true;
+    
+    const matchesTarget = req.target_id === currentHospitalId || 
+                          req.target_name.toLowerCase() === currentHospitalName.toLowerCase();
+    const isRequester = req.requester_id === currentHospitalId || 
+                        req.requester_name.toLowerCase() === currentHospitalName.toLowerCase();
+    
+    return matchesTarget && !isRequester;
+  }, [currentHospitalId, currentHospitalName]);
+
   // Filter incoming requests (where current hospital is target_id or target_name)
+  // We strictly exclude requests where the logged-in hospital is the requester to ensure privacy
   const incomingRequests = useMemo(() => {
     return requests.filter(r => {
-      const isTarget = r.target_id === currentHospitalId || 
-                       r.target_name.toLowerCase() === currentHospitalName.toLowerCase() ||
-                       currentHospitalId === 'admin';
       const isPending = r.status === 'pending';
-      return isTarget && isPending;
+      return isPending && isTargetOfReq(r);
     });
-  }, [requests, currentHospitalId, currentHospitalName]);
+  }, [requests, isTargetOfReq]);
 
   // Filter history requests (all decided / requests where current hospital is target or requester)
   const historyRequests = useMemo(() => {
@@ -75,14 +89,27 @@ export default function PersetujuanBenchmarkTab({
   const handleApprove = async (req: BenchmarkRequest) => {
     setIsProcessing(true);
     try {
+      const now = new Date().toISOString();
+      const updatedReq: BenchmarkRequest = {
+        ...req,
+        status: 'approved',
+        notes: actionNotes || 'Disetujui untuk perbandingan data benchmark',
+        decided_at: now,
+        decided_by: currentHospitalName,
+        updated_at: now
+      };
+      
+      const nextRequests = requests.map(r => r.id === req.id ? updatedReq : r);
+      onRefresh(nextRequests); // Optimistic UI update!
+
       await updateBenchmarkRequestStatus(req.id, 'approved', currentHospitalName, actionNotes || 'Disetujui untuk perbandingan data benchmark');
       showNotification(`Permintaan benchmark dari ${req.requester_name} berhasil DISETUJUI.`, 'success');
       setSelectedRequestForDetail(null);
       setActionNotes('');
-      onRefresh();
     } catch (err) {
       console.error(err);
       showNotification('Gagal memproses persetujuan. Coba lagi.', 'error');
+      onRefresh(); // Revert cache on error
     } finally {
       setIsProcessing(false);
     }
@@ -91,42 +118,77 @@ export default function PersetujuanBenchmarkTab({
   const handleReject = async (req: BenchmarkRequest) => {
     setIsProcessing(true);
     try {
+      const now = new Date().toISOString();
+      const updatedReq: BenchmarkRequest = {
+        ...req,
+        status: 'rejected',
+        notes: actionNotes || 'Ditolak oleh rumah sakit tujuan',
+        decided_at: now,
+        decided_by: currentHospitalName,
+        updated_at: now
+      };
+      
+      const nextRequests = requests.map(r => r.id === req.id ? updatedReq : r);
+      onRefresh(nextRequests); // Optimistic UI update!
+
       await updateBenchmarkRequestStatus(req.id, 'rejected', currentHospitalName, actionNotes || 'Ditolak oleh rumah sakit tujuan');
       showNotification(`Permintaan benchmark dari ${req.requester_name} DITOLAK.`, 'success');
       setSelectedRequestForDetail(null);
       setActionNotes('');
-      onRefresh();
     } catch (err) {
       console.error(err);
       showNotification('Gagal memproses penolakan.', 'error');
+      onRefresh(); // Revert cache on error
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleRevoke = async (req: BenchmarkRequest) => {
-    if (!confirm(`Apakah Anda yakin ingin mencabut persetujuan benchmark untuk ${req.requester_name}?`)) return;
+  const handleRevokeConfirm = async () => {
+    if (!revokeTarget) return;
     setIsProcessing(true);
     try {
-      await updateBenchmarkRequestStatus(req.id, 'revoked', currentHospitalName, 'Persetujuan dicabut oleh rumah sakit tujuan');
-      showNotification(`Persetujuan benchmark untuk ${req.requester_name} telah DICABUT.`, 'success');
-      onRefresh();
+      const now = new Date().toISOString();
+      const updatedReq: BenchmarkRequest = {
+        ...revokeTarget,
+        status: 'revoked',
+        notes: 'Persetujuan dicabut oleh rumah sakit tujuan',
+        decided_at: now,
+        decided_by: currentHospitalName,
+        updated_at: now
+      };
+      
+      const nextRequests = requests.map(r => r.id === revokeTarget.id ? updatedReq : r);
+      onRefresh(nextRequests); // Optimistic UI update!
+
+      await updateBenchmarkRequestStatus(revokeTarget.id, 'revoked', currentHospitalName, 'Persetujuan dicabut oleh rumah sakit tujuan');
+      showNotification(`Persetujuan benchmark untuk ${revokeTarget.requester_name} telah DICABUT.`, 'success');
+      setRevokeTarget(null);
     } catch (err) {
       console.error(err);
       showNotification('Gagal mencabut persetujuan.', 'error');
+      onRefresh(); // Revert cache on error
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const handleDeleteHistory = async (reqId: string) => {
-    if (!confirm("Hapus catatan riwayat ini?")) return;
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return;
+    setIsProcessing(true);
     try {
-      await deleteBenchmarkRequest(reqId);
+      const nextRequests = requests.filter(r => r.id !== deleteTargetId);
+      onRefresh(nextRequests); // Optimistic UI update!
+
+      await deleteBenchmarkRequest(deleteTargetId);
       showNotification('Riwayat berhasil dihapus.', 'success');
-      onRefresh();
+      setDeleteTargetId(null);
     } catch (err) {
+      console.error(err);
       showNotification('Gagal menghapus riwayat.', 'error');
+      onRefresh(); // Revert cache on error
+    } finally {
+      setIsProcessing(false);
     }
   };
 
@@ -173,7 +235,7 @@ export default function PersetujuanBenchmarkTab({
           <div className="space-y-2">
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Persetujuan Benchmark Data</h1>
             <p className="text-slate-300 text-sm max-w-[668px] w-full leading-relaxed" style={{ fontSize: '14px', width: '668px' }}>
-              Kelola izin berbagi data hasil survei budaya keselamatan pasien secara realtime. Data {currentHospitalName || 'RSUD Al-Mulk'} aman dan hanya dapat dibandingkan oleh rumah sakit lain setelah disetujui.
+              Kelola izin berbagi data hasil survei budaya keselamatan pasien secara realtime. Data {currentHospitalName || 'Rumah Sakit'} aman dan hanya dapat dibandingkan oleh rumah sakit lain setelah disetujui.
             </p>
           </div>
 
@@ -183,7 +245,7 @@ export default function PersetujuanBenchmarkTab({
             </div>
             <div>
               <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider block">Akun Rumah Sakit</span>
-              <span className="text-sm font-bold text-white block truncate max-w-[200px]">{currentHospitalName || 'RSUD Al-Mulk'}</span>
+              <span className="text-sm font-bold text-white block truncate max-w-[200px]">{currentHospitalName || 'Rumah Sakit'}</span>
             </div>
           </div>
         </div>
@@ -257,7 +319,7 @@ export default function PersetujuanBenchmarkTab({
               </div>
               <h3 className="font-bold text-base text-slate-800">Tidak Ada Permintaan Menunggu</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Saat ini tidak ada rumah sakit lain yang mengajukan permintaan izin benchmark data kepada {currentHospitalName || 'RSUD Al-Mulk'}.
+                Saat ini tidak ada rumah sakit lain yang mengajukan permintaan izin benchmark data kepada {currentHospitalName || 'Rumah Sakit'}.
               </p>
             </div>
           ) : (
@@ -394,7 +456,7 @@ export default function PersetujuanBenchmarkTab({
                       label = "Dicabut";
                     }
 
-                    const isTargetOfReq = req.target_id === currentHospitalId || req.target_name === currentHospitalName || currentHospitalId === 'admin';
+                    const isTarget = isTargetOfReq(req);
 
                     return (
                       <tr key={req.id} className="hover:bg-slate-50/80 transition-colors">
@@ -420,9 +482,9 @@ export default function PersetujuanBenchmarkTab({
                         </td>
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">
                           <div className="flex items-center justify-center gap-2">
-                            {req.status === 'approved' && isTargetOfReq && (
+                            {req.status === 'approved' && isTarget && (
                               <button
-                                onClick={() => handleRevoke(req)}
+                                onClick={() => setRevokeTarget(req)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-[11px] transition-colors cursor-pointer"
                                 title="Cabut persetujuan agar RS pemohon tidak dapat melihat data benchmark lagi"
                               >
@@ -432,7 +494,7 @@ export default function PersetujuanBenchmarkTab({
                             )}
 
                             <button
-                              onClick={() => handleDeleteHistory(req.id)}
+                              onClick={() => setDeleteTargetId(req.id)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
                               title="Hapus riwayat"
                             >
@@ -519,7 +581,7 @@ export default function PersetujuanBenchmarkTab({
                   <div className="flex items-start gap-2 text-indigo-900 font-semibold">
                     <HelpCircle className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
                     <p className="leading-relaxed">
-                      &quot;Apakah Anda mengizinkan rumah sakit ini menggunakan data {currentHospitalName || 'RSUD Al-Mulk'} sebagai benchmark pada fitur Analisa Data?&quot;
+                      &quot;Apakah Anda mengizinkan rumah sakit ini menggunakan data {currentHospitalName || 'Rumah Sakit'} sebagai benchmark pada fitur Analisa Data?&quot;
                     </p>
                   </div>
                 </div>
@@ -542,26 +604,132 @@ export default function PersetujuanBenchmarkTab({
                   onClick={() => setSelectedRequestForDetail(null)}
                   className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
                 >
-                  Batal
+                  {isTargetOfReq(selectedRequestForDetail) ? 'Batal' : 'Tutup'}
                 </button>
 
-                <button
-                  disabled={isProcessing}
-                  onClick={() => handleReject(selectedRequestForDetail)}
-                  className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <XCircle className="w-4 h-4" />
-                  Tolak Permintaan
-                </button>
+                {isTargetOfReq(selectedRequestForDetail) && (
+                  <>
+                    <button
+                      disabled={isProcessing}
+                      onClick={() => handleReject(selectedRequestForDetail)}
+                      className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Tolak Permintaan
+                    </button>
 
-                <button
-                  disabled={isProcessing}
-                  onClick={() => handleApprove(selectedRequestForDetail)}
-                  className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  Setujui Permintaan
-                </button>
+                    <button
+                      disabled={isProcessing}
+                      onClick={() => handleApprove(selectedRequestForDetail)}
+                      className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Setujui Permintaan
+                    </button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Glassmorphism 2.0 Revoke Access Modal */}
+        {revokeTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative max-w-md w-full p-8 text-center rounded-2xl border border-white/40 backdrop-blur-2xl bg-white/45 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-saturate-150 overflow-hidden"
+            >
+              {/* Decorative radial gradients for Glassmorphism 2.0 feel */}
+              <div className="absolute -top-24 -left-24 w-48 h-48 bg-rose-400/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-indigo-400/20 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col items-center">
+                {/* Visual indicator */}
+                <div className="w-16 h-16 bg-rose-500/15 text-rose-600 rounded-full flex items-center justify-center mb-5 border border-rose-500/20 shadow-inner">
+                  <AlertCircle className="w-8 h-8" />
+                </div>
+
+                <h3 className="font-extrabold text-[10px] text-rose-600 uppercase tracking-widest mb-2">Konfirmasi Pemutusan Izin</h3>
+                
+                {/* Main required text */}
+                <h4 className="font-black text-slate-800 text-base leading-snug tracking-tight mb-4 px-2">
+                  APAKAH ANDA AKAN MEMUTUS AKSES UNTUK BECHMARKING DATA
+                </h4>
+
+                {/* Additional context */}
+                <div className="bg-slate-900/5 backdrop-blur-sm px-4 py-2.5 rounded-xl border border-slate-950/5 text-xs text-slate-700 font-medium mb-6 w-full">
+                  <span className="text-slate-500 block text-[9px] uppercase font-bold tracking-wider mb-0.5">Rumah Sakit Pemohon</span>
+                  {revokeTarget.requester_name}
+                </div>
+
+                {/* Buttons (YA and TIDAK) */}
+                <div className="flex items-center gap-3 w-full">
+                  <button
+                    onClick={() => setRevokeTarget(null)}
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 bg-white/80 hover:bg-slate-100 text-slate-700 font-bold text-[11px] tracking-wider uppercase transition-all shadow-sm cursor-pointer"
+                  >
+                    TIDAK
+                  </button>
+                  <button
+                    disabled={isProcessing}
+                    onClick={handleRevokeConfirm}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-700 hover:to-red-700 text-white font-extrabold text-[11px] tracking-wider uppercase transition-all shadow-md hover:shadow-rose-600/20 cursor-pointer disabled:opacity-50"
+                  >
+                    YA
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Glassmorphism 2.0 Delete History Modal */}
+        {deleteTargetId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative max-w-md w-full p-8 text-center rounded-2xl border border-white/40 backdrop-blur-2xl bg-white/45 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-saturate-150 overflow-hidden"
+            >
+              {/* Decorative radial gradients for Glassmorphism 2.0 feel */}
+              <div className="absolute -top-24 -left-24 w-48 h-48 bg-slate-400/20 rounded-full blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-red-400/20 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="relative z-10 flex flex-col items-center">
+                {/* Visual indicator */}
+                <div className="w-16 h-16 bg-red-500/15 text-red-600 rounded-full flex items-center justify-center mb-5 border border-red-500/20 shadow-inner">
+                  <Trash2 className="w-8 h-8" />
+                </div>
+
+                <h3 className="font-extrabold text-[10px] text-slate-500 uppercase tracking-widest mb-2">Hapus Catatan</h3>
+                
+                {/* Main required text */}
+                <h4 className="font-black text-slate-800 text-base leading-snug tracking-tight mb-6 px-2">
+                  APAKAH ANDA AKAN MENGHAPUS RIWAYAT BENCHMARK DATA INI?
+                </h4>
+
+                {/* Buttons (YA and TIDAK) */}
+                <div className="flex items-center gap-3 w-full">
+                  <button
+                    onClick={() => setDeleteTargetId(null)}
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 bg-white/80 hover:bg-slate-100 text-slate-700 font-bold text-[11px] tracking-wider uppercase transition-all shadow-sm cursor-pointer"
+                  >
+                    TIDAK
+                  </button>
+                  <button
+                    disabled={isProcessing}
+                    onClick={handleDeleteConfirm}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-extrabold text-[11px] tracking-wider uppercase transition-all shadow-md hover:shadow-red-600/20 cursor-pointer disabled:opacity-50"
+                  >
+                    YA
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>

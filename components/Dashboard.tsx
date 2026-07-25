@@ -178,9 +178,24 @@ export default function Dashboard({
         }
       };
       const saved = await saveSurvey(surveyWithUser, hospitalId || identifier, identifier, identifier, namaRs);
-      mutate();
+      
+      // Mutate all survey-related SWR keys across the application
+      await globalMutate(
+        (key) => {
+          if (typeof key === 'string') {
+            return key === 'ahrq_surveys_all' || key === 'ahrq_surveys';
+          }
+          if (Array.isArray(key)) {
+            return key[0] === 'ahrq_surveys';
+          }
+          return false;
+        },
+        undefined,
+        { revalidate: true }
+      );
     } catch (e) {
       console.error("Gagal menyimpan data survei:", e);
+      throw e; // Rethrow to let the UI handle the error state
     }
   };
 
@@ -203,7 +218,6 @@ export default function Dashboard({
       
       // Mutate locally both the bound and global cache for 'ahrq_surveys' immediately
       mutate(updatedSurveys, false);
-      globalMutate('ahrq_surveys', updatedSurveys, false);
 
       // Perform actual deletion on Supabase database
       await deleteSurvey(surveyToDelete);
@@ -212,14 +226,24 @@ export default function Dashboard({
       setNotification({ text: "Data responden berhasil dihapus.", type: 'success' });
       
       // Finally, trigger real background revalidation to make sure everyone is fully synchronized
-      await mutate();
-      await globalMutate('ahrq_surveys');
+      await globalMutate(
+        (key) => {
+          if (typeof key === 'string') {
+            return key === 'ahrq_surveys_all' || key === 'ahrq_surveys';
+          }
+          if (Array.isArray(key)) {
+            return key[0] === 'ahrq_surveys';
+          }
+          return false;
+        },
+        undefined,
+        { revalidate: true }
+      );
     } catch (e) {
       console.error("Gagal menghapus survei:", e);
       setNotification({ text: "Gagal menghapus data. Silakan coba kembali.", type: 'error' });
       // Rollback state in case of any database exception
       mutate();
-      globalMutate('ahrq_surveys');
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);

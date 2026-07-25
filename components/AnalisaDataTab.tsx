@@ -83,9 +83,10 @@ const E1Tooltip = ({ active, payload, label }: any) => {
 
 const ReportedEventsTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
-    const rsData = payload.find((p: any) => p.dataKey === 'Rumah Sakit Anda');
-    const benchmarkData = payload.find((p: any) => p.dataKey !== 'Rumah Sakit Anda');
-    const benchmarkLabel = benchmarkData ? benchmarkData.dataKey : 'RS Pembanding';
+    const rsData = payload.find((p: any) => p.dataKey === 'Rumah Sakit Anda' || (typeof p.dataKey === 'string' && p.dataKey.startsWith('Tahun '))) || payload[0];
+    const benchmarkData = payload.find((p: any) => p !== rsData);
+    const benchmarkLabel = benchmarkData ? (benchmarkData.name || benchmarkData.dataKey) : 'RS Pembanding';
+    const rsLabel = rsData ? (rsData.name || rsData.dataKey) : 'Rumah Sakit';
 
     return (
       <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-xl text-xs space-y-4 min-w-[260px] text-slate-200">
@@ -93,14 +94,14 @@ const ReportedEventsTooltip = ({ active, payload, label }: any) => {
         
         {rsData && (
           <div className="space-y-1">
-            <p className="font-bold text-blue-400 flex items-center gap-1.5">
+            <p className="font-bold text-blue-400 flex items-center gap-1.5 font-poppins">
               <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-              Rumah Sakit Anda
+              {rsLabel}
             </p>
             <div className="pl-4 space-y-0.5 text-slate-300">
               <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
               <p>Persentase : <span className="font-semibold text-white">{(rsData.value ?? 0).toFixed(1)}%</span></p>
-              <p>Jumlah Responden : <span className="font-semibold text-white">{rsData.payload['Rumah Sakit Anda Count'] || 0}</span></p>
+              <p>Jumlah Responden : <span className="font-semibold text-white">{rsData.payload[`${rsData.dataKey} Count`] || rsData.payload['Rumah Sakit Anda Count'] || 0}</span></p>
             </div>
           </div>
         )}
@@ -116,7 +117,7 @@ const ReportedEventsTooltip = ({ active, payload, label }: any) => {
               <div className="pl-4 space-y-0.5 text-slate-300">
                 <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
                 <p>Persentase : <span className="font-semibold text-white">{(benchmarkData.value ?? 0).toFixed(1)}%</span></p>
-                <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload[`${benchmarkLabel} Count`] || benchmarkData.payload['Rumah Sakit Uji Coba Count'] || 0).toLocaleString('id-ID')}</span></p>
+                <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload[`${benchmarkData.dataKey} Count`] || benchmarkData.payload['Data Pembanding Count'] || benchmarkData.payload['Rumah Sakit Uji Coba Count'] || benchmarkData.payload['RS Uji Coba atau Rumah Sakit Uji Coba Count'] || 0).toLocaleString('id-ID')}</span></p>
               </div>
             </div>
           </>
@@ -237,27 +238,27 @@ function BenchmarkHeaderCard({
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         {/* Left Side: Hospital Infos */}
         <div className="flex flex-wrap items-center gap-6">
-          {/* RS Anda */}
+          {/* Logged in RS */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center shrink-0">
               <Building2 className="w-5 h-5 text-blue-600" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RS Anda</span>
-              <p className="text-sm font-extrabold text-slate-800 leading-tight">{namaRs || 'Rumah Sakit Anda'}</p>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block font-poppins">{namaRs || 'Rumah Sakit'}</span>
+              <p className="text-sm font-semibold text-slate-800 leading-tight font-poppins truncate max-w-[280px]" title={namaRs || 'Rumah Sakit'}>{namaRs || 'Rumah Sakit'}</p>
             </div>
           </div>
 
           <div className="hidden sm:block h-8 w-[1px] bg-slate-200"></div>
 
-          {/* RS Pembanding */}
+          {/* RS Pembanding / Benchmark */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
               <Building2 className="w-5 h-5 text-emerald-600" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">RS Pembanding</span>
-              <p className="text-sm font-extrabold text-slate-800 leading-tight">{activeBenchmarkLabel}</p>
+              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider block font-poppins">RS Pembanding</span>
+              <p className="text-sm font-semibold text-slate-800 leading-tight font-poppins truncate max-w-[280px]" title={activeBenchmarkLabel}>{activeBenchmarkLabel}</p>
             </div>
           </div>
         </div>
@@ -319,7 +320,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
       return selectedTargetHospital.namaRs;
     }
-    return "Rumah Sakit Uji Coba";
+    return "RS Uji Coba atau Rumah Sakit Uji Coba";
   }, [selectedBenchmarkHospitalId, selectedTargetHospital, currentRequestForSelectedHospital]);
 
   // Fetch surveys of approved target benchmark hospital
@@ -327,7 +328,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
       setIsLoadingTargetSurveys(true);
       getSurveys(selectedTargetHospital.id || selectedTargetHospital.username)
-        .then(res => setTargetHospitalSurveys(res || []))
+        .then(res => setTargetHospitalSurveys((res || []).filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})))))
         .catch(err => {
           console.warn("Failed to fetch target hospital surveys:", err);
           setTargetHospitalSurveys([]);
@@ -437,7 +438,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     setCurrentPageTenureEvent(1);
   }, [searchTenureEventQuery]);
   
-  const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
+  const actualSurveys = useMemo(() => surveys.filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {}))), [surveys]);
 
   const uniqueUnits = useMemo(() => {
     const units = new Set<string>();
@@ -470,9 +471,25 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [tahun1, setTahun1] = useState<string>(actualDataYears[0] || currentYear);
   const [tahun2, setTahun2] = useState<string>(actualDataYears[1] || actualDataYears[0] || currentYear);
 
+  const filterTargetSurveysByYear = (targetSurveys: SurveyData[]) => {
+    const cleanSurveys = targetSurveys.filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
+    if (cleanSurveys.length === 0) return [];
+    let filtered: SurveyData[] = [];
+    if (mode === 'Tunggal') {
+      filtered = cleanSurveys.filter(s => extractYear(s.tanggalInput) === tahun1);
+    } else {
+      filtered = cleanSurveys.filter(s => {
+        const y = extractYear(s.tanggalInput);
+        return y === tahun1 || y === tahun2;
+      });
+    }
+    return filtered.length > 0 ? filtered : cleanSurveys;
+  };
+
   const masterBenchmarkData = useMemo(() => {
     if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
-      const targetScores = computeDimensionScores(targetHospitalSurveys);
+      const filteredTarget = filterTargetSurveysByYear(targetHospitalSurveys);
+      const targetScores = computeDimensionScores(filteredTarget);
       const customMb: Record<string, { min: number; max: number; avg: number; positivePercent: number }> = {};
       targetScores.forEach(ds => {
         const val = parseFloat(ds.percentage.toFixed(1));
@@ -483,7 +500,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     }
     const mb = surveys.find(s => s.id === 'MASTER_BENCHMARK');
     return mb ? (mb.dimensiScores as any) : undefined;
-  }, [surveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys]);
+  }, [surveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, tahun1, tahun2, mode]);
 
   const [benchmarkInteraksiData, setBenchmarkInteraksiData] = useState<BenchmarkInteraksi[]>([]);
 
@@ -540,7 +557,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     let targetValid = 0;
     const targetCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
     if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
-      targetHospitalSurveys.forEach(survey => {
+      filterTargetSurveysByYear(targetHospitalSurveys).forEach(survey => {
         const raw = (survey.dimensiScores as any)?._rawAnswers;
         if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
           targetCounts[raw.ansE as keyof typeof targetCounts] += 1;
@@ -623,10 +640,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   const activeBenchmarkSurveys = useMemo(() => {
     if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
-      return targetHospitalSurveys;
+      return filterTargetSurveysByYear(targetHospitalSurveys);
     }
-    return surveys.filter(s => s.id === 'MASTER_BENCHMARK' || (s as any).isBenchmark);
-  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, surveys]);
+    return surveys.filter(s => (s.id === 'MASTER_BENCHMARK' || (s as any).isBenchmark) && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
+  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, surveys, tahun1, tahun2, mode]);
 
   const targetDemografiStats = useMemo(() => {
     let surveysToUse: SurveyData[] = activeBenchmarkSurveys;
@@ -1167,10 +1184,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   
   const targetReportedEventsStats = useMemo(() => {
     if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
-      return calculateReportedEventsStats(targetHospitalSurveys);
+      return calculateReportedEventsStats(filterTargetSurveysByYear(targetHospitalSurveys));
     }
     return null;
-  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, calculateReportedEventsStats]);
+  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, calculateReportedEventsStats, tahun1, tahun2, mode]);
 
   const e2ChartData = useMemo(() => {
     const categories = [
@@ -2752,9 +2769,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     return count > 0 ? sum / count : null;
   };
 
-  const getInteraksiStats = (dimId: string, type: 'langsung' | 'tidak') => {
-    const hasAnyRaw = hospitalSurveys.some(s => (s.dimensiScores as any)?._rawAnswers);
-    const interaksiSurveys = hospitalSurveys.filter((s, idx) => {
+  const getInteraksiStats = (dimId: string, type: 'langsung' | 'tidak', surveysOverride?: SurveyData[]) => {
+    const targetSurveys = surveysOverride || hospitalSurveys;
+    const hasAnyRaw = targetSurveys.some(s => (s.dimensiScores as any)?._rawAnswers);
+    const interaksiSurveys = targetSurveys.filter((s, idx) => {
       const raw = (s.dimensiScores as any)?._rawAnswers;
       if (raw && raw.ansG && raw.ansG[4]) {
         const isLangsung = isDirectInteraction(raw.ansG[4]);
@@ -2822,7 +2840,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const mainCards = [
     {
       id: 'hospital',
-      title: 'Hasil Survei Budaya Keselamatan Rumah Sakit Anda',
+      title: `Hasil Survei Budaya Keselamatan ${namaRs || 'Rumah Sakit'}`,
       description: 'Menampilkan seluruh hasil analisis berdasarkan data survei rumah sakit',
       icon: <ClipboardCheck />,
       color: 'from-[#2563EB] to-[#1D4ED8]'
@@ -3323,12 +3341,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <th className="p-3 w-10 text-center align-bottom">No.</th>
                               <th className="p-3 w-64 align-bottom">Komponen Budaya<br/>Keselamatan Pasien</th>
                               <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
-                              <th className="p-3 w-40 text-center border-l border-slate-200">
-                                <div>Rata-rata {activeBenchmarkLabel}<br/>(% Respons Positif)</div>
-                                <div className="flex justify-between mt-2 pt-2 border-t border-slate-200 text-teal-600">
-                                  <span className="w-1/2 text-center">MIN</span>
-                                  <span className="w-1/2 text-center border-l border-slate-200">MAX</span>
-                                </div>
+                              <th className={`p-3 text-center border-l border-slate-200 ${selectedBenchmarkHospitalId === 'default' ? 'w-40' : 'w-40'}`}>
+                                <div>{selectedBenchmarkHospitalId === 'default' ? `Rata-rata ${activeBenchmarkLabel}` : activeBenchmarkLabel}<br/>(% Respons Positif)</div>
+                                {selectedBenchmarkHospitalId === 'default' && (
+                                  <div className="flex justify-between mt-2 pt-2 border-t border-slate-200 text-teal-600">
+                                    <span className="w-1/2 text-center">MIN</span>
+                                    <span className="w-1/2 text-center border-l border-slate-200">MAX</span>
+                                  </div>
+                                )}
                               </th>
                             </tr>
                           </thead>
@@ -3351,7 +3371,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         {/* Bar Rumah Sakit Anda */}
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center justify-between text-[11px] font-black">
-                                            <span className="text-blue-800 tracking-tight">Rumah Sakit Anda</span>
+                                            <span className="text-blue-800 tracking-tight">{namaRs || 'Rumah Sakit'}</span>
                                             <span className="text-xs font-black text-slate-800">{row.Capaian.toFixed(1)}%</span>
                                           </div>
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
@@ -3373,15 +3393,15 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                             <span className="text-emerald-800 tracking-tight truncate" title={activeBenchmarkLabel}>
                                               {activeBenchmarkLabel}
                                             </span>
-                                            <span className="text-xs font-black text-emerald-700">{(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? 75.0) : 75.0).toFixed(1)}%</span>
+                                            <span className="text-xs font-black text-emerald-700">{(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)).toFixed(1)}%</span>
                                           </div>
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
                                             <motion.div 
                                               initial={{ scaleX: 0 }}
                                               animate={{ scaleX: 1 }}
                                               transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
-                                              style={{ transformOrigin: 'left', width: `${masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? 75.0) : 75.0}%` }}
-                                              className={`h-full ${getBarColor(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? 75.0) : 75.0)} opacity-85 relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                              style={{ transformOrigin: 'left', width: `${masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)}%` }}
+                                              className={`h-full ${getBarColor(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0))} opacity-85 relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                             </motion.div>
@@ -3425,12 +3445,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       </div>
                                     )}
                                   </td>
-                                  <td className="p-0 border-l border-slate-200 text-center font-bold text-slate-700 text-sm align-middle bg-slate-50">
-                                    <div className="flex h-full items-center justify-center min-h-[60px]">
-                                      <span className="w-1/2 py-2">{row.d1.benchmarkMin}%</span>
-                                      <span className="w-1/2 py-2 border-l border-slate-200">{row.d1.benchmarkMax}%</span>
-                                    </div>
-                                  </td>
+                                  {selectedBenchmarkHospitalId === 'default' && (
+                                    <td className="p-0 border-l border-slate-200 text-center font-bold text-slate-700 text-sm align-middle bg-slate-50">
+                                      <div className="flex h-full items-center justify-center min-h-[60px]">
+                                        <span className="w-1/2 py-2">{row.d1.benchmarkMin}%</span>
+                                        <span className="w-1/2 py-2 border-l border-slate-200">{row.d1.benchmarkMax}%</span>
+                                      </div>
+                                    </td>
+                                  )}
                                 </tr>
                               );
                             })}
@@ -3447,7 +3469,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <DynamicAIAnalysisCards
+                  <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                     type="benchmark-dimension"
                     activeBenchmarkLabel={activeBenchmarkLabel}
                     tahun1={tahun1}
@@ -3523,7 +3545,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-                          <Bar isAnimationActive={false} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                             <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-rs-${index}`} fill="#10b981" />
@@ -3540,7 +3562,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </motion.div>
 
-                  <DynamicAIAnalysisCards
+                  <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                     type="benchmark-safety"
                     activeBenchmarkLabel={activeBenchmarkLabel}
                     tahun1={tahun1}
@@ -3770,6 +3792,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             />
                             <Bar 
                               isAnimationActive={false} 
+                              name={namaRs || 'Rumah Sakit'}
                               dataKey="Rumah Sakit Anda" 
                               fill="url(#royalBlueGrad3D)" 
                               radius={[8, 8, 0, 0]} 
@@ -3808,7 +3831,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </ResponsiveContainer>
                       </div>
 
-                      <DynamicAIAnalysisCards
+                      <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                         type="benchmark-reported"
                     activeBenchmarkLabel={activeBenchmarkLabel}
                         tahun1={tahun1}
@@ -3960,11 +3983,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   <th className="p-4 align-bottom">Pernyataan / Kuesioner</th>
                                   <th className="p-4 align-bottom text-center">Persentase Respons Pasien (Positif/Netral/Negatif)</th>
                                   <th className="p-4 w-44 text-center border-l border-slate-200/50 bg-slate-50/60">
-                                    <div>Rata-rata {activeBenchmarkLabel}<br/>(% Respons Positif)</div>
-                                    <div className="flex justify-between mt-2 pt-2 border-t border-slate-200/50 text-teal-600">
-                                      <span className="w-1/2 text-center text-[9px]">MIN</span>
-                                      <span className="w-1/2 text-center border-l border-slate-200/50 text-[9px]">MAX</span>
-                                    </div>
+                                    <div>{selectedBenchmarkHospitalId === 'default' ? `Rata-rata ${activeBenchmarkLabel}` : activeBenchmarkLabel}<br/>(% Respons Positif)</div>
+                                    {selectedBenchmarkHospitalId === 'default' && (
+                                      <div className="flex justify-between mt-2 pt-2 border-t border-slate-200/50 text-teal-600">
+                                        <span className="w-1/2 text-center text-[9px]">MIN</span>
+                                        <span className="w-1/2 text-center border-l border-slate-200/50 text-[9px]">MAX</span>
+                                      </div>
+                                    )}
                                   </th>
                                 </tr>
                               </thead>
@@ -3986,8 +4011,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         {/* Bar 1: RS Anda */}
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center justify-between text-[11px] font-extrabold">
-                                            <span className="text-[11px] text-blue-700 font-black tracking-tight" title="RS Anda">
-                                              RS Anda {mode === 'Perbandingan' ? `(${tahun1})` : ''}
+                                            <span className="text-[11px] text-blue-700 font-black tracking-tight" title={namaRs || 'Rumah Sakit'}>
+                                              {namaRs || 'RS'} {mode === 'Perbandingan' ? `(${tahun1})` : ''}
                                             </span>
                                             <div className="flex items-center gap-1.5 shrink-0">
                                               <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
@@ -4054,7 +4079,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                           <div className="flex flex-col gap-1 w-full pt-1 border-t border-slate-100">
                                             <div className="flex items-center justify-between text-[11px] font-extrabold">
                                               <span className="text-[11px] text-indigo-700 font-black tracking-tight">
-                                                RS Anda ({tahun2})
+                                                {namaRs || 'RS'} (${tahun2})
                                               </span>
                                               <div className="flex items-center gap-1.5 shrink-0">
                                                 <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
@@ -4086,12 +4111,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       </div>
                                     </td>
                                     {/* Benchmark MIN & MAX on the right */}
-                                    <td className="p-0 border-l border-slate-200/50 text-center font-bold text-slate-700 text-xs align-middle bg-slate-50/60 w-44">
-                                      <div className="flex h-full items-center justify-center min-h-[50px]">
-                                        <span className="w-1/2 py-2">{bMin}%</span>
-                                        <span className="w-1/2 py-2 border-l border-slate-200/50">{bMax}%</span>
-                                      </div>
-                                    </td>
+                                    {selectedBenchmarkHospitalId === 'default' && (
+                                      <td className="p-0 border-l border-slate-200/50 text-center font-bold text-slate-700 text-xs align-middle bg-slate-50/60 w-44">
+                                        <div className="flex h-full items-center justify-center min-h-[50px]">
+                                          <span className="w-1/2 py-2">{bMin}%</span>
+                                          <span className="w-1/2 py-2 border-l border-slate-200/50">{bMax}%</span>
+                                        </div>
+                                      </td>
+                                    )}
                                   </tr>
                                 ))}
                               </tbody>
@@ -4138,7 +4165,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     })}
                   </div>
 
-                  <DynamicAIAnalysisCards
+                  <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                     type="benchmark-item"
                     tahun1={tahun1}
                     hospitalSurveys={hospitalSurveys}
@@ -4254,7 +4281,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <div className="mb-2">
                         <div>
                           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Demografi Responden Rumah Sakit</h1>
-                          <p className="text-sm font-medium text-slate-500 mt-1">Data Hasil Survei Demografi Responden Rumah Sakit Anda</p>
+                          <p className="text-sm font-medium text-slate-500 mt-1">Data Hasil Survei Demografi Responden {namaRs || 'Rumah Sakit'}</p>
                         </div>
                       </div>
                     </div>
@@ -4288,7 +4315,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <thead className="bg-slate-50 text-slate-600 font-bold">
                               <tr>
                                 <th className="p-3.5 border-b border-slate-200 text-center">Statistik</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">Rumah Sakit Anda</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'Rumah Sakit'}</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -4324,8 +4351,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <thead className="bg-slate-50 text-slate-600 font-bold">
                               <tr>
                                 <th className="p-3.5 border-b border-slate-200 text-left">Jabatan / Kategori Staf</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">RS Anda (N)</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">RS Anda (%)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (N)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (%)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -4362,8 +4389,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <thead className="bg-slate-50 text-slate-600 font-bold">
                               <tr>
                                 <th className="p-3.5 border-b border-slate-200 text-left">Unit Utama (Primary Work Area)</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">RS Anda (N)</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">RS Anda (%)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (N)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (%)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -4401,7 +4428,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Durasi (Tahun)</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">RS Anda (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -4436,7 +4463,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Durasi (Tahun)</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">RS Anda (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -4474,7 +4501,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Durasi (Jam)</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">RS Anda (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -4509,7 +4536,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Kategori</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">RS Anda (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -4535,7 +4562,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </section>
                       </div>
 
-                      <DynamicAIAnalysisCards
+                      <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                         type="hospital-demographics"
                         tahun1={tahun1}
                         hospitalSurveys={hospitalSurveys}
@@ -4688,7 +4715,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-blue-500 shadow-md"></div> &ge;85% (Sangat Baik)</div>
                         </div>
 
-                        <DynamicAIAnalysisCards
+                        <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                           type="hospital-dimension"
                           tahun1={tahun1}
                           hospitalSurveys={hospitalSurveys}
@@ -4931,7 +4958,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       })}
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="hospital-item"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -5013,14 +5040,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-                          <Bar isAnimationActive={false} name="Rumah Sakit Anda" dataKey="Rumah Sakit Anda" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} filter="url(#shadow-raised-rose)">
+                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} filter="url(#shadow-raised-rose)">
                             <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#be123c" fontSize={11} fontWeight="bold" />
                           </Bar>
                         </RechartsBarChart>
                       </ResponsiveContainer>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="hospital-safety"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -5153,7 +5180,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             />
                             <Bar 
                               isAnimationActive={false} 
-                              name={mode === 'Perbandingan' ? `Tahun ${tahun1}` : 'Rumah Sakit Anda'}
+                              name={mode === 'Perbandingan' ? `Tahun ${tahun1}` : (namaRs || 'Rumah Sakit')}
                               dataKey="Rumah Sakit Anda" 
                               fill="url(#purpleGrad)" 
                               radius={[6, 6, 0, 0]} 
@@ -5195,7 +5222,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <DynamicAIAnalysisCards
+                  <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                     type="hospital-reported"
                     tahun1={tahun1}
                     hospitalSurveys={hospitalSurveys}
@@ -5250,7 +5277,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       )}
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="hospital-reported"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -5387,7 +5414,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara Rumah Sakit Anda dan {activeBenchmarkLabel} berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -5427,14 +5454,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       <p className="text-[10px] text-slate-500 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</p>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">RS Anda</td>
+                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">{namaRs || 'RS'}</td>
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
                                   {demografiStats.unitData.map((u, unitIdx) => {
                                     const scoreObj = unitDimensionScores.find(s => s.id === dimId);
                                     const percentage = scoreObj ? scoreObj[u.name] : null;
                                     return (
                                       <td key={`unit-rs-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                        {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                        {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                       </td>
                                     );
                                    })}
@@ -5446,7 +5473,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     <td key={`unit-pilot-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
                                       <div className="flex flex-col items-center justify-center text-center">
                                         <span className={`text-[14px] text-center ${getCellColorClass(bAvg)}`}>{bAvg.toFixed(1)}%</span>
-                                        <span className="text-[14px] text-center text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                        {selectedBenchmarkHospitalId === 'default' && (
+                                          <span className="text-[14px] text-center text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                        )}
                                       </div>
                                     </td>
                                   ))}
@@ -5461,13 +5490,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <div className="text-indigo-700 text-xs font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
                               </div>
                             </td>
-                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">RS Anda</td>
+                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">{namaRs || 'RS'}</td>
                             <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">{hospitalSurveys.length}</td>
                             {demografiStats.unitData.map((u, unitIdx) => {
                               const avgVal = getAverageCompositeForUnit(u.name);
                               return (
                                 <td key={`unit-avg-rs-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                  {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                  {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
                               );
                             })}
@@ -5485,7 +5514,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="unit-dimension"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -5526,7 +5555,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <Hospital className="w-6 h-6" />
                       </div>
                       <div className="space-y-0.5 font-sans">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata RS Anda</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
                         <h4 className="text-2xl font-extrabold text-sky-700 tracking-tight">
                           {avgHospitalScore > 0 ? `${avgHospitalScore.toFixed(1)}%` : '0%'}
                         </h4>
@@ -5625,7 +5654,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           {/* Respondent Count Sub-Header Rows */}
                           <tr className="bg-blue-50 text-slate-800 text-xs font-semibold border-b border-blue-200 divide-x divide-blue-200 font-sans">
                             <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-blue-900 bg-blue-100/70">
-                              Rumah Sakit Anda: # Responden
+                              {namaRs || 'Rumah Sakit'}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
                               {demografiStats.total}
@@ -5709,7 +5738,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Dataset Label Row 1 */}
                                         <td className="py-2.5 px-3 font-semibold text-blue-800 text-center bg-blue-50/40 whitespace-nowrap text-[11px]">
-                                          Rumah Sakit Anda
+                                          {namaRs || 'Rumah Sakit'}
                                         </td>
 
                                         {/* Unit Scores Row 1 (RS Anda) */}
@@ -5759,7 +5788,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="unit-item"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -5859,7 +5888,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               </div>
                             </td>
                             <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[12px] italic bg-slate-200/60">
-                              Rumah Sakit Anda
+                              {namaRs || 'Rumah Sakit'}
                             </td>
                             <td className="p-3 text-center font-bold text-slate-900 border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                               {activeUnitSafetyScores.reduce((acc, r) => acc + r.count, 0).toLocaleString('id-ID')}
@@ -5911,7 +5940,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     </div>
                                   </td>
                                   <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-200/60">
-                                    Rumah Sakit Anda
+                                    {namaRs || 'Rumah Sakit'}
                                   </td>
                                   <td className="p-3 text-center text-slate-900 font-bold border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                                     {totalHospCount === 0 ? '--' : `${overallHospPct.toFixed(0)}%`}
@@ -5963,7 +5992,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     )}
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="unit-safety"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -6055,7 +6084,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr className="hover:bg-blue-50/5 transition-colors bg-white">
                             <td rowSpan={2} className="sticky left-0 z-10 bg-white p-3.5 border-r border-b border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-top">
                               <div className="flex flex-col gap-0.5 mt-1">
-                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">Rumah Sakit Anda:</span>
+                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">{namaRs || 'Rumah Sakit'}:</span>
                                 <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
                               </div>
                             </td>
@@ -6088,7 +6117,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   {cat}
                                 </td>
                                 <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
-                                  Rumah Sakit Anda
+                                  {namaRs || 'Rumah Sakit'}
                                 </td>
                                 {paginatedComputedUnitTableData.map((col, idx) => {
                                   const pct = (col.percentages as Record<string, number>)[cat] || 0;
@@ -6127,7 +6156,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     )}
                   </div>
 
-                  <DynamicAIAnalysisCards
+                  <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                     type="unit-reported"
                     tahun1={tahun1}
                     hospitalSurveys={hospitalSurveys}
@@ -6217,7 +6246,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Persentase Respon Positif Dimensi Berdasarkan Posisi Staf
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara Rumah Sakit Anda dan {activeBenchmarkLabel} berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -6257,14 +6286,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       <div className="text-[10px] text-slate-500 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</div>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">RS Anda</td>
+                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">{namaRs || 'RS'}</td>
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
                                   {demografiStats.posisiData.map((pos, posIdx) => {
                                     const scoreObj = positionDimensionScores.find(s => s.id === dimId);
                                     const percentage = scoreObj ? scoreObj[pos.name] : null;
                                     return (
                                       <td key={`pos-rs-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                        {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                        {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                       </td>
                                     );
                                   })}
@@ -6276,7 +6305,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     <td key={`pos-pilot-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
                                       <div className="flex flex-col items-center justify-center">
                                         <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
-                                        <span className="text-[9px] text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                        {selectedBenchmarkHospitalId === 'default' && (
+                                          <span className="text-[9px] text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                        )}
                                       </div>
                                     </td>
                                   ))}
@@ -6291,13 +6322,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <div className="text-indigo-700 text-xs font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
                               </div>
                             </td>
-                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">RS Anda</td>
+                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">{namaRs || 'RS'}</td>
                             <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">{hospitalSurveys.length}</td>
                             {demografiStats.posisiData.map((pos, posIdx) => {
                               const avgVal = getAverageCompositeForPosition(pos.name);
                               return (
                                 <td key={`pos-avg-rs-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                  {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                  {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
                               );
                             })}
@@ -6315,7 +6346,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="position-dimension"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -6356,7 +6387,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <Hospital className="w-6 h-6" />
                       </div>
                       <div className="space-y-0.5 font-sans">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata RS Anda</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
                         <h4 className="text-2xl font-extrabold text-sky-700 tracking-tight">
                           {avgHospitalScore > 0 ? `${avgHospitalScore.toFixed(1)}%` : '0%'}
                         </h4>
@@ -6405,7 +6436,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
                       <div className="space-y-1 font-sans">
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Matrix Perbandingan Per Item Berdasarkan Posisi Staf</h3>
-                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan posisi staf antara Rumah Sakit Anda dengan Hasil Uji Coba Nasional (AHRQ SOPS 2.0).</p>
+                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan posisi staf antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.</p>
                       </div>
                       <div className="w-full md:w-96">
                         <select
@@ -6455,7 +6486,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           {/* Respondent Count Sub-Header Rows */}
                           <tr className="bg-blue-50 text-slate-800 text-xs font-semibold border-b border-blue-200 divide-x divide-blue-200 font-sans">
                             <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-blue-900 bg-blue-100/70">
-                              Rumah Sakit Anda: # Responden
+                              {namaRs || 'Rumah Sakit'}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
                               {demografiStats.total}
@@ -6539,7 +6570,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Dataset Label Row 1 */}
                                         <td className="py-2.5 px-3 font-semibold text-blue-800 text-center bg-blue-50/40 whitespace-nowrap text-[11px]">
-                                          Rumah Sakit Anda
+                                          {namaRs || 'Rumah Sakit'}
                                         </td>
 
                                         {/* Positions Scores Row 1 (RS Anda) */}
@@ -6589,7 +6620,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="position-item"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -6682,7 +6713,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               </div>
                             </td>
                             <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[12px] italic bg-slate-200/60">
-                              Rumah Sakit Anda
+                              {namaRs || 'Rumah Sakit'}
                             </td>
                             <td className="p-3 text-center font-bold text-slate-900 border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                               {activePositionSafetyScores.reduce((acc, r) => acc + r.count, 0).toLocaleString('id-ID')}
@@ -6735,7 +6766,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     </div>
                                   </td>
                                   <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-200/60">
-                                    Rumah Sakit Anda
+                                    {namaRs || 'Rumah Sakit'}
                                   </td>
                                   <td className="p-3 text-center text-slate-900 font-bold border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                                     {totalHospCount === 0 ? '--' : `${overallHospPct.toFixed(0)}%`}
@@ -6787,7 +6818,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     )}
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="position-safety"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -6830,7 +6861,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <TrendingUp className="w-6 h-6" />
                       </div>
                       <div>
-                        <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Rata-Rata RS Anda</span>
+                        <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
                         <span className="text-2xl font-black text-slate-800">{averageEventsRS.toFixed(2)}</span>
                         <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">peristiwa / responden / th</span>
                       </div>
@@ -6924,7 +6955,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr className="hover:bg-blue-50/5 transition-colors bg-white">
                             <td rowSpan={2} className="sticky left-0 z-10 bg-white p-3.5 border-r border-b border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-top">
                               <div className="flex flex-col gap-0.5 mt-1">
-                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">Rumah Sakit Anda:</span>
+                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">{namaRs || 'Rumah Sakit'}:</span>
                                 <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
                               </div>
                             </td>
@@ -6955,7 +6986,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   {cat}
                                 </td>
                                 <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
-                                  Rumah Sakit Anda
+                                  {namaRs || 'Rumah Sakit'}
                                 </td>
                                 {paginatedComputedTableData.map((col, idx) => {
                                   const pct = col.percentages[cat as keyof typeof col.percentages] || 0;
@@ -6993,7 +7024,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     )}
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="position-reported"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -7128,7 +7159,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Masa Jabatan / Lama Kerja
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara {namaRs || 'Rumah Sakit Anda'} dan {activeBenchmarkLabel} berdasarkan Masa Jabatan / Lama Kerja (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan Masa Jabatan / Lama Kerja (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -7168,14 +7199,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       <p className="text-[10px] text-slate-500 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</p>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">{namaRs || 'RS Anda'}</td>
+                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">{namaRs || 'Rumah Sakit'}</td>
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
                                   {demografiStats.g1Data.map((g1, tIdx) => {
                                     const scoreObj = tenureDimensionScores.find(s => s.id === dimId);
                                     const percentage = scoreObj ? scoreObj[g1.name] : null;
                                     return (
                                       <td key={`tenure-rs-${dimId}-${g1.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
-                                        {percentage !== null && percentage !== undefined ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                        {percentage !== null && percentage !== undefined ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                       </td>
                                     );
                                   })}
@@ -7187,7 +7218,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     <td key={`tenure-pilot-${dimId}-${g1.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
                                       <div className="flex flex-col items-center justify-center text-center">
                                         <span className={`text-[14px] text-center ${getCellColorClass(bAvg)}`}>{bAvg.toFixed(1)}%</span>
-                                        <span className="text-[14px] text-center text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                        {selectedBenchmarkHospitalId === 'default' && (
+                                          <span className="text-[14px] text-center text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                        )}
                                       </div>
                                     </td>
                                   ))}
@@ -7202,13 +7235,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <div className="text-indigo-700 text-xs font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
                               </div>
                             </td>
-                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">{namaRs || 'RS Anda'}</td>
+                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">{namaRs || 'Rumah Sakit'}</td>
                             <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">{hospitalSurveys.length}</td>
                             {demografiStats.g1Data.map((g1, tIdx) => {
                               const avgVal = getAverageCompositeForTenure(g1.name);
                               return (
                                 <td key={`tenure-avg-rs-${g1.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
-                                  {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                  {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
                               );
                             })}
@@ -7226,7 +7259,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="tenure-dimension"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -7267,7 +7300,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <Hospital className="w-6 h-6" />
                       </div>
                       <div className="space-y-0.5 font-sans">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata RS Anda</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
                         <h4 className="text-2xl font-extrabold text-sky-700 tracking-tight">
                           {avgHospitalScore > 0 ? `${avgHospitalScore.toFixed(1)}%` : '0%'}
                         </h4>
@@ -7316,7 +7349,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
                       <div className="space-y-1 font-sans">
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Matrix Perbandingan Per Item Berdasarkan Masa Jabatan / Lama Kerja</h3>
-                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan masa jabatan / lama kerja antara Rumah Sakit Anda dengan Hasil Uji Coba Nasional ({activeBenchmarkLabel}).</p>
+                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan masa jabatan / lama kerja antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.</p>
                       </div>
                       <div className="w-full md:w-96">
                         <select
@@ -7366,7 +7399,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           {/* Respondent Count Sub-Header Rows */}
                           <tr className="bg-blue-50 text-slate-800 text-xs font-semibold border-b border-blue-200 divide-x divide-blue-200 font-sans">
                             <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-blue-900 bg-blue-100/70">
-                              Rumah Sakit Anda: # Responden
+                              {namaRs || 'Rumah Sakit'}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
                               {demografiStats.total}
@@ -7450,7 +7483,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Dataset Label Row 1 */}
                                         <td className="py-2.5 px-3 font-semibold text-blue-800 text-center bg-blue-50/40 whitespace-nowrap text-[11px]">
-                                          Rumah Sakit Anda
+                                          {namaRs || 'Rumah Sakit'}
                                         </td>
 
                                         {/* Tenure Scores Row 1 (RS Anda) */}
@@ -7500,7 +7533,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="tenure-item"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -7600,7 +7633,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               </div>
                             </td>
                             <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[12px] italic bg-slate-200/60">
-                              Rumah Sakit Anda
+                              {namaRs || 'Rumah Sakit'}
                             </td>
                             <td className="p-3 text-center font-bold text-slate-900 border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                               {activeTenureSafetyScores.reduce((acc, r) => acc + r.count, 0).toLocaleString('id-ID')}
@@ -7652,7 +7685,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     </div>
                                   </td>
                                   <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-200/60">
-                                    Rumah Sakit Anda
+                                    {namaRs || 'Rumah Sakit'}
                                   </td>
                                   <td className="p-3 text-center text-slate-900 font-bold border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                                     {totalHospCount === 0 ? '--' : `${overallHospPct.toFixed(0)}%`}
@@ -7704,7 +7737,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     )}
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="tenure-safety"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -7721,7 +7754,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <div>
                         <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Frekuensi Pelaporan Peristiwa Berdasarkan Masa Jabatan / Lama Kerja</h3>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Menunjukkan perbandingan persentase jumlah laporan yang diserahkan dalam 12 bulan terakhir berdasarkan masa jabatan / lama kerja antara Rumah Sakit Anda dengan {activeBenchmarkLabel}.
+                          Menunjukkan perbandingan persentase jumlah laporan yang diserahkan dalam 12 bulan terakhir berdasarkan masa jabatan / lama kerja antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.
                         </p>
                       </div>
                       
@@ -7796,7 +7829,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr className="hover:bg-blue-50/5 transition-colors bg-white">
                             <td rowSpan={2} className="bg-white p-3.5 border-r border-b border-slate-200/80 align-middle text-center">
                               <div className="flex flex-col gap-1 items-center justify-center text-center">
-                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-center">Jumlah Responden Rumah Sakit Anda</span>
+                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-center">Jumlah Responden {namaRs || 'Rumah Sakit'}</span>
                                 <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-center">Jumlah Responden {activeBenchmarkLabel}</span>
                               </div>
                             </td>
@@ -7829,7 +7862,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   {cat}
                                 </td>
                                 <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
-                                  Rumah Sakit Anda
+                                  {namaRs || 'Rumah Sakit'}
                                 </td>
                                 {paginatedComputedTenureTableData.map((col, idx) => {
                                   const pct = (col.percentages as Record<string, number>)[cat] || 0;
@@ -7867,7 +7900,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                     )}
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="tenure-reported"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -7961,7 +7994,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Hubungan Langsung dengan Pasien
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara {namaRs || 'Rumah Sakit Anda'} dan {activeBenchmarkLabel} berdasarkan interaksi dengan pasien (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan interaksi dengan pasien (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -7971,7 +8004,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr>
                             <th rowSpan={2} className="py-4 px-4 text-center w-12 border-r border-blue-800/80 bg-[#1E3A8A] text-white sticky left-0 z-30 shadow-sm">No</th>
                             <th rowSpan={2} className="py-4 px-5 min-w-[280px] text-center border-r border-blue-800/80 bg-[#1E3A8A] text-white sticky left-12 z-30 shadow-sm">Dimensi Budaya Keselamatan</th>
-                            <th colSpan={2} className="py-3 px-4 text-center border-r border-blue-800/80 bg-[#254BAF] text-white font-extrabold">{namaRs || 'Rumah Sakit Anda'}</th>
+                            <th colSpan={2} className="py-3 px-4 text-center border-r border-blue-800/80 bg-[#254BAF] text-white font-extrabold">{namaRs || 'Rumah Sakit'}</th>
                             <th colSpan={2} className="py-3 px-4 text-center border-r border-blue-800/80 bg-[#1E3A8A] text-white font-extrabold">{activeBenchmarkLabel} (Benchmark)</th>
                           </tr>
                           <tr className="bg-[#254BAF] text-white">
@@ -7987,8 +8020,15 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             const statsTidak = getInteraksiStats(dimId, 'tidak');
                             
                             const bmData = benchmarkInteraksiData.find(b => b.dimensi === dimId);
-                            const bmLangsung = bmData ? bmData.dengan_pasien : 0;
-                            const bmTidak = bmData ? bmData.tanpa_pasien : 0;
+                            let bmLangsung = bmData ? bmData.dengan_pasien : 0;
+                            let bmTidak = bmData ? bmData.tanpa_pasien : 0;
+
+                            if (selectedBenchmarkHospitalId !== 'default' && activeBenchmarkSurveys.length > 0) {
+                              const bmStatsLangsung = getInteraksiStats(dimId, 'langsung', activeBenchmarkSurveys);
+                              const bmStatsTidak = getInteraksiStats(dimId, 'tidak', activeBenchmarkSurveys);
+                              if (bmStatsLangsung.percentage !== null) bmLangsung = bmStatsLangsung.percentage;
+                              if (bmStatsTidak.percentage !== null) bmTidak = bmStatsTidak.percentage;
+                            }
 
                             return (
                               <tr key={`interaksi-dim-${dimId}`} className="hover:bg-slate-50/50 transition-all border-b border-slate-100">
@@ -8001,10 +8041,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 </td>
                                 
                                 <td className="py-3 px-4 text-center border-r border-slate-200/80 bg-cyan-50/30">
-                                  {statsLangsung.percentage !== null ? <span className={getCellColorClass(statsLangsung.percentage)}>{statsLangsung.percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                  {statsLangsung.percentage !== null ? <span className={getCellColorClass(statsLangsung.percentage)}>{statsLangsung.percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
                                 <td className="py-3 px-4 text-center border-r border-slate-200/80 bg-cyan-50/30">
-                                  {statsTidak.percentage !== null ? <span className={getCellColorClass(statsTidak.percentage)}>{statsTidak.percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">N/A</span>}
+                                  {statsTidak.percentage !== null ? <span className={getCellColorClass(statsTidak.percentage)}>{statsTidak.percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
 
                                 <td className="py-3 px-4 text-center border-r border-slate-200/80 font-bold text-slate-600 bg-emerald-50/10">
@@ -8041,7 +8081,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="interaction-dimension"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -8082,7 +8122,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <Hospital className="w-6 h-6" />
                       </div>
                       <div className="space-y-0.5 font-sans">
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata RS Anda</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
                         <h4 className="text-2xl font-extrabold text-sky-700 tracking-tight">
                           {avgHospitalScore > 0 ? `${avgHospitalScore.toFixed(1)}%` : '0%'}
                         </h4>
@@ -8131,7 +8171,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
                       <div className="space-y-1 font-sans">
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Matrix Perbandingan Per Item Berdasarkan Interaksi Dengan Pasien</h3>
-                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan hubungan langsung dengan pasien antara Rumah Sakit Anda dengan Hasil Uji Coba Nasional (AHRQ SOPS 2.0).</p>
+                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan hubungan langsung dengan pasien antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.</p>
                       </div>
                       <div className="w-full md:w-96">
                         <select
@@ -8189,7 +8229,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           {/* Respondent Count Sub-Header Rows */}
                           <tr className="bg-blue-50 text-slate-800 text-xs font-semibold border-b border-blue-200 divide-x divide-blue-200 font-sans">
                             <td colSpan={2} className="py-2 px-3 text-right font-bold italic text-blue-900 bg-blue-100/70">
-                              Rumah Sakit Anda: # Responden
+                              {namaRs || 'Rumah Sakit'}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
                               {demografiStats.total}
@@ -8273,7 +8313,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Dataset Label Row 1 */}
                                         <td className="py-2.5 px-3 font-semibold text-blue-800 text-center bg-blue-50/40 whitespace-nowrap text-[11px]">
-                                          Rumah Sakit Anda
+                                          {namaRs || 'Rumah Sakit'}
                                         </td>
 
                                         {/* Interaction Categories Scores Row 1 (RS Anda) */}
@@ -8323,7 +8363,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </table>
                     </div>
 
-                    <DynamicAIAnalysisCards
+                    <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="interaction-item"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -8392,7 +8432,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               </div>
                             </td>
                             <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[12px] italic bg-slate-200/60">
-                              Rumah Sakit Anda
+                              {namaRs || 'Rumah Sakit'}
                             </td>
                             <td className="p-3 text-center font-bold text-slate-900 border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                               {interactionSafetyScores.reduce((acc, r) => acc + r.count, 0).toLocaleString('id-ID')}
@@ -8444,7 +8484,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     </div>
                                   </td>
                                   <td className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 text-[11px] md:text-xs italic bg-slate-200/60">
-                                    Rumah Sakit Anda
+                                    {namaRs || 'Rumah Sakit'}
                                   </td>
                                   <td className="p-3 text-center text-slate-900 font-bold border-r border-slate-200/80 text-[13px] bg-slate-100/70">
                                     {totalHospCount === 0 ? '--' : `${overallHospPct.toFixed(0)}%`}
@@ -8488,7 +8528,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <DynamicAIAnalysisCards
+                  <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                       type="interaction-safety"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
@@ -8503,7 +8543,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <div>
                         <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Frekuensi Pelaporan Peristiwa Berdasarkan Interaksi Pasien</h3>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Menunjukkan perbandingan persentase jumlah laporan yang diserahkan dalam 12 bulan terakhir antara RS Anda dan RS Pembanding berdasarkan kategori interaksi pasien
+                          Menunjukkan perbandingan persentase jumlah laporan yang diserahkan dalam 12 bulan terakhir antara {namaRs || 'RS'} dan ${activeBenchmarkLabel} berdasarkan kategori interaksi pasien
                         </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
@@ -8517,18 +8557,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="overflow-x-auto max-h-[75vh] border border-slate-200/80 rounded-xl relative shadow-sm">
                       <table className="w-full text-left border-collapse min-w-[750px] font-sans">
                         <thead>
-                          <tr className="bg-slate-700 text-white font-semibold uppercase tracking-wider text-[10px]">
-                            <th rowSpan={2} className="p-3.5 border-r border-b border-slate-800/40 w-[28%] min-w-[220px] bg-slate-700 text-white text-center align-middle font-extrabold text-[10px]">
+                          <tr className="bg-gradient-to-r from-blue-800 via-blue-900 to-indigo-950 text-white font-semibold uppercase tracking-wider text-[11px]">
+                            <th rowSpan={2} className="p-3.5 border-r border-b border-blue-900/60 w-[36%] min-w-[260px] bg-gradient-to-r from-blue-800 to-blue-900 text-white text-center align-middle font-extrabold">
                               Jumlah Insiden Keselamatan Pasien<br/>Yang Dilaporkan
                             </th>
-                            <th rowSpan={2} className="p-3.5 border-r border-b border-slate-800/40 text-center w-[18%] min-w-[130px] bg-slate-700 text-white align-middle font-extrabold text-[10px]">
+                            <th rowSpan={2} className="p-3.5 border-r border-b border-blue-900/60 text-center w-[14%] min-w-[110px] bg-blue-900 text-white align-middle font-extrabold">
                               Dataset
                             </th>
-                            <th colSpan={computedInteractionEventTableData.length} className="p-3 text-center border-b border-slate-800/40 bg-slate-700 text-white font-extrabold text-[10px]">
+                            <th colSpan={computedInteractionEventTableData.length} className="p-3 text-center border-b border-blue-900/60 bg-blue-950 text-white font-extrabold tracking-wider">
                               Kategori Interaksi Pasien
                             </th>
                           </tr>
-                          <tr className="bg-slate-600 text-white font-semibold text-[10px]">
+                          <tr className="bg-blue-900/90 text-white font-semibold text-[10px]">
                             {computedInteractionEventTableData.map((col, idx) => {
                               let label = col.name;
                               if (isDirectInteraction(label)) {
@@ -8537,7 +8577,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 label = "Interaksi Tidak Langsung dengan Pasien";
                               }
                               return (
-                                <th key={`hdr-inter-ev-${idx}`} className="p-3.5 text-center border-r border-b border-slate-700/40 align-middle w-[27%] min-w-[180px] bg-slate-600 text-white leading-snug font-bold text-[10px]">
+                                <th key={`hdr-inter-ev-${idx}`} className="p-3 text-center border-r border-b border-blue-800/60 align-middle w-[25%] min-w-[170px] bg-blue-900/80 text-white leading-snug font-bold text-[10px]">
                                   {label}
                                 </th>
                               );
@@ -8549,7 +8589,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr className="hover:bg-blue-50/5 transition-colors bg-white">
                             <td rowSpan={2} className="bg-white p-3.5 border-r border-b border-slate-200/80 align-middle text-center">
                               <div className="flex flex-col gap-1 items-center justify-center text-center">
-                                <span className="text-[10px] italic font-medium text-slate-700 text-center">Jumlah Responden Rumah Sakit Anda</span>
+                                <span className="text-[10px] italic font-medium text-slate-700 text-center">Jumlah Responden {namaRs || 'Rumah Sakit'}</span>
                                 <span className="text-[10px] italic font-semibold text-slate-900 text-center">Jumlah Responden {activeBenchmarkLabel}</span>
                               </div>
                             </td>
@@ -8582,7 +8622,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   {cat}
                                 </td>
                                 <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
-                                  Rumah Sakit Anda
+                                  {namaRs || 'Rumah Sakit'}
                                 </td>
                                 {computedInteractionEventTableData.map((col, idx) => {
                                   const pct = col.percentages[cat as keyof typeof col.percentages] || 0;
@@ -8613,7 +8653,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <DynamicAIAnalysisCards
+                  <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
                     type="interaction-reported"
                     tahun1={tahun1}
                     hospitalSurveys={hospitalSurveys}
@@ -8677,6 +8717,7 @@ interface DynamicAIAnalysisCardsProps {
   e1Stats?: any[];
   reportedEventsComparisonStats?: any;
   activeBenchmarkLabel?: string;
+  selectedBenchmarkHospitalId?: string;
   masterBenchmarkData?: any;
 }
 
@@ -8709,6 +8750,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
   e1Stats = [],
   reportedEventsComparisonStats = {},
   activeBenchmarkLabel = "RS Pembanding",
+  selectedBenchmarkHospitalId = "default",
   masterBenchmarkData = {}
 }) => {
   // Safe general count helper
@@ -8940,7 +8982,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       analysisText = (
         <span className="space-y-2 block">
           <span>
-            Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahun1}</strong>), kategori dengan persentase tertinggi di {namaRs || 'Rumah Sakit Anda'} adalah <strong>&ldquo;{maxReportedCat.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCat.val.toFixed(1)}%</strong>. 
+            Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahun1}</strong>), kategori dengan persentase tertinggi di {namaRs || 'Rumah Sakit'} adalah <strong>&ldquo;{maxReportedCat.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCat.val.toFixed(1)}%</strong>. 
             Tingginya angka staf yang tidak melapor atau jarang melapor menunjukkan adanya potensi fenomena <em>underreporting</em> (kejadian yang disembunyikan atau tidak dicatatkan) akibat rasa takut atau birokrasi yang rumit.
           </span>
           <span className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 bg-white/60 p-3 rounded-xl border border-blue-100/50 text-center text-xs block mt-2">
@@ -8970,15 +9012,15 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       if (e1Stats && e1Stats.length > 0) {
         let maxVal = -1;
         e1Stats.forEach((entry: any) => {
-          const val = entry['Rumah Sakit Anda'] || 0;
+          const val = entry[namaRs || 'Rumah Sakit'] || entry['Rumah Sakit Anda'] || 0;
           grades.push({ kategori: entry.kategori, val });
           if (val > maxVal) {
             maxVal = val;
             highestSafetyCat = { kategori: entry.kategori, val };
           }
         });
-        const sangatBaik = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Rumah Sakit Anda'] || 0;
-        const baik = e1Stats.find((e: any) => e.kategori === 'Baik')?.['Rumah Sakit Anda'] || 0;
+        const sangatBaik = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.[namaRs || 'Rumah Sakit'] || e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Rumah Sakit Anda'] || 0;
+        const baik = e1Stats.find((e: any) => e.kategori === 'Baik')?.[namaRs || 'Rumah Sakit'] || e1Stats.find((e: any) => e.kategori === 'Baik')?.['Rumah Sakit Anda'] || 0;
         overallSafetyPos = sangatBaik + baik;
       }
 
@@ -9019,7 +9061,14 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
 
       if (dimsList.length > 0) {
         dimsList.forEach((d: any) => {
-          const bmAvg = (d.benchmarkMin + d.benchmarkMax) / 2;
+          let bmAvg = 0;
+          if (selectedBenchmarkHospitalId === 'default') {
+            bmAvg = (d.benchmarkMin + d.benchmarkMax) / 2;
+          } else {
+            const dimId = d.dimId || d.id;
+            bmAvg = masterBenchmarkData && masterBenchmarkData[dimId] ? (masterBenchmarkData[dimId].positivePercent ?? masterBenchmarkData[dimId].avg ?? ((DIMENSI_INFO[dimId]?.benchmarkMin + DIMENSI_INFO[dimId]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[dimId]?.benchmarkMin + DIMENSI_INFO[dimId]?.benchmarkMax) / 2 || 75.0);
+          }
+          
           const diff = d.percentage - bmAvg;
           if (d.percentage >= bmAvg) {
             aboveBmCount++;
@@ -9036,26 +9085,49 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
         });
       }
 
-      analysisText = (
-        <span className="space-y-2 block">
-          <span>
-            Berdasarkan perbandingan dengan {activeBenchmarkLabel} nasional, {namaRs || 'Rumah Sakit Anda'} berada di atas rata-rata benchmark pada <strong>{aboveBmCount}</strong> dari 10 dimensi budaya keselamatan. 
-            Capaian komparatif terbaik dicatat pada dimensi <strong>&ldquo;{bestBmDiff.nama}&rdquo;</strong> dengan keunggulan selisih sebesar <strong>+{bestBmDiff.diff.toFixed(1)}%</strong> di atas benchmark. 
-            Sebaliknya, area kesenjangan terdalam yang menuntut evaluasi serius adalah dimensi <strong>&ldquo;{worstBmDiff.nama}&rdquo;</strong> dengan ketertinggalan skor sebesar <strong>{worstBmDiff.diff.toFixed(1)}%</strong> di bawah pembanding nasional.
+      if (selectedBenchmarkHospitalId === 'default') {
+        analysisText = (
+          <span className="space-y-2 block">
+            <span>
+              Berdasarkan perbandingan dengan {activeBenchmarkLabel} nasional, {namaRs || 'Rumah Sakit Anda'} berada di atas rata-rata benchmark pada <strong>{aboveBmCount}</strong> dari 10 dimensi budaya keselamatan. 
+              Capaian komparatif terbaik dicatat pada dimensi <strong>&ldquo;{bestBmDiff.nama}&rdquo;</strong> dengan keunggulan selisih sebesar <strong>+{bestBmDiff.diff.toFixed(1)}%</strong> di atas benchmark. 
+              Sebaliknya, area kesenjangan terdalam yang menuntut evaluasi serius adalah dimensi <strong>&ldquo;{worstBmDiff.nama}&rdquo;</strong> dengan ketertinggalan skor sebesar <strong>{worstBmDiff.diff.toFixed(1)}%</strong> di bawah pembanding nasional.
+            </span>
+            <span className="text-xs space-y-1.5 bg-white/60 p-3 rounded-xl border border-blue-100/50 block mt-2">
+              <div><span className="font-bold text-emerald-700">✓ Melebihi Benchmark:</span> {outperforming.length > 0 ? outperforming.join(', ') : 'Belum ada'}</div>
+              <div><span className="font-bold text-rose-700">⚠ Di Bawah Benchmark:</span> {underperforming.length > 0 ? underperforming.join(', ') : 'Belum ada'}</div>
+            </span>
           </span>
-          <span className="text-xs space-y-1.5 bg-white/60 p-3 rounded-xl border border-blue-100/50 block mt-2">
-            <div><span className="font-bold text-emerald-700">✓ Melebihi Benchmark:</span> {outperforming.length > 0 ? outperforming.join(', ') : 'Belum ada'}</div>
-            <div><span className="font-bold text-rose-700">⚠ Di Bawah Benchmark:</span> {underperforming.length > 0 ? underperforming.join(', ') : 'Belum ada'}</div>
-          </span>
-        </span>
-      );
+        );
 
-      recs = [
-        { text: `Jadikan keberhasilan dimensi "${bestBmDiff.nama}" sebagai role model dan replikasikan model kerjanya di unit lain.`, icon: "🏆" },
-        { text: `Lakukan diskusi kritis bersama kepala-kepala unit untuk mencari solusi ketertinggalan pada dimensi "${worstBmDiff.nama}".`, icon: "🛠️" },
-        { text: `Adopsi instrumen audit dan monitoring dari ${activeBenchmarkLabel} nasional untuk dimensi yang masih di bawah standar.`, icon: "🔍" },
-        { text: "Laporkan hasil komparasi berkala ini kepada jajaran direksi sebagai bahan evaluasi kebijakan mutu pelayanan.", icon: "📋" }
-      ];
+        recs = [
+          { text: `Jadikan keberhasilan dimensi "${bestBmDiff.nama}" sebagai role model dan replikasikan model kerjanya di unit lain.`, icon: "🏆" },
+          { text: `Lakukan diskusi kritis bersama kepala-kepala unit untuk mencari solusi ketertinggalan pada dimensi "${worstBmDiff.nama}".`, icon: "🛠️" },
+          { text: `Adopsi instrumen audit dan monitoring dari ${activeBenchmarkLabel} nasional untuk dimensi yang masih di bawah standar.`, icon: "🔍" },
+          { text: "Laporkan hasil komparasi berkala ini kepada jajaran direksi sebagai bahan evaluasi kebijakan mutu pelayanan.", icon: "📋" }
+        ];
+      } else {
+        analysisText = (
+          <span className="space-y-2 block">
+            <span>
+              Berdasarkan hasil benchmark dengan <strong>{activeBenchmarkLabel}</strong>, {namaRs || 'Rumah Sakit Anda'} memiliki nilai lebih tinggi pada dimensi <strong>&ldquo;{bestBmDiff.nama}&rdquo;</strong> sebesar <strong>{Math.abs(bestBmDiff.diff).toFixed(1)}%</strong>. 
+              Sebaliknya, pada dimensi <strong>&ldquo;{worstBmDiff.nama}&rdquo;</strong>, {activeBenchmarkLabel} memperoleh nilai lebih tinggi sebesar <strong>{Math.abs(worstBmDiff.diff).toFixed(1)}%</strong>.
+              Hal ini menunjukkan bahwa rumah sakit pembanding memiliki keunggulan pada area tersebut sehingga perlu dilakukan perbaikan terfokus di rumah sakit Anda.
+            </span>
+            <span className="text-xs space-y-1.5 bg-white/60 p-3 rounded-xl border border-blue-100/50 block mt-2">
+              <div><span className="font-bold text-emerald-700">✓ Lebih Tinggi dari {activeBenchmarkLabel}:</span> {outperforming.length > 0 ? outperforming.join(', ') : 'Belum ada'}</div>
+              <div><span className="font-bold text-rose-700">⚠ Lebih Rendah dari {activeBenchmarkLabel}:</span> {underperforming.length > 0 ? underperforming.join(', ') : 'Belum ada'}</div>
+            </span>
+          </span>
+        );
+
+        recs = [
+          { text: `Prioritaskan peningkatan pada dimensi "${worstBmDiff.nama}" karena masih berada di bawah ${activeBenchmarkLabel}.`, icon: "🎯" },
+          { text: `Lakukan studi banding terhadap praktik yang diterapkan oleh ${activeBenchmarkLabel} pada dimensi tersebut.`, icon: "🤝" },
+          { text: `Pertahankan keunggulan pada dimensi "${bestBmDiff.nama}" karena sudah melampaui rumah sakit pembanding.`, icon: "🌟" },
+          { text: "Gunakan hasil perbandingan langsung ini untuk menyusun strategi perbaikan budaya keselamatan antar-RS.", icon: "📈" }
+        ];
+      }
       break;
     }
 
@@ -9066,21 +9138,21 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       const detailsList: string[] = [];
 
       if (e1Stats && e1Stats.length > 0) {
-        const sangatBaikHosp = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Rumah Sakit Anda'] || 0;
-        const baikHosp = e1Stats.find((e: any) => e.kategori === 'Baik')?.['Rumah Sakit Anda'] || 0;
+        const sangatBaikHosp = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.[namaRs || 'Rumah Sakit'] || e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Rumah Sakit Anda'] || 0;
+        const baikHosp = e1Stats.find((e: any) => e.kategori === 'Baik')?.[namaRs || 'Rumah Sakit'] || e1Stats.find((e: any) => e.kategori === 'Baik')?.['Rumah Sakit Anda'] || 0;
         hospSafetyPos = sangatBaikHosp + baikHosp;
 
-        const sangatBaikBm = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Data Pembanding'] || 0;
-        const baikBm = e1Stats.find((e: any) => e.kategori === 'Baik')?.['Data Pembanding'] || 0;
+        const sangatBaikBm = e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.['Data Pembanding'] || e1Stats.find((e: any) => e.kategori === 'Sangat Baik')?.[activeBenchmarkLabel] || 0;
+        const baikBm = e1Stats.find((e: any) => e.kategori === 'Baik')?.['Data Pembanding'] || e1Stats.find((e: any) => e.kategori === 'Baik')?.[activeBenchmarkLabel] || 0;
         bmSafetyPos = sangatBaikBm + baikBm;
 
         let maxVal = -1;
         e1Stats.forEach((entry: any) => {
-          const val = entry['Rumah Sakit Anda'] || 0;
-          const bmVal = entry['Data Pembanding'] || 0;
+          const val = entry[namaRs || 'Rumah Sakit'] || entry['Rumah Sakit Anda'] || 0;
+          const bmVal = entry['Data Pembanding'] || entry[activeBenchmarkLabel] || 0;
           const diff = val - bmVal;
           const sign = diff >= 0 ? '+' : '';
-          detailsList.push(`${entry.kategori}: ${namaRs || 'RS Anda'} ${val.toFixed(1)}% vs ${activeBenchmarkLabel} ${bmVal.toFixed(1)}% (${sign}${diff.toFixed(1)}%)`);
+          detailsList.push(`${entry.kategori}: ${namaRs || 'Rumah Sakit'} ${val.toFixed(1)}% vs ${activeBenchmarkLabel} ${bmVal.toFixed(1)}% (${sign}${diff.toFixed(1)}%)`);
 
           if (val > maxVal) {
             maxVal = val;
@@ -9092,7 +9164,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       analysisText = (
         <span className="space-y-2 block">
           <span>
-            Perbandingan tingkat keselamatan makro menunjukkan proporsi respons positif (Sangat Baik & Luar Biasa) di {namaRs || 'Rumah Sakit Anda'} adalah sebesar <strong>{hospSafetyPos.toFixed(1)}%</strong>, 
+            Perbandingan tingkat keselamatan makro menunjukkan proporsi respons positif (Sangat Baik & Luar Biasa) di {namaRs || 'Rumah Sakit'} adalah sebesar <strong>{hospSafetyPos.toFixed(1)}%</strong>, 
             dibandingkan dengan rata-rata benchmark {activeBenchmarkLabel} sebesar <strong>{bmSafetyPos.toFixed(1)}%</strong>. 
             {hospSafetyPos >= bmSafetyPos 
               ? ' Capaian yang berhasil unggul di atas benchmark ini menunjukkan adanya iklim keselamatan kerja yang solid dan perlu dipertahankan.' 
@@ -9136,7 +9208,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
           const pct = reportedEventsComparisonStats.percentages[c.key] || 0;
           const diff = pct - c.bm;
           const sign = diff >= 0 ? '+' : '';
-          detailsList.push(`${c.label}: ${namaRs || 'RS Anda'} ${pct.toFixed(1)}% vs ${activeBenchmarkLabel} ${c.bm}% (${sign}${diff.toFixed(1)}%)`);
+          detailsList.push(`${c.label}: ${namaRs || 'Rumah Sakit'} ${pct.toFixed(1)}% vs ${activeBenchmarkLabel} ${c.bm}% (${sign}${diff.toFixed(1)}%)`);
 
           if (pct > maxPct) {
             maxPct = pct;
@@ -9148,7 +9220,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       analysisText = (
         <span className="space-y-2 block">
           <span>
-            Berdasarkan hasil survei frekuensi pelaporan insiden, mayoritas responden {namaRs || 'Rumah Sakit Anda'} berada pada kategori <strong>&ldquo;{maxReportedCatBm.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCatBm.val.toFixed(1)}%</strong>, 
+            Berdasarkan hasil survei frekuensi pelaporan insiden, mayoritas responden {namaRs || 'Rumah Sakit'} berada pada kategori <strong>&ldquo;{maxReportedCatBm.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCatBm.val.toFixed(1)}%</strong>, 
             sedangkan rata-rata {activeBenchmarkLabel} nasional pada kategori ini adalah <strong>{maxReportedCatBm.bmVal}%</strong>. 
             {maxReportedCatBm.val > maxReportedCatBm.bmVal && maxReportedCatBm.kategori.includes("Tidak Pernah")
               ? ' Tingginya angka tidak melapor dibanding benchmark nasional (selisih negatif) menegaskan adanya urgensi reformasi sistem pelaporan agar bebas dari sanksi (non-punitive culture).'
@@ -9166,7 +9238,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       );
 
       recs = [
-        { text: `Bandingkan alur birokrasi sistem pelaporan ${namaRs || 'RS Anda'} dengan ${activeBenchmarkLabel} yang memiliki rasio pelaporan lebih sehat.`, icon: "🔍" },
+        { text: `Bandingkan alur birokrasi sistem pelaporan ${namaRs || 'Rumah Sakit'} dengan ${activeBenchmarkLabel} yang memiliki rasio pelaporan lebih sehat.`, icon: "🔍" },
         { text: "Terapkan perlindungan hukum dan jaminan kerahasiaan penuh bagi staf tapak yang berani melaporkan insiden keselamatan.", icon: "🛡️" },
         { text: "Lakukan sosialisasi pentingnya budaya pelaporan bebas sanksi (Just Culture) ke jajaran manajemen madya.", icon: "📢" },
         { text: "Sediakan portal pelaporan insiden online yang praktis dan dapat diakses dari gadget seluruh staf.", icon: "📱" }
@@ -9194,7 +9266,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
 
       analysisText = (
         <span>
-          Melalui evaluasi komparatif per butir pertanyaan (item) tahun <strong>{tahun1}</strong>, {namaRs || 'Rumah Sakit Anda'} mencatatkan keunggulan tertinggi dibanding benchmark nasional pada item <strong>{bestItemBmDiff.code}</strong> (&ldquo;{bestItemBmDiff.text}&rdquo;) dengan selisih positif mencapai <strong>+{bestItemBmDiff.diff.toFixed(1)}%</strong>. 
+          Melalui evaluasi komparatif per butir pertanyaan (item) tahun <strong>{tahun1}</strong>, {namaRs || 'Rumah Sakit'} mencatatkan keunggulan tertinggi dibanding benchmark nasional pada item <strong>{bestItemBmDiff.code}</strong> (&ldquo;{bestItemBmDiff.text}&rdquo;) dengan selisih positif mencapai <strong>+{bestItemBmDiff.diff.toFixed(1)}%</strong>. 
           Sebaliknya, area butir keselamatan yang paling tertinggal di bawah rata-rata benchmark adalah item <strong>{worstItemBmDiff.code}</strong> (&ldquo;{worstItemBmDiff.text}&rdquo;) dengan kesenjangan negatif sebesar <strong>{worstItemBmDiff.diff.toFixed(1)}%</strong>.
         </span>
       );
