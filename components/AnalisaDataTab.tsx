@@ -117,7 +117,7 @@ const ReportedEventsTooltip = ({ active, payload, label }: any) => {
               <div className="pl-4 space-y-0.5 text-slate-300">
                 <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
                 <p>Persentase : <span className="font-semibold text-white">{(benchmarkData.value ?? 0).toFixed(1)}%</span></p>
-                <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload[`${benchmarkData.dataKey} Count`] || benchmarkData.payload['Data Pembanding Count'] || benchmarkData.payload['Rumah Sakit Uji Coba Count'] || benchmarkData.payload['RS Uji Coba atau Rumah Sakit Uji Coba Count'] || 0).toLocaleString('id-ID')}</span></p>
+                <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload[`${benchmarkData.dataKey} Count`] || benchmarkData.payload['Data Pembanding Count'] || benchmarkData.payload['Rumah Sakit Uji Coba Count'] || benchmarkData.payload['RS Uji Coba Count'] || benchmarkData.payload['RS Uji Coba atau Rumah Sakit Uji Coba Count'] || 0).toLocaleString('id-ID')}</span></p>
               </div>
             </div>
           </>
@@ -320,7 +320,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
       return selectedTargetHospital.namaRs;
     }
-    return "RS Uji Coba atau Rumah Sakit Uji Coba";
+    return "RS Uji Coba";
   }, [selectedBenchmarkHospitalId, selectedTargetHospital, currentRequestForSelectedHospital]);
 
   // Fetch surveys of approved target benchmark hospital
@@ -2840,7 +2840,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const mainCards = [
     {
       id: 'hospital',
-      title: `Hasil Survei Budaya Keselamatan ${namaRs || 'Rumah Sakit'}`,
+      title: `Hasil Survei Budaya Keselamatan Pasien ${namaRs || 'Rumah Sakit'}`,
       description: 'Menampilkan seluruh hasil analisis berdasarkan data survei rumah sakit',
       icon: <ClipboardCheck />,
       color: 'from-[#2563EB] to-[#1D4ED8]'
@@ -3099,25 +3099,28 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             className="max-w-7xl mx-auto min-h-[600px] flex flex-col"
           >
             
-            <BenchmarkHeaderCard
-              namaRs={namaRs}
-              selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
-              selectedTargetHospital={selectedTargetHospital}
-              currentRequestForSelectedHospital={currentRequestForSelectedHospital}
-              isSelectedTargetApproved={isSelectedTargetApproved}
-              activeBenchmarkLabel={activeBenchmarkLabel}
-              accounts={accounts}
-              hospitalId={hospitalId}
-              identifier={identifier}
-              benchmarkSearchTerm={benchmarkSearchTerm}
-              setBenchmarkSearchTerm={setBenchmarkSearchTerm}
-              isDropdownOpen={isDropdownOpen}
-              setIsDropdownOpen={setIsDropdownOpen}
-              setSelectedBenchmarkHospitalId={setSelectedBenchmarkHospitalId}
-              isSendingBenchmarkReq={isSendingBenchmarkReq}
-              handleSendBenchmarkRequest={handleSendBenchmarkRequest}
-              isLoadingTargetSurveys={isLoadingTargetSurveys}
-            />
+            {/* Card Header Benchmark disembunyikan sesuai permintaan */}
+            {false && activeView === 'benchmark' && (
+              <BenchmarkHeaderCard
+                namaRs={namaRs}
+                selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
+                selectedTargetHospital={selectedTargetHospital}
+                currentRequestForSelectedHospital={currentRequestForSelectedHospital}
+                isSelectedTargetApproved={isSelectedTargetApproved}
+                activeBenchmarkLabel={activeBenchmarkLabel}
+                accounts={accounts}
+                hospitalId={hospitalId}
+                identifier={identifier}
+                benchmarkSearchTerm={benchmarkSearchTerm}
+                setBenchmarkSearchTerm={setBenchmarkSearchTerm}
+                isDropdownOpen={isDropdownOpen}
+                setIsDropdownOpen={setIsDropdownOpen}
+                setSelectedBenchmarkHospitalId={setSelectedBenchmarkHospitalId}
+                isSendingBenchmarkReq={isSendingBenchmarkReq}
+                handleSendBenchmarkRequest={handleSendBenchmarkRequest}
+                isLoadingTargetSurveys={isLoadingTargetSurveys}
+              />
+            )}
 
             <div className="flex items-center gap-4 mb-8">
               <button
@@ -4276,16 +4279,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 <div className="w-full flex flex-col gap-6 animate-in fade-in duration-500">
                   {/* Laporan AHRQ V2 Style */}
                   <div id="demografi-report" className="bg-white border border-slate-200 p-8 md:p-12 rounded-[24px] shadow-xl shadow-slate-200/50">
-                    {/* Header Laporan */}
-                    <div className="border-b-4 border-blue-600 pb-6 mb-8">
-                      <div className="mb-2">
-                        <div>
-                          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Demografi Responden Rumah Sakit</h1>
-                          <p className="text-sm font-medium text-slate-500 mt-1">Data Hasil Survei Demografi Responden {namaRs || 'Rumah Sakit'}</p>
-                        </div>
-                      </div>
-                    </div>
-
                     {/* Info Card */}
                     <div className="bg-blue-50/50 rounded-xl p-5 border border-blue-100 mb-10 grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="text-center">
@@ -4297,8 +4290,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <span className="block text-sm font-bold text-blue-900">{demografiStats.total}</span>
                       </div>
                       <div className="text-center">
-                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Tanggal Generate</span>
-                        <span className="block text-sm font-bold text-blue-900">{new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                        <span className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">PERIODE TAHUN</span>
+                        <span className="block text-sm font-bold text-blue-900">{tahun1 || new Date().getFullYear().toString()}</span>
                       </div>
                     </div>
 

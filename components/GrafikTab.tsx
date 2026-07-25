@@ -154,7 +154,7 @@ function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan
   return { analisis, rekomendasi };
 }
 
-export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS Uji Coba atau Rumah Sakit Uji Coba" }: GrafikTabProps) {
+export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS Uji Coba" }: GrafikTabProps) {
   const rsName = namaRs || 'Rumah Sakit';
   const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
 

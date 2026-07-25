@@ -438,7 +438,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
             <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
               <motion.div 
                 variants={sapaanVariants}
-                className="text-[22px] md:text-[36px] font-bold text-slate-800 leading-tight md:leading-none tracking-tight whitespace-normal break-words"
+                className="text-[22px] md:text-[36px] font-black text-[#435492] leading-tight md:leading-none tracking-tight whitespace-normal break-words font-['Poppins',sans-serif]"
               >
                 {greeting.text}
               </motion.div>
@@ -451,7 +451,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
                     animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
                     exit={{ opacity: 0, scale: 0.7, rotate: 15, y: -5 }}
                     transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
-                    className="flex items-center justify-center p-1 cursor-default hover:scale-110 transition-transform duration-300"
+                    className="flex items-center justify-center p-1 cursor-default hover:scale-110 transition-transform duration-300 filter drop-shadow-[0_5px_8px_rgba(15,23,42,0.35)]"
                   >
                     {renderGreetingIcon(greeting.type)}
                   </motion.div>
@@ -462,7 +462,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
             {/* Row 2: Hospital Title with Gradient Accent & Glow */}
             <motion.h2 
               variants={namaRsVariants}
-              className="text-[28px] md:text-[48px] font-extrabold text-slate-900 tracking-tight leading-tight md:leading-none break-words whitespace-normal font-sans"
+              className="text-[28px] md:text-[48px] font-extrabold text-[#435492] tracking-tight leading-tight md:leading-none break-words whitespace-normal font-sans"
             >
               Hai, Sobat <span className="bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600 bg-clip-text text-transparent drop-shadow-xs font-extrabold">{displayHospital}</span>
             </motion.h2>
@@ -472,7 +472,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
           <div className="space-y-2">
             <motion.p 
               variants={subjudulVariants}
-              className="text-[18px] md:text-[22px] font-bold text-slate-800 leading-tight"
+              className="text-[18px] md:text-[22px] font-bold text-[#435492] leading-tight"
             >
               Selamat Datang di Aplikasi <span className="font-extrabold bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600 bg-clip-text text-transparent">Sistem Survei Budaya Keselamatan Pasien</span>
             </motion.p>

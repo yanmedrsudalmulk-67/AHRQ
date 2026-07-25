@@ -725,9 +725,9 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId, s
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="text-white font-bold uppercase tracking-wider divide-x divide-teal-400/30">
-                <th className="p-4 text-center w-12 text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7' }}>No</th>
-                <th className="p-4 text-center text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7' }}>DIMENSI BUDAYA KESELAMATAN PASIEN</th>
-                <th className="p-4 text-center w-52 text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7' }}>Hasil Persentase (%)</th>
+                <th className="p-4 text-center w-12 text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7', textAlign: 'center' }}>No</th>
+                <th className="p-4 text-center text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7', textAlign: 'center' }}>DIMENSI BUDAYA KESELAMATAN PASIEN</th>
+                <th className="p-4 text-center w-52 text-[12px] bg-[#00bba7]" style={{ backgroundColor: '#00bba7', textAlign: 'center' }}>Hasil Persentase (%)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white text-slate-600">
@@ -766,10 +766,10 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId, s
                       <td className="p-4 text-center font-bold font-mono text-base text-slate-400">
                         {globalIdx}
                       </td>
-                      <td className="p-4 text-left">
-                        <div className="text-[14px] font-bold text-slate-800 flex items-center justify-between">
-                          <span>{dim.nama}</span>
-                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400" />
+                      <td className="p-4 text-center">
+                        <div className="text-[14px] font-bold text-slate-800 flex items-center justify-center text-center relative" style={{ textAlign: 'center' }}>
+                          <span style={{ textAlign: 'center' }}>{dim.nama}</span>
+                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 absolute right-0" />
                         </div>
                       </td>
                       <td className="p-4 text-center">
