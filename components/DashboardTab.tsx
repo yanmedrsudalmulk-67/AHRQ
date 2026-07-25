@@ -7,11 +7,13 @@ import { Users, Award, ShieldAlert, Heart, TrendingUp, Sparkles, Database } from
 interface DashboardTabProps {
   submissions: SurveySubmission[];
   isSupabase: boolean;
+  namaRs?: string;
 }
 
-export default function DashboardTab({ submissions, isSupabase }: DashboardTabProps) {
+export default function DashboardTab({ submissions, isSupabase, namaRs }: DashboardTabProps) {
   // If there are no submissions, don't crash
   const totalSubmissions = submissions.length;
+  const hospitalDisplayName = namaRs && namaRs.trim() ? namaRs : 'RSUD Al-Mulk';
 
   // Calculate Average Scores
   const avgOverall = totalSubmissions > 0 
@@ -40,7 +42,7 @@ export default function DashboardTab({ submissions, isSupabase }: DashboardTabPr
     { name: 'Pimpinan (B)', skor: avgB, fill: '#4f46e5' },
     { name: 'Komunikasi (C)', skor: avgC, fill: '#818cf8' },
     { name: 'Pelaporan (D)', skor: avgD, fill: '#3b82f6' },
-    { name: 'RS Anda (F)', skor: avgF, fill: '#4338ca' },
+    { name: `${hospitalDisplayName} (F)`, skor: avgF, fill: '#4338ca' },
   ];
 
   // Group by Staff Position

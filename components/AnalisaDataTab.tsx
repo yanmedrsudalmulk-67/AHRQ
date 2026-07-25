@@ -7128,7 +7128,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Masa Jabatan / Lama Kerja
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara Rumah Sakit Anda dan {activeBenchmarkLabel} berdasarkan Masa Jabatan / Lama Kerja (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara {namaRs || 'Rumah Sakit Anda'} dan {activeBenchmarkLabel} berdasarkan Masa Jabatan / Lama Kerja (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -7168,7 +7168,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       <p className="text-[10px] text-slate-500 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</p>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">RS Anda</td>
+                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">{namaRs || 'RS Anda'}</td>
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
                                   {demografiStats.g1Data.map((g1, tIdx) => {
                                     const scoreObj = tenureDimensionScores.find(s => s.id === dimId);
@@ -7202,7 +7202,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <div className="text-indigo-700 text-xs font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
                               </div>
                             </td>
-                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">RS Anda</td>
+                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">{namaRs || 'RS Anda'}</td>
                             <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">{hospitalSurveys.length}</td>
                             {demografiStats.g1Data.map((g1, tIdx) => {
                               const avgVal = getAverageCompositeForTenure(g1.name);
@@ -7961,7 +7961,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Hubungan Langsung dengan Pasien
                       </h3>
                       <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara Rumah Sakit Anda dan {activeBenchmarkLabel} berdasarkan interaksi dengan pasien (AHRQ SOPS Versi 2.0)
+                        Perbandingan antara {namaRs || 'Rumah Sakit Anda'} dan {activeBenchmarkLabel} berdasarkan interaksi dengan pasien (AHRQ SOPS Versi 2.0)
                       </p>
                     </div>
 
@@ -7971,7 +7971,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr>
                             <th rowSpan={2} className="py-4 px-4 text-center w-12 border-r border-blue-800/80 bg-[#1E3A8A] text-white sticky left-0 z-30 shadow-sm">No</th>
                             <th rowSpan={2} className="py-4 px-5 min-w-[280px] text-center border-r border-blue-800/80 bg-[#1E3A8A] text-white sticky left-12 z-30 shadow-sm">Dimensi Budaya Keselamatan</th>
-                            <th colSpan={2} className="py-3 px-4 text-center border-r border-blue-800/80 bg-[#254BAF] text-white font-extrabold">Rumah Sakit Anda</th>
+                            <th colSpan={2} className="py-3 px-4 text-center border-r border-blue-800/80 bg-[#254BAF] text-white font-extrabold">{namaRs || 'Rumah Sakit Anda'}</th>
                             <th colSpan={2} className="py-3 px-4 text-center border-r border-blue-800/80 bg-[#1E3A8A] text-white font-extrabold">{activeBenchmarkLabel} (Benchmark)</th>
                           </tr>
                           <tr className="bg-[#254BAF] text-white">
@@ -8653,6 +8653,7 @@ interface DynamicAIAnalysisCardsProps {
   tahun1: string;
   tahun2?: string;
   mode?: string;
+  namaRs?: string;
   hospitalSurveys: any[];
   hospitalDimensionScores?: any[];
   hospitalItemScores?: any[];
@@ -8684,6 +8685,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
   tahun1,
   tahun2,
   mode,
+  namaRs,
   hospitalSurveys = [],
   hospitalDimensionScores = [],
   hospitalItemScores = [],
@@ -8816,7 +8818,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
           Keterwakilan posisi staf didominasi oleh <strong>{topPos}</strong> (<strong>{topPosVal}</strong> responden){secondPos ? `, diikuti oleh ${secondPos} (${secondPosVal} responden)` : ''}. 
           Unit dengan kontribusi terbesar adalah <strong>{topUnit}</strong> dengan <strong>{topUnitVal}</strong> responden{secondUnit ? `, disusul unit ${secondUnit} (${secondUnitVal} responden)` : ''}. 
           Sedangkan dari masa bakti di rumah sakit, mayoritas responden memiliki masa kerja <strong>{topTenure}</strong> sebanyak <strong>{topTenureVal}</strong> staf. 
-          Data ini menunjukkan sebaran responden yang representatif dan valid untuk dijadikan pijakan analisis budaya keselamatan pasien secara makro di rumah sakit Anda.
+          Data ini menunjukkan sebaran responden yang representatif dan valid untuk dijadikan pijakan analisis budaya keselamatan pasien secara makro di {namaRs || 'rumah sakit Anda'}.
         </span>
       );
 
@@ -8849,7 +8851,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
         <span className="space-y-2 block">
           <span>
             Hasil analisis 10 dimensi budaya keselamatan pasien tahun <strong>{tahun1}</strong> menghasilkan nilai rata-rata keseluruhan respons positif sebesar <strong>{overallAvgDim.toFixed(1)}%</strong>. 
-            Kekuatan utama (aspek unggul) rumah sakit Anda terletak pada dimensi <strong>&ldquo;{highestDim.nama}&rdquo;</strong> dengan skor positif tertinggi mencapai <strong>{highestDim.percentage.toFixed(1)}%</strong>. 
+            Kekuatan utama (aspek unggul) {namaRs || 'rumah sakit Anda'} terletak pada dimensi <strong>&ldquo;{highestDim.nama}&rdquo;</strong> dengan skor positif tertinggi mencapai <strong>{highestDim.percentage.toFixed(1)}%</strong>. 
             Sebaliknya, dimensi yang mendesak untuk segera diintervensi adalah <strong>&ldquo;{lowestDim.nama}&rdquo;</strong> dengan respons positif terendah sebesar <strong>{lowestDim.percentage.toFixed(1)}%</strong>.
           </span>
           <span className="text-xs space-y-1 bg-white/60 p-3 rounded-xl border border-blue-100/50 block mt-2">
@@ -8938,7 +8940,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       analysisText = (
         <span className="space-y-2 block">
           <span>
-            Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahun1}</strong>), kategori dengan persentase tertinggi di Rumah Sakit Anda adalah <strong>&ldquo;{maxReportedCat.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCat.val.toFixed(1)}%</strong>. 
+            Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahun1}</strong>), kategori dengan persentase tertinggi di {namaRs || 'Rumah Sakit Anda'} adalah <strong>&ldquo;{maxReportedCat.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCat.val.toFixed(1)}%</strong>. 
             Tingginya angka staf yang tidak melapor atau jarang melapor menunjukkan adanya potensi fenomena <em>underreporting</em> (kejadian yang disembunyikan atau tidak dicatatkan) akibat rasa takut atau birokrasi yang rumit.
           </span>
           <span className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 bg-white/60 p-3 rounded-xl border border-blue-100/50 text-center text-xs block mt-2">
@@ -9037,7 +9039,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       analysisText = (
         <span className="space-y-2 block">
           <span>
-            Berdasarkan perbandingan dengan {activeBenchmarkLabel} nasional, Rumah Sakit Anda berada di atas rata-rata benchmark pada <strong>{aboveBmCount}</strong> dari 10 dimensi budaya keselamatan. 
+            Berdasarkan perbandingan dengan {activeBenchmarkLabel} nasional, {namaRs || 'Rumah Sakit Anda'} berada di atas rata-rata benchmark pada <strong>{aboveBmCount}</strong> dari 10 dimensi budaya keselamatan. 
             Capaian komparatif terbaik dicatat pada dimensi <strong>&ldquo;{bestBmDiff.nama}&rdquo;</strong> dengan keunggulan selisih sebesar <strong>+{bestBmDiff.diff.toFixed(1)}%</strong> di atas benchmark. 
             Sebaliknya, area kesenjangan terdalam yang menuntut evaluasi serius adalah dimensi <strong>&ldquo;{worstBmDiff.nama}&rdquo;</strong> dengan ketertinggalan skor sebesar <strong>{worstBmDiff.diff.toFixed(1)}%</strong> di bawah pembanding nasional.
           </span>
@@ -9078,7 +9080,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
           const bmVal = entry['Data Pembanding'] || 0;
           const diff = val - bmVal;
           const sign = diff >= 0 ? '+' : '';
-          detailsList.push(`${entry.kategori}: RS Anda ${val.toFixed(1)}% vs ${activeBenchmarkLabel} ${bmVal.toFixed(1)}% (${sign}${diff.toFixed(1)}%)`);
+          detailsList.push(`${entry.kategori}: ${namaRs || 'RS Anda'} ${val.toFixed(1)}% vs ${activeBenchmarkLabel} ${bmVal.toFixed(1)}% (${sign}${diff.toFixed(1)}%)`);
 
           if (val > maxVal) {
             maxVal = val;
@@ -9090,12 +9092,12 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       analysisText = (
         <span className="space-y-2 block">
           <span>
-            Perbandingan tingkat keselamatan makro menunjukkan proporsi respons positif (Sangat Baik & Luar Biasa) di Rumah Sakit Anda adalah sebesar <strong>{hospSafetyPos.toFixed(1)}%</strong>, 
+            Perbandingan tingkat keselamatan makro menunjukkan proporsi respons positif (Sangat Baik & Luar Biasa) di {namaRs || 'Rumah Sakit Anda'} adalah sebesar <strong>{hospSafetyPos.toFixed(1)}%</strong>, 
             dibandingkan dengan rata-rata benchmark {activeBenchmarkLabel} sebesar <strong>{bmSafetyPos.toFixed(1)}%</strong>. 
             {hospSafetyPos >= bmSafetyPos 
               ? ' Capaian yang berhasil unggul di atas benchmark ini menunjukkan adanya iklim keselamatan kerja yang solid dan perlu dipertahankan.' 
               : ' Nilai yang berada di bawah benchmark ini mengindikasikan perlunya akselerasi standarisasi mutu keselamatan pelayanan klinis.'} 
-            Kategori penilaian dominan di rumah sakit Anda adalah predikat <strong>&ldquo;{hospSafetyMax.kategori}&rdquo;</strong> sebesar <strong>{hospSafetyMax.val.toFixed(1)}%</strong>.
+            Kategori penilaian dominan di {namaRs || 'rumah sakit Anda'} adalah predikat <strong>&ldquo;{hospSafetyMax.kategori}&rdquo;</strong> sebesar <strong>{hospSafetyMax.val.toFixed(1)}%</strong>.
           </span>
           <span className="text-xs space-y-1 bg-white/60 p-3 rounded-xl border border-blue-100/50 font-mono block mt-2">
             {detailsList.map((det, idx) => (
@@ -9134,7 +9136,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
           const pct = reportedEventsComparisonStats.percentages[c.key] || 0;
           const diff = pct - c.bm;
           const sign = diff >= 0 ? '+' : '';
-          detailsList.push(`${c.label}: RS Anda ${pct.toFixed(1)}% vs ${activeBenchmarkLabel} ${c.bm}% (${sign}${diff.toFixed(1)}%)`);
+          detailsList.push(`${c.label}: ${namaRs || 'RS Anda'} ${pct.toFixed(1)}% vs ${activeBenchmarkLabel} ${c.bm}% (${sign}${diff.toFixed(1)}%)`);
 
           if (pct > maxPct) {
             maxPct = pct;
@@ -9146,7 +9148,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       analysisText = (
         <span className="space-y-2 block">
           <span>
-            Berdasarkan hasil survei frekuensi pelaporan insiden, mayoritas responden Rumah Sakit Anda berada pada kategori <strong>&ldquo;{maxReportedCatBm.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCatBm.val.toFixed(1)}%</strong>, 
+            Berdasarkan hasil survei frekuensi pelaporan insiden, mayoritas responden {namaRs || 'Rumah Sakit Anda'} berada pada kategori <strong>&ldquo;{maxReportedCatBm.kategori}&rdquo;</strong> sebesar <strong>{maxReportedCatBm.val.toFixed(1)}%</strong>, 
             sedangkan rata-rata {activeBenchmarkLabel} nasional pada kategori ini adalah <strong>{maxReportedCatBm.bmVal}%</strong>. 
             {maxReportedCatBm.val > maxReportedCatBm.bmVal && maxReportedCatBm.kategori.includes("Tidak Pernah")
               ? ' Tingginya angka tidak melapor dibanding benchmark nasional (selisih negatif) menegaskan adanya urgensi reformasi sistem pelaporan agar bebas dari sanksi (non-punitive culture).'
@@ -9164,7 +9166,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
       );
 
       recs = [
-        { text: `Bandingkan alur birokrasi sistem pelaporan RS Anda dengan ${activeBenchmarkLabel} yang memiliki rasio pelaporan lebih sehat.`, icon: "🔍" },
+        { text: `Bandingkan alur birokrasi sistem pelaporan ${namaRs || 'RS Anda'} dengan ${activeBenchmarkLabel} yang memiliki rasio pelaporan lebih sehat.`, icon: "🔍" },
         { text: "Terapkan perlindungan hukum dan jaminan kerahasiaan penuh bagi staf tapak yang berani melaporkan insiden keselamatan.", icon: "🛡️" },
         { text: "Lakukan sosialisasi pentingnya budaya pelaporan bebas sanksi (Just Culture) ke jajaran manajemen madya.", icon: "📢" },
         { text: "Sediakan portal pelaporan insiden online yang praktis dan dapat diakses dari gadget seluruh staf.", icon: "📱" }
@@ -9192,7 +9194,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
 
       analysisText = (
         <span>
-          Melalui evaluasi komparatif per butir pertanyaan (item) tahun <strong>{tahun1}</strong>, Rumah Sakit Anda mencatatkan keunggulan tertinggi dibanding benchmark nasional pada item <strong>{bestItemBmDiff.code}</strong> (&ldquo;{bestItemBmDiff.text}&rdquo;) dengan selisih positif mencapai <strong>+{bestItemBmDiff.diff.toFixed(1)}%</strong>. 
+          Melalui evaluasi komparatif per butir pertanyaan (item) tahun <strong>{tahun1}</strong>, {namaRs || 'Rumah Sakit Anda'} mencatatkan keunggulan tertinggi dibanding benchmark nasional pada item <strong>{bestItemBmDiff.code}</strong> (&ldquo;{bestItemBmDiff.text}&rdquo;) dengan selisih positif mencapai <strong>+{bestItemBmDiff.diff.toFixed(1)}%</strong>. 
           Sebaliknya, area butir keselamatan yang paling tertinggal di bawah rata-rata benchmark adalah item <strong>{worstItemBmDiff.code}</strong> (&ldquo;{worstItemBmDiff.text}&rdquo;) dengan kesenjangan negatif sebesar <strong>{worstItemBmDiff.diff.toFixed(1)}%</strong>.
         </span>
       );

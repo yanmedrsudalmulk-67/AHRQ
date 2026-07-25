@@ -173,7 +173,7 @@ export default function PersetujuanBenchmarkTab({
           <div className="space-y-2">
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">Persetujuan Benchmark Data</h1>
             <p className="text-slate-300 text-sm max-w-[668px] w-full leading-relaxed" style={{ fontSize: '14px', width: '668px' }}>
-              Kelola izin berbagi data hasil survei budaya keselamatan pasien secara realtime. Data rumah sakit Anda aman dan hanya dapat dibandingkan oleh rumah sakit lain setelah disetujui.
+              Kelola izin berbagi data hasil survei budaya keselamatan pasien secara realtime. Data {currentHospitalName || 'RSUD Al-Mulk'} aman dan hanya dapat dibandingkan oleh rumah sakit lain setelah disetujui.
             </p>
           </div>
 
@@ -182,8 +182,8 @@ export default function PersetujuanBenchmarkTab({
               <Building2 className="w-6 h-6" />
             </div>
             <div>
-              <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider block">Rumah Sakit Anda</span>
-              <span className="text-sm font-bold text-white block truncate max-w-[200px]">{currentHospitalName}</span>
+              <span className="text-[10px] text-slate-300 font-medium uppercase tracking-wider block">Akun Rumah Sakit</span>
+              <span className="text-sm font-bold text-white block truncate max-w-[200px]">{currentHospitalName || 'RSUD Al-Mulk'}</span>
             </div>
           </div>
         </div>
@@ -257,7 +257,7 @@ export default function PersetujuanBenchmarkTab({
               </div>
               <h3 className="font-bold text-base text-slate-800">Tidak Ada Permintaan Menunggu</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Saat ini tidak ada rumah sakit lain yang mengajukan permintaan izin benchmark data kepada rumah sakit Anda.
+                Saat ini tidak ada rumah sakit lain yang mengajukan permintaan izin benchmark data kepada {currentHospitalName || 'RSUD Al-Mulk'}.
               </p>
             </div>
           ) : (
@@ -519,7 +519,7 @@ export default function PersetujuanBenchmarkTab({
                   <div className="flex items-start gap-2 text-indigo-900 font-semibold">
                     <HelpCircle className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
                     <p className="leading-relaxed">
-                      &quot;Apakah Anda mengizinkan rumah sakit ini menggunakan data rumah sakit Anda sebagai benchmark pada fitur Analisa Data?&quot;
+                      &quot;Apakah Anda mengizinkan rumah sakit ini menggunakan data {currentHospitalName || 'RSUD Al-Mulk'} sebagai benchmark pada fitur Analisa Data?&quot;
                     </p>
                   </div>
                 </div>

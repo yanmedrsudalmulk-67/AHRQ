@@ -641,6 +641,8 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
     { id: 6, code: 'F6', text: 'Selama pergantian shift, ada waktu yang memadai untuk bertukar semua informasi penting tentang perawatan pasien', dim: 'd10' }
   ];
 
+  const activeRsName = currentRsName && currentRsName.trim() ? currentRsName : 'RSUD Al-Mulk';
+
   const SECTIONS = [
     { id: 0, label: 'Identitas', key: 'identitas' },
     { id: 1, label: 'Bagian A', key: 'A', title: 'Unit / Area Kerja Anda', desc: 'Seberapa jauh Anda setuju dengan pernyataan berikut tentang unit/area kerja utama Anda?' },
@@ -648,7 +650,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
     { id: 3, label: 'Bagian C', key: 'C', title: 'Komunikasi', desc: 'Seberapa sering hal-hal berikut terjadi di unit atau area kerja Anda?' },
     { id: 4, label: 'Bagian D', key: 'D', title: 'Pelaporan Kejadian Keselamatan', desc: 'Kejadian dan pelaporan insiden keselamatan pasien di unit Anda.' },
     { id: 5, label: 'Bagian E', key: 'E', title: 'Peringkat Keselamatan Pasien', desc: 'Bagaimana Anda menilai unit/area kerja Anda dalam hal keselamatan pasien?' },
-    { id: 6, label: 'Bagian F', key: 'F', title: 'Rumah Sakit Anda', desc: 'Seberapa jauh Anda setuju dengan kondisi fasyankes rumah sakit secara menyeluruh?' },
+    { id: 6, label: 'Bagian F', key: 'F', title: activeRsName, desc: `Seberapa jauh Anda setuju dengan kondisi ${activeRsName} secara menyeluruh?` },
     { id: 7, label: 'Bagian G', key: 'G', title: 'Latar Belakang', desc: 'Informasi demografis dan lama bekerja untuk analisis orisinalitas.' },
     { id: 8, label: 'Bagian H', key: 'H', title: 'Komentar Anda', desc: 'Tuliskan masukan atau ulasan konstruktif demi kemajuan budaya keselamatan.' },
     { id: 9, label: 'Review', key: 'review' }
@@ -1248,7 +1250,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     </div>
 
                     <p className="text-sm text-slate-600 leading-relaxed font-normal">
-                      Survei ini meminta pendapat Anda tentang masalah keselamatan pasien, kesalahan medis, dan pelaporan kejadian di rumah sakit Anda dan akan memakan waktu sekitar 10-15 menit untuk menyelesaikannya. Jika ada pertanyaan yang tidak berlaku untuk Anda atau rumah sakit Anda atau Anda tidak tahu jawabannya, silakan pilih <span className="text-emerald-600 font-semibold">{`"Tidak Berlaku atau Tidak Tahu."`}</span>
+                      Survei ini meminta pendapat Anda tentang masalah keselamatan pasien, kesalahan medis, dan pelaporan kejadian di {activeRsName} dan akan memakan waktu sekitar 10-15 menit untuk menyelesaikannya. Jika ada pertanyaan yang tidak berlaku untuk Anda atau {activeRsName} atau Anda tidak tahu jawabannya, silakan pilih <span className="text-emerald-600 font-semibold">{`"Tidak Berlaku atau Tidak Tahu."`}</span>
                     </p>
 
                     {/* DEFINITION BOX (OUTLINED, PREMIUM GLOW) */}
@@ -2151,7 +2153,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
                   <div className="space-y-2">
                     <h3 className="text-lg font-bold text-slate-800">Bagikan Komentar atau Pengalaman Anda</h3>
-                    <p className="text-xs text-slate-500">Silakan berikan komentar Anda tentang bagaimana hal-hal yang dilakukan atau dapat dilakukan di rumah sakit Anda yang dapat mempengaruhi keselamatan pasien.</p>
+                    <p className="text-xs text-slate-500">Silakan berikan komentar Anda tentang bagaimana hal-hal yang dilakukan atau dapat dilakukan di {activeRsName} yang dapat mempengaruhi keselamatan pasien.</p>
                   </div>
 
                   <textarea
