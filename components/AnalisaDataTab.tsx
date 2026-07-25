@@ -3207,10 +3207,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     { 
                       title: <>Perbandingan Jumlah<br/>Peristiwa Dilaporkan</>, 
                       desc: 'Perbandingan distribusi jumlah kejadian keselamatan pasien.', 
-                      icon: <TriangleAlert className="w-[38px] h-[38px] text-[#10B981] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />,
+                      icon: <TriangleAlert className="w-[38px] h-[38px] text-[#6B7280] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />,
                       num: '04',
-                      quarterColor: 'bg-[#10B981]',
-                      lineColor: 'bg-[#10B981]',
+                      quarterColor: 'bg-[#6B7280]',
+                      lineColor: 'bg-[#6B7280]',
                       cardAlign: 'justify-end items-start',
                       headerClasses: 'flex-row',
                       quarterClasses: 'top-0 left-0 rounded-br-full',

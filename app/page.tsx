@@ -74,7 +74,7 @@ export default function Home() {
               className="w-full h-full object-cover"
             />
             {/* Soft light overlay to ensure high contrast in light mode */}
-            <div className={`absolute inset-0 transition-all duration-500 ${screen === 'welcome' ? 'bg-transparent' : 'bg-slate-50/90'}`} />
+            <div className={`absolute inset-0 transition-all duration-500 ${(screen === 'welcome' || screen === 'login' || screen === 'register') ? 'bg-transparent' : 'bg-slate-50/90'}`} />
           </div>
         ) : (
           <div 
@@ -82,7 +82,7 @@ export default function Home() {
             style={{ backgroundImage: `url("${wallpaper.url}")` }}
           >
             {/* Soft light overlay to ensure high contrast in light mode */}
-            <div className={`absolute inset-0 transition-all duration-500 ${screen === 'welcome' ? 'bg-transparent' : 'bg-slate-50/90'}`} />
+            <div className={`absolute inset-0 transition-all duration-500 ${(screen === 'welcome' || screen === 'login' || screen === 'register') ? 'bg-transparent' : 'bg-slate-50/90'}`} />
           </div>
         )
       ) : (

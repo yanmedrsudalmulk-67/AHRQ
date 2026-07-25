@@ -363,13 +363,13 @@ export default function Dashboard({
             type="button"
             onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
             title={isSidebarCollapsed ? "Tampilkan Menu Sidebar" : "Sembunyikan Menu Sidebar"}
-            className="hidden md:flex absolute -right-3.5 top-[88px] z-50 items-center justify-center w-7 h-7 bg-blue-600 hover:bg-blue-500 active:scale-95 text-white rounded-full border-2 border-white shadow-xl cursor-pointer transition-all duration-200 group hover:scale-110 ring-2 ring-blue-900/40"
+            className="hidden md:flex absolute -right-4 top-[96px] z-50 items-center justify-center w-4 h-10 bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-700 rounded-r-xl border border-slate-200 border-l-0 shadow-[4px_0_10px_-2px_rgba(0,0,0,0.1)] cursor-pointer transition-colors duration-200"
             aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isSidebarCollapsed ? (
-              <ChevronRight className="w-4 h-4 text-white transition-transform group-hover:translate-x-0.5" />
+              <ChevronRight className="w-3.5 h-3.5 stroke-[2]" />
             ) : (
-              <ChevronLeft className="w-4 h-4 text-white transition-transform group-hover:-translate-x-0.5" />
+              <ChevronLeft className="w-3.5 h-3.5 stroke-[2]" />
             )}
           </button>
           
