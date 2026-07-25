@@ -2893,7 +2893,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             exit={{ opacity: 0, y: -20 }}
             className="max-w-7xl mx-auto"
           >
-            <div className="relative overflow-hidden bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-950 rounded-[32px] p-8 md:p-10 shadow-2xl shadow-blue-950/40 mb-8 border border-white/20 backdrop-blur-xl group">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-[32px] p-8 md:p-10 shadow-2xl shadow-blue-900/30 mb-8 border border-white/20 backdrop-blur-xl group">
               {/* Decorative Glass Elements */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-3xl"></div>
@@ -2913,7 +2913,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             {/* Card Benchmark dengan Rumah Sakit Lain */}
             <div className="bg-white rounded-[28px] p-6 md:p-8 shadow-lg border border-slate-200/80 mb-10 relative">
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div className="space-y-1 max-w-xl">
+                <div className="space-y-1 max-w-2xl">
                   <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
                     <Building2 className="w-4 h-4" />
                     <span>Fitur Benchmark Antar Rumah Sakit</span>
@@ -2921,7 +2921,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   <h2 className="text-[17px] font-extrabold text-slate-800 tracking-tight">
                     Benchmark dengan Rumah Sakit Lain
                   </h2>
-                  <p className="text-[11px] text-left text-slate-500 font-medium leading-relaxed max-w-[367px]">
+                  <p className="text-[11px] text-left text-slate-500 font-medium leading-relaxed max-w-[580px]">
                     Pilih rumah sakit terdaftar untuk melakukan perbandingan data. Akses perbandingan membutuhkan persetujuan dari rumah sakit pembanding demi keamanan data.
                   </p>
                 </div>
@@ -3699,7 +3699,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   {/* Main Chart Card - Glassmorphism 2.0 style */}
                   <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(37,99,235,0.12)] border border-[rgba(37,99,235,0.10)] overflow-hidden">
                     {/* Header Card */}
-                    <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-indigo-950 p-8 text-white flex items-center justify-between">
+                    <div className="bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] p-8 text-white flex items-center justify-between">
                       <div className="space-y-1.5">
                         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Perbandingan Jumlah Insiden Keselamatan Pasien yang Dilaporkan</h2>
                         <p className="text-xs md:text-sm text-blue-100/80 font-medium">Membandingkan distribusi frekuensi pelaporan insiden keselamatan pasien dengan {activeBenchmarkLabel}</p>
@@ -5301,96 +5301,58 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       { 
                         title: 'Perbandingan Pengukuran Dimensi', 
                         desc: 'Analisis Perbandingan tingkat persentase respon positif untuk 10 dimensi budaya keselamatan berdasarkan unit / area kerja.', 
-                        icon: <BarChart2 className="w-8 h-8 text-[#EE8B1B]" />, 
-                        textColor: 'text-[#EE8B1B]',
-                        badgeBg: 'bg-[#EE8B1B]',
-                        badgePos: 'right',
-                        accent: 'absolute -top-2.5 -left-2.5 w-32 h-20 bg-[#EE8B1B] rounded-[24px] -z-10'
+                        icon: <BarChart2 className="w-5 h-5 text-[#2563EB]" />, 
+                        gradient: 'from-[#2563EB] to-[#1D4ED8]', // Royal Blue Gradient
                       },
                       { 
                         title: 'Perbandingan Hasil Per Item', 
                         desc: 'Mengevaluasi dan membandingkan tanggapan positif staf untuk setiap butir pertanyaan kuesioner SOPS di tiap unit.', 
-                        icon: <ListChecks className="w-8 h-8 text-[#F05A28]" />, 
-                        textColor: 'text-[#F05A28]',
-                        badgeBg: 'bg-[#F05A28]',
-                        badgePos: 'right',
-                        accent: 'absolute -bottom-2.5 -left-2.5 w-32 h-20 bg-[#F05A28] rounded-[24px] -z-10'
+                        icon: <ListChecks className="w-5 h-5 text-[#0D9488]" />, 
+                        gradient: 'from-[#0D9488] to-[#047857]', // Hijau Tosca Gradient
                       },
                       { 
                         title: 'Perbandingan Penilaian Insiden Keselamatan Pasien', 
                         desc: 'Membandingkan penilaian peringkat keselamatan pasien umum (E1) lintas berbagai unit / departemen kerja.', 
-                        icon: <HeartPulse className="w-8 h-8 text-[#22B573]" />, 
-                        textColor: 'text-[#22B573]',
-                        badgeBg: 'bg-[#22B573]',
-                        badgePos: 'left',
-                        accent: 'absolute -top-2.5 -right-2.5 w-32 h-20 bg-[#22B573] rounded-[24px] -z-10'
+                        icon: <HeartPulse className="w-5 h-5 text-[#F97316]" />, 
+                        gradient: 'from-[#F97316] to-[#EA580C]', // Orange Gradient
                       },
                       { 
                         title: 'Perbandingan Jumlah Insiden Keselamatan Pasien Yang Dilaporkan', 
                         desc: 'Melihat perbandingan frekuensi pelaporan kejadian tidak diharapkan (KTD/KNC) di antara berbagai unit / area kerja.', 
-                        icon: <AlertTriangle className="w-8 h-8 text-[#00AEEF]" />, 
-                        textColor: 'text-[#00AEEF]',
-                        badgeBg: 'bg-[#00AEEF]',
-                        badgePos: 'left',
-                        accent: 'absolute -bottom-2.5 -right-2.5 w-32 h-20 bg-[#00AEEF] rounded-[24px] -z-10'
+                        icon: <AlertTriangle className="w-5 h-5 text-[#64748B]" />, 
+                        gradient: 'from-[#64748B] to-[#475569]', // Grey Gradient
                       }
                     ].map((item, idx) => (
                       <motion.div
                         key={idx}
-                        whileHover={{ y: -5 }}
+                        whileHover={{ y: -6, scale: 1.01 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         onClick={() => setUnitSubView(item.title)}
-                        className="relative cursor-pointer group"
+                        className="relative cursor-pointer group bg-white rounded-[20px] shadow-[0_12px_24px_rgba(15,23,42,0.12),_0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.18),_0_6px_16px_rgba(15,23,42,0.08)] border border-slate-200 overflow-hidden flex min-h-[200px] transition-all duration-300"
                       >
-                        {/* Accent shape behind the card */}
-                        <div className={item.accent} />
-
-                        {/* Main Card */}
-                        <div className={`bg-white rounded-[24px] shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.1)] border border-slate-100 p-8 flex min-h-[220px] relative z-10 transition-all duration-300 ${
-                          item.badgePos === 'right' ? 'pr-24 pl-8' : 'pl-24 pr-8'
-                        }`}>
-                          
-                          {/* Circle Badge */}
-                          <div className={`absolute ${
-                            item.badgePos === 'right' ? 'right-6' : 'left-6'
-                          } top-1/2 -translate-y-1/2 flex items-center justify-center z-20`}>
-                            <div className="w-[52px] h-[52px] rounded-full bg-white shadow-[0_8px_20px_rgba(0,0,0,0.12)] flex items-center justify-center p-1 border border-slate-100">
-                              <div className={`w-full h-full rounded-full ${item.badgeBg} flex items-center justify-center text-white font-bold text-[16px]`}>
-                                0{idx + 1}
-                              </div>
-                            </div>
+                        {/* Main Content (Left Area) */}
+                        <div className="flex-1 p-8 flex flex-col justify-between text-left">
+                          {/* Circular Icon Container */}
+                          <div className="w-[50px] h-[50px] rounded-full border border-slate-200/80 flex items-center justify-center bg-slate-50 shadow-[inset_0_2px_4px_rgba(0,0,0,0.02)] mb-5 group-hover:border-slate-300 group-hover:bg-slate-100/50 transition-colors duration-300">
+                            {item.icon}
                           </div>
 
-                          {/* Content */}
-                          {item.badgePos === 'right' ? (
-                            <div className="flex flex-col h-full justify-between text-left w-full">
-                              <div>
-                                <h3 className={`font-bold text-[15px] uppercase tracking-wider mb-2 ${item.textColor} leading-snug`}>
-                                  {item.title}
-                                </h3>
-                                <p className="text-slate-400 text-[11px] leading-[1.6]">
-                                  {item.desc}
-                                </p>
-                              </div>
-                              <div className="mt-4 p-2 bg-slate-50/50 rounded-xl w-fit group-hover:scale-110 transition-transform duration-300">
-                                {item.icon}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col h-full justify-between text-right w-full">
-                              <div>
-                                <h3 className={`font-bold text-[15px] uppercase tracking-wider mb-2 ${item.textColor} leading-snug`}>
-                                  {item.title}
-                                </h3>
-                                <p className="text-slate-400 text-[11px] leading-[1.6]">
-                                  {item.desc}
-                                </p>
-                              </div>
-                              <div className="mt-4 p-2 bg-slate-50/50 rounded-xl w-fit self-end group-hover:scale-110 transition-transform duration-300">
-                                {item.icon}
-                              </div>
-                            </div>
-                          )}
+                          {/* Text Content */}
+                          <div>
+                            <h3 className="font-extrabold text-[14px] uppercase tracking-wider text-slate-700 mb-2 leading-snug group-hover:text-slate-950 transition-colors duration-300">
+                              {item.title}
+                            </h3>
+                            <p className="text-slate-400 text-[11px] leading-[1.6] font-normal">
+                              {item.desc}
+                            </p>
+                          </div>
+                        </div>
 
+                        {/* Right Colored Strip Block with Number */}
+                        <div className={`w-[54px] bg-gradient-to-b ${item.gradient} flex flex-col items-center justify-start pt-6 relative shrink-0`}>
+                          <span className="text-white font-black text-[22px] tracking-tight leading-none select-none">
+                            {idx + 1}
+                          </span>
                         </div>
                       </motion.div>
                     ))}
@@ -6202,9 +6164,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     ].map((item, idx) => (
                       <motion.div
                         key={idx}
-                        whileHover={{ y: -5 }}
+                        whileHover={{ y: -6, scale: 1.01 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 25 }}
                         onClick={() => setPositionSubView(item.title)}
-                        className="bg-white rounded-[28px] shadow-[0_10px_30px_rgba(0,0,0,0.08)] hover:shadow-[0_15px_40px_rgba(0,0,0,0.12)] transition-all duration-300 cursor-pointer relative flex min-h-[220px]"
+                        className="bg-white rounded-[28px] shadow-[0_12px_24px_rgba(15,23,42,0.12),_0_2px_8px_rgba(15,23,42,0.06)] hover:shadow-[0_20px_40px_rgba(15,23,42,0.18),_0_6px_16px_rgba(15,23,42,0.08)] border border-slate-200 transition-all duration-300 cursor-pointer relative flex min-h-[220px]"
                       >
                         {/* Left colored tab */}
                         <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-[70%] w-[80px] ${item.color} rounded-r-[20px] flex flex-col justify-center items-center text-white z-10 shadow-sm`}>
@@ -8550,14 +8513,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="overflow-x-auto max-h-[75vh] border border-slate-200/80 rounded-xl relative shadow-sm">
                       <table className="w-full text-left border-collapse min-w-[750px] font-sans">
                         <thead>
-                          <tr className="bg-gradient-to-r from-blue-800 via-blue-900 to-indigo-950 text-white font-semibold uppercase tracking-wider text-[11px]">
-                            <th rowSpan={2} className="p-3.5 border-r border-b border-blue-900/60 w-[36%] min-w-[260px] bg-gradient-to-r from-blue-800 to-blue-900 text-white text-center align-middle font-extrabold">
+                          <tr className="bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white font-semibold uppercase tracking-wider text-[11px]">
+                            <th rowSpan={2} className="p-3.5 border-r border-b border-blue-800/60 w-[36%] min-w-[260px] bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white text-center align-middle font-extrabold">
                               Jumlah Insiden Keselamatan Pasien<br/>Yang Dilaporkan
                             </th>
-                            <th rowSpan={2} className="p-3.5 border-r border-b border-blue-900/60 text-center w-[14%] min-w-[110px] bg-blue-900 text-white align-middle font-extrabold">
+                            <th rowSpan={2} className="p-3.5 border-r border-b border-blue-800/60 text-center w-[14%] min-w-[110px] bg-[#1D4ED8] text-white align-middle font-extrabold">
                               Dataset
                             </th>
-                            <th colSpan={computedInteractionEventTableData.length} className="p-3 text-center border-b border-blue-900/60 bg-blue-950 text-white font-extrabold tracking-wider">
+                            <th colSpan={computedInteractionEventTableData.length} className="p-3 text-center border-b border-blue-800/60 bg-[#1E40AF] text-white font-extrabold tracking-wider">
                               Kategori Interaksi Pasien
                             </th>
                           </tr>

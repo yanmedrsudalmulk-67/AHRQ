@@ -380,7 +380,7 @@ export default function Dashboard({
         </header>
 
         {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-        <aside className={`w-full fixed bottom-0 left-0 z-50 md:relative ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} bg-gradient-to-b from-blue-800 via-blue-900 to-indigo-950 text-white flex flex-col shrink-0 no-print shadow-2xl md:h-full transition-all duration-300 ease-in-out pb-safe pt-0 md:pt-5 md:pb-5 z-30`}>
+        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-blue-950/45 bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-gradient-to-b md:from-[#2563EB] md:via-[#1D4ED8] md:to-[#1E3A8A] md:pt-5 md:pb-5`}>
           
           {/* Tombol Collapse / Hide Sidebar - Terletak Sejajar Dengan Tulisan AHRQ SOPS v2.0 */}
           <button
@@ -402,7 +402,7 @@ export default function Dashboard({
             {/* Header / Brand Logo & Title - Centered Logo with Text Underneath */}
             <div className={`hidden md:flex flex-col items-center text-center pt-1 pb-1 ${isSidebarCollapsed ? 'px-1' : 'px-4'}`}>
               <div className="relative mb-2 shrink-0">
-                <div className="p-0.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-2xl border border-white/40 shadow-[0_8px_24px_rgba(37,99,235,0.35)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-14 h-14 overflow-hidden relative">
+                <div className="p-0.5 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white rounded-2xl border border-white/40 shadow-[0_8px_24px_rgba(37,99,235,0.3)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-14 h-14 overflow-hidden relative">
                   {activeLogo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />

@@ -139,7 +139,7 @@ export default function LoginScreen({
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
         <div className="text-center space-y-4 mb-8 relative z-10">
-          <div className="mx-auto p-0.5 bg-gradient-to-r from-blue-600/90 to-indigo-700/90 text-white rounded-2xl border border-white/70 shadow-[0_12px_32px_rgba(37,99,235,0.35)] ring-1 ring-white/60 flex items-center justify-center shrink-0 w-20 h-20 overflow-hidden relative group/logo">
+          <div className="mx-auto p-0.5 bg-gradient-to-r from-[#2563EB]/90 via-[#1D4ED8]/90 to-[#1E3A8A]/90 text-white rounded-2xl border border-white/70 shadow-[0_12px_32px_rgba(37,99,235,0.35)] ring-1 ring-white/60 flex items-center justify-center shrink-0 w-20 h-20 overflow-hidden relative group/logo">
             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -160,7 +160,7 @@ export default function LoginScreen({
             onClick={() => { setActiveTab('rs'); setError(''); }}
             className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer ${
               activeTab === 'rs' 
-                ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-[0_8px_20px_rgba(37,99,235,0.35)] ring-1 ring-white/50' 
+                ? 'bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] ring-1 ring-white/50' 
                 : 'text-slate-800 hover:text-slate-950 hover:bg-white/50'
             }`}
           >
@@ -170,7 +170,7 @@ export default function LoginScreen({
             onClick={() => { setActiveTab('admin'); setError(''); }}
             className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer ${
               activeTab === 'admin' 
-                ? 'bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-[0_8px_20px_rgba(37,99,235,0.35)] ring-1 ring-white/50' 
+                ? 'bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] ring-1 ring-white/50' 
                 : 'text-slate-800 hover:text-slate-950 hover:bg-white/50'
             }`}
           >
@@ -196,7 +196,7 @@ export default function LoginScreen({
                   placeholder="Masukan Username"
                   value={rsUsername}
                   onChange={e => setRsUsername(e.target.value)}
-                  className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold shadow-sm"
+                  className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold shadow-sm"
                 />
               </div>
 
@@ -209,12 +209,12 @@ export default function LoginScreen({
                     placeholder="Masukkan Password"
                     value={rsPassword}
                     onChange={e => setRsPassword(e.target.value)}
-                    className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold pr-14 shadow-sm"
+                    className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold pr-14 shadow-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowRsPassword(!showRsPassword)}
-                    className="absolute right-4 top-3.5 text-slate-500 hover:text-blue-700 transition-colors cursor-pointer"
+                    className="absolute right-4 top-3.5 text-slate-500 hover:text-[#1D4ED8] transition-colors cursor-pointer"
                   >
                     {showRsPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -223,7 +223,7 @@ export default function LoginScreen({
 
               <button
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-[0_12px_24px_rgba(37,99,235,0.35)] hover:shadow-[0_16px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
+                className="w-full py-4 bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] hover:from-[#1D4ED8] hover:via-[#1E3A8A] hover:to-[#172554] text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-[0_12px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_16px_32px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
               >
                 <LogIn className="w-4 h-4 transition-transform group-hover:translate-x-1" /> Masuk ke Portal RS
               </button>
@@ -232,7 +232,7 @@ export default function LoginScreen({
                 <button
                   type="button"
                   onClick={onGoToRegister}
-                  className="text-blue-800 hover:text-indigo-900 text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer bg-white/50 hover:bg-white/80 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/60 shadow-sm hover:shadow-md inline-block"
+                  className="text-[#2563EB] hover:text-[#1D4ED8] text-[11px] font-black uppercase tracking-widest transition-all cursor-pointer bg-white/50 hover:bg-white/80 backdrop-blur-xl px-4 py-2.5 rounded-2xl border border-white/60 shadow-sm hover:shadow-md inline-block"
                 >
                   Daftar Akun Rumah Sakit
                 </button>
@@ -251,7 +251,7 @@ export default function LoginScreen({
                   placeholder="Masukan Username"
                   value={adminUsername}
                   onChange={e => setAdminUsername(e.target.value)}
-                  className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold shadow-sm"
+                  className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold shadow-sm"
                 />
               </div>
 
@@ -264,12 +264,12 @@ export default function LoginScreen({
                     placeholder="••••••"
                     value={adminPassword}
                     onChange={e => setAdminPassword(e.target.value)}
-                    className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold pr-14 shadow-sm"
+                    className="w-full bg-white/60 backdrop-blur-2xl border border-white/70 rounded-2xl px-5 py-3.5 text-sm focus:bg-white/90 focus:border-[#2563EB] focus:ring-4 focus:ring-[#2563EB]/20 transition-all outline-none text-slate-900 placeholder-slate-500 font-bold pr-14 shadow-sm"
                   />
                   <button
                     type="button"
                     onClick={() => setShowAdminPassword(!showAdminPassword)}
-                    className="absolute right-4 top-3.5 text-slate-500 hover:text-blue-700 transition-colors cursor-pointer"
+                    className="absolute right-4 top-3.5 text-slate-500 hover:text-[#1D4ED8] transition-colors cursor-pointer"
                   >
                     {showAdminPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
@@ -278,7 +278,7 @@ export default function LoginScreen({
 
               <button
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-[0_12px_24px_rgba(37,99,235,0.35)] hover:shadow-[0_16px_32px_rgba(37,99,235,0.45)] hover:-translate-y-0.5 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
+                className="w-full py-4 bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] hover:from-[#1D4ED8] hover:via-[#1E3A8A] hover:to-[#172554] text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-[0_12px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_16px_32px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
               >
                 <LogIn className="w-4 h-4 transition-transform group-hover:translate-x-1" /> Masuk Admin Utama
               </button>

@@ -64,7 +64,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
         <div className="flex items-center gap-3 relative z-10">
-          <div className="p-0.5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-xl border border-white/40 shadow-[0_8px_32px_rgba(37,99,235,0.3)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-12 h-12 overflow-hidden relative group/logo">
+          <div className="p-0.5 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white rounded-xl border border-white/40 shadow-[0_8px_32px_rgba(37,99,235,0.3)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-12 h-12 overflow-hidden relative group/logo">
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -136,7 +136,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
           >
             <button
               onClick={onEnter}
-              className="group px-8 py-4 bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu duration-300 cursor-pointer text-sm tracking-wide"
+              className="group px-8 py-4 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu duration-300 cursor-pointer text-sm tracking-wide"
             >
               MULAI SURVEI
               <motion.div
