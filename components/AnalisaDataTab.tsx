@@ -2875,7 +2875,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             exit={{ opacity: 0, y: -20 }}
             className="max-w-7xl mx-auto"
           >
-            <div className="relative overflow-hidden bg-gradient-to-br from-blue-600 to-indigo-700 rounded-[32px] p-8 md:p-10 shadow-2xl shadow-blue-900/30 mb-8 border border-white/20 backdrop-blur-xl group">
+            <div className="relative overflow-hidden bg-gradient-to-br from-blue-800 via-blue-900 to-indigo-950 rounded-[32px] p-8 md:p-10 shadow-2xl shadow-blue-950/40 mb-8 border border-white/20 backdrop-blur-xl group">
               {/* Decorative Glass Elements */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-3xl"></div>
@@ -3674,7 +3674,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   {/* Main Chart Card - Glassmorphism 2.0 style */}
                   <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(37,99,235,0.12)] border border-[rgba(37,99,235,0.10)] overflow-hidden">
                     {/* Header Card */}
-                    <div className="bg-gradient-to-r from-blue-600 to-indigo-800 p-8 text-white flex items-center justify-between">
+                    <div className="bg-gradient-to-r from-blue-800 via-blue-900 to-indigo-950 p-8 text-white flex items-center justify-between">
                       <div className="space-y-1.5">
                         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Perbandingan Jumlah Insiden Keselamatan Pasien yang Dilaporkan</h2>
                         <p className="text-xs md:text-sm text-blue-100/80 font-medium">Membandingkan distribusi frekuensi pelaporan insiden keselamatan pasien dengan {activeBenchmarkLabel}</p>
@@ -6186,7 +6186,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       >
                         {/* Left colored tab */}
                         <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-[70%] w-[80px] ${item.color} rounded-r-[20px] flex flex-col justify-center items-center text-white z-10 shadow-sm`}>
-                          <span className="text-[11px] font-bold tracking-widest uppercase opacity-90 mb-1">Step</span>
+                          <span className="text-[11px] font-bold tracking-widest uppercase opacity-90 mb-1">HASIL</span>
                           <span className="text-[32px] font-bold leading-none">0{idx + 1}</span>
                         </div>
 

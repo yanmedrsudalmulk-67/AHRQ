@@ -441,9 +441,29 @@ export default function Dashboard({
                     )}
 
                     {/* Icon */}
-                    <div className={`p-1 rounded-lg shrink-0 ${isActive ? 'text-amber-300 md:text-blue-700' : 'text-blue-200'}`}>
-                      <Icon className={`w-[18px] h-[18px] md:w-5 md:h-5 shrink-0 transition-all ${isActive ? 'scale-110' : ''}`} />
-                    </div>
+                    <motion.div 
+                      className={`p-1 rounded-lg shrink-0 ${isActive ? 'text-amber-300 md:text-blue-700' : 'text-blue-200'}`}
+                      animate={
+                        isActive
+                          ? {
+                              y: [0, -7, 0, -3.5, 0, 0],
+                              scale: [1, 1.15, 1, 1.08, 1, 1],
+                            }
+                          : { y: 0, scale: 1 }
+                      }
+                      transition={
+                        isActive
+                          ? {
+                              duration: 3,
+                              repeat: Infinity,
+                              ease: "easeInOut",
+                              times: [0, 0.12, 0.24, 0.36, 0.48, 1],
+                            }
+                          : { duration: 0.2 }
+                      }
+                    >
+                      <Icon className="w-[18px] h-[18px] md:w-5 md:h-5 shrink-0 transition-all" />
+                    </motion.div>
 
                     {!isSidebarCollapsed && (
                       item.id === 'persetujuan-benchmark' ? (
