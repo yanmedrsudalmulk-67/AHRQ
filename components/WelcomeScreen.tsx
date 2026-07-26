@@ -93,10 +93,10 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         </div>
       </header>
 
-      {/* 2. Main Content Area (Left-Aligned Layout) */}
+      {/* 2. Main Content Area (Bottom-Left Aligned Layout) */}
       <main 
         id="welcome-main" 
-        className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-center items-start text-left py-6 lg:py-0 px-6"
+        className="max-w-7xl mx-auto w-full flex-1 flex flex-col justify-end items-start text-left pb-8 pt-6 px-6"
       >
         
         {/* Headline & CTA */}
