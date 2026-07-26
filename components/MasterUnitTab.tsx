@@ -7,6 +7,18 @@ interface MasterUnitTabProps {
   rsName: string;
 }
 
+const PRESET_CATEGORIES = [
+  'Manajemen & Direksi',
+  'Rawat Jalan',
+  'Instalasi Gawat Darurat',
+  'Rawat Inap',
+  'Kamar Operasi',
+  'Penunjang Medis',
+  'Penunjang Non Medis',
+  'Administrasi',
+  'Lainnya'
+];
+
 export default function MasterUnitTab({ rsName }: MasterUnitTabProps) {
   const [positions, setPositions] = useState<UnitKerja[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -16,7 +28,7 @@ export default function MasterUnitTab({ rsName }: MasterUnitTabProps) {
   const [editForm, setEditForm] = useState<Partial<UnitKerja>>({});
   
   const [isAdding, setIsAdding] = useState(false);
-  const [addForm, setAddForm] = useState<Partial<UnitKerja>>({ kategori: 'Lainnya', is_active: true });
+  const [addForm, setAddForm] = useState<Partial<UnitKerja>>({ kategori: 'Instalasi Gawat Darurat', is_active: true });
 
   const [draggedId, setDraggedId] = useState<string | null>(null);
 
@@ -76,7 +88,7 @@ export default function MasterUnitTab({ rsName }: MasterUnitTabProps) {
     const updated = [...positions, newPos];
     await handleSave(updated);
     setIsAdding(false);
-    setAddForm({ kategori: 'Lainnya', is_active: true });
+    setAddForm({ kategori: 'Instalasi Gawat Darurat', is_active: true });
   };
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
@@ -121,7 +133,12 @@ export default function MasterUnitTab({ rsName }: MasterUnitTabProps) {
     return acc;
   }, {} as Record<string, UnitKerja[]>);
 
-  const allCategories = Array.from(new Set(positions.map(p => p.kategori)));
+  const categoryOptions = Array.from(
+    new Set([
+      ...PRESET_CATEGORIES,
+      ...positions.map(p => p.kategori).filter(Boolean)
+    ])
+  );
 
   if (isLoading) {
     return (
@@ -176,23 +193,20 @@ export default function MasterUnitTab({ rsName }: MasterUnitTabProps) {
                   value={addForm.nama_unit || ''}
                   onChange={e => setAddForm({...addForm, nama_unit: e.target.value})}
                   className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500/50"
-                  placeholder="Contoh: Perawat IGD"
+                  placeholder="IGD, RAWAT INAP"
                 />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-500 mb-1.5">Kategori</label>
-                <div className="relative">
-                  <input 
-                    type="text" 
-                    value={addForm.kategori || ''}
-                    onChange={e => setAddForm({...addForm, kategori: e.target.value})}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500/50"
-                    list="categories"
-                  />
-                  <datalist id="categories">
-                    {allCategories.map(c => <option key={c} value={c} />)}
-                  </datalist>
-                </div>
+                <select 
+                  value={addForm.kategori || categoryOptions[0]}
+                  onChange={e => setAddForm({...addForm, kategori: e.target.value})}
+                  className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm text-slate-700 outline-none focus:border-emerald-500/50 cursor-pointer"
+                >
+                  {categoryOptions.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div className="flex justify-end gap-2">
@@ -224,12 +238,15 @@ export default function MasterUnitTab({ rsName }: MasterUnitTabProps) {
                           onChange={e => setEditForm({...editForm, nama_unit: e.target.value})}
                           className="w-full bg-white border border-emerald-500 rounded-lg px-3 py-1.5 text-sm text-slate-700 outline-none"
                         />
-                        <input 
-                          type="text" 
+                        <select 
                           value={editForm.kategori || ''}
                           onChange={e => setEditForm({...editForm, kategori: e.target.value})}
-                          className="w-full bg-white border border-emerald-500 rounded-lg px-3 py-1.5 text-sm text-slate-700 outline-none"
-                        />
+                          className="w-full bg-white border border-emerald-500 rounded-lg px-3 py-1.5 text-sm text-slate-700 outline-none cursor-pointer"
+                        >
+                          {categoryOptions.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                          ))}
+                        </select>
                         <div className="flex justify-end gap-2 pt-1">
                           <button onClick={() => setIsEditing(null)} className="p-1.5 text-slate-500 hover:text-slate-800 bg-slate-100 rounded-lg"><X className="w-4 h-4" /></button>
                           <button onClick={saveEdit} className="p-1.5 text-white bg-emerald-600 hover:bg-emerald-500 rounded-lg"><Check className="w-4 h-4" /></button>
