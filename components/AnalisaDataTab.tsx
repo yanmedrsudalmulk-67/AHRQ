@@ -4328,8 +4328,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <thead className="bg-slate-50 text-slate-600 font-bold">
                               <tr>
                                 <th className="p-3.5 border-b border-slate-200 text-left">Jabatan / Kategori Staf</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (N)</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (%)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">(N)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">(%)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -4366,8 +4366,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <thead className="bg-slate-50 text-slate-600 font-bold">
                               <tr>
                                 <th className="p-3.5 border-b border-slate-200 text-left">Unit Utama (Primary Work Area)</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (N)</th>
-                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">{namaRs || 'RS'} (%)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">(N)</th>
+                                <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900 w-28">(%)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
@@ -4405,7 +4405,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Durasi (Tahun)</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">(%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -4440,7 +4440,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Durasi (Tahun)</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">(%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -4478,7 +4478,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Durasi (Jam)</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">(%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
@@ -4513,7 +4513,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <thead className="bg-slate-50 text-slate-600 font-bold">
                                 <tr>
                                   <th className="p-3.5 border-b border-slate-200 text-left">Kategori</th>
-                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">{namaRs || 'RS'} (%)</th>
+                                  <th className="p-3.5 border-b border-slate-200 text-center bg-blue-50/50 text-blue-900">(%)</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-100">
