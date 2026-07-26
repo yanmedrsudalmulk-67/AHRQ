@@ -6767,8 +6767,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Total Responden</span>
-                        <span className="text-2xl font-black text-slate-800">{computedTableData.reduce((sum, r) => sum + r.totalValid, 0)}</span>
-                        <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">staf aktif berpartisipasi</span>
+                        <span className="text-2xl font-black text-slate-800 italic block">{computedTableData.reduce((sum, r) => sum + r.totalValid, 0)}</span>
+                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">staf aktif berpartisipasi</span>
                       </div>
                     </div>
 
@@ -6779,8 +6779,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Jumlah Posisi Staf</span>
-                        <span className="text-2xl font-black text-slate-800">{masterPositions.filter(p => p.is_active).length}</span>
-                        <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">peran terdaftar di sistem</span>
+                        <span className="text-2xl font-black text-slate-800 italic block">{masterPositions.filter(p => p.is_active).length}</span>
+                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">peran terdaftar di sistem</span>
                       </div>
                     </div>
 
@@ -6791,8 +6791,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
-                        <span className="text-2xl font-black text-slate-800">{averageEventsRS.toFixed(2)}</span>
-                        <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">peristiwa / responden / th</span>
+                        <span className="text-2xl font-black text-slate-800 italic block">{averageEventsRS.toFixed(2)}</span>
+                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">peristiwa / responden / th</span>
                       </div>
                     </div>
 
@@ -6803,8 +6803,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       </div>
                       <div>
                         <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Rata-Rata Benchmark</span>
-                        <span className="text-2xl font-black text-slate-800">{averageEventsBenchmark.toFixed(2)}</span>
-                        <span className="text-[10px] font-semibold text-slate-400 block mt-0.5">peristiwa keselamatan / th</span>
+                        <span className="text-2xl font-black text-slate-800 italic block">{averageEventsBenchmark.toFixed(2)}</span>
+                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">peristiwa keselamatan / th</span>
                       </div>
                     </div>
                   </div>
