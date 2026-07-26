@@ -110,8 +110,11 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               className="text-[49px] w-full md:w-[504px] max-w-[504px] font-black text-[#2563EB] tracking-tight leading-[1.1] font-sans text-left [text-shadow:_0_2px_6px_rgba(0,0,0,0.15)]"
             >
               Sistem Survei <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-[#1D4ED8] drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]">
-                Budaya Keselamatan Pasien
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]">
+                Budaya
+              </span>{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-700 drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]">
+                Keselamatan Pasien
               </span>
             </motion.h1>
 
