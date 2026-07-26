@@ -2898,13 +2898,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-3xl"></div>
               
-              <div className="relative z-10">
-                <div className="mb-4">
-                  <h1 className="text-[35px] font-black text-white tracking-tight">
-                    Analisa Data
-                  </h1>
-                </div>
-                <p className="text-blue-50 text-[16px] font-medium leading-relaxed max-w-4xl opacity-90">
+              <div className="relative z-10 space-y-1.5">
+                <h1 className="text-[35px] font-black text-white tracking-tight leading-tight">
+                  Analisa Data
+                </h1>
+                <p className="text-blue-50 text-[14px] font-medium leading-relaxed w-full opacity-90">
                   Analisis komprehensif hasil Survei Budaya Keselamatan Pasien AHRQ SOPS 2.0 secara interaktif, realtime, dan terintegrasi dengan seluruh data survei.
                 </p>
               </div>

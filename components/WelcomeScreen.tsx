@@ -55,15 +55,13 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       className="min-h-screen lg:h-screen lg:max-h-screen bg-transparent text-slate-800 flex flex-col justify-between p-4 md:p-6 lg:p-8 relative overflow-x-hidden overflow-y-auto lg:overflow-hidden font-sans select-none"
     >
       
-      {/* 1. Header (Translucent Light Glass Bar) */}
+      {/* 1. Header (Clean direct items without card/box container) */}
       <header 
         id="welcome-header" 
-        className="max-w-7xl mx-auto w-full flex justify-between items-center py-3.5 px-6 bg-white/30 backdrop-blur-2xl rounded-2xl border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.1)] ring-1 ring-white/30 relative overflow-hidden group"
+        className="max-w-7xl mx-auto w-full flex justify-between items-center py-2 px-2 md:px-4 relative z-20"
       >
-        {/* Shine effect overlay */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
-
-        <div className="flex items-center gap-3 relative z-10">
+        {/* Left branding: Logo & Text */}
+        <div className="flex items-center gap-3">
           <div className="p-0.5 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white rounded-xl border border-white/40 shadow-[0_8px_32px_rgba(37,99,235,0.3)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-12 h-12 overflow-hidden relative group/logo">
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
             {activeLogo ? (
@@ -79,16 +77,16 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
           </div>
         </div>
 
-        {/* Real-time Date and Clock Widget */}
-        <div className="flex items-center gap-2 md:gap-3 relative z-10">
+        {/* Right side: Floating Date & Clock Widget */}
+        <div className="flex items-center gap-2 md:gap-3 bg-white/40 backdrop-blur-xl border border-white/60 rounded-2xl p-1.5 shadow-[0_10px_25px_rgba(0,0,0,0.08)] ring-1 ring-white/40">
           {/* Date pill */}
-          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-[0_10px_25px_rgba(0,0,0,0.05)] ring-1 ring-white/30 text-slate-700 transition-all hover:bg-white/30">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/60 text-slate-800">
             <Calendar className="w-3.5 h-3.5 text-teal-600 shrink-0" />
             <span className="text-[11px] font-bold tracking-wide">{dateString || 'Memuat...'}</span>
           </div>
 
           {/* Clock pill */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/20 backdrop-blur-xl border border-white/40 shadow-[0_10px_25px_rgba(0,0,0,0.05)] ring-1 ring-white/30 text-teal-800 font-mono transition-all hover:bg-white/30">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 text-teal-900 font-mono">
             <Clock className="w-3.5 h-3.5 text-teal-600 shrink-0 animate-pulse" />
             <span className="text-xs font-black tracking-wider">{timeString || '--:--:-- WIB'}</span>
           </div>
@@ -109,7 +107,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-[36px] md:text-[56px] w-full md:w-[600px] font-black text-[#2563EB] tracking-tight leading-[1.1] font-sans text-left"
+              className="text-[49px] w-full md:w-[504px] max-w-[504px] font-black text-[#2563EB] tracking-tight leading-[1.1] font-sans text-left"
             >
               Sistem Survei <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-[#1D4ED8]">
@@ -121,7 +119,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-slate-600 text-xs md:text-[15px] leading-relaxed w-full md:w-[600px] text-left md:text-justify font-medium"
+              className="text-[11px] leading-relaxed w-full md:w-[501px] max-w-[501px] text-left md:text-justify font-medium text-slate-700"
             >
               Platform digital untuk pelaksanaan, analisis, dan pelaporan Survei Budaya Keselamatan Pasien berbasis AHRQ SOPS Version 2.0 yang terintegrasi secara realtime guna mendukung peningkatan mutu pelayanan dan keselamatan pasien di rumah sakit
             </motion.p>
@@ -158,7 +156,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
         id="welcome-footer" 
         className="max-w-7xl mx-auto w-full py-4 border-t border-slate-200 text-center flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 px-6"
       >
-        <p className="text-[#e7eef8] [text-shadow:_0_1px_2px_rgba(0,0,0,0.5)] font-medium">© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
+        <p className="text-[#1c293e] font-medium">© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
       </footer>
 
     </div>

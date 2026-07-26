@@ -1246,7 +1246,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {step === 0 && (
                 <div className="space-y-6">
                   {/* PETUNJUK CARD (PREMIUM & MODERN) */}
-                  <div className="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-xl shadow-slate-900/10 relative overflow-hidden space-y-6">
+                  <div className="bg-white rounded-3xl border border-emerald-300 ring-1 ring-emerald-500/10 p-6 md:p-8 shadow-xl shadow-slate-900/10 relative overflow-hidden space-y-6">
                     <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
                     
                     <div className="flex items-center gap-3">
@@ -1283,12 +1283,14 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
                   {/* IDENTIFIKASI PROFIL RESPONDEN */}
                   <div
-                    className={`rounded-3xl border p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 ${
+                    className={`rounded-3xl border p-8 shadow-xl shadow-slate-900/10 transition-all transform-gpu duration-300 space-y-6 relative overflow-hidden ${
                       posisiStaf && unitKerja 
                         ? 'bg-white border-emerald-300 ring-1 ring-emerald-500/10' 
-                        : 'bg-white border-slate-200 hover:border-slate-300'
+                        : 'bg-white border-emerald-300 ring-1 ring-emerald-500/10'
                     }`}
                   >
+                    <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500" />
+
                     <div className="space-y-2">
                       <span className="text-xs font-bold text-emerald-600 tracking-wider font-mono">STEP 1</span>
                       <h2 className="text-2xl font-bold text-slate-800">Identifikasi Profil Responden</h2>
