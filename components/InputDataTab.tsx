@@ -661,16 +661,16 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
   // Automatically scroll to the top of the page / container when step changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
       
       const mains = document.getElementsByTagName('main');
       for (let i = 0; i < mains.length; i++) {
-        mains[i].scrollTo({ top: 0, behavior: 'smooth' });
+        mains[i].scrollTop = 0;
       }
 
       const wrapper = document.getElementById('survey-main-wrapper');
       if (wrapper) {
-        wrapper.scrollTo({ top: 0, behavior: 'smooth' });
+        wrapper.scrollTop = 0;
       }
     }
   }, [step]);
@@ -1094,18 +1094,18 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       <div className="sticky top-0 z-30 p-4 md:p-6 pb-2">
         <header 
           id="survey-sticky-header" 
-          className="bg-white/90 backdrop-blur-xl border border-slate-200 shadow-xl shadow-slate-900/10 rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
+          className="bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white border border-blue-500/30 shadow-xl shadow-blue-900/20 rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
         >
           {/* Subtle gradient background effect */}
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-indigo-500/5 to-purple-500/5 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
 
           {/* Top section: Title and Actions */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
             <div className="space-y-1">
-              <h1 className="text-[19px] font-extrabold text-[#4c43c9] leading-tight">
+              <h1 className="text-[23px] font-extrabold text-white leading-tight">
                 Kuesioner Survei Budaya Keselamatan Pasien
               </h1>
-              <p className="text-[10px] text-slate-500 font-semibold tracking-wider uppercase">
+              <p className="text-[12px] text-blue-100 font-semibold tracking-wider uppercase">
                 AHRQ Hospital Survey on Patient Safety Culture Version 2.0
               </p>
             </div>
@@ -1114,41 +1114,41 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {/* Card Tanggal & Tahun Pengisian */}
               <div 
                 id="date-year-picker-card" 
-                className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1 shadow-[0_2px_8px_rgba(0,0,0,0.03)] h-[44px] hover:border-slate-300 hover:bg-slate-100/30 transition-all duration-300"
+                className="flex items-center gap-2 bg-white border border-white/80 rounded-xl px-3 py-1 shadow-md h-[44px] hover:bg-slate-50 transition-all duration-300"
               >
                 {/* Tanggal Picker */}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-emerald-600 shrink-0">
+                  <span className="text-[#21bf3e] shrink-0">
                     <Calendar className="w-4 h-4" />
                   </span>
                   <div className="flex flex-col">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase leading-none tracking-wider font-sans">Tanggal</span>
+                    <span className="text-[8px] font-bold text-[#525b80] uppercase leading-none tracking-wider font-sans">Tanggal</span>
                     <input
                       type="date"
                       value={tanggalPengisian}
                       onChange={(e) => handleTanggalChange(e.target.value)}
-                      className="bg-transparent border-none text-[11px] font-bold text-slate-700 focus:outline-none w-[105px] h-4 cursor-pointer p-0 font-sans"
+                      className="bg-transparent border-none text-[11px] font-extrabold text-[#2563EB] focus:outline-none w-[105px] h-4 cursor-pointer p-0 font-sans"
                     />
                   </div>
                 </div>
 
-                <div className="h-6 w-px bg-slate-200" />
+                <div className="h-6 w-px bg-blue-100" />
 
                 {/* Tahun Picker */}
                 <div className="flex items-center gap-1.5">
-                  <span className="text-emerald-600 shrink-0">
+                  <span className="text-[#e89a13] shrink-0">
                     <Clock className="w-4 h-4" />
                   </span>
                   <div className="flex flex-col">
-                    <span className="text-[8px] font-bold text-slate-400 uppercase leading-none tracking-wider font-sans">Tahun</span>
+                    <span className="text-[8px] font-bold text-[#525b80] uppercase leading-none tracking-wider font-sans">Tahun</span>
                     <select
                       value={tahunPengisian}
                       onChange={(e) => handleTahunChange(e.target.value)}
-                      className="bg-transparent border-none text-[11px] font-bold text-slate-700 focus:outline-none w-[55px] h-4 cursor-pointer p-0 font-sans"
+                      className="bg-transparent border-none text-[11px] font-extrabold text-[#2563EB] focus:outline-none w-[55px] h-4 cursor-pointer p-0 font-sans"
                     >
                       {Array.from({ length: 15 }, (_, i) => {
                         const y = new Date().getFullYear() - 10 + i;
-                        return <option key={y} value={y.toString()}>{y}</option>;
+                        return <option key={y} value={y.toString()} className="text-slate-800 bg-white">{y}</option>;
                       })}
                     </select>
                   </div>
@@ -1159,7 +1159,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   type="button"
                   onClick={handleResetTanggal}
                   title="Gunakan Tanggal Hari Ini"
-                  className="p-1 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all duration-200 shrink-0 cursor-pointer"
+                  className="p-1 text-[#454d60] hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-all duration-200 shrink-0 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -1171,9 +1171,9 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 shadow-[0_0_10px_rgba(16,185,129,0.05)]"
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-[#2563EB] bg-white px-3 py-1.5 rounded-xl border border-white/80 shadow-md"
                   >
-                    <Check className="w-3.5 h-3.5" />
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Tersimpan</span>
                   </motion.div>
                 )}
@@ -1181,9 +1181,9 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {!isPublic && (
                 <button
                   onClick={() => setShowLinkModal(true)}
-                  className="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_0_15px_rgba(99,102,241,0.05)]"
+                  className="flex items-center gap-2 bg-white hover:bg-blue-50 text-[#2563EB] border border-white/80 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
                 >
-                  <Share2 className="w-4 h-4" />
+                  <Share2 className="w-4 h-4 text-[#2563EB]" />
                   Bagikan Link
                 </button>
               )}
@@ -1193,22 +1193,22 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           {/* Bottom section: Progress Bar */}
           <div className="flex flex-col md:flex-row md:items-center justify-between w-full relative z-10 pt-2 gap-3 md:gap-6">
             <div className="shrink-0">
-              <h3 className="text-[10px] md:text-xs font-bold text-[#4c43c9] uppercase tracking-widest">
+              <h3 className="text-[10px] md:text-xs font-bold text-white uppercase tracking-widest">
                 Progres Pengisian Kuesioner
               </h3>
             </div>
             
             <div className="flex items-center gap-3 flex-1 w-full">
-              <span className="text-xs font-bold text-slate-600 tabular-nums shrink-0">
+              <span className="text-xs font-bold text-white/90 tabular-nums shrink-0">
                 {answeredCount}/{totalQuestions}
               </span>
-              <div className="flex-1 bg-slate-100 h-3.5 rounded-full overflow-hidden relative shadow-inner border border-slate-200/50">
+              <div className="flex-1 bg-black/20 h-3.5 rounded-full overflow-hidden relative shadow-inner border border-white/20">
                 <div 
-                  className="bg-gradient-to-r from-blue-600 via-indigo-500 to-cyan-500 h-full rounded-full transition-all transform-gpu duration-500 ease-out shadow-[0_0_12px_rgba(59,130,246,0.3)]" 
+                  className="bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-300 h-full rounded-full transition-all transform-gpu duration-500 ease-out shadow-[0_0_12px_rgba(52,211,153,0.5)]" 
                   style={{ width: `${progressPercent}%` }}
                 />
               </div>
-              <span className="text-sm font-extrabold text-indigo-600 w-10 text-right shrink-0 tabular-nums">
+              <span className="text-sm font-extrabold text-white w-10 text-right shrink-0 tabular-nums">
                 {progressPercent}%
               </span>
             </div>

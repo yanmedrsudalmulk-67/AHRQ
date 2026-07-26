@@ -1,22 +1,16 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 
-export default function CountUp({ value, duration = 1.5, className = '' }: { value: number, duration?: number, className?: string }) {
+export default function CountUp({ value, duration = 1, className = '' }: { value: number, duration?: number, className?: string }) {
   const count = useMotionValue(0);
-  const rounded = useTransform(count, Math.round);
-  const [displayValue, setDisplayValue] = useState(0);
+  const rounded = useTransform(count, (latest) => `${Math.round(latest)}%`);
 
   useEffect(() => {
-    const animation = animate(count, value, { duration });
+    const animation = animate(count, value, { duration, ease: "easeOut" });
     return animation.stop;
   }, [value, duration, count]);
 
-  useEffect(() => {
-    return rounded.on("change", (latest) => {
-      setDisplayValue(latest);
-    });
-  }, [rounded]);
-
-  return <span className={className}>{displayValue}%</span>;
+  return <motion.span className={className}>{rounded}</motion.span>;
 }
+

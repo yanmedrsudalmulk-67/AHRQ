@@ -364,19 +364,19 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     }
   };
 
-  // Reset scroll to top when activeView, subviews, or mode change
+  // Reset scroll to top instantly when activeView, subviews, or mode change
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as any });
     const mains = document.getElementsByTagName('main');
     for (let i = 0; i < mains.length; i++) {
-      mains[i].scrollTo({ top: 0, behavior: 'smooth' });
+      mains[i].scrollTop = 0;
     }
     const wrapper = document.getElementById('dashboard-main-scroll');
     if (wrapper) {
-      wrapper.scrollTo({ top: 0, behavior: 'smooth' });
+      wrapper.scrollTop = 0;
     }
     if (tabContentRef.current) {
-      tabContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      tabContentRef.current.scrollTop = 0;
     }
   }, [activeView, benchmarkSubView, hospitalSubView, positionSubView, unitSubView, tenureSubView, interactionSubView, mode]);
   const [selectedDimId, setSelectedDimId] = useState<string>('d1');
@@ -3378,15 +3378,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                             <span className="text-xs font-black text-slate-800">{row.Capaian.toFixed(1)}%</span>
                                           </div>
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
-                                            <motion.div 
-                                              initial={{ scaleX: 0 }}
-                                              animate={{ scaleX: 1 }}
-                                              transition={{ duration: 0.8, ease: "easeOut" }}
+                                            <div 
                                               style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
-                                              className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                              className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 animate-bar-grow transform-gpu`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                            </motion.div>
+                                            </div>
                                           </div>
                                         </div>
 
@@ -3399,15 +3396,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                             <span className="text-xs font-black text-emerald-700">{(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)).toFixed(1)}%</span>
                                           </div>
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
-                                            <motion.div 
-                                              initial={{ scaleX: 0 }}
-                                              animate={{ scaleX: 1 }}
-                                              transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+                                            <div 
                                               style={{ transformOrigin: 'left', width: `${masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)}%` }}
-                                              className={`h-full ${getBarColor(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0))} opacity-85 relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                              className={`h-full ${getBarColor(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0))} opacity-85 relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                            </motion.div>
+                                            </div>
                                           </div>
                                         </div>
                                       </div>
@@ -3417,15 +3411,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         <div className="flex items-center gap-3 w-full">
                                           <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun1}</span>
                                           <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                                            <motion.div 
-                                              initial={{ scaleX: 0 }}
-                                              animate={{ scaleX: 1 }}
-                                              transition={{ duration: 0.8, ease: "easeOut" }}
+                                            <div 
                                               style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
-                                              className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all transform-gpu opacity-70 will-change-transform`}
+                                              className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 animate-bar-grow transform-gpu opacity-70`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                            </motion.div>
+                                            </div>
                                           </div>
                                           <span className="text-xs font-bold text-slate-500 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
                                         </div>
@@ -3433,15 +3424,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         <div className="flex items-center gap-3 w-full">
                                           <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun2}</span>
                                           <div className="flex-1 bg-slate-100 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                                            <motion.div 
-                                              initial={{ scaleX: 0 }}
-                                              animate={{ scaleX: 1 }}
-                                              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                            <div 
                                               style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
-                                              className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                              className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                            </motion.div>
+                                            </div>
                                           </div>
                                           <span className="text-sm font-bold text-slate-700 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
                                         </div>
@@ -3548,13 +3536,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
                             <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-rs-${index}`} fill="#10b981" />
                             ))}
                           </Bar>
-                          <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+                          <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
                             <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-bp-${index}`} fill="#64748b" />
@@ -3800,7 +3788,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               fill="url(#royalBlueGrad3D)" 
                               radius={[8, 8, 0, 0]} 
                               maxBarSize={55} 
-                              filter="url(#dark3DShadowBlue)"
                             >
                               <LabelList 
                                 dataKey="Rumah Sakit Anda" 
@@ -3819,7 +3806,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               strokeWidth={0.5} 
                               radius={[8, 8, 0, 0]} 
                               maxBarSize={55}
-                              filter="url(#dark3DShadowGrey)"
                             >
                               <LabelList 
                                 dataKey={activeBenchmarkLabel} 
@@ -4646,15 +4632,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     {mode === 'Tunggal' ? (
                                       <div className="flex items-center gap-3 w-full">
                                         <div className="flex-1 bg-slate-100 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                                          <motion.div 
-                                            initial={{ scaleX: 0 }}
-                                            animate={{ scaleX: 1 }}
-                                            transition={{ duration: 0.8, ease: "easeOut" }}
+                                          <div 
                                             style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
-                                            className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                            className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 animate-bar-grow transform-gpu`}
                                           >
                                             <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                          </motion.div>
+                                          </div>
                                         </div>
                                         <span className="text-sm font-bold text-slate-700 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
                                       </div>
@@ -4664,15 +4647,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         <div className="flex items-center gap-3 w-full">
                                           <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun1}</span>
                                           <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                                            <motion.div 
-                                              initial={{ scaleX: 0 }}
-                                              animate={{ scaleX: 1 }}
-                                              transition={{ duration: 0.8, ease: "easeOut" }}
+                                            <div 
                                               style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
-                                              className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all transform-gpu opacity-70 will-change-transform`}
+                                              className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 animate-bar-grow transform-gpu opacity-70`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                            </motion.div>
+                                            </div>
                                           </div>
                                           <span className="text-xs font-bold text-slate-500 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
                                         </div>
@@ -4680,15 +4660,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         <div className="flex items-center gap-3 w-full">
                                           <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun2}</span>
                                           <div className="flex-1 bg-slate-100 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                                            <motion.div 
-                                              initial={{ scaleX: 0 }}
-                                              animate={{ scaleX: 1 }}
-                                              transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                            <div 
                                               style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
-                                              className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                              className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                            </motion.div>
+                                            </div>
                                           </div>
                                           <span className="text-sm font-bold text-slate-700 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
                                         </div>
@@ -5033,7 +5010,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50} filter="url(#shadow-raised-rose)">
+                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50}>
                             <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#be123c" fontSize={11} fontWeight="bold" />
                           </Bar>
                         </RechartsBarChart>
@@ -5178,7 +5155,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               fill="url(#purpleGrad)" 
                               radius={[6, 6, 0, 0]} 
                               maxBarSize={55} 
-                              filter="url(#re-shadow-purple)"
                             >
                               <LabelList 
                                 dataKey="Rumah Sakit Anda" 
@@ -5197,7 +5173,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 fill="url(#orangeGrad2)" 
                                 radius={[6, 6, 0, 0]} 
                                 maxBarSize={55} 
-                                filter="url(#re-shadow-orange)"
                               >
                                 <LabelList 
                                   dataKey="Tahun 2" 
@@ -7867,7 +7842,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
               )
             ) : activeView === 'interaction' ? (
               !interactionSubView ? (
-                <div className="w-full space-y-6">
+                <div className="w-full space-y-6 overflow-x-hidden">
                   {/* Period selection / Header */}
                   <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -7881,7 +7856,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full pt-[20px] pb-[20px] pl-[8px] pr-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 w-full pt-[20px] pb-[20px] px-3 overflow-hidden">
                     {[
                       { 
                         title: 'Perbandingan Pengukuran Dimensi', 
@@ -7915,7 +7890,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         className="relative cursor-pointer flex flex-col group min-h-[260px]"
                       >
                         {/* Colored rotated background */}
-                        <div className={`absolute top-0 bottom-0 right-0 w-[70%] rounded-[24px] ${item.color} transform origin-bottom-left -rotate-[4deg] translate-x-3 -translate-y-1 z-0 shadow-sm transition-transform duration-300 group-hover:-rotate-[6deg] group-hover:translate-x-4`}></div>
+                        <div className={`absolute top-0 bottom-0 right-0 w-[70%] rounded-[24px] ${item.color} transform origin-bottom-left -rotate-[3deg] translate-x-0.5 -translate-y-1 z-0 shadow-sm transition-transform duration-300 group-hover:-rotate-[5deg] group-hover:translate-x-1`}></div>
 
                         {/* Content area - White Card with fine grey border */}
                         <div className="relative bg-white rounded-[24px] shadow-[0_5px_20px_rgba(0,0,0,0.05)] hover:shadow-[0_10px_30px_rgba(0,0,0,0.08)] transition-all duration-300 p-6 flex flex-col items-center text-center w-full justify-between z-10 border border-slate-300/80 h-full">

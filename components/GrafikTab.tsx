@@ -395,15 +395,12 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
                         {mode === 'Tunggal' ? (
                           <div className="flex items-center gap-3 w-full">
                             <div className="flex-1 bg-slate-100 rounded-r-md h-7 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                              <motion.div 
-                                initial={{ scaleX: 0 }}
-                                animate={{ scaleX: 1 }}
-                                transition={{ duration: 0.8, ease: "easeOut" }}
+                              <div 
                                 style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
-                                className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 animate-bar-grow transform-gpu`}
                               >
                                 <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                              </motion.div>
+                              </div>
                             </div>
                             <span className="text-sm font-bold text-slate-700 w-12 text-right">{row.Capaian.toFixed(0)}%</span>
                           </div>
@@ -413,15 +410,12 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
                             <div className="flex items-center gap-3 w-full">
                               <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun1}</span>
                               <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                                <motion.div 
-                                  initial={{ scaleX: 0 }}
-                                  animate={{ scaleX: 1 }}
-                                  transition={{ duration: 0.8, ease: "easeOut" }}
+                                <div 
                                   style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
-                                  className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 transition-all transform-gpu opacity-70 will-change-transform`}
+                                  className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 animate-bar-grow transform-gpu opacity-70`}
                                 >
                                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                </motion.div>
+                                </div>
                               </div>
                               <span className="text-xs font-bold text-slate-500 w-10 text-right">{row['Tahun 1'].toFixed(0)}%</span>
                             </div>
@@ -429,15 +423,12 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
                             <div className="flex items-center gap-3 w-full">
                               <span className="text-[10px] text-slate-400 w-14 text-right">Thn {tahun2}</span>
                               <div className="flex-1 bg-slate-100 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
-                                <motion.div 
-                                  initial={{ scaleX: 0 }}
-                                  animate={{ scaleX: 1 }}
-                                  transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                                <div 
                                   style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
-                                  className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 transition-all transform-gpu will-change-transform`}
+                                  className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu`}
                                 >
                                   <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
-                                </motion.div>
+                                </div>
                               </div>
                               <span className="text-sm font-bold text-slate-700 w-10 text-right">{row['Tahun 2'].toFixed(0)}%</span>
                             </div>
@@ -492,13 +483,13 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
               <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
               <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-              <Bar isAnimationActive={false} dataKey={rsName} fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+              <Bar isAnimationActive={false} dataKey={rsName} fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
                 <LabelList dataKey={rsName} position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-rs-${index}`} fill="#10b981" />
                 ))}
               </Bar>
-              <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+              <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
                 <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-bp-${index}`} fill="#64748b" />

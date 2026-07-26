@@ -139,7 +139,7 @@ export default function LoginScreen({
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
         <div className="text-center space-y-4 mb-8 relative z-10">
-          <div className="mx-auto p-0.5 bg-gradient-to-r from-[#2563EB]/90 via-[#1D4ED8]/90 to-[#1E3A8A]/90 text-white rounded-2xl border border-white/70 shadow-[0_12px_32px_rgba(37,99,235,0.35)] ring-1 ring-white/60 flex items-center justify-center shrink-0 w-20 h-20 overflow-hidden relative group/logo">
+          <div className="mx-auto p-0.5 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white rounded-2xl border border-white/70 shadow-[0_12px_32px_rgba(37,99,235,0.3)] ring-1 ring-white/60 flex items-center justify-center shrink-0 w-20 h-20 overflow-hidden relative group/logo">
             <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -160,7 +160,7 @@ export default function LoginScreen({
             onClick={() => { setActiveTab('rs'); setError(''); }}
             className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer ${
               activeTab === 'rs' 
-                ? 'bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] ring-1 ring-white/50' 
+                ? 'bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)] ring-1 ring-white/50' 
                 : 'text-slate-800 hover:text-slate-950 hover:bg-white/50'
             }`}
           >
@@ -170,7 +170,7 @@ export default function LoginScreen({
             onClick={() => { setActiveTab('admin'); setError(''); }}
             className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all transform-gpu cursor-pointer ${
               activeTab === 'admin' 
-                ? 'bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] ring-1 ring-white/50' 
+                ? 'bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white shadow-[0_8px_20px_rgba(37,99,235,0.25)] ring-1 ring-white/50' 
                 : 'text-slate-800 hover:text-slate-950 hover:bg-white/50'
             }`}
           >
@@ -223,7 +223,7 @@ export default function LoginScreen({
 
               <button
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] hover:from-[#1D4ED8] hover:via-[#1E3A8A] hover:to-[#172554] text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-[0_12px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_16px_32px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
+                className="w-full py-4 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
               >
                 <LogIn className="w-4 h-4 transition-transform group-hover:translate-x-1" /> Masuk ke Portal RS
               </button>
@@ -278,7 +278,7 @@ export default function LoginScreen({
 
               <button
                 type="submit"
-                className="w-full py-4 bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] hover:from-[#1D4ED8] hover:via-[#1E3A8A] hover:to-[#172554] text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-[0_12px_24px_rgba(37,99,235,0.3)] hover:shadow-[0_16px_32px_rgba(37,99,235,0.4)] hover:-translate-y-0.5 transition-all active:scale-[0.98] cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
+                className="w-full py-4 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] text-white font-black uppercase tracking-widest rounded-2xl text-xs shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu cursor-pointer flex items-center justify-center gap-2 group ring-1 ring-white/40"
               >
                 <LogIn className="w-4 h-4 transition-transform group-hover:translate-x-1" /> Masuk Admin Utama
               </button>

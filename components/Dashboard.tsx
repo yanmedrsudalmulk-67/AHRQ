@@ -662,11 +662,11 @@ export default function Dashboard({
                 className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-300 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
               >
                 {/* Top right shape */}
-                <div className="absolute top-6 right-0 w-14 h-7 bg-blue-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
+                <div className="absolute top-6 right-0 w-14 h-7 bg-[#2563EB] transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
                 
                 {/* Icon */}
                 <div className="flex justify-center mb-5 relative z-10">
-                  <Building2 className="w-10 h-10 text-slate-800 group-hover:text-blue-600 transition-colors" strokeWidth={1.5} />
+                  <Building2 className="w-10 h-10 text-slate-800 group-hover:text-[#2563EB] transition-colors" strokeWidth={1.5} />
                 </div>
 
                 {/* Title */}
@@ -685,20 +685,20 @@ export default function Dashboard({
                 </div>
 
                 {/* Ribbon Structure */}
-                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-blue-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
+                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] rounded-b-xl rounded-t-sm z-10 transition-colors" />
                 
                 {/* Left fold */}
-                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-blue-800 border-l-[12px] border-l-transparent z-0" />
+                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-[#1E3A8A] border-l-[12px] border-l-transparent z-0" />
                 {/* Right fold */}
-                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-blue-800 border-r-[12px] border-r-transparent z-0" />
+                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-[#1E3A8A] border-r-[12px] border-r-transparent z-0" />
 
                 {/* Center Hump */}
-                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-blue-500 rounded-full z-10 transition-colors" />
+                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-[#2563EB] rounded-full z-10 transition-colors" />
                 
                 {/* White Circle */}
-                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(59,130,246,0.5)] group-hover:shadow-[0_0_25px_rgba(59,130,246,0.9)] group-hover:-translate-y-1 transition-all duration-300">
-                  <div className="absolute inset-0 rounded-full bg-blue-400/50 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
-                  <Briefcase className="w-6 h-6 text-blue-600 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
+                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(37,99,235,0.5)] group-hover:shadow-[0_0_25px_rgba(37,99,235,0.9)] group-hover:-translate-y-1 transition-all duration-300">
+                  <div className="absolute inset-0 rounded-full bg-[#2563EB]/40 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
+                  <Briefcase className="w-6 h-6 text-[#2563EB] drop-shadow-[0_0_8px_rgba(37,99,235,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
                 </div>
               </div>
 

@@ -75,7 +75,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
           </div>
           <div className="flex flex-col min-w-0">
             <span className="font-extrabold tracking-wider text-sm text-slate-800 block font-sans whitespace-normal break-words">AHRQ SOPS v2.0</span>
-            <span className="text-[10px] text-blue-600 font-mono tracking-wider font-bold block whitespace-normal break-words max-w-[150px] sm:max-w-none">Agency for Healthcare Research and Quality</span>
+            <span className="text-[10px] text-[#2563EB] font-mono tracking-wider font-bold block whitespace-normal break-words max-w-[150px] sm:max-w-none">Agency for Healthcare Research and Quality</span>
           </div>
         </div>
 
@@ -109,10 +109,10 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-[36px] md:text-[56px] w-full md:w-[600px] font-black text-[#285378] tracking-tight leading-[1.1] font-sans text-left"
+              className="text-[36px] md:text-[56px] w-full md:w-[600px] font-black text-[#2563EB] tracking-tight leading-[1.1] font-sans text-left"
             >
               Sistem Survei <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-[#1D4ED8]">
                 Budaya Keselamatan Pasien
               </span>
             </motion.h1>
