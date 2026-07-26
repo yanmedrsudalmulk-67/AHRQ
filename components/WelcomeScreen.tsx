@@ -107,10 +107,10 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-[49px] w-full md:w-[504px] max-w-[504px] font-black text-[#2563EB] tracking-tight leading-[1.1] font-sans text-left"
+              className="text-[49px] w-full md:w-[504px] max-w-[504px] font-black text-[#2563EB] tracking-tight leading-[1.1] font-sans text-left [text-shadow:_0_2px_6px_rgba(0,0,0,0.15)]"
             >
               Sistem Survei <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-[#1D4ED8]">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-600 via-teal-500 to-[#1D4ED8] drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]">
                 Budaya Keselamatan Pasien
               </span>
             </motion.h1>
@@ -119,7 +119,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
-              className="text-[11px] leading-relaxed w-full md:w-[501px] max-w-[501px] text-left md:text-justify font-medium text-slate-700"
+              className="text-[11px] leading-relaxed w-full md:w-[501px] max-w-[501px] text-left md:text-justify font-medium text-slate-700 [text-shadow:_0_1px_3px_rgba(0,0,0,0.12)]"
             >
               Platform digital untuk pelaksanaan, analisis, dan pelaporan Survei Budaya Keselamatan Pasien berbasis AHRQ SOPS Version 2.0 yang terintegrasi secara realtime guna mendukung peningkatan mutu pelayanan dan keselamatan pasien di rumah sakit
             </motion.p>
@@ -154,7 +154,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       {/* 3. Footer */}
       <footer 
         id="welcome-footer" 
-        className="max-w-7xl mx-auto w-full py-4 border-t border-slate-200 text-center flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 px-6"
+        className="max-w-7xl mx-auto w-full py-4 text-center flex flex-col sm:flex-row justify-between items-center gap-4 text-[11px] text-slate-500 px-6"
       >
         <p className="text-[#1c293e] font-medium">© 2026 Sistem Survei Budaya Keselamatan Pasien • AHRQ SOPS v2.0</p>
       </footer>
