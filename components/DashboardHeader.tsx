@@ -478,7 +478,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
             </motion.p>
             <motion.p 
               variants={deskripsiVariants}
-              className="text-[13px] md:text-[13px] text-slate-600 font-medium leading-[1.7]"
+              className="text-[12px] md:text-[12px] text-slate-600 font-medium leading-[1.7]"
             >
               {"\"Kelola survei, analisis hasil, dan tingkatkan budaya keselamatan pasien melalui dashboard analitik berbasis AHRQ SOPS Version 2.0.\""}
             </motion.p>

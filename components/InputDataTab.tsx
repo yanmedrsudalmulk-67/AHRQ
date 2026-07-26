@@ -1102,10 +1102,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           {/* Top section: Title and Actions */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative z-10">
             <div className="space-y-1">
-              <h1 className="text-[23px] font-extrabold text-white leading-tight">
+              <h1 className="text-[20px] font-extrabold text-white leading-tight">
                 Kuesioner Survei Budaya Keselamatan Pasien
               </h1>
-              <p className="text-[12px] text-blue-100 font-semibold tracking-wider uppercase">
+              <p className="text-[11px] text-blue-100 font-semibold tracking-wider uppercase">
                 AHRQ Hospital Survey on Patient Safety Culture Version 2.0
               </p>
             </div>
