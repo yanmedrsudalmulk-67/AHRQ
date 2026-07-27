@@ -5923,26 +5923,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </p>
                       </div>
                       
-                      {/* Search and Pagination Navigation */}
+                      {/* Pagination Navigation */}
                       <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                        <div className="flex items-center gap-2 shrink-0">
-                          <span className="text-xs font-semibold text-slate-600">Pilih Tahun:</span>
-                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 focus:border-blue-500 outline-none cursor-pointer">
-                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                          </select>
-                        </div>
-                        <div className="relative w-full sm:w-60">
-                          <input 
-                            type="text"
-                            placeholder="Cari unit kerja..."
-                            value={searchUnitEventQuery}
-                            onChange={e => setSearchUnitEventQuery(e.target.value)}
-                            className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer w-full transition-all"
-                          />
-                          <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                        </div>
                         {totalPagesUnitEvent > 1 && (
                           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
                             <button 
@@ -5971,19 +5953,19 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <table className="w-full text-left border-collapse min-w-[800px] font-sans">
                         <thead>
                           <tr className="bg-[#D8D4EC] text-slate-800 font-semibold uppercase tracking-wider text-[11px] md:text-xs">
-                            <th rowSpan={2} className="sticky left-0 top-0 z-30 p-4 border-r border-b border-slate-300/60 w-[200px] min-w-[200px] bg-[#D8D4EC] align-bottom shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                            <th rowSpan={2} className="p-4 border-r border-b border-slate-300/60 w-[200px] min-w-[200px] bg-[#D8D4EC] align-middle text-center">
                               Jumlah Insiden Keselamatan Pasien<br/>Yang Dilaporkan
                             </th>
-                            <th rowSpan={2} className="sticky top-0 z-20 p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
+                            <th rowSpan={2} className="p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
                               Dataset
                             </th>
-                            <th colSpan={paginatedComputedUnitTableData.length} className="sticky top-0 z-20 p-3 text-center border-b border-slate-300/60 bg-[#D8D4EC] font-bold">
+                            <th colSpan={paginatedComputedUnitTableData.length} className="p-3 text-center border-b border-slate-300/60 bg-[#D8D4EC] font-bold">
                               Unit / Area Kerja
                             </th>
                           </tr>
                           <tr className="bg-[#E5E1F9] text-slate-800 font-semibold text-[11px] md:text-xs">
                             {paginatedComputedUnitTableData.map((col, idx) => (
-                              <th key={`hdr-unit-ev-${idx}`} className="sticky top-[45px] z-20 p-3 text-center border-r border-b border-slate-300/60 align-bottom min-w-[130px] w-[130px] bg-[#E5E1F9] leading-snug">
+                              <th key={`hdr-unit-ev-${idx}`} className="p-3 text-center border-r border-b border-slate-300/60 align-bottom min-w-[130px] w-[130px] bg-[#E5E1F9] leading-snug">
                                 {col.name}
                               </th>
                             ))}
@@ -5992,28 +5974,28 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <tbody className="divide-y divide-slate-200/80">
                           {/* Row 1: Your Hospital Respondents */}
                           <tr className="hover:bg-blue-50/5 transition-colors bg-white">
-                            <td rowSpan={2} className="sticky left-0 z-10 bg-white p-3.5 border-r border-b border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-top">
-                              <div className="flex flex-col gap-0.5 mt-1">
-                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">{namaRs || 'Rumah Sakit'}:</span>
-                                <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
-                              </div>
+                            <td className="p-3.5 border-r border-b border-slate-200/80 align-middle text-center font-bold text-slate-800 text-[12px] bg-white">
+                              Jumlah Responden {namaRs || 'Rumah Sakit'}
                             </td>
-                            <td className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[13px] bg-white">
+                            <td className="p-3 text-center font-medium text-slate-700 border-r border-b border-slate-200/80 text-[13px] bg-white">
                               {paginatedComputedUnitTableData.reduce((acc, col) => acc + col.totalValid, 0)}
                             </td>
                             {paginatedComputedUnitTableData.map((col, idx) => (
-                              <td key={`rsp-rs-unit-ev-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-white">
+                              <td key={`rsp-rs-unit-ev-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-b border-slate-200/80 last:border-r-0 text-[13px] bg-white">
                                 {col.totalValid}
                               </td>
                             ))}
                           </tr>
                           {/* Row 2: Benchmark Respondents */}
                           <tr className="hover:bg-blue-50/5 transition-colors bg-slate-50/60">
+                            <td className="p-3.5 border-r border-b border-slate-200/80 align-middle text-center font-bold text-slate-800 text-[12px] bg-slate-50">
+                              Jumlah Responden {activeBenchmarkLabel}
+                            </td>
                             <td className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 text-[13px] bg-slate-50">
                               {paginatedComputedUnitTableData.reduce((acc, col) => acc + (col.benchmarkCount || 0), 0).toLocaleString('id-ID')}
                             </td>
                             {paginatedComputedUnitTableData.map((col, idx) => (
-                              <td key={`rsp-bm-unit-ev-${idx}`} className="p-3 text-center font-bold text-slate-800 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-slate-50">
+                              <td key={`rsp-bm-unit-ev-${idx}`} className="p-3 text-center font-bold text-slate-800 border-r border-b border-slate-200/80 last:border-r-0 text-[13px] bg-slate-50">
                                 {(col.benchmarkCount || 0).toLocaleString('id-ID')}
                               </td>
                             ))}
@@ -6023,7 +6005,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           {['Tidak ada', '1 sampai 2', '3 sampai 5', '6 hingga 10', '11 atau lebih'].map((cat, catIdx) => (
                             <Fragment key={cat}>
                               <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
-                                <td rowSpan={2} className={`sticky left-0 z-10 p-3.5 border-r border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-middle font-bold text-slate-800 text-[13px] md:text-sm ${catIdx % 2 === 0 ? 'bg-slate-100/90' : 'bg-white'}`}>
+                                <td rowSpan={2} className={`p-3.5 border-r border-slate-200/80 align-middle text-center font-bold text-slate-800 text-[13px] md:text-sm ${catIdx % 2 === 0 ? 'bg-slate-100/90' : 'bg-white'}`}>
                                   {cat}
                                 </td>
                                 <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
@@ -6346,7 +6328,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     {/* Filter Bar */}
                     <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
                       <div className="space-y-1 font-sans">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Matrix Perbandingan Per Item Berdasarkan Posisi Staf</h3>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Tabel Perbandingan Per Item Berdasarkan Posisi Staf</h3>
                         <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan posisi staf antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.</p>
                       </div>
                       <div className="w-full md:w-96">
@@ -6842,20 +6824,20 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="overflow-auto max-h-[75vh] border border-slate-200/60 rounded-xl relative shadow-sm">
                       <table className="w-full text-left border-collapse min-w-[800px] font-sans">
                         <thead>
-                          <tr className="bg-[#D8D4EC] text-slate-800 font-semibold uppercase tracking-wider text-[11px] md:text-xs">
-                            <th rowSpan={2} className="sticky left-0 top-0 z-30 p-4 border-r border-b border-slate-300/60 w-[200px] min-w-[200px] bg-[#D8D4EC] align-bottom shadow-[2px_0_5px_rgba(0,0,0,0.02)]">
+                          <tr className="bg-purple-700 text-white font-semibold uppercase tracking-wider text-[11px] md:text-xs">
+                            <th rowSpan={2} className="p-4 border-r border-b border-purple-600/60 w-[200px] min-w-[200px] bg-purple-700 text-white align-middle text-center font-bold">
                               Jumlah Insiden Keselamatan Pasien<br/>Yang Dilaporkan
                             </th>
-                            <th rowSpan={2} className="sticky top-0 z-20 p-4 border-r border-b border-slate-300/60 text-center w-28 bg-[#D8D4EC] align-bottom">
+                            <th rowSpan={2} className="p-4 border-r border-b border-purple-600/60 text-center w-28 bg-purple-700 text-white align-middle font-bold">
                               Dataset
                             </th>
-                            <th colSpan={paginatedComputedTableData.length} className="sticky top-0 z-20 p-3 text-center border-b border-slate-300/60 bg-[#D8D4EC] font-bold">
+                            <th colSpan={paginatedComputedTableData.length} className="p-3 text-center border-b border-purple-600/60 bg-purple-700 text-white font-extrabold">
                               Posisi Staf
                             </th>
                           </tr>
-                          <tr className="bg-[#E5E1F9] text-slate-800 font-semibold text-[11px] md:text-xs">
+                          <tr className="bg-purple-600 text-white font-semibold text-[11px] md:text-xs">
                             {paginatedComputedTableData.map((col, idx) => (
-                              <th key={`hdr-ev-${idx}`} className="sticky top-[45px] z-20 p-3 text-center border-r border-b border-slate-300/60 align-bottom min-w-[130px] w-[130px] bg-[#E5E1F9] leading-snug">
+                              <th key={`hdr-ev-${idx}`} className="p-3 text-center border-r border-b border-purple-500/60 align-bottom min-w-[130px] w-[130px] bg-purple-600 text-white leading-snug font-bold">
                                 {col.name}
                               </th>
                             ))}
@@ -6864,7 +6846,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <tbody className="divide-y divide-slate-200/80">
                           {/* Row 1: Your Hospital Respondents */}
                           <tr className="hover:bg-blue-50/5 transition-colors bg-white">
-                            <td rowSpan={2} className="sticky left-0 z-10 bg-white p-3.5 border-r border-b border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-top">
+                            <td rowSpan={2} className="bg-white p-3.5 border-r border-b border-slate-200/80 align-middle text-center font-bold text-slate-800 text-[12px]">
                               <div className="flex flex-col gap-0.5 mt-1">
                                 <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">{namaRs || 'Rumah Sakit'}:</span>
                                 <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
@@ -6893,7 +6875,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           {['Tidak ada', '1 sampai 2', '3 sampai 5', '6 hingga 10', '11 atau lebih'].map((cat, catIdx) => (
                             <Fragment key={cat}>
                               <tr className={`hover:bg-blue-50/5 transition-colors ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>
-                                <td rowSpan={2} className={`sticky left-0 z-10 p-3.5 border-r border-slate-200/80 shadow-[2px_0_5px_rgba(0,0,0,0.02)] align-middle text-center font-bold text-slate-800 text-[13px] md:text-sm ${catIdx % 2 === 0 ? 'bg-slate-100/90' : 'bg-white'}`}>
+                                <td rowSpan={2} className={`p-3.5 border-r border-slate-200/80 align-middle text-center font-bold text-slate-800 text-[13px] md:text-sm ${catIdx % 2 === 0 ? 'bg-slate-100/90' : 'bg-white'}`}>
                                   {cat}
                                 </td>
                                 <td className={`p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[11px] md:text-xs italic ${catIdx % 2 === 0 ? 'bg-slate-100/50' : 'bg-white'}`}>

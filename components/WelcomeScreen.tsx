@@ -107,15 +107,15 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.1 }}
-              className="text-[49px] w-full md:w-[504px] max-w-[504px] font-black text-[#2563EB] tracking-tight leading-[1.1] font-sans text-left [text-shadow:_0_2px_6px_rgba(0,0,0,0.15)]"
+              className="text-[36px] sm:text-[44px] md:text-[49px] w-full md:w-[504px] max-w-[504px] font-extrabold tracking-tight leading-[1.1] font-sans text-left"
+              style={{
+                WebkitTextStroke: '1px #94a3b8',
+                paintOrder: 'stroke fill'
+              }}
             >
-              Sistem Survei <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-500 via-emerald-500 to-teal-600 drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]">
-                Budaya
-              </span>{' '}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-indigo-600 to-violet-700 drop-shadow-[0_2px_6px_rgba(0,0,0,0.15)]">
-                Keselamatan Pasien
-              </span>
+              <span className="text-[#2563EB]">Sistem Survei</span> <br />
+              <span className="text-[#14B8A6]">Budaya</span>{' '}
+              <span className="text-[#7C3AED]">Keselamatan Pasien</span>
             </motion.h1>
 
             <motion.p
