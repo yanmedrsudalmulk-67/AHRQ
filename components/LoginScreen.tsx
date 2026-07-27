@@ -150,7 +150,7 @@ export default function LoginScreen({
           </div>
           <div className="space-y-1.5">
             <h2 className="text-3xl font-sans font-black text-slate-900 tracking-tight drop-shadow-sm">Selamat Datang</h2>
-            <p className="text-xs text-slate-700 font-extrabold uppercase tracking-wider">Silakan login ke dalam Sistem Survei AHRQ SOPS 2.0</p>
+            <p className="text-[10px] text-slate-700 font-extrabold uppercase tracking-wider whitespace-nowrap">SILAHKAN MASUK UNTUK MENGAKSES SISTEM SURVEI AHRQ SOPS v2.0</p>
           </div>
         </div>
 

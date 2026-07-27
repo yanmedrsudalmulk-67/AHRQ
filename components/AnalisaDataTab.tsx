@@ -3378,7 +3378,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
                                             <div 
                                               style={{ transformOrigin: 'left', width: `${row.Capaian}%` }}
-                                              className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 animate-bar-grow transform-gpu`}
+                                              className={`h-full ${getBarColor(row.Capaian)} relative group-hover:brightness-110 animate-bar-grow transform-gpu shadow-[2px_3px_6px_rgba(15,23,42,0.35)]`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                             </div>
@@ -3396,7 +3396,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
                                             <div 
                                               style={{ transformOrigin: 'left', width: `${masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)}%` }}
-                                              className={`h-full ${getBarColor(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0))} opacity-85 relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu`}
+                                              className={`h-full ${getBarColor(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0))} opacity-85 relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu shadow-[2px_3px_6px_rgba(15,23,42,0.35)]`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                             </div>
@@ -3411,7 +3411,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                           <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
                                             <div 
                                               style={{ transformOrigin: 'left', width: `${row['Tahun 1']}%` }}
-                                              className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 animate-bar-grow transform-gpu opacity-70`}
+                                              className={`h-full ${getBarColor(row['Tahun 1'])} relative group-hover:brightness-110 animate-bar-grow transform-gpu opacity-70 shadow-[2px_3px_6px_rgba(15,23,42,0.3)]`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                             </div>
@@ -3424,7 +3424,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                           <div className="flex-1 bg-slate-100 rounded-r-md h-6 relative overflow-hidden flex items-center border-y border-r border-slate-200 shadow-inner">
                                             <div 
                                               style={{ transformOrigin: 'left', width: `${row['Tahun 2']}%` }}
-                                              className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu`}
+                                              className={`h-full ${getBarColor(row['Tahun 2'])} relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu shadow-[2px_3px_6px_rgba(15,23,42,0.3)]`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                             </div>
@@ -3525,8 +3525,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <ResponsiveContainer width="100%" height="100%">
                         <RechartsBarChart data={e1Stats} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
                           <defs>
-                            <filter id="shadow-raised" x="-10%" y="-15%" width="125%" height="135%">
-                              <feDropShadow dx="2" dy="5" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.25" />
+                            <filter id="shadow-raised" x="-20%" y="-20%" width="150%" height="150%">
+                              <feDropShadow dx="3" dy="6" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.35" />
+                              <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#1e293b" floodOpacity="0.2" />
                             </filter>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.7} />
@@ -3534,13 +3535,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                             <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-rs-${index}`} fill="#10b981" />
                             ))}
                           </Bar>
-                          <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
+                          <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                             <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-bp-${index}`} fill="#64748b" />
@@ -3786,6 +3787,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               fill="url(#royalBlueGrad3D)" 
                               radius={[8, 8, 0, 0]} 
                               maxBarSize={55} 
+                              filter="url(#dark3DShadowBlue)"
                             >
                               <LabelList 
                                 dataKey="Rumah Sakit Anda" 
@@ -3804,6 +3806,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               strokeWidth={0.5} 
                               radius={[8, 8, 0, 0]} 
                               maxBarSize={55}
+                              filter="url(#dark3DShadowGrey)"
                             >
                               <LabelList 
                                 dataKey={activeBenchmarkLabel} 
@@ -4006,7 +4009,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                               <span className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Menjawab/Tahu <span className="text-slate-800 font-black">{stat.missingPercent}%</span></span>
                                             </div>
                                           </div>
-                                          <div className="w-full h-6 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative">
+                                          <div className="w-full h-6 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-[0_4px_12px_rgba(15,23,42,0.18)] relative">
                                             <div
                                               className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
                                               style={{ width: `${stat.posPercent}%` }}
@@ -4039,7 +4042,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                               <span className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Menjawab/Tahu <span className="text-slate-800 font-black">{bmStat.missingPercent}%</span></span>
                                             </div>
                                           </div>
-                                          <div className="w-full h-6 flex rounded-xl overflow-hidden bg-emerald-50/40 border border-emerald-200/60 shadow-inner relative">
+                                          <div className="w-full h-6 flex rounded-xl overflow-hidden bg-emerald-50/40 border border-emerald-200/60 shadow-[0_4px_12px_rgba(15,23,42,0.18)] relative">
                                             <div
                                               className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
                                               style={{ width: `${bmStat.posPercent}%` }}
@@ -4073,7 +4076,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                                 <span className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Menjawab/Tahu <span className="text-slate-800 font-black">{stat2.missingPercent}%</span></span>
                                               </div>
                                             </div>
-                                            <div className="w-full h-6 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative opacity-85">
+                                            <div className="w-full h-6 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-[0_4px_12px_rgba(15,23,42,0.18)] relative opacity-85">
                                               <div
                                                 className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
                                                 style={{ width: `${stat2.posPercent}%` }}
@@ -5341,30 +5344,27 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <Building2 className="w-6 h-6 text-indigo-600" />
                         Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
                       </h3>
-                      <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan Unit Kerja (AHRQ SOPS Versi 2.0)
-                      </p>
                     </div>
 
-                    <div className="overflow-x-auto rounded-[16px] border border-slate-200 shadow-sm bg-white/50 relative custom-scrollbar pb-2">
+                    <div className="overflow-x-auto rounded-[16px] border border-slate-200 shadow-sm bg-white relative custom-scrollbar pb-2">
                       <table className="w-full text-left text-xs border-collapse">
-                        <thead className="bg-slate-50 text-slate-700 uppercase tracking-wider font-semibold border-b-2 border-slate-200 sticky top-0 z-20">
+                        <thead className="bg-[#2563EB] text-white uppercase tracking-wider font-semibold border-b-2 border-blue-700 sticky top-0 z-30">
                           <tr>
-                            <th className="py-4 px-4 text-center w-12 border-r border-slate-200/80 sticky left-0 z-30 bg-slate-50">No</th>
-                            <th className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 sticky left-12 z-30 bg-slate-50">Dimensi Budaya Keselamatan</th>
-                            <th className="py-4 px-4 text-center min-w-[150px] border-r border-slate-200/80">Dataset</th>
-                            <th className="py-4 px-4 text-center min-w-[120px] border-r border-slate-200/80">Total Responden</th>
+                            <th className="py-4 px-4 text-center w-12 border-r border-blue-400/40 bg-[#2563EB] text-white">No</th>
+                            <th className="py-4 px-5 min-w-[280px] text-center border-r border-blue-400/40 bg-[#2563EB] text-white">Dimensi Budaya Keselamatan</th>
+                            <th className="py-4 px-4 text-center min-w-[150px] border-r border-blue-400/40 bg-[#2563EB] text-white">Dataset</th>
+                            <th className="py-4 px-4 text-center min-w-[120px] border-r border-blue-400/40 bg-[#2563EB] text-white">Total Responden</th>
                             {demografiStats.unitData.map(u => (
-                              <th key={u.name} className="py-4 px-5 min-w-[190px] text-center border-r border-slate-200/80 last:border-r-0 font-black text-indigo-600">
+                              <th key={u.name} className="py-4 px-5 min-w-[190px] text-center border-r border-blue-400/40 last:border-r-0 font-black bg-[#2563EB] text-white">
                                 <div className="flex flex-col items-center">
                                   <span className="whitespace-normal break-words">{u.name}</span>
-                                  <span className="text-[10px] text-indigo-500/80 font-mono tracking-normal normal-case mt-0.5">(N = {u.value})</span>
+                                  <span className="text-[10px] text-blue-100 font-mono tracking-normal normal-case mt-0.5">(N = {u.value})</span>
                                 </div>
                               </th>
                             ))}
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 bg-white/30 text-slate-600">
+                        <tbody className="divide-y divide-slate-100 bg-white text-slate-600">
                           {DIMENSION_ORDER.map((dimId, idx) => {
                             const bMin = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
                             const bMax = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
@@ -5372,33 +5372,33 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                             return (
                               <Fragment key={`unit-comp-${dimId}`}>
-                                <tr className="hover:bg-slate-50/50 transition-all border-b border-slate-100">
-                                  <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-600 border-r border-slate-200/80 bg-slate-50/80 sticky left-0 z-10">
+                                <tr className="hover:bg-slate-50 transition-all border-b border-slate-100">
+                                  <td rowSpan={2} className="py-5 px-4 text-center font-extrabold text-indigo-700 border-r border-slate-200 bg-slate-100">
                                     {idx + 1}
                                   </td>
-                                  <td rowSpan={2} className="py-5 px-5 font-bold text-slate-800 border-r border-slate-200/80 bg-slate-50/80 sticky left-12 z-10 leading-snug">
+                                  <td rowSpan={2} className="py-5 px-5 font-bold text-slate-800 border-r border-slate-200 bg-slate-100 leading-snug">
                                     <div className="space-y-1.5 max-w-[320px]">
                                       <p>{DIMENSI_INFO[dimId].nama}</p>
                                       <p className="text-[10px] text-slate-500 font-normal leading-relaxed">{DIMENSI_INFO[dimId].deskripsi}</p>
                                     </div>
                                   </td>
-                                  <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">{namaRs || 'RS'}</td>
-                                  <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
+                                  <td className="py-3 px-4 font-bold text-cyan-700 text-center border-r border-slate-200 bg-[#e0f2fe]">{namaRs || 'RS'}</td>
+                                  <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200 bg-cyan-50/40">{hospitalSurveys.length}</td>
                                   {demografiStats.unitData.map((u, unitIdx) => {
                                     const scoreObj = unitDimensionScores.find(s => s.id === dimId);
                                     const percentage = scoreObj ? scoreObj[u.name] : null;
                                     return (
-                                      <td key={`unit-rs-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                      <td key={`unit-rs-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200 bg-cyan-50/40 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
                                         {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                       </td>
                                     );
                                    })}
                                  </tr>
-                                <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
-                                  <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
-                                  <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
+                                <tr className="hover:bg-slate-50 transition-all bg-slate-50/30">
+                                  <td className="py-3 px-4 font-bold text-emerald-700 text-center border-r border-slate-200 bg-slate-100">{activeBenchmarkLabel}</td>
+                                  <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200 font-bold">-</td>
                                   {demografiStats.unitData.map((u, unitIdx) => (
-                                    <td key={`unit-pilot-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                    <td key={`unit-pilot-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
                                       <div className="flex flex-col items-center justify-center text-center">
                                         <span className={`text-[14px] text-center ${getCellColorClass(bAvg)}`}>{bAvg.toFixed(1)}%</span>
                                         {selectedBenchmarkHospitalId === 'default' && (
@@ -5411,26 +5411,26 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               </Fragment>
                             );
                           })}
-                          <tr className="bg-indigo-50/40 border-t-2 border-indigo-200/80 hover:bg-indigo-50/50 transition-all">
-                            <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-600 border-r border-slate-200/80 bg-indigo-50/60 sticky left-0 z-10">★</td>
-                            <td rowSpan={2} className="py-5 px-5 font-black text-slate-800 border-r border-slate-200/80 bg-indigo-50/60 sticky left-12 z-10">
+                          <tr className="bg-indigo-50/40 border-t-2 border-indigo-200 hover:bg-indigo-50 transition-all">
+                            <td rowSpan={2} className="py-5 px-4 text-center font-black text-indigo-700 border-r border-slate-200 bg-indigo-100">★</td>
+                            <td rowSpan={2} className="py-5 px-5 font-black text-slate-800 border-r border-slate-200 bg-indigo-100">
                               <div className="space-y-1">
-                                <div className="text-indigo-700 text-xs font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
+                                <div className="text-indigo-800 text-xs font-extrabold uppercase tracking-wide">Rata-rata Seluruh Dimensi</div>
                               </div>
                             </td>
-                            <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">{namaRs || 'RS'}</td>
-                            <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">{hospitalSurveys.length}</td>
+                            <td className="py-4 px-4 font-bold text-cyan-700 text-center border-r border-slate-200 bg-[#cff4fe]">{namaRs || 'RS'}</td>
+                            <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200 bg-cyan-50/30">{hospitalSurveys.length}</td>
                             {demografiStats.unitData.map((u, unitIdx) => {
                               const avgVal = getAverageCompositeForUnit(u.name);
                               return (
-                                <td key={`unit-avg-rs-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                <td key={`unit-avg-rs-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200 bg-cyan-50/30 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
                                   {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
                               );
                             })}
                           </tr>
-                          <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all">
-                            <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
+                          <tr className="bg-indigo-50/20 hover:bg-indigo-50 transition-all">
+                            <td className="py-4 px-4 font-bold text-emerald-700 text-center border-r border-slate-200 bg-indigo-50">{activeBenchmarkLabel}</td>
                             <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
                             {demografiStats.unitData.map((u, unitIdx) => (
                               <td key={`unit-avg-pilot-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
@@ -5738,26 +5738,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         </p>
                       </div>
                       
-                      {/* Filter, Search and Pagination Navigation */}
+                      {/* Pagination Navigation */}
                       <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-semibold text-slate-600">Pilih Tahun:</span>
-                          <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer">
-                            {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
-                          </select>
-                        </div>
-                        <div className="relative w-full sm:w-60">
-                          <input 
-                            type="text"
-                            placeholder="Cari unit kerja..."
-                            value={searchUnitQuery}
-                            onChange={e => setSearchUnitQuery(e.target.value)}
-                            className="bg-slate-50 hover:bg-slate-100 focus:bg-white border border-slate-200 rounded-xl pl-9 pr-4 py-2 text-xs font-semibold text-slate-700 outline-none focus:border-blue-500 cursor-pointer w-full transition-all"
-                          />
-                          <svg className="absolute left-3 top-2.5 w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                          </svg>
-                        </div>
                         {totalPagesUnitSafety > 1 && (
                           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
                             <button 

@@ -766,10 +766,10 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId, s
                       <td className="p-4 text-center font-bold font-mono text-base text-slate-400">
                         {globalIdx}
                       </td>
-                      <td className="p-4 text-center">
-                        <div className="text-[14px] font-bold text-slate-800 flex items-center justify-center text-center relative px-2" style={{ textAlign: 'center' }}>
-                          <span style={{ textAlign: 'center' }}>{dim.nama}</span>
-                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 shrink-0 ml-2 absolute right-2" />
+                      <td className="p-4 text-left">
+                        <div className="text-[14px] font-bold text-slate-800 flex items-center justify-between text-left relative px-2" style={{ textAlign: 'left' }}>
+                          <span style={{ textAlign: 'left' }}>{dim.nama}</span>
+                          <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400 shrink-0 ml-2" />
                         </div>
                       </td>
                       <td className="p-4 text-center">

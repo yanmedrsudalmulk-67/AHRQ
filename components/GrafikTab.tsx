@@ -474,8 +474,9 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={e1Stats} margin={{ top: 20, right: 30, left: 10, bottom: 20 }}>
               <defs>
-                <filter id="shadow-raised" x="-10%" y="-15%" width="125%" height="135%">
-                  <feDropShadow dx="2" dy="5" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.25" />
+                <filter id="shadow-raised" x="-20%" y="-20%" width="150%" height="150%">
+                  <feDropShadow dx="3" dy="6" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.35" />
+                  <feDropShadow dx="1" dy="2" stdDeviation="2" floodColor="#1e293b" floodOpacity="0.2" />
                 </filter>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" opacity={0.7} />
@@ -483,13 +484,13 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
               <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
               <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-              <Bar isAnimationActive={false} dataKey={rsName} fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60}>
+              <Bar isAnimationActive={false} dataKey={rsName} fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                 <LabelList dataKey={rsName} position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-rs-${index}`} fill="#10b981" />
                 ))}
               </Bar>
-              <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60}>
+              <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                 <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-bp-${index}`} fill="#64748b" />
