@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { LogIn, ArrowLeft, ShieldCheck, ClipboardCheck, Eye, EyeOff } from 'lucide-react';
 import bcrypt from 'bcryptjs';
-import { getHospitalAccounts } from '../lib/db';
+import { getHospitalAccounts, updateLastLogin } from '../lib/db';
 import { LogoData } from '../lib/logo';
 
 interface LoginScreenProps {
@@ -93,6 +93,19 @@ export default function LoginScreen({
         return;
       }
 
+      if (status === 'Disabled') {
+        setError('Akun rumah sakit Anda telah dinonaktifkan oleh Administrator. Silakan hubungi Admin Utama untuk informasi lebih lanjut.');
+        return;
+      }
+
+      if (status === 'Archived') {
+        setError('Akun rumah sakit Anda telah diarsipkan/dihapus oleh Administrator. Silakan hubungi Admin Utama untuk informasi lebih lanjut.');
+        return;
+      }
+
+      // Record last login timestamp in Supabase
+      updateLastLogin(found.id || found.username).catch(err => console.warn("Update last login error:", err));
+
       // Proceed on Active status
       onLoginSuccess('rs', found.username, found.namaRs, found.id);
     } catch (err) {
@@ -139,18 +152,22 @@ export default function LoginScreen({
         <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/25 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-1000 pointer-events-none"></div>
 
         <div className="text-center space-y-4 mb-8 relative z-10">
-          <div className="mx-auto p-0.5 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white rounded-2xl border border-white/70 shadow-[0_12px_32px_rgba(37,99,235,0.3)] ring-1 ring-white/60 flex items-center justify-center shrink-0 w-20 h-20 overflow-hidden relative group/logo">
-            <div className="absolute inset-0 bg-white/20 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
+          <div className="mx-auto p-0.5 bg-white text-blue-600 rounded-2xl border-2 border-teal-400 ring-2 ring-white shadow-md flex items-center justify-center shrink-0 w-20 h-20 overflow-hidden relative group/logo">
+            <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
+              <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-125 p-1" />
             ) : (
-              <ShieldCheck className="w-12 h-12 text-white" />
+              <ShieldCheck className="w-14 h-14 text-blue-600" />
             )}
           </div>
-          <div className="space-y-1.5">
-            <h2 className="text-3xl font-sans font-black text-slate-900 tracking-tight drop-shadow-sm">Selamat Datang</h2>
-            <p className="text-[10px] text-slate-700 font-extrabold uppercase tracking-wider whitespace-nowrap">SILAHKAN MASUK UNTUK MENGAKSES SISTEM SURVEI AHRQ SOPS v2.0</p>
+          <div className="space-y-2">
+            <h2 className="text-[33px] font-sans font-black text-slate-900 tracking-tight drop-shadow-sm">Selamat Datang</h2>
+            <div className="text-[10px] sm:text-[10.5px] text-slate-700 font-extrabold uppercase tracking-wider leading-snug space-y-0.5">
+              <p className="text-slate-600">SILAHKAN MASUK UNTUK MENGAKSES</p>
+              <p className="text-[#45556c] font-black text-[11px] sm:text-[11.5px] tracking-tight">SISTEM SURVEI BUDAYA KESELAMATAN PASIEN</p>
+              <p className="text-slate-600">MENGGUNAKAN INSTRUMEN AHRQ SOPS V2.0</p>
+            </div>
           </div>
         </div>
 

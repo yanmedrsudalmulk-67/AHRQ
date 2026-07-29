@@ -29,13 +29,31 @@ import {
   Building2,
   MapPin,
   Lock,
-  Edit
+  Edit,
+  FileCheck,
+  FileText,
+  Calendar,
+  Award,
+  UserCheck
 } from 'lucide-react';
 import bcrypt from 'bcryptjs';
 import { saveWallpaper, clearWallpaper, WallpaperData } from '../lib/wallpaper';
 import { saveLogo, clearLogo, LogoData } from '../lib/logo';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
-import { syncAllLocalDataToSupabase, getHospitalAccountByUsername, updateHospitalProfile, HospitalAccount, getMasterBenchmark, saveMasterBenchmark, getBenchmarkInteraksi, saveBenchmarkInteraksi, BenchmarkInteraksi } from '../lib/db';
+import { 
+  syncAllLocalDataToSupabase, 
+  getHospitalAccountByUsername, 
+  updateHospitalProfile, 
+  HospitalAccount, 
+  getMasterBenchmark, 
+  saveMasterBenchmark, 
+  getBenchmarkInteraksi, 
+  saveBenchmarkInteraksi, 
+  BenchmarkInteraksi,
+  getPengesahanConfig,
+  savePengesahanConfig,
+  PengesahanConfig
+} from '../lib/db';
 import { DIMENSI_INFO } from '../lib/scoring';
 import { BarChart2, Users } from 'lucide-react';
 import MasterPosisiTab from './MasterPosisiTab';
@@ -64,7 +82,7 @@ export default function PengaturanTab({
   activeLogo,
   onUpdateLogo
 }: PengaturanTabProps) {
-  const [activeSettingsSection, setActiveSettingsSection] = useState<'profil' | 'posisi' | 'unit'>('profil');
+  const [activeSettingsSection, setActiveSettingsSection] = useState<'profil' | 'posisi' | 'unit' | 'pengesahan'>('profil');
   // Benchmark state
   const [benchmarks, setBenchmarks] = useState<Record<string, { min: number, max: number }>>({});
   const [benchmarkInteraksi, setBenchmarkInteraksi] = useState<BenchmarkInteraksi[]>([]);
@@ -235,6 +253,60 @@ export default function PengaturanTab({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
   const hasSupabase = isSupabaseConnected();
+
+  // Pengesahan Halaman State
+  const [pengesahanForm, setPengesahanForm] = useState<PengesahanConfig>({
+    namaRs: namaRs || '',
+    logoRs: '',
+    kota: 'Sukabumi',
+    tanggalPengesahan: new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+    direkturNama: 'dr. H. Ahmad Wijaya',
+    direkturGelar: 'MARS',
+    direkturJabatan: 'Direktur Utama Rumah Sakit',
+    direkturNip: '19780512 200501 1 002',
+    pjNama: 'dr. Budi Santoso',
+    pjGelar: 'Sp.KP',
+    pjJabatan: 'Ketua Komite Mutu & Keselamatan Pasien',
+    pjNip: '19820315 200804 1 005',
+  });
+  const [isSavingPengesahan, setIsSavingPengesahan] = useState(false);
+  const [isFetchingPengesahan, setIsFetchingPengesahan] = useState(false);
+
+  useEffect(() => {
+    const fetchPengesahan = async () => {
+      setIsFetchingPengesahan(true);
+      try {
+        const config = await getPengesahanConfig(identifier || namaRs, namaRs);
+        setPengesahanForm(config);
+      } catch (err) {
+        console.warn("Gagal memuat konfigurasi pengesahan:", err);
+      } finally {
+        setIsFetchingPengesahan(false);
+      }
+    };
+    fetchPengesahan();
+  }, [identifier, namaRs]);
+
+  const handleSavePengesahan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!pengesahanForm.namaRs.trim()) {
+      showToast("❌ Nama Rumah Sakit tidak boleh kosong.", "error");
+      return;
+    }
+
+    setIsSavingPengesahan(true);
+    try {
+      await savePengesahanConfig(identifier || namaRs, pengesahanForm);
+      if (pengesahanForm.namaRs && pengesahanForm.namaRs !== namaRs) {
+        onUpdateRsName(pengesahanForm.namaRs.trim());
+      }
+      showToast("✅ Pengaturan Halaman Pengesahan berhasil disimpan ke database.", "success");
+    } catch (err: any) {
+      showToast(`❌ Gagal menyimpan Halaman Pengesahan: ${err.message || err}`, "error");
+    } finally {
+      setIsSavingPengesahan(false);
+    }
+  };
 
   // Supabase integrations
   const [isTestingConn, setIsTestingConn] = useState(false);
@@ -749,7 +821,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         </button>
         <button
           onClick={() => setActiveSettingsSection('unit')}
-          className={`flex-1 sm:flex-initial flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
+          className={`flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
             activeSettingsSection === 'unit'
               ? 'text-indigo-600 border-indigo-600 bg-indigo-50'
               : 'text-slate-500 border-transparent hover:text-slate-850 hover:bg-slate-100'
@@ -757,6 +829,17 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         >
           <Building2 className="w-4 h-4" />
           <span>Master Unit Kerja</span>
+        </button>
+        <button
+          onClick={() => setActiveSettingsSection('pengesahan')}
+          className={`flex-1 sm:flex-initial flex items-center gap-2 px-4 py-2.5 text-xs font-semibold rounded-t-xl transition-all border-b-2 cursor-pointer shrink-0 ${
+            activeSettingsSection === 'pengesahan'
+              ? 'text-indigo-600 border-indigo-600 bg-indigo-50'
+              : 'text-slate-500 border-transparent hover:text-slate-850 hover:bg-slate-100'
+          }`}
+        >
+          <FileCheck className="w-4 h-4 text-teal-600" />
+          <span>Pengaturan Halaman Pengesahan</span>
         </button>
       </div>
 
@@ -1871,6 +1954,251 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
 
       {activeSettingsSection === 'unit' && (
         <MasterUnitTab rsName={namaRs} />
+      )}
+
+      {activeSettingsSection === 'pengesahan' && (
+        <form onSubmit={handleSavePengesahan} className="space-y-6 animate-fadeIn">
+          {/* Header Banner */}
+          <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+            <div className="relative z-10 space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-600/50 border border-teal-400/30 text-xs font-semibold backdrop-blur-md">
+                <FileCheck className="w-3.5 h-3.5 text-teal-200" /> Form Lembar Pengesahan Laporan Resmi
+              </div>
+              <h2 className="text-xl font-black tracking-tight">Pengaturan Halaman Pengesahan</h2>
+              <p className="text-xs text-teal-100/80 max-w-2xl leading-relaxed">
+                Kelola data Rumah Sakit, kota, tanggal pengesahan, identitas Direktur, dan Penanggung Jawab Survei. Data ini tersimpan di database Supabase dan otomatis tercantum pada Lembar 6 Pengesahan di setiap laporan survei AHRQ SOPS® v2.0.
+              </p>
+            </div>
+          </div>
+
+          {isFetchingPengesahan ? (
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-12 flex flex-col items-center justify-center space-y-3">
+              <Loader2 className="w-8 h-8 text-teal-600 animate-spin" />
+              <p className="text-xs text-slate-500 font-medium">Memuat data halaman pengesahan...</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              
+              {/* CARD 1: DATA RUMAH SAKIT */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-5 lg:col-span-1">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-teal-600" /> Data Rumah Sakit
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-teal-50 text-teal-700 border border-teal-200 rounded-md">1 dari 3</span>
+                </div>
+
+                {/* Nama Rumah Sakit */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    Nama Rumah Sakit <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.namaRs}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, namaRs: e.target.value }))}
+                    placeholder="Contoh: RSUD Al-Mulk"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* Kota */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-teal-600" /> Kota Pengesahan <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.kota}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, kota: e.target.value }))}
+                    placeholder="Contoh: Sukabumi"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* Tanggal Pengesahan */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    <Calendar className="w-3.5 h-3.5 text-teal-600" /> Tanggal Pengesahan <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.tanggalPengesahan}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, tanggalPengesahan: e.target.value }))}
+                    placeholder="Contoh: 28 Juli 2026"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-teal-500 transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* CARD 2: DIREKTUR RUMAH SAKIT */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-5 lg:col-span-1">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-indigo-600" /> Direktur Rumah Sakit
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-md">2 dari 3</span>
+                </div>
+
+                {/* Nama Direktur */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    Nama Direktur <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.direkturNama}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, direkturNama: e.target.value }))}
+                    placeholder="Contoh: dr. H. Ahmad Wijaya"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* Gelar */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">
+                    Gelar Akademik / Profesi
+                  </label>
+                  <input
+                    type="text"
+                    value={pengesahanForm.direkturGelar || ''}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, direkturGelar: e.target.value }))}
+                    placeholder="Contoh: MARS / Sp.A"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* Jabatan */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    Jabatan <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.direkturJabatan}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, direkturJabatan: e.target.value }))}
+                    placeholder="Contoh: Direktur Utama Rumah Sakit"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* NIP */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    NIP / ID Pegawai <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.direkturNip}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, direkturNip: e.target.value }))}
+                    placeholder="Contoh: 19780512 200501 1 002"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-mono focus:bg-white focus:border-indigo-500 transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* CARD 3: PENANGGUNG JAWAB SURVEI */}
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-5 lg:col-span-1">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-emerald-600" /> Penanggung Jawab Survei
+                  </h3>
+                  <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md">3 dari 3</span>
+                </div>
+
+                {/* Nama PJ */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    Nama Penanggung Jawab <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.pjNama}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, pjNama: e.target.value }))}
+                    placeholder="Contoh: dr. Budi Santoso"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-emerald-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* Gelar */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">
+                    Gelar Akademik / Profesi
+                  </label>
+                  <input
+                    type="text"
+                    value={pengesahanForm.pjGelar || ''}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, pjGelar: e.target.value }))}
+                    placeholder="Contoh: Sp.KP / S.Kep., Ns."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-emerald-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* Jabatan */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    Jabatan <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.pjJabatan}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, pjJabatan: e.target.value }))}
+                    placeholder="Contoh: Ketua Komite Mutu & Keselamatan Pasien"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-medium focus:bg-white focus:border-emerald-500 transition-all outline-none"
+                  />
+                </div>
+
+                {/* NIP */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700 flex items-center gap-1">
+                    NIP / ID Pegawai <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={pengesahanForm.pjNip}
+                    onChange={(e) => setPengesahanForm(prev => ({ ...prev, pjNip: e.target.value }))}
+                    placeholder="Contoh: 19820315 200804 1 005"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs text-slate-800 font-mono focus:bg-white focus:border-emerald-500 transition-all outline-none"
+                  />
+                </div>
+              </div>
+
+            </div>
+          )}
+
+          {/* Action Footer */}
+          <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="text-xs text-slate-500 flex items-center gap-2">
+              <Check className="w-4 h-4 text-teal-600 shrink-0" />
+              <span>Tersimpan di Supabase & otomatis terintegrasi ke seluruh laporan survei.</span>
+            </div>
+            
+            <button
+              type="submit"
+              disabled={isSavingPengesahan || isFetchingPengesahan}
+              className="w-full sm:w-auto px-6 py-3 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white rounded-xl font-bold text-xs shadow-md shadow-teal-600/20 flex items-center justify-center gap-2 transition-all cursor-pointer transform-gpu hover:scale-[1.01]"
+            >
+              {isSavingPengesahan ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan Pengaturan...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" /> Simpan Pengaturan Halaman Pengesahan
+                </>
+              )}
+            </button>
+          </div>
+        </form>
       )}
     </div>
   );

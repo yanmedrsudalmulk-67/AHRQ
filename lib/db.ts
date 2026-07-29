@@ -24,13 +24,27 @@ export interface HospitalAccount {
   jabatan?: string;
   noWhatsapp?: string;
   emailRs?: string;
-  status: 'Pending' | 'Active' | 'Rejected';
+  status: 'Pending' | 'Active' | 'Rejected' | 'Disabled' | 'Archived';
+  account_status?: 'Aktif' | 'Nonaktif' | 'Arsip' | 'Pending' | 'Ditolak';
+  last_login?: string;
+  lastLogin?: string;
   approvalDate?: string;
   approvedBy?: string;
   rejectionReason?: string;
   updated_at?: string;
   kodePos?: string;
   noTelepon?: string;
+}
+
+export interface AccountAuditLog {
+  id: string;
+  hospital_id: string;
+  hospital_name: string;
+  action: 'approved' | 'rejected' | 'activated' | 'disabled' | 'archived' | 'restored' | 'deleted';
+  action_label: string;
+  performed_by: string;
+  timestamp: string;
+  reason?: string;
 }
 
 export interface EmailNotification {
@@ -94,6 +108,15 @@ export const mapToHospitalAccount = (item: any): HospitalAccount => {
     }
   }
 
+  const rawStatus = item.status || 'Active';
+  const lastLoginVal = item.last_login || item.lastLogin || null;
+
+  let computedAccountStatus: 'Aktif' | 'Nonaktif' | 'Arsip' | 'Pending' | 'Ditolak' = 'Aktif';
+  if (rawStatus === 'Disabled') computedAccountStatus = 'Nonaktif';
+  else if (rawStatus === 'Archived') computedAccountStatus = 'Arsip';
+  else if (rawStatus === 'Pending') computedAccountStatus = 'Pending';
+  else if (rawStatus === 'Rejected') computedAccountStatus = 'Ditolak';
+
   return {
     id: item.id,
     username: item.username || '',
@@ -108,7 +131,10 @@ export const mapToHospitalAccount = (item: any): HospitalAccount => {
     jabatan: item.jabatan || '',
     noWhatsapp: item.no_whatsapp || '',
     emailRs: item.email_rs || '',
-    status: (item.status as any) || 'Active', // Fallback for legacy accounts
+    status: (rawStatus as any),
+    account_status: item.account_status || computedAccountStatus,
+    last_login: lastLoginVal,
+    lastLogin: lastLoginVal,
     approvalDate: item.approval_date,
     approvedBy: item.approved_by,
     rejectionReason: item.rejection_reason,
@@ -494,9 +520,112 @@ export async function getEmailNotifications(): Promise<EmailNotification[]> {
   return [];
 }
 
+export async function updateLastLogin(idOrUsername: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const now = new Date().toISOString();
+  if (supabase) {
+    try {
+      await supabase
+        .from('hospital_accounts')
+        .update({ last_login: now, updated_at: now })
+        .or(`id.eq.${idOrUsername},username.ilike.${idOrUsername}`);
+    } catch (e) {
+      console.warn("Gagal memperbarui last_login:", e);
+    }
+  }
+}
+
+const LOCAL_ACCOUNT_AUDIT_LOGS_KEY = 'ahrq_account_audit_logs_v1';
+
+export async function getAccountAuditLogs(): Promise<AccountAuditLog[]> {
+  const supabase = getSupabaseClient();
+  let logs: AccountAuditLog[] = [];
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('account_audit_logs')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (!error && data) {
+        logs = data as AccountAuditLog[];
+      } else if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        const { data: configRow } = await supabase
+          .from('ahrq_surveys')
+          .select('dimensi_scores')
+          .eq('id', 'MASTER_ACCOUNT_AUDIT_LOGS')
+          .single();
+        if (configRow && configRow.dimensi_scores && Array.isArray((configRow.dimensi_scores as any).logs)) {
+          logs = (configRow.dimensi_scores as any).logs;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch account audit logs from Supabase:", e);
+    }
+  }
+
+  if (logs.length === 0 && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_ACCOUNT_AUDIT_LOGS_KEY);
+      if (stored) {
+        logs = JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn("Failed reading account_audit_logs from localStorage:", err);
+    }
+  }
+
+  return logs;
+}
+
+export async function addAccountAuditLog(logData: Omit<AccountAuditLog, 'id' | 'timestamp'>): Promise<AccountAuditLog> {
+  const newLog: AccountAuditLog = {
+    ...logData,
+    id: `acc-log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: new Date().toISOString()
+  };
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('account_audit_logs')
+        .insert([newLog]);
+
+      if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        const currentLogs = await getAccountAuditLogs();
+        const updated = [newLog, ...currentLogs];
+        await supabase.from('ahrq_surveys').upsert({
+          id: 'MASTER_ACCOUNT_AUDIT_LOGS',
+          nama_rs: '_MASTER_CONFIG_',
+          unit_kerja: 'ACCOUNT_AUDIT_LOGS',
+          jumlah_responden: updated.length,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: { logs: updated }
+        });
+      }
+    } catch (e) {
+      console.warn("Error inserting account_audit_log to Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const currentLogs = await getAccountAuditLogs();
+      const updated = [newLog, ...currentLogs];
+      localStorage.setItem(LOCAL_ACCOUNT_AUDIT_LOGS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Error saving account_audit_log to localStorage:", err);
+    }
+  }
+
+  return newLog;
+}
+
 export async function updateHospitalAccountStatus(
   id: string, 
-  status: 'Active' | 'Rejected', 
+  status: 'Active' | 'Rejected' | 'Disabled' | 'Archived' | 'Pending', 
   approvedBy: string, 
   rejectionReason?: string
 ): Promise<HospitalAccount> {
@@ -540,6 +669,32 @@ export async function updateHospitalAccountStatus(
       ? mapToHospitalAccount(data[0])
       : { ...originalAccount, ...updateData };
 
+    // Record audit log for status updates
+    let actionType: AccountAuditLog['action'] = 'approved';
+    let actionLabel = 'Akun Disetujui';
+    if (status === 'Active') {
+      actionType = 'approved';
+      actionLabel = 'Akun Disetujui';
+    } else if (status === 'Rejected') {
+      actionType = 'rejected';
+      actionLabel = 'Akun Ditolak';
+    } else if (status === 'Disabled') {
+      actionType = 'disabled';
+      actionLabel = 'Akun Dinonaktifkan';
+    } else if (status === 'Archived') {
+      actionType = 'archived';
+      actionLabel = 'Akun Diarsipkan (Soft Delete)';
+    }
+
+    await addAccountAuditLog({
+      hospital_id: id,
+      hospital_name: originalAccount.namaRs,
+      action: actionType,
+      action_label: actionLabel,
+      performed_by: approvedBy,
+      reason: rejectionReason || `Status akun diubah menjadi ${status}`
+    });
+
     // 2. Send Email Notification automatically to the hospital
     if (status === 'Active') {
       const hospitalEmailSubject = `✅ Selamat! Akun Budaya Keselamatan Pasien Anda Telah Disetujui`;
@@ -560,7 +715,7 @@ Salam Hangat,
 Sistem Manajemen AHRQ SOPS 2.0
       `;
       await sendSystemEmail(originalAccount.emailRs || 'rs-user@example.com', hospitalEmailSubject, hospitalEmailBody.trim(), 'approval');
-    } else {
+    } else if (status === 'Rejected') {
       const hospitalEmailSubject = `❌ Permohonan Akun Budaya Keselamatan Pasien Belum Disetujui`;
       const hospitalEmailBody = `
 Yth. Pimpinan / Penanggung Jawab ${originalAccount.namaRs},
@@ -584,6 +739,96 @@ Sistem Manajemen AHRQ SOPS 2.0
   } catch (e: any) {
     console.error("Supabase update status exception:", e);
     throw new Error(e.message || "Gagal memperbarui status akun.");
+  }
+}
+
+export async function disableHospitalAccount(id: string, performedBy: string, reason?: string): Promise<HospitalAccount> {
+  const updated = await updateHospitalAccountStatus(id, 'Disabled', performedBy, reason);
+  const emailSubject = `🔒 Pemberitahuan: Akun Rumah Sakit Anda Telah Dinonaktifkan`;
+  const emailBody = `
+Yth. Pimpinan / Penanggung Jawab ${updated.namaRs},
+
+Akun sistem budaya keselamatan pasien (AHRQ SOPS 2.0) Anda telah dinonaktifkan oleh Administrator Utama (${performedBy}).
+
+Catatan/Alasan: "${reason || 'Penonaktifan oleh Administrator Utama'}"
+
+Seluruh akses login portal rumah sakit Anda telah dihentikan sementara. Silakan hubungi Administrator Utama (yanmedrsudalmulk@gmail.com) untuk informasi lebih lanjut.
+
+Salam Hangat,
+Sistem Manajemen AHRQ SOPS 2.0
+  `;
+  await sendSystemEmail(updated.emailRs || 'rs-user@example.com', emailSubject, emailBody.trim(), 'rejection');
+  return updated;
+}
+
+export async function activateHospitalAccount(id: string, performedBy: string, reason?: string): Promise<HospitalAccount> {
+  const updated = await updateHospitalAccountStatus(id, 'Active', performedBy, reason);
+  return updated;
+}
+
+export async function archiveHospitalAccount(id: string, performedBy: string, reason?: string): Promise<HospitalAccount> {
+  const updated = await updateHospitalAccountStatus(id, 'Archived', performedBy, reason);
+  return updated;
+}
+
+export async function restoreHospitalAccount(id: string, performedBy: string, reason?: string): Promise<HospitalAccount> {
+  const updated = await updateHospitalAccountStatus(id, 'Active', performedBy, reason || 'Akun dipulihkan dari arsip');
+  await addAccountAuditLog({
+    hospital_id: id,
+    hospital_name: updated.namaRs,
+    action: 'restored',
+    action_label: 'Akun Dipulihkan',
+    performed_by: performedBy,
+    reason: reason || 'Akun dipulihkan dari arsip oleh administrator'
+  });
+  return updated;
+}
+
+export async function deleteHospitalAccountPermanently(id: string, performedBy: string): Promise<void> {
+  const accounts = await getHospitalAccounts();
+  const target = accounts.find(a => a.id === id);
+  const rsName = target?.namaRs || '';
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await Promise.allSettled([
+        supabase.from('hospital_accounts').delete().eq('id', id),
+        supabase.from('hospital_accounts').delete().ilike('nama_rs', rsName),
+        supabase.from('surveys').delete().eq('hospital_id', id),
+        supabase.from('surveys').delete().ilike('nama_rs', rsName),
+        supabase.from('survey_submissions').delete().eq('rs_id', id),
+        supabase.from('survey_submissions').delete().ilike('nama_rs', rsName),
+        supabase.from('benchmark_requests').delete().or(`requester_id.eq.${id},target_id.eq.${id}`),
+        supabase.from('benchmark_requests').delete().or(`requester_name.ilike.${rsName},target_name.ilike.${rsName}`)
+      ]);
+    } catch (e) {
+      console.error("Error permanently deleting hospital account from Supabase:", e);
+    }
+  }
+
+  await addAccountAuditLog({
+    hospital_id: id,
+    hospital_name: rsName || id,
+    action: 'deleted',
+    action_label: 'Akun Dihapus Permanen',
+    performed_by: performedBy,
+    reason: 'Penghapusan permanen akun & seluruh relasi data (Hard Delete)'
+  });
+
+  if (target?.emailRs) {
+    const emailSubject = `🗑️ Akun Rumah Sakit Anda Telah Dihapus Permanen`;
+    const emailBody = `
+Yth. Pimpinan / Penanggung Jawab ${rsName},
+
+Akun sistem budaya keselamatan pasien (AHRQ SOPS 2.0) Anda beserta seluruh data terkait telah dihapus secara permanen dari database oleh Administrator Utama.
+
+Terima kasih atas partisipasi Anda sebelumnya.
+
+Salam Hangat,
+Sistem Manajemen AHRQ SOPS 2.0
+    `;
+    await sendSystemEmail(target.emailRs, emailSubject, emailBody.trim(), 'rejection');
   }
 }
 
@@ -1378,12 +1623,130 @@ export interface BenchmarkRequest {
   updated_at?: string;
   decided_at?: string;
   decided_by?: string;
+  expires_at?: string;
+  data_type?: string;
 }
 
-// Local memory / storage cache key fallback for benchmark_requests
+export interface BenchmarkAuditLog {
+  id: string;
+  requester_id: string;
+  requester_name: string;
+  target_id: string;
+  target_name: string;
+  action: 'created' | 'approved' | 'rejected' | 'revoked' | 'reactivated';
+  action_label: string;
+  timestamp: string;
+  performed_by: string;
+  notes?: string;
+}
+
+// Local memory / storage cache key fallbacks
 const LOCAL_BENCHMARK_REQUESTS_KEY = 'ahrq_benchmark_requests_v1';
+const LOCAL_BENCHMARK_AUDIT_LOGS_KEY = 'ahrq_benchmark_audit_logs_v1';
+
+export async function getBenchmarkAuditLogs(hospitalId?: string): Promise<BenchmarkAuditLog[]> {
+  // PRIVACY MANDATE: Admin Utama ('admin') or unauthenticated calls MUST NOT access inter-hospital benchmark logs!
+  if (!hospitalId || hospitalId === 'admin') {
+    return [];
+  }
+
+  const supabase = getSupabaseClient();
+  let logs: BenchmarkAuditLog[] = [];
+
+  if (supabase) {
+    try {
+      const { data, error } = await supabase
+        .from('benchmark_audit_logs')
+        .select('*')
+        .order('timestamp', { ascending: false });
+
+      if (!error && data) {
+        logs = data as BenchmarkAuditLog[];
+      } else if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        const { data: configRow } = await supabase
+          .from('ahrq_surveys')
+          .select('dimensi_scores')
+          .eq('id', 'MASTER_BENCHMARK_AUDIT_LOGS')
+          .single();
+        if (configRow && configRow.dimensi_scores && Array.isArray((configRow.dimensi_scores as any).logs)) {
+          logs = (configRow.dimensi_scores as any).logs;
+        }
+      }
+    } catch (e) {
+      console.warn("Failed to fetch benchmark audit logs from Supabase:", e);
+    }
+  }
+
+  if (logs.length === 0 && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_BENCHMARK_AUDIT_LOGS_KEY);
+      if (stored) {
+        logs = JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn("Failed reading benchmark_audit_logs from localStorage:", err);
+    }
+  }
+
+  // Strict hospital privacy filter: only logs involving this hospital
+  return logs.filter(l => 
+    l.requester_id === hospitalId || 
+    l.target_id === hospitalId ||
+    l.requester_name.toLowerCase() === hospitalId.toLowerCase() ||
+    l.target_name.toLowerCase() === hospitalId.toLowerCase()
+  );
+}
+
+export async function addBenchmarkAuditLog(logData: Omit<BenchmarkAuditLog, 'id' | 'timestamp'>): Promise<BenchmarkAuditLog> {
+  const newLog: BenchmarkAuditLog = {
+    ...logData,
+    id: `bm-log-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+    timestamp: new Date().toISOString()
+  };
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      const { error } = await supabase
+        .from('benchmark_audit_logs')
+        .insert([newLog]);
+
+      if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+        const currentLogs = await getBenchmarkAuditLogs(logData.requester_id);
+        const updated = [newLog, ...currentLogs];
+        await supabase.from('ahrq_surveys').upsert({
+          id: 'MASTER_BENCHMARK_AUDIT_LOGS',
+          nama_rs: '_MASTER_CONFIG_',
+          unit_kerja: 'BENCHMARK_AUDIT_LOGS',
+          jumlah_responden: updated.length,
+          tanggal_input: new Date().toISOString(),
+          dimensi_scores: { logs: updated }
+        });
+      }
+    } catch (e) {
+      console.warn("Error inserting benchmark_audit_log to Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const currentLogs = await getBenchmarkAuditLogs(logData.requester_id);
+      const updated = [newLog, ...currentLogs];
+      localStorage.setItem(LOCAL_BENCHMARK_AUDIT_LOGS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Error saving benchmark_audit_log to localStorage:", err);
+    }
+  }
+
+  return newLog;
+}
 
 export async function getBenchmarkRequests(hospitalId?: string): Promise<BenchmarkRequest[]> {
+  // PRIVACY MANDATE: Admin Utama ('admin') or unauthenticated calls MUST NOT access inter-hospital benchmark requests!
+  if (!hospitalId || hospitalId === 'admin') {
+    return [];
+  }
+
   const supabase = getSupabaseClient();
   let items: BenchmarkRequest[] = [];
 
@@ -1424,16 +1787,13 @@ export async function getBenchmarkRequests(hospitalId?: string): Promise<Benchma
     }
   }
 
-  if (hospitalId && hospitalId !== 'admin') {
-    return items.filter(r => 
-      r.requester_id === hospitalId || 
-      r.target_id === hospitalId ||
-      r.requester_name.toLowerCase() === hospitalId.toLowerCase() ||
-      r.target_name.toLowerCase() === hospitalId.toLowerCase()
-    );
-  }
-
-  return items;
+  // Strict hospital privacy filter: only requests involving this hospital
+  return items.filter(r => 
+    r.requester_id === hospitalId || 
+    r.target_id === hospitalId ||
+    r.requester_name.toLowerCase() === hospitalId.toLowerCase() ||
+    r.target_name.toLowerCase() === hospitalId.toLowerCase()
+  );
 }
 
 export async function createBenchmarkRequest(
@@ -1443,12 +1803,13 @@ export async function createBenchmarkRequest(
     ...reqData,
     id: `bm-req-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
     status: 'pending',
+    data_type: reqData.data_type || 'Kuesioner Budaya Keselamatan Pasien AHRQ SOPS® v2.0 (10 Dimensi)',
+    expires_at: reqData.expires_at || '1 Tahun (365 Hari)',
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   };
 
   const supabase = getSupabaseClient();
-  let savedInSupabase = false;
 
   if (supabase) {
     try {
@@ -1456,9 +1817,7 @@ export async function createBenchmarkRequest(
         .from('benchmark_requests')
         .insert([newReq]);
 
-      if (!error) {
-        savedInSupabase = true;
-      } else if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
+      if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
         // Fallback store into ahrq_surveys config row
         const allCurrent = await getBenchmarkRequests();
         const updated = [newReq, ...allCurrent.filter(r => r.id !== newReq.id)];
@@ -1470,7 +1829,6 @@ export async function createBenchmarkRequest(
           tanggal_input: new Date().toISOString(),
           dimensi_scores: { requests: updated }
         });
-        savedInSupabase = true;
       }
     } catch (e) {
       console.warn("Error inserting benchmark_request to Supabase:", e);
@@ -1487,6 +1845,18 @@ export async function createBenchmarkRequest(
       console.warn("Error saving benchmark_request to localStorage:", err);
     }
   }
+
+  // Write audit log
+  await addBenchmarkAuditLog({
+    requester_id: newReq.requester_id,
+    requester_name: newReq.requester_name,
+    target_id: newReq.target_id,
+    target_name: newReq.target_name,
+    action: 'created',
+    action_label: 'Permintaan Benchmark dibuat',
+    performed_by: newReq.requester_name,
+    notes: newReq.notes || 'Permintaan akses benchmark data baru dikirim'
+  });
 
   // Trigger automated email notification simulation
   if (newReq.target_email) {
@@ -1560,13 +1930,37 @@ export async function updateBenchmarkRequestStatus(
     }
   }
 
-  if (updatedReq && updatedReq.requester_email) {
-    const statusLabel = status === 'approved' ? 'Disetujui' : status === 'rejected' ? 'Ditolak' : 'Dicabut';
-    await sendBenchmarkEmailNotification(
-      updatedReq.requester_email,
-      `Keputusan Permintaan Benchmark Data dari ${updatedReq.target_name}`,
-      `Permintaan benchmark data Anda kepada Rumah Sakit ${updatedReq.target_name} telah ${statusLabel.toUpperCase()} oleh ${decidedBy}.${notes ? ` Catatan: ${notes}` : ''}`
-    );
+  if (updatedReq) {
+    const actionMap: Record<string, 'approved' | 'rejected' | 'revoked'> = {
+      approved: 'approved',
+      rejected: 'rejected',
+      revoked: 'revoked'
+    };
+    const actionLabelMap: Record<string, string> = {
+      approved: 'Benchmark disetujui',
+      rejected: 'Benchmark ditolak',
+      revoked: 'Benchmark dicabut'
+    };
+
+    await addBenchmarkAuditLog({
+      requester_id: updatedReq.requester_id,
+      requester_name: updatedReq.requester_name,
+      target_id: updatedReq.target_id,
+      target_name: updatedReq.target_name,
+      action: actionMap[status] || 'approved',
+      action_label: actionLabelMap[status] || `Status diubah menjadi ${status}`,
+      performed_by: decidedBy,
+      notes: notes || `Keputusan status benchmark: ${status}`
+    });
+
+    if (updatedReq.requester_email) {
+      const statusLabel = status === 'approved' ? 'Disetujui' : status === 'rejected' ? 'Ditolak' : 'Dicabut';
+      await sendBenchmarkEmailNotification(
+        updatedReq.requester_email,
+        `Keputusan Permintaan Benchmark Data dari ${updatedReq.target_name}`,
+        `Permintaan benchmark data Anda kepada Rumah Sakit ${updatedReq.target_name} telah ${statusLabel.toUpperCase()} oleh ${decidedBy}.${notes ? ` Catatan: ${notes}` : ''}`
+      );
+    }
   }
 
   return updatedReq;
@@ -1574,6 +1968,7 @@ export async function updateBenchmarkRequestStatus(
 
 export async function deleteBenchmarkRequest(requestId: string): Promise<void> {
   const currentRequests = await getBenchmarkRequests();
+  const targetReq = currentRequests.find(r => r.id === requestId);
   const filtered = currentRequests.filter(r => r.id !== requestId);
 
   const supabase = getSupabaseClient();
@@ -1606,29 +2001,155 @@ export async function deleteBenchmarkRequest(requestId: string): Promise<void> {
       console.warn("Failed saving deleted benchmark_requests to localStorage:", err);
     }
   }
+
+  if (targetReq) {
+    await addBenchmarkAuditLog({
+      requester_id: targetReq.requester_id,
+      requester_name: targetReq.requester_name,
+      target_id: targetReq.target_id,
+      target_name: targetReq.target_name,
+      action: 'revoked',
+      action_label: 'Riwayat Permintaan Benchmark dihapus',
+      performed_by: 'Sistem / Admin',
+      notes: 'Catatan riwayat benchmark telah dihapus dari sistem'
+    });
+  }
 }
 
-export async function sendBenchmarkEmailNotification(toEmail: string, subject: string, body: string): Promise<void> {
-  console.log(`[EMAIL AUTOMATION] Sending email to: ${toEmail}`);
-  console.log(`[EMAIL AUTOMATION] Subject: ${subject}`);
-  console.log(`[EMAIL AUTOMATION] Body: ${body}`);
+export interface PengesahanConfig {
+  namaRs: string;
+  logoRs?: string;
+  kota: string;
+  tanggalPengesahan: string;
+  
+  // Direktur Rumah Sakit
+  direkturNama: string;
+  direkturGelar?: string;
+  direkturJabatan: string;
+  direkturNip: string;
+  
+  // Penanggung Jawab Survei
+  pjNama: string;
+  pjGelar?: string;
+  pjJabatan: string;
+  pjNip: string;
+}
+
+export const LOCAL_PENGESAHAN_KEY_PREFIX = 'ahrq_pengesahan_v1_';
+
+export async function getPengesahanConfig(hospitalIdOrUsername?: string, currentNamaRs?: string): Promise<PengesahanConfig> {
+  const identifier = (hospitalIdOrUsername || 'default').toLowerCase().trim();
+  let foundConfig: PengesahanConfig | null = null;
 
   const supabase = getSupabaseClient();
-  if (supabase) {
+  if (supabase && identifier) {
     try {
-      await supabase.from('email_notifications').insert([{
-        id: `email-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
-        to_email: toEmail,
-        subject,
-        body,
-        type: 'approval',
-        created_at: new Date().toISOString()
-      }]);
+      // 1. Try hospital_accounts table by ID or username
+      const { data: accData } = await supabase
+        .from('hospital_accounts')
+        .select('*')
+        .or(`id.eq.${hospitalIdOrUsername},username.ilike.${hospitalIdOrUsername}`);
+
+      if (accData && accData.length > 0 && accData[0].pengesahan_config) {
+        foundConfig = typeof accData[0].pengesahan_config === 'string'
+          ? JSON.parse(accData[0].pengesahan_config)
+          : accData[0].pengesahan_config;
+      }
+
+      // 2. Try ahrq_surveys table fallback (id = PENGESAHAN_<identifier>)
+      if (!foundConfig) {
+        const { data: surveyRow } = await supabase
+          .from('ahrq_surveys')
+          .select('dimensi_scores')
+          .eq('id', `PENGESAHAN_${identifier}`)
+          .maybeSingle();
+
+        if (surveyRow && surveyRow.dimensi_scores && (surveyRow.dimensi_scores as any).pengesahan) {
+          foundConfig = (surveyRow.dimensi_scores as any).pengesahan;
+        }
+      }
     } catch (e) {
-      // Ignore if table email_notifications doesn't exist
+      console.warn("Failed to fetch pengesahan config from Supabase:", e);
+    }
+  }
+
+  // 3. Try LocalStorage fallback
+  if (!foundConfig && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}${identifier}`) ||
+                     localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}global`);
+      if (stored) {
+        foundConfig = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn("Failed reading pengesahan config from localStorage:", e);
+    }
+  }
+
+  const defaultDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  const rsName = foundConfig?.namaRs || currentNamaRs || 'Rumah Sakit';
+
+  return {
+    namaRs: rsName,
+    logoRs: foundConfig?.logoRs || '',
+    kota: foundConfig?.kota || 'Sukabumi',
+    tanggalPengesahan: foundConfig?.tanggalPengesahan || defaultDate,
+    
+    direkturNama: foundConfig?.direkturNama || 'dr. H. Ahmad Wijaya',
+    direkturGelar: foundConfig?.direkturGelar || 'MARS',
+    direkturJabatan: foundConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit',
+    direkturNip: foundConfig?.direkturNip || '19780512 200501 1 002',
+
+    pjNama: foundConfig?.pjNama || 'dr. Budi Santoso',
+    pjGelar: foundConfig?.pjGelar || 'Sp.KP',
+    pjJabatan: foundConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien',
+    pjNip: foundConfig?.pjNip || '19820315 200804 1 005',
+  };
+}
+
+export async function savePengesahanConfig(hospitalIdOrUsername: string, config: PengesahanConfig): Promise<void> {
+  const identifier = (hospitalIdOrUsername || 'default').toLowerCase().trim();
+  const supabase = getSupabaseClient();
+
+  if (supabase && identifier) {
+    try {
+      // 1. Update hospital_accounts
+      await supabase
+        .from('hospital_accounts')
+        .update({
+          pengesahan_config: config,
+          updated_at: new Date().toISOString()
+        })
+        .or(`id.eq.${hospitalIdOrUsername},username.ilike.${hospitalIdOrUsername}`);
+
+      // 2. Upsert to ahrq_surveys fallback table
+      await supabase.from('ahrq_surveys').upsert({
+        id: `PENGESAHAN_${identifier}`,
+        nama_rs: config.namaRs || '_CONFIG_',
+        unit_kerja: 'PENGESAHAN_CONFIG',
+        jumlah_responden: 1,
+        tanggal_input: new Date().toISOString(),
+        dimensi_scores: { pengesahan: config }
+      });
+    } catch (e) {
+      console.warn("Error saving pengesahan config to Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}${identifier}`, JSON.stringify(config));
+      localStorage.setItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}global`, JSON.stringify(config));
+    } catch (e) {
+      console.warn("Error saving pengesahan config to localStorage:", e);
     }
   }
 }
+
+export async function sendBenchmarkEmailNotification(to: string, subject: string, body: string): Promise<void> {
+  console.log(`[EMAIL NOTIFICATION] To: ${to} | Subject: ${subject} | Body: ${body}`);
+}
+
 
 
 

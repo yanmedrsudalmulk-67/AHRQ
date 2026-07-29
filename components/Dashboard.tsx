@@ -120,23 +120,46 @@ export default function Dashboard({
     { refreshInterval: 5000 }
   );
 
-  // SWR for real-time benchmark requests
+  // SWR for real-time benchmark requests (disabled for Admin Utama to respect data privacy)
   const { data: benchmarkRequests = [], mutate: mutateBenchmarkRequests } = useSWR(
-    ['ahrq_benchmark_requests', hospitalId || identifier],
+    role === 'admin' ? null : ['ahrq_benchmark_requests', hospitalId || identifier],
     () => getBenchmarkRequests(hospitalId || identifier),
     { refreshInterval: 3000 }
   );
 
+  // Benchmark notification badge: ONLY target hospital receives notification!
   const pendingBenchmarkCount = useMemo(() => {
+    if (role === 'admin' || identifier === 'admin') return 0;
     return benchmarkRequests.filter(r => {
       const isTarget = r.target_id === (hospitalId || identifier) || 
-                       r.target_name?.toLowerCase() === namaRs?.toLowerCase() ||
-                       identifier === 'admin';
-      return isTarget && r.status === 'pending';
+                       r.target_name?.toLowerCase() === namaRs?.toLowerCase();
+      const isRequester = r.requester_id === (hospitalId || identifier) ||
+                          r.requester_name?.toLowerCase() === namaRs?.toLowerCase();
+      return isTarget && !isRequester && r.status === 'pending';
     }).length;
-  }, [benchmarkRequests, hospitalId, identifier, namaRs]);
+  }, [role, benchmarkRequests, hospitalId, identifier, namaRs]);
+
+  // Security guard: Admin Utama must never land on persetujuan-benchmark
+  useEffect(() => {
+    if (role === 'admin' && activeTab === 'persetujuan-benchmark') {
+      setActiveTab('dashboard');
+    }
+  }, [role, activeTab]);
 
   const pendingAccountsCount = accounts.filter(a => a.status === 'Pending').length;
+
+  // Real-time active session security check: force logout if account is disabled/archived
+  useEffect(() => {
+    if (role === 'rs' && accounts.length > 0) {
+      const currentAcc = accounts.find(
+        a => a.id === hospitalId || a.username.toLowerCase() === identifier.toLowerCase()
+      );
+      if (currentAcc && (currentAcc.status === 'Disabled' || currentAcc.status === 'Archived' || currentAcc.status === 'Rejected')) {
+        alert("Akun rumah sakit Anda telah dinonaktifkan atau diarsipkan oleh Administrator Utama. Sesi Anda diakhiri secara otomatis.");
+        onLogout();
+      }
+    }
+  }, [role, accounts, hospitalId, identifier, onLogout]);
 
   // Filter surveys: Admin sees all, RS sees only their own
   const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
@@ -331,13 +354,13 @@ export default function Dashboard({
     { id: 'analisa-data', label: 'Analisa Data', mobileLabel: 'Analisa', icon: Activity },
     { id: 'laporan', label: 'Laporan Survei', mobileLabel: 'Laporan', icon: FileText },
     { id: 'pengaturan', label: 'Pengaturan', mobileLabel: 'Setelan', icon: Settings },
-    { 
+    ...(role !== 'admin' ? [{ 
       id: 'persetujuan-benchmark', 
       label: 'Persetujuan Benchmark Data', 
       mobileLabel: 'Benchmark', 
       icon: ShieldCheck, 
       badge: pendingBenchmarkCount 
-    },
+    }] : []),
     ...(role === 'admin' ? [{
       id: 'persetujuan',
       label: 'Persetujuan Akun',
@@ -357,17 +380,17 @@ export default function Dashboard({
         {/* Mobile Top Header (Sticky on Mobile) */}
         <header className="md:hidden flex-none w-full z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2.5">
-            <div className="p-0.5 bg-blue-600 text-white rounded-lg border border-blue-400 shadow-sm flex items-center justify-center shrink-0 w-8 h-8">
+            <div className="p-0.5 bg-white text-blue-600 rounded-lg border-2 border-teal-400 ring-2 ring-white shadow-xs flex items-center justify-center shrink-0 w-8 h-8 overflow-hidden">
               {activeLogo ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
+                <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-125 p-0.5" />
               ) : (
-                <ShieldCheck className="w-6 h-6 text-white" />
+                <ShieldCheck className="w-6 h-6 text-blue-600" />
               )}
             </div>
             <div>
-              <span className="font-sans font-bold text-sm text-slate-800 tracking-tight">AHRQ SOPS v2.0</span>
-              <p className="text-[9px] text-blue-600 font-mono tracking-wider font-bold block">Agency for Healthcare Research and Quality</p>
+              <span className="font-sans font-bold text-sm text-slate-800 tracking-tight block leading-tight">Medclin</span>
+              <span className="text-xs text-blue-600 font-bold block leading-tight">Pro Academy</span>
             </div>
           </div>
           <button
@@ -402,23 +425,23 @@ export default function Dashboard({
             {/* Header / Brand Logo & Title - Centered Logo with Text Underneath */}
             <div className={`hidden md:flex flex-col items-center text-center pt-1 pb-1 ${isSidebarCollapsed ? 'px-1' : 'px-4'}`}>
               <div className="relative mb-2 shrink-0">
-                <div className="p-0.5 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] text-white rounded-2xl border border-white/40 shadow-[0_8px_24px_rgba(37,99,235,0.3)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-14 h-14 overflow-hidden relative">
+                <div className="p-0.5 bg-white text-blue-600 rounded-2xl border-2 border-teal-400 ring-2 ring-white shadow-md flex items-center justify-center shrink-0 w-14 h-14 overflow-hidden relative">
                   {activeLogo ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
+                    <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-125 p-0.5" />
                   ) : (
-                    <ShieldCheck className="w-8 h-8 text-white" />
+                    <ShieldCheck className="w-9 h-9 text-blue-600" />
                   )}
                 </div>
               </div>
               {!isSidebarCollapsed && (
                 <div className="w-full overflow-hidden text-center transition-all duration-200">
-                  <span className="font-sans font-extrabold text-[14px] text-white tracking-wider block whitespace-nowrap">
-                    AHRQ SOPS v2.0
+                  <span className="font-sans font-black text-[17px] text-white tracking-tight block leading-snug">
+                    Medclin
                   </span>
-                  <p className="text-[10px] text-blue-200 font-mono tracking-wider font-bold block leading-tight mt-0.5">
-                    Agency for Healthcare<br />Research and Quality
-                  </p>
+                  <span className="font-sans font-extrabold text-[15px] text-white tracking-tight block leading-snug">
+                    Pro Academy
+                  </span>
                 </div>
               )}
             </div>
@@ -718,8 +741,14 @@ export default function Dashboard({
                 </h3>
 
                 {/* Description */}
-                <p className="text-[11px] leading-relaxed max-w-[90%] mx-auto mb-4 font-bold text-slate-500">
-                  Kategori : <strong className="text-orange-600">{overallScorePercent >= 75 ? 'LULUS KUAT' : (overallScorePercent === 0 ? 'BELUM ADA DATA' : 'PERLU PERBAIKAN')}</strong>
+                <p className="text-slate-500 text-[10px] leading-relaxed max-w-[90%] mx-auto mb-4 font-medium">
+                  {overallScorePercent >= 75 
+                    ? 'Area Kekuatan (strengths, ≥75% respon positif)' 
+                    : overallScorePercent === 0 
+                    ? 'Belum Ada Data' 
+                    : overallScorePercent < 50 
+                    ? 'Area Perbaikan (areas for improvement, <50% respon positif)'
+                    : 'Area Sedang (50% - 74% respon positif)'}
                 </p>
 
                 {/* Value */}
@@ -766,7 +795,7 @@ export default function Dashboard({
           />
         )}
 
-        {activeTab === 'persetujuan-benchmark' && (
+        {activeTab === 'persetujuan-benchmark' && role !== 'admin' && (
           <PersetujuanBenchmarkTab 
             currentHospitalId={hospitalId || identifier}
             currentHospitalName={namaRs}
@@ -785,7 +814,16 @@ export default function Dashboard({
         )}
 
         {activeTab === 'laporan' && (
-          <LaporanTab />
+          <LaporanTab 
+            surveys={surveys}
+            role={role}
+            identifier={identifier}
+            hospitalId={hospitalId || ''}
+            namaRs={namaRs}
+            accounts={accounts}
+            requests={benchmarkRequests}
+            activeLogo={activeLogo}
+          />
         )}
 
         {activeTab === 'pengaturan' && (

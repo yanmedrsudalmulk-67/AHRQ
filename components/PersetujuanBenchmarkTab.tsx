@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   ShieldCheck, 
@@ -19,10 +19,20 @@ import {
   History,
   Check,
   X,
-  Send,
-  HelpCircle
+  HelpCircle,
+  Activity,
+  User,
+  ShieldAlert,
+  Play
 } from 'lucide-react';
-import { BenchmarkRequest, updateBenchmarkRequestStatus, deleteBenchmarkRequest } from '../lib/db';
+import { 
+  BenchmarkRequest, 
+  BenchmarkAuditLog, 
+  updateBenchmarkRequestStatus, 
+  deleteBenchmarkRequest,
+  getBenchmarkAuditLogs,
+  addBenchmarkAuditLog 
+} from '../lib/db';
 
 interface PersetujuanBenchmarkTabProps {
   currentHospitalId: string;
@@ -39,15 +49,17 @@ export default function PersetujuanBenchmarkTab({
   requests = [],
   onRefresh
 }: PersetujuanBenchmarkTabProps) {
-  const [activeSubTab, setActiveSubTab] = useState<'incoming' | 'history'>('incoming');
+  const [activeSubTab, setActiveSubTab] = useState<'incoming' | 'history' | 'audit'>('incoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRequestForDetail, setSelectedRequestForDetail] = useState<BenchmarkRequest | null>(null);
   const [actionNotes, setActionNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [auditLogs, setAuditLogs] = useState<BenchmarkAuditLog[]>([]);
 
   // Custom states for Glassmorphism 2.0 confirmation popups
   const [revokeTarget, setRevokeTarget] = useState<BenchmarkRequest | null>(null);
+  const [reactivateTarget, setReactivateTarget] = useState<BenchmarkRequest | null>(null);
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
 
   const showNotification = (text: string, type: 'success' | 'error') => {
@@ -55,9 +67,23 @@ export default function PersetujuanBenchmarkTab({
     setTimeout(() => setNotification(null), 4000);
   };
 
+  // Load audit logs on mount & subtab change
+  const loadAuditLogs = useCallback(async () => {
+    if (currentHospitalId === 'admin') {
+      setAuditLogs([]);
+      return;
+    }
+    const logs = await getBenchmarkAuditLogs(currentHospitalId || currentHospitalName);
+    setAuditLogs(logs);
+  }, [currentHospitalId, currentHospitalName]);
+
+  useEffect(() => {
+    loadAuditLogs();
+  }, [loadAuditLogs, activeSubTab]);
+
   // Check if current logged-in hospital is the target (not requester) of the benchmark request
   const isTargetOfReq = useCallback((req: BenchmarkRequest) => {
-    if (currentHospitalId === 'admin') return true;
+    if (currentHospitalId === 'admin') return false;
     
     const matchesTarget = req.target_id === currentHospitalId || 
                           req.target_name.toLowerCase() === currentHospitalName.toLowerCase();
@@ -68,23 +94,46 @@ export default function PersetujuanBenchmarkTab({
   }, [currentHospitalId, currentHospitalName]);
 
   // Filter incoming requests (where current hospital is target_id or target_name)
-  // We strictly exclude requests where the logged-in hospital is the requester to ensure privacy
   const incomingRequests = useMemo(() => {
+    if (currentHospitalId === 'admin') return [];
     return requests.filter(r => {
       const isPending = r.status === 'pending';
       return isPending && isTargetOfReq(r);
     });
-  }, [requests, isTargetOfReq]);
+  }, [requests, isTargetOfReq, currentHospitalId]);
 
-  // Filter history requests (all decided / requests where current hospital is target or requester)
+  // Filter history requests (strictly requests where current hospital is target or requester)
   const historyRequests = useMemo(() => {
+    if (currentHospitalId === 'admin') return [];
     return requests.filter(r => {
+      const isRelated = r.requester_id === currentHospitalId || 
+                        r.target_id === currentHospitalId ||
+                        r.requester_name.toLowerCase() === currentHospitalName.toLowerCase() ||
+                        r.target_name.toLowerCase() === currentHospitalName.toLowerCase();
+      if (!isRelated) return false;
+
       const matchesSearch = r.requester_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             r.target_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             (r.notes && r.notes.toLowerCase().includes(searchQuery.toLowerCase()));
       return matchesSearch;
     });
-  }, [requests, searchQuery]);
+  }, [requests, searchQuery, currentHospitalId, currentHospitalName]);
+
+  const filteredAuditLogs = useMemo(() => {
+    if (currentHospitalId === 'admin') return [];
+    return auditLogs.filter(l => {
+      const isRelated = l.requester_id === currentHospitalId || 
+                        l.target_id === currentHospitalId ||
+                        l.requester_name.toLowerCase() === currentHospitalName.toLowerCase() ||
+                        l.target_name.toLowerCase() === currentHospitalName.toLowerCase();
+      if (!isRelated) return false;
+
+      return l.requester_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.target_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.action_label.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        l.performed_by.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+  }, [auditLogs, searchQuery, currentHospitalId, currentHospitalName]);
 
   const handleApprove = async (req: BenchmarkRequest) => {
     setIsProcessing(true);
@@ -106,6 +155,7 @@ export default function PersetujuanBenchmarkTab({
       showNotification(`Permintaan benchmark dari ${req.requester_name} berhasil DISETUJUI.`, 'success');
       setSelectedRequestForDetail(null);
       setActionNotes('');
+      loadAuditLogs();
     } catch (err) {
       console.error(err);
       showNotification('Gagal memproses persetujuan. Coba lagi.', 'error');
@@ -135,6 +185,7 @@ export default function PersetujuanBenchmarkTab({
       showNotification(`Permintaan benchmark dari ${req.requester_name} DITOLAK.`, 'success');
       setSelectedRequestForDetail(null);
       setActionNotes('');
+      loadAuditLogs();
     } catch (err) {
       console.error(err);
       showNotification('Gagal memproses penolakan.', 'error');
@@ -164,9 +215,52 @@ export default function PersetujuanBenchmarkTab({
       await updateBenchmarkRequestStatus(revokeTarget.id, 'revoked', currentHospitalName, 'Persetujuan dicabut oleh rumah sakit tujuan');
       showNotification(`Persetujuan benchmark untuk ${revokeTarget.requester_name} telah DICABUT.`, 'success');
       setRevokeTarget(null);
+      loadAuditLogs();
     } catch (err) {
       console.error(err);
       showNotification('Gagal mencabut persetujuan.', 'error');
+      onRefresh(); // Revert cache on error
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReactivateConfirm = async () => {
+    if (!reactivateTarget) return;
+    setIsProcessing(true);
+    try {
+      const now = new Date().toISOString();
+      const updatedReq: BenchmarkRequest = {
+        ...reactivateTarget,
+        status: 'approved',
+        notes: 'Akses diaktifkan kembali oleh rumah sakit tujuan',
+        decided_at: now,
+        decided_by: currentHospitalName,
+        updated_at: now
+      };
+      
+      const nextRequests = requests.map(r => r.id === reactivateTarget.id ? updatedReq : r);
+      onRefresh(nextRequests); // Optimistic UI update!
+
+      await updateBenchmarkRequestStatus(reactivateTarget.id, 'approved', currentHospitalName, 'Akses diaktifkan kembali oleh rumah sakit tujuan');
+      
+      await addBenchmarkAuditLog({
+        requester_id: reactivateTarget.requester_id,
+        requester_name: reactivateTarget.requester_name,
+        target_id: reactivateTarget.target_id,
+        target_name: reactivateTarget.target_name,
+        action: 'reactivated',
+        action_label: 'Benchmark diaktifkan kembali',
+        performed_by: currentHospitalName,
+        notes: 'Akses benchmark diaktifkan kembali secara realtime'
+      });
+
+      showNotification(`Akses benchmark untuk ${reactivateTarget.requester_name} berhasil DIAKTIFKAN KEMBALI.`, 'success');
+      setReactivateTarget(null);
+      loadAuditLogs();
+    } catch (err) {
+      console.error(err);
+      showNotification('Gagal mengaktifkan kembali akses.', 'error');
       onRefresh(); // Revert cache on error
     } finally {
       setIsProcessing(false);
@@ -183,6 +277,7 @@ export default function PersetujuanBenchmarkTab({
       await deleteBenchmarkRequest(deleteTargetId);
       showNotification('Riwayat berhasil dihapus.', 'success');
       setDeleteTargetId(null);
+      loadAuditLogs();
     } catch (err) {
       console.error(err);
       showNotification('Gagal menghapus riwayat.', 'error');
@@ -206,6 +301,23 @@ export default function PersetujuanBenchmarkTab({
       return dateStr;
     }
   };
+
+  if (currentHospitalId === 'admin') {
+    return (
+      <div className="p-8 bg-white rounded-3xl border border-slate-200 shadow-sm text-center space-y-4 max-w-2xl mx-auto my-8 font-sans">
+        <div className="w-16 h-16 bg-amber-50 rounded-2xl border border-amber-200 flex items-center justify-center mx-auto text-amber-600">
+          <ShieldAlert className="w-8 h-8" />
+        </div>
+        <h3 className="text-xl font-bold text-slate-800">Kerahasiaan Data Benchmark Terjaga</h3>
+        <p className="text-sm text-slate-600 leading-relaxed">
+          Sesuai dengan kebijakan privasi dan hak akses sistem, <strong>Administrator Utama tidak memiliki wewenang untuk melihat, membaca, atau mengelola permintaan benchmark antar rumah sakit</strong>.
+        </p>
+        <p className="text-xs text-slate-500">
+          Permintaan dan persetujuan benchmark hanya dikelola secara langsung oleh dua pihak rumah sakit yang saling berhubungan.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-12 font-sans">
@@ -280,17 +392,29 @@ export default function PersetujuanBenchmarkTab({
             }`}
           >
             <History className="w-4 h-4" />
-            <span>Riwayat & Akses Benchmark ({requests.length})</span>
+            <span>Riwayat & Kelola Akses ({requests.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveSubTab('audit')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all cursor-pointer ${
+              activeSubTab === 'audit'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
+          >
+            <Activity className="w-4 h-4 text-emerald-300" />
+            <span>Audit Log Benchmark ({auditLogs.length})</span>
           </button>
         </div>
 
-        {/* Search filter for history */}
-        {activeSubTab === 'history' && (
+        {/* Search filter for history & audit */}
+        {(activeSubTab === 'history' || activeSubTab === 'audit') && (
           <div className="relative w-full sm:w-64">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
-              placeholder="Cari nama rumah sakit..."
+              placeholder="Cari rumah sakit / aktivitas..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:border-blue-500 focus:outline-none transition-all font-sans"
@@ -374,7 +498,7 @@ export default function PersetujuanBenchmarkTab({
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors cursor-pointer"
                           >
                             <Eye className="w-3.5 h-3.5 text-slate-600" />
-                            Detail
+                            Lihat Detail
                           </button>
 
                           <button
@@ -401,12 +525,12 @@ export default function PersetujuanBenchmarkTab({
             </div>
           )}
         </div>
-      ) : (
+      ) : activeSubTab === 'history' ? (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <History className="w-5 h-5 text-indigo-600" />
-              <h2 className="font-bold text-sm text-slate-800">Riwayat Permintaan & Pengaturan Izin Benchmark</h2>
+              <h2 className="font-bold text-sm text-slate-800">Riwayat Permintaan & Kelola Akses Benchmark</h2>
             </div>
             <span className="text-xs text-slate-500 font-medium">
               Total Riwayat: <strong className="text-indigo-700">{historyRequests.length}</strong>
@@ -434,7 +558,7 @@ export default function PersetujuanBenchmarkTab({
                     <th className="py-3.5 px-4">Tanggal Keputusan</th>
                     <th className="py-3.5 px-4 text-center">Status</th>
                     <th className="py-3.5 px-4">Pengambil Keputusan</th>
-                    <th className="py-3.5 px-4 text-center">Kelola Akses</th>
+                    <th className="py-3.5 px-4 text-center min-w-[210px]">Aksi & Kelola Akses</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 text-xs text-slate-800">
@@ -453,7 +577,7 @@ export default function PersetujuanBenchmarkTab({
                       label = "Menunggu";
                     } else if (req.status === 'revoked') {
                       badgeClass = "bg-slate-200 text-slate-800 border-slate-300";
-                      label = "Dicabut";
+                      label = "Akses Dicabut";
                     }
 
                     const isTarget = isTargetOfReq(req);
@@ -481,7 +605,16 @@ export default function PersetujuanBenchmarkTab({
                           {req.decided_by || '-'}
                         </td>
                         <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                          <div className="flex items-center justify-center gap-2">
+                          <div className="flex items-center justify-center gap-1.5">
+                            <button
+                              onClick={() => setSelectedRequestForDetail(req)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[11px] transition-colors cursor-pointer"
+                              title="Lihat Detail Permintaan"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-slate-600" />
+                              Detail
+                            </button>
+
                             {req.status === 'approved' && isTarget && (
                               <button
                                 onClick={() => setRevokeTarget(req)}
@@ -493,6 +626,36 @@ export default function PersetujuanBenchmarkTab({
                               </button>
                             )}
 
+                            {req.status === 'revoked' && isTarget && (
+                              <button
+                                onClick={() => setReactivateTarget(req)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-bold text-[11px] transition-colors cursor-pointer"
+                                title="Aktifkan kembali akses benchmark"
+                              >
+                                <Play className="w-3.5 h-3.5" />
+                                Aktifkan Kembali
+                              </button>
+                            )}
+
+                            {req.status === 'pending' && isTarget && (
+                              <>
+                                <button
+                                  onClick={() => handleApprove(req)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 text-white font-bold text-[11px] cursor-pointer"
+                                >
+                                  <Check className="w-3.5 h-3.5" />
+                                  Setujui
+                                </button>
+                                <button
+                                  onClick={() => handleReject(req)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-rose-600 text-white font-bold text-[11px] cursor-pointer"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                  Tolak
+                                </button>
+                              </>
+                            )}
+
                             <button
                               onClick={() => setDeleteTargetId(req.id)}
                               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-slate-100 rounded transition-colors cursor-pointer"
@@ -501,6 +664,87 @@ export default function PersetujuanBenchmarkTab({
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Audit Log Tab */
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+          <div className="p-5 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-emerald-600" />
+              <h2 className="font-bold text-sm text-slate-800">Audit Log & Riwayat Aktivitas Benchmark</h2>
+            </div>
+            <span className="text-xs text-slate-500 font-medium">
+              Total Catatan: <strong className="text-emerald-700">{filteredAuditLogs.length}</strong>
+            </span>
+          </div>
+
+          {filteredAuditLogs.length === 0 ? (
+            <div className="p-12 text-center space-y-3">
+              <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mx-auto">
+                <Activity className="w-8 h-8 text-slate-400" />
+              </div>
+              <h3 className="font-bold text-base text-slate-800">Belum Ada Catatan Audit Log</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Seluruh aktivitas pembuatan, persetujuan, penolakan, pencabutan, dan reaktivasi benchmark akan tercatat secara otomatis di sini.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-700 text-xs font-bold uppercase tracking-wider border-b border-slate-200">
+                    <th className="py-3.5 px-4">Waktu Aktivitas</th>
+                    <th className="py-3.5 px-4">Jenis Aktivitas</th>
+                    <th className="py-3.5 px-4">RS Pemohon</th>
+                    <th className="py-3.5 px-4">RS Tujuan</th>
+                    <th className="py-3.5 px-4">Pelaku Tindakan</th>
+                    <th className="py-3.5 px-4">Catatan / Detail</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200 text-xs text-slate-800">
+                  {filteredAuditLogs.map((log) => {
+                    let actionBadge = "bg-slate-100 text-slate-800 border-slate-200";
+                    if (log.action === 'created') actionBadge = "bg-blue-100 text-blue-800 border-blue-300";
+                    if (log.action === 'approved') actionBadge = "bg-emerald-100 text-emerald-800 border-emerald-300";
+                    if (log.action === 'rejected') actionBadge = "bg-rose-100 text-rose-800 border-rose-300";
+                    if (log.action === 'revoked') actionBadge = "bg-amber-100 text-amber-800 border-amber-300";
+                    if (log.action === 'reactivated') actionBadge = "bg-teal-100 text-teal-800 border-teal-300";
+
+                    return (
+                      <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-4 font-mono text-slate-600 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{formatDate(log.timestamp)}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border ${actionBadge}`}>
+                            {log.action_label}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">
+                          {log.requester_name}
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-indigo-900">
+                          {log.target_name}
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-700">
+                          <div className="flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            <strong className="font-semibold">{log.performed_by}</strong>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-slate-600 italic">
+                          {log.notes || '-'}
                         </td>
                       </tr>
                     );
@@ -530,12 +774,12 @@ export default function PersetujuanBenchmarkTab({
                   </div>
                   <div>
                     <h3 className="font-extrabold text-base">Detail Permintaan Benchmark</h3>
-                    <p className="text-xs text-blue-200">Evaluasi izin akses perbandingan data survei</p>
+                    <p className="text-xs text-blue-200">Informasi lengkap permohonan akses data survei</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setSelectedRequestForDetail(null)}
-                  className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+                  className="text-slate-300 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -545,57 +789,82 @@ export default function PersetujuanBenchmarkTab({
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs">
                   <div>
-                    <span className="text-slate-500 block mb-0.5 font-medium">Rumah Sakit Pemohon:</span>
+                    <span className="text-slate-500 block mb-0.5 font-medium">Nama Rumah Sakit Pemohon:</span>
                     <strong className="text-slate-900 text-sm block">{selectedRequestForDetail.requester_name}</strong>
                   </div>
 
                   <div>
-                    <span className="text-slate-500 block mb-0.5 font-medium">Email Kontak:</span>
-                    <strong className="text-blue-700 text-sm block">{selectedRequestForDetail.requester_email || '-'}</strong>
+                    <span className="text-slate-500 block mb-0.5 font-medium">Nama Rumah Sakit Tujuan:</span>
+                    <strong className="text-indigo-900 text-sm block">{selectedRequestForDetail.target_name}</strong>
                   </div>
 
                   <div>
-                    <span className="text-slate-500 block mb-0.5 font-medium">Tanggal Pengajuan:</span>
+                    <span className="text-slate-500 block mb-0.5 font-medium">Tanggal Permintaan:</span>
                     <strong className="text-slate-800 block">{formatDate(selectedRequestForDetail.created_at)}</strong>
                   </div>
 
                   <div>
+                    <span className="text-slate-500 block mb-0.5 font-medium">Status Akses:</span>
+                    <strong className={`text-xs uppercase font-bold px-2 py-0.5 rounded-md inline-block ${
+                      selectedRequestForDetail.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                      selectedRequestForDetail.status === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                      selectedRequestForDetail.status === 'revoked' ? 'bg-slate-200 text-slate-800' :
+                      'bg-amber-100 text-amber-800'
+                    }`}>
+                      {selectedRequestForDetail.status === 'approved' ? 'Disetujui' :
+                       selectedRequestForDetail.status === 'rejected' ? 'Ditolak' :
+                       selectedRequestForDetail.status === 'revoked' ? 'Akses Dicabut' :
+                       'Menunggu Persetujuan'}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span className="text-slate-500 block mb-0.5 font-medium">Tanggal Berakhir Akses:</span>
+                    <strong className="text-blue-700 block">{selectedRequestForDetail.expires_at || '1 Tahun (Dapat diperpanjang / dicabut)'}</strong>
+                  </div>
+
+                  <div>
                     <span className="text-slate-500 block mb-0.5 font-medium">Tahun Data Yang Diminta:</span>
-                    <strong className="text-indigo-700 text-sm block">{selectedRequestForDetail.requested_year}</strong>
+                    <strong className="text-indigo-700 block">{selectedRequestForDetail.requested_year}</strong>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wide block">Data Yang Akan Dibandingkan:</span>
-                  <div className="flex flex-wrap gap-1.5 text-[11px] font-medium text-slate-700">
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg">Dimensi Budaya Keselamatan</span>
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg">Capaian Per Item</span>
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg">Posisi Staf</span>
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg">Unit / Area Kerja</span>
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg">Interaksi Pasien</span>
-                    <span className="px-2.5 py-1 bg-blue-50 text-blue-800 border border-blue-200 rounded-lg">Masa Kerja</span>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-indigo-50 border border-indigo-200 rounded-xl space-y-2 text-xs">
-                  <div className="flex items-start gap-2 text-indigo-900 font-semibold">
-                    <HelpCircle className="w-5 h-5 text-indigo-600 shrink-0 mt-0.5" />
-                    <p className="leading-relaxed">
-                      &quot;Apakah Anda mengizinkan rumah sakit ini menggunakan data {currentHospitalName || 'Rumah Sakit'} sebagai benchmark pada fitur Analisa Data?&quot;
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wide block">Jenis Data Yang Akan Dibandingkan:</span>
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs font-medium text-blue-900 space-y-1">
+                    <p className="font-bold text-blue-950">
+                      {selectedRequestForDetail.data_type || 'Kuesioner Budaya Keselamatan Pasien AHRQ SOPS® v2.0'}
                     </p>
+                    <div className="flex flex-wrap gap-1.5 pt-1 text-[11px]">
+                      <span className="px-2 py-0.5 bg-white border border-blue-200 rounded text-blue-800">10 Dimensi Utama</span>
+                      <span className="px-2 py-0.5 bg-white border border-blue-200 rounded text-blue-800">Per Item Pertanyaan</span>
+                      <span className="px-2 py-0.5 bg-white border border-blue-200 rounded text-blue-800">Posisi Staf</span>
+                      <span className="px-2 py-0.5 bg-white border border-blue-200 rounded text-blue-800">Unit / Area Kerja</span>
+                      <span className="px-2 py-0.5 bg-white border border-blue-200 rounded text-blue-800">Interaksi Pasien</span>
+                      <span className="px-2 py-0.5 bg-white border border-blue-200 rounded text-blue-800">Masa Kerja</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-700 block">Catatan / Pesan Persetujuan (Opsional):</label>
-                  <textarea
-                    rows={2}
-                    value={actionNotes}
-                    onChange={(e) => setActionNotes(e.target.value)}
-                    placeholder="Contoh: Disetujui untuk perbandingan evaluasi mutu bersama..."
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none font-sans"
-                  />
-                </div>
+                {selectedRequestForDetail.notes && (
+                  <div className="p-3 bg-slate-100 border border-slate-200 rounded-xl text-xs space-y-1">
+                    <span className="font-bold text-slate-700 block">Catatan Tambahan:</span>
+                    <p className="text-slate-600">{selectedRequestForDetail.notes}</p>
+                  </div>
+                )}
+
+                {isTargetOfReq(selectedRequestForDetail) && selectedRequestForDetail.status === 'pending' && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 block">Catatan / Pesan Keputusan (Opsional):</label>
+                    <textarea
+                      rows={2}
+                      value={actionNotes}
+                      onChange={(e) => setActionNotes(e.target.value)}
+                      placeholder="Contoh: Disetujui untuk perbandingan evaluasi mutu bersama..."
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none font-sans"
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Modal Footer */}
@@ -604,10 +873,10 @@ export default function PersetujuanBenchmarkTab({
                   onClick={() => setSelectedRequestForDetail(null)}
                   className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-xl transition-colors cursor-pointer"
                 >
-                  {isTargetOfReq(selectedRequestForDetail) ? 'Batal' : 'Tutup'}
+                  Tutup
                 </button>
 
-                {isTargetOfReq(selectedRequestForDetail) && (
+                {isTargetOfReq(selectedRequestForDetail) && selectedRequestForDetail.status === 'pending' && (
                   <>
                     <button
                       disabled={isProcessing}
@@ -615,7 +884,7 @@ export default function PersetujuanBenchmarkTab({
                       className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <XCircle className="w-4 h-4" />
-                      Tolak Permintaan
+                      Tolak
                     </button>
 
                     <button
@@ -624,7 +893,7 @@ export default function PersetujuanBenchmarkTab({
                       className="px-5 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-md shadow-emerald-600/20 transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       <CheckCircle2 className="w-4 h-4" />
-                      Setujui Permintaan
+                      Setujui
                     </button>
                   </>
                 )}
@@ -687,6 +956,47 @@ export default function PersetujuanBenchmarkTab({
           </div>
         )}
 
+        {/* Reactivate Access Modal */}
+        {reactivateTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 15 }}
+              transition={{ duration: 0.25, ease: "easeOut" }}
+              className="relative max-w-md w-full p-8 text-center rounded-2xl border border-white/40 backdrop-blur-2xl bg-white/45 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-saturate-150 overflow-hidden"
+            >
+              <div className="relative z-10 flex flex-col items-center">
+                <div className="w-16 h-16 bg-emerald-500/15 text-emerald-600 rounded-full flex items-center justify-center mb-5 border border-emerald-500/20 shadow-inner">
+                  <Play className="w-8 h-8" />
+                </div>
+
+                <h3 className="font-extrabold text-[10px] text-emerald-600 uppercase tracking-widest mb-2">Konfirmasi Pengaktifan Kembali</h3>
+                
+                <h4 className="font-black text-slate-800 text-base leading-snug tracking-tight mb-4 px-2">
+                  AKTIFKAN KEMBALI AKSES BENCHMARK DATA UNTUK {reactivateTarget.requester_name.toUpperCase()}?
+                </h4>
+
+                <div className="flex items-center gap-3 w-full mt-4">
+                  <button
+                    onClick={() => setReactivateTarget(null)}
+                    className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 bg-white/80 hover:bg-slate-100 text-slate-700 font-bold text-[11px] tracking-wider uppercase transition-all shadow-sm cursor-pointer"
+                  >
+                    TIDAK
+                  </button>
+                  <button
+                    disabled={isProcessing}
+                    onClick={handleReactivateConfirm}
+                    className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-[11px] tracking-wider uppercase transition-all shadow-md hover:shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                  >
+                    YA, AKTIFKAN
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {/* Glassmorphism 2.0 Delete History Modal */}
         {deleteTargetId && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/45 backdrop-blur-md">
@@ -697,24 +1007,17 @@ export default function PersetujuanBenchmarkTab({
               transition={{ duration: 0.25, ease: "easeOut" }}
               className="relative max-w-md w-full p-8 text-center rounded-2xl border border-white/40 backdrop-blur-2xl bg-white/45 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-saturate-150 overflow-hidden"
             >
-              {/* Decorative radial gradients for Glassmorphism 2.0 feel */}
-              <div className="absolute -top-24 -left-24 w-48 h-48 bg-slate-400/20 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-24 -right-24 w-48 h-48 bg-red-400/20 rounded-full blur-3xl pointer-events-none" />
-
               <div className="relative z-10 flex flex-col items-center">
-                {/* Visual indicator */}
                 <div className="w-16 h-16 bg-red-500/15 text-red-600 rounded-full flex items-center justify-center mb-5 border border-red-500/20 shadow-inner">
                   <Trash2 className="w-8 h-8" />
                 </div>
 
                 <h3 className="font-extrabold text-[10px] text-slate-500 uppercase tracking-widest mb-2">Hapus Catatan</h3>
                 
-                {/* Main required text */}
                 <h4 className="font-black text-slate-800 text-base leading-snug tracking-tight mb-6 px-2">
                   APAKAH ANDA AKAN MENGHAPUS RIWAYAT BENCHMARK DATA INI?
                 </h4>
 
-                {/* Buttons (YA and TIDAK) */}
                 <div className="flex items-center gap-3 w-full">
                   <button
                     onClick={() => setDeleteTargetId(null)}

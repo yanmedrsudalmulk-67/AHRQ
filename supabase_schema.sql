@@ -133,6 +133,76 @@ CREATE POLICY "Enable update access for all users" ON public.email_notifications
 DROP POLICY IF EXISTS "Enable delete access for all users" ON public.email_notifications;
 CREATE POLICY "Enable delete access for all users" ON public.email_notifications FOR DELETE USING (true);
 
+-- 6. Table: benchmark_requests (Strict RLS: Only Requester & Target Hospital)
+CREATE TABLE IF NOT EXISTS public.benchmark_requests (
+    id TEXT PRIMARY KEY,
+    requester_id TEXT NOT NULL,
+    requester_name TEXT NOT NULL,
+    requester_email TEXT,
+    target_id TEXT NOT NULL,
+    target_name TEXT NOT NULL,
+    target_email TEXT,
+    data_type TEXT NOT NULL,
+    requested_year TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending', -- 'pending', 'approved', 'rejected', 'revoked'
+    notes TEXT,
+    decided_at TIMESTAMP WITH TIME ZONE,
+    decided_by TEXT,
+    expires_at TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.benchmark_requests ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Benchmark Requests Private Access Policy" ON public.benchmark_requests;
+-- Strict Privacy: Only Requester or Target Hospital can read or modify. Admin is DENIED.
+CREATE POLICY "Benchmark Requests Private Access Policy" ON public.benchmark_requests
+    FOR ALL
+    USING (
+        auth.uid()::text = requester_id OR 
+        auth.uid()::text = target_id OR
+        current_setting('app.current_hospital_id', true) = requester_id OR
+        current_setting('app.current_hospital_id', true) = target_id
+    )
+    WITH CHECK (
+        auth.uid()::text = requester_id OR 
+        auth.uid()::text = target_id OR
+        current_setting('app.current_hospital_id', true) = requester_id OR
+        current_setting('app.current_hospital_id', true) = target_id
+    );
+
+-- 7. Table: benchmark_audit_logs (Strict RLS: Only Requester & Target Hospital)
+CREATE TABLE IF NOT EXISTS public.benchmark_audit_logs (
+    id TEXT PRIMARY KEY,
+    requester_id TEXT NOT NULL,
+    requester_name TEXT NOT NULL,
+    target_id TEXT NOT NULL,
+    target_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    action_label TEXT NOT NULL,
+    performed_by TEXT NOT NULL,
+    notes TEXT,
+    timestamp TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE public.benchmark_audit_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Benchmark Audit Logs Private Access Policy" ON public.benchmark_audit_logs;
+-- Strict Privacy: Only Requester or Target Hospital can read or write audit logs. Admin is DENIED.
+CREATE POLICY "Benchmark Audit Logs Private Access Policy" ON public.benchmark_audit_logs
+    FOR ALL
+    USING (
+        auth.uid()::text = requester_id OR 
+        auth.uid()::text = target_id OR
+        current_setting('app.current_hospital_id', true) = requester_id OR
+        current_setting('app.current_hospital_id', true) = target_id
+    )
+    WITH CHECK (
+        auth.uid()::text = requester_id OR 
+        auth.uid()::text = target_id OR
+        current_setting('app.current_hospital_id', true) = requester_id OR
+        current_setting('app.current_hospital_id', true) = target_id
+    );
+
 
 -- =========================================================================
 -- DATABASE MIGRATION SCRIPT (For existing databases)

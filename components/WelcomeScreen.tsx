@@ -62,18 +62,18 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
       >
         {/* Left branding: Logo & Text */}
         <div className="flex items-center gap-3">
-          <div className="p-0.5 bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white rounded-xl border border-white/40 shadow-[0_8px_32px_rgba(37,99,235,0.3)] ring-1 ring-white/40 flex items-center justify-center shrink-0 w-12 h-12 overflow-hidden relative group/logo">
-            <div className="absolute inset-0 bg-white/10 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
+          <div className="p-0.5 bg-white text-blue-600 rounded-xl border-2 border-teal-400 ring-2 ring-white shadow-md flex items-center justify-center shrink-0 w-12 h-12 overflow-hidden relative group/logo">
+            <div className="absolute inset-0 bg-slate-900/5 opacity-0 group-hover/logo:opacity-100 transition-opacity"></div>
             {activeLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-105" />
+              <img src={activeLogo.url} alt="Medclin Logo" className="w-full h-full object-contain scale-125 p-0.5" />
             ) : (
-              <ShieldCheck className="w-8 h-8" />
+              <ShieldCheck className="w-9 h-9 text-blue-600" />
             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-extrabold tracking-wider text-sm text-slate-800 block font-sans whitespace-normal break-words">AHRQ SOPS v2.0</span>
-            <span className="text-[10px] text-[#2563EB] font-mono tracking-wider font-bold block whitespace-normal break-words max-w-[150px] sm:max-w-none">Agency for Healthcare Research and Quality</span>
+            <span className="font-extrabold text-lg leading-tight text-[#0e4a5b] block font-sans tracking-tight">Medclin</span>
+            <span className="font-bold text-sm leading-tight text-[#2fa8b9] block font-sans tracking-tight">Pro Academy</span>
           </div>
         </div>
 
