@@ -471,7 +471,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [tahun1, setTahun1] = useState<string>(actualDataYears[0] || currentYear);
   const [tahun2, setTahun2] = useState<string>(actualDataYears[1] || actualDataYears[0] || currentYear);
 
-  const filterTargetSurveysByYear = (targetSurveys: SurveyData[]) => {
+  const filterTargetSurveysByYear = useCallback((targetSurveys: SurveyData[]) => {
     const cleanSurveys = targetSurveys.filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
     if (cleanSurveys.length === 0) return [];
     let filtered: SurveyData[] = [];
@@ -484,7 +484,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       });
     }
     return filtered.length > 0 ? filtered : cleanSurveys;
-  };
+  }, [tahun1, tahun2, mode]);
 
   const masterBenchmarkData = useMemo(() => {
     if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
@@ -500,7 +500,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     }
     const mb = surveys.find(s => s.id === 'MASTER_BENCHMARK');
     return mb ? (mb.dimensiScores as any) : undefined;
-  }, [surveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, tahun1, tahun2, mode]);
+  }, [surveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, filterTargetSurveysByYear]);
 
   const [benchmarkInteraksiData, setBenchmarkInteraksiData] = useState<BenchmarkInteraksi[]>([]);
 
@@ -580,7 +580,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       { kategori: 'Kurang', 'Rumah Sakit Anda': getPct(counts[2]), [activeBenchmarkLabel]: getTargetPct(2, 4) },
       { kategori: 'Sangat Kurang', 'Rumah Sakit Anda': getPct(counts[1]), [activeBenchmarkLabel]: getTargetPct(1, 1) },
     ];
-  }, [actualSurveys, tahun1, tahun2, mode, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, activeBenchmarkLabel]);
+  }, [actualSurveys, tahun1, tahun2, mode, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, activeBenchmarkLabel, filterTargetSurveysByYear]);
 
   // SOPS 2.0 Question Items Mapping
   const STATEMENTS_A = useMemo(() => [
@@ -643,7 +643,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       return filterTargetSurveysByYear(targetHospitalSurveys);
     }
     return surveys.filter(s => (s.id === 'MASTER_BENCHMARK' || (s as any).isBenchmark) && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
-  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, surveys, tahun1, tahun2, mode]);
+  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, surveys, filterTargetSurveysByYear]);
 
   const targetDemografiStats = useMemo(() => {
     let surveysToUse: SurveyData[] = activeBenchmarkSurveys;
@@ -1187,7 +1187,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       return calculateReportedEventsStats(filterTargetSurveysByYear(targetHospitalSurveys));
     }
     return null;
-  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, calculateReportedEventsStats, tahun1, tahun2, mode]);
+  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, calculateReportedEventsStats, filterTargetSurveysByYear]);
 
   const e2ChartData = useMemo(() => {
     const categories = [
@@ -2909,137 +2909,139 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             </div>
 
             {/* Card Benchmark dengan Rumah Sakit Lain */}
-            <div className="bg-white rounded-[28px] p-6 md:p-8 shadow-lg border border-slate-200/80 mb-10 relative">
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                <div className="space-y-1 max-w-2xl">
-                  <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
-                    <Building2 className="w-4 h-4" />
-                    <span>Fitur Benchmark Antar Rumah Sakit</span>
-                  </div>
-                  <h2 className="text-[17px] font-extrabold text-slate-800 tracking-tight">
-                    Benchmark dengan Rumah Sakit Lain
-                  </h2>
-                  <p className="text-[11px] text-left text-slate-500 font-medium leading-relaxed max-w-[580px]">
-                    Pilih rumah sakit terdaftar untuk melakukan perbandingan data. Akses perbandingan membutuhkan persetujuan dari rumah sakit pembanding demi keamanan data.
-                  </p>
-                </div>
-
-                {/* Dropdown & Actions */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-                  <div className="relative min-w-[280px]">
-                    <label className="text-[11px] font-bold text-slate-700 block mb-1">Pilih Rumah Sakit Pembanding:</label>
-                    
-                    {/* Custom Searchable Select Box */}
-                    <div className="relative">
-                      <button
-                        type="button"
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-left text-xs font-bold text-slate-800 flex items-center justify-between transition-all cursor-pointer"
-                      >
-                        <span className="truncate">
-                          {selectedBenchmarkHospitalId === 'default' 
-                            ? `${activeBenchmarkLabel} (Benchmark Bawaan Aplikasi)` 
-                            : selectedTargetHospital?.namaRs || 'Pilih Rumah Sakit...'}
-                        </span>
-                        <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
-                      </button>
-
-                      {isDropdownOpen && (
-                        <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 space-y-2 max-h-64 overflow-y-auto">
-                          <div className="relative px-1">
-                            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input
-                              type="text"
-                              placeholder="Cari nama rumah sakit..."
-                              value={benchmarkSearchTerm}
-                              onChange={(e) => setBenchmarkSearchTerm(e.target.value)}
-                              className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-sans"
-                            />
-                          </div>
-
-                          <div className="divide-y divide-slate-100">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedBenchmarkHospitalId('default');
-                                setIsDropdownOpen(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
-                                selectedBenchmarkHospitalId === 'default' ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
-                              }`}
-                            >
-                              <span>{activeBenchmarkLabel} (Benchmark Bawaan)</span>
-                              {selectedBenchmarkHospitalId === 'default' && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
-                            </button>
-
-                            {accounts
-                              .filter(a => a.status === 'Active' && a.id !== hospitalId && a.username !== identifier)
-                              .filter(a => a.namaRs.toLowerCase().includes(benchmarkSearchTerm.toLowerCase()))
-                              .map(acc => {
-                                const isSel = selectedBenchmarkHospitalId === acc.id || selectedBenchmarkHospitalId === acc.username;
-                                return (
-                                  <button
-                                    key={acc.id}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedBenchmarkHospitalId(acc.id || acc.username);
-                                      setIsDropdownOpen(false);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
-                                      isSel ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
-                                    }`}
-                                  >
-                                    <span className="truncate">{acc.namaRs}</span>
-                                    {isSel && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
-                                  </button>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      )}
+            {role !== 'admin' && (
+              <div className="bg-white rounded-[28px] p-6 md:p-8 shadow-lg border border-slate-200/80 mb-10 relative">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="space-y-1 max-w-2xl">
+                    <div className="flex items-center gap-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
+                      <Building2 className="w-4 h-4" />
+                      <span>Fitur Benchmark Antar Rumah Sakit</span>
                     </div>
+                    <h2 className="text-[17px] font-extrabold text-slate-800 tracking-tight">
+                      Benchmark dengan Rumah Sakit Lain
+                    </h2>
+                    <p className="text-[11px] text-left text-slate-500 font-medium leading-relaxed max-w-[580px]">
+                      Pilih rumah sakit terdaftar untuk melakukan perbandingan data. Akses perbandingan membutuhkan persetujuan dari rumah sakit pembanding demi keamanan data.
+                    </p>
                   </div>
 
-                  {/* Button & Status Pill */}
-                  {selectedBenchmarkHospitalId !== 'default' && (
-                    <div className="flex flex-col justify-end">
-                      <span className="text-[11px] font-bold text-slate-700 hidden sm:block mb-1">&nbsp;</span>
-                      {isSelectedTargetApproved ? (
-                        <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                          <span>Izin Disetujui (Data Realtime)</span>
-                        </div>
-                      ) : currentRequestForSelectedHospital?.status === 'pending' ? (
+                  {/* Dropdown & Actions */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                    <div className="relative min-w-[280px]">
+                      <label className="text-[11px] font-bold text-slate-700 block mb-1">Pilih Rumah Sakit Pembanding:</label>
+                      
+                      {/* Custom Searchable Select Box */}
+                      <div className="relative">
                         <button
-                          disabled
-                          className="px-4 py-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 opacity-80 cursor-not-allowed"
+                          type="button"
+                          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                          className="w-full bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl px-4 py-2.5 text-left text-xs font-bold text-slate-800 flex items-center justify-between transition-all cursor-pointer"
                         >
-                          <Clock className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
-                          <span>Menunggu Persetujuan</span>
+                          <span className="truncate">
+                            {selectedBenchmarkHospitalId === 'default' 
+                              ? `${activeBenchmarkLabel} (Benchmark Bawaan Aplikasi)` 
+                              : selectedTargetHospital?.namaRs || 'Pilih Rumah Sakit...'}
+                          </span>
+                          <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
                         </button>
-                      ) : (
-                        <button
-                          disabled={isSendingBenchmarkReq}
-                          onClick={handleSendBenchmarkRequest}
-                          className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                        >
-                          <Handshake className="w-4 h-4" />
-                          <span>{currentRequestForSelectedHospital?.status === 'rejected' ? 'Kirim Ulang Permintaan' : 'Kirim Permintaan Benchmark'}</span>
-                        </button>
-                      )}
+
+                        {isDropdownOpen && (
+                          <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 p-2 space-y-2 max-h-64 overflow-y-auto">
+                            <div className="relative px-1">
+                              <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                              <input
+                                type="text"
+                                placeholder="Cari nama rumah sakit..."
+                                value={benchmarkSearchTerm}
+                                onChange={(e) => setBenchmarkSearchTerm(e.target.value)}
+                                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:border-blue-500 font-sans"
+                              />
+                            </div>
+
+                            <div className="divide-y divide-slate-100">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedBenchmarkHospitalId('default');
+                                  setIsDropdownOpen(false);
+                                }}
+                                className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+                                  selectedBenchmarkHospitalId === 'default' ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
+                                }`}
+                              >
+                                <span>{activeBenchmarkLabel} (Benchmark Bawaan)</span>
+                                {selectedBenchmarkHospitalId === 'default' && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                              </button>
+
+                              {accounts
+                                .filter(a => a.status === 'Active' && a.id !== hospitalId && a.username !== identifier)
+                                .filter(a => a.namaRs.toLowerCase().includes(benchmarkSearchTerm.toLowerCase()))
+                                .map(acc => {
+                                  const isSel = selectedBenchmarkHospitalId === acc.id || selectedBenchmarkHospitalId === acc.username;
+                                  return (
+                                    <button
+                                      key={acc.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedBenchmarkHospitalId(acc.id || acc.username);
+                                        setIsDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-3 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center justify-between ${
+                                        isSel ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
+                                      }`}
+                                    >
+                                      <span className="truncate">{acc.namaRs}</span>
+                                      {isSel && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
+                                    </button>
+                                  );
+                                })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
+
+                    {/* Button & Status Pill */}
+                    {selectedBenchmarkHospitalId !== 'default' && (
+                      <div className="flex flex-col justify-end">
+                        <span className="text-[11px] font-bold text-slate-700 hidden sm:block mb-1">&nbsp;</span>
+                        {isSelectedTargetApproved ? (
+                          <div className="px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs flex items-center gap-2">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Izin Disetujui (Data Realtime)</span>
+                          </div>
+                        ) : currentRequestForSelectedHospital?.status === 'pending' ? (
+                          <button
+                            disabled
+                            className="px-4 py-2.5 rounded-xl bg-amber-100 border border-amber-200 text-amber-900 font-bold text-xs flex items-center gap-2 opacity-80 cursor-not-allowed"
+                          >
+                            <Clock className="w-4 h-4 text-amber-600 animate-spin shrink-0" />
+                            <span>Menunggu Persetujuan</span>
+                          </button>
+                        ) : (
+                          <button
+                            disabled={isSendingBenchmarkReq}
+                            onClick={handleSendBenchmarkRequest}
+                            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                          >
+                            <Handshake className="w-4 h-4" />
+                            <span>{currentRequestForSelectedHospital?.status === 'rejected' ? 'Kirim Ulang Permintaan' : 'Kirim Permintaan Benchmark'}</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
+
+                {/* Notification Banner */}
+                {benchmarkNotification && (
+                  <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>{benchmarkNotification}</span>
+                  </div>
+                )}
               </div>
-
-              {/* Notification Banner */}
-              {benchmarkNotification && (
-                <div className="mt-4 p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                  <span>{benchmarkNotification}</span>
-                </div>
-              )}
-            </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[32px]">
               {mainCards.map((card, idx) => (

@@ -1094,7 +1094,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       <div className="sticky top-0 z-30 p-4 md:p-6 pb-2">
         <header 
           id="survey-sticky-header" 
-          className="bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white border border-blue-500/30 shadow-xl shadow-blue-900/20 rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
+          className="bg-gradient-to-r from-[#163F4B] via-[#1E6F73] to-[#2FA7A7] text-white border border-teal-500/30 shadow-xl shadow-teal-900/20 rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
         >
           {/* Subtle gradient background effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
@@ -1105,7 +1105,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               <h1 className="text-[20px] font-extrabold text-white leading-tight">
                 Kuesioner Survei Budaya Keselamatan Pasien
               </h1>
-              <p className="text-[11px] text-blue-100 font-semibold tracking-wider uppercase">
+              <p className="text-[11px] text-teal-100 font-semibold tracking-wider uppercase">
                 AHRQ Hospital Survey on Patient Safety Culture Version 2.0
               </p>
             </div>
@@ -1127,12 +1127,12 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       type="date"
                       value={tanggalPengisian}
                       onChange={(e) => handleTanggalChange(e.target.value)}
-                      className="bg-transparent border-none text-[11px] font-extrabold text-[#2563EB] focus:outline-none w-[105px] h-4 cursor-pointer p-0 font-sans"
+                      className="bg-transparent border-none text-[11px] font-extrabold text-[#2FA7A7] focus:outline-none w-[105px] h-4 cursor-pointer p-0 font-sans"
                     />
                   </div>
                 </div>
 
-                <div className="h-6 w-px bg-blue-100" />
+                <div className="h-6 w-px bg-teal-100" />
 
                 {/* Tahun Picker */}
                 <div className="flex items-center gap-1.5">
@@ -1144,7 +1144,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     <select
                       value={tahunPengisian}
                       onChange={(e) => handleTahunChange(e.target.value)}
-                      className="bg-transparent border-none text-[11px] font-extrabold text-[#2563EB] focus:outline-none w-[55px] h-4 cursor-pointer p-0 font-sans"
+                      className="bg-transparent border-none text-[11px] font-extrabold text-[#2FA7A7] focus:outline-none w-[55px] h-4 cursor-pointer p-0 font-sans"
                     >
                       {Array.from({ length: 15 }, (_, i) => {
                         const y = new Date().getFullYear() - 10 + i;
@@ -1159,7 +1159,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                   type="button"
                   onClick={handleResetTanggal}
                   title="Gunakan Tanggal Hari Ini"
-                  className="p-1 text-[#454d60] hover:text-[#2563EB] hover:bg-blue-50 rounded-lg transition-all duration-200 shrink-0 cursor-pointer"
+                  className="p-1 text-[#454d60] hover:text-[#2FA7A7] hover:bg-teal-50 rounded-lg transition-all duration-200 shrink-0 cursor-pointer"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                 </button>
@@ -1171,7 +1171,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0 }}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-[#2563EB] bg-white px-3 py-1.5 rounded-xl border border-white/80 shadow-md"
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-[#2FA7A7] bg-white px-3 py-1.5 rounded-xl border border-white/80 shadow-md"
                   >
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
                     <span>Tersimpan</span>
@@ -1181,9 +1181,9 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {!isPublic && (
                 <button
                   onClick={() => setShowLinkModal(true)}
-                  className="flex items-center gap-2 bg-white hover:bg-blue-50 text-[#2563EB] border border-white/80 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                  className="flex items-center gap-2 bg-white hover:bg-teal-50 text-[#1E6F73] border border-white/80 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
                 >
-                  <Share2 className="w-4 h-4 text-[#2563EB]" />
+                  <Share2 className="w-4 h-4 text-[#1E6F73]" />
                   Bagikan Link
                 </button>
               )}

@@ -164,6 +164,42 @@ export default function Dashboard({
   // Filter surveys: Admin sees all, RS sees only their own
   const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
 
+  const activeHospitalNameForLaporan = useMemo(() => {
+    if (role === 'admin') {
+      if (selectedRsFilter === 'admin') {
+        return 'Administrator Pusat';
+      } else if (selectedRsFilter === 'all') {
+        return 'Semua Rumah Sakit';
+      } else {
+        const acc = accounts.find(a => a.username === selectedRsFilter || a.id === selectedRsFilter);
+        return acc ? acc.namaRs : namaRs;
+      }
+    }
+    return namaRs;
+  }, [role, selectedRsFilter, accounts, namaRs]);
+
+  const activeHospitalSurveys = useMemo(() => {
+    if (role === 'admin') {
+      if (selectedRsFilter === 'admin') {
+        return validSurveys.filter(s => {
+          const surveyUser = (s.dimensiScores as any)?.username;
+          return surveyUser?.toLowerCase() === 'admin' || s.namaRs === 'Administrator Pusat';
+        });
+      } else if (selectedRsFilter === 'all') {
+        return validSurveys;
+      } else {
+        return validSurveys.filter(s => {
+          const surveyUser = (s.dimensiScores as any)?.username;
+          const surveyHospitalId = (s.dimensiScores as any)?.hospital_id;
+          return (surveyUser?.toLowerCase() === selectedRsFilter.toLowerCase() || 
+                  surveyHospitalId === selectedRsFilter || 
+                  s.namaRs.toLowerCase() === selectedRsFilter.toLowerCase());
+        });
+      }
+    }
+    return validSurveys;
+  }, [validSurveys, role, selectedRsFilter]);
+
   const availableYears = useMemo(() => {
     const extractYear = (tanggalStr?: string) => {
       if (!tanggalStr) return new Date().getFullYear().toString();
@@ -403,7 +439,7 @@ export default function Dashboard({
         </header>
 
         {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-blue-950/45 bg-gradient-to-r from-[#2563EB] via-[#1D4ED8] to-[#1E3A8A] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-gradient-to-b md:from-[#2563EB] md:via-[#1D4ED8] md:to-[#1E3A8A] md:pt-5 md:pb-5`}>
+        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-teal-950/45 bg-gradient-to-r from-[#5CC8C9] via-[#2FA7A7] to-[#1E6F73] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-gradient-to-b md:from-[#5CC8C9] md:via-[#2FA7A7] md:to-[#1E6F73] md:pt-5 md:pb-5`}>
           
           {/* Tombol Collapse / Hide Sidebar - Terletak Sejajar Dengan Tulisan AHRQ SOPS v2.0 */}
           <button
@@ -425,21 +461,21 @@ export default function Dashboard({
             {/* Header / Brand Logo & Title - Centered Logo with Text Underneath */}
             <div className={`hidden md:flex flex-col items-center text-center pt-1 pb-1 ${isSidebarCollapsed ? 'px-1' : 'px-4'}`}>
               <div className="relative mb-2 shrink-0">
-                <div className="p-0.5 bg-white text-blue-600 rounded-2xl border-2 border-teal-400 ring-2 ring-white shadow-md flex items-center justify-center shrink-0 w-14 h-14 overflow-hidden relative">
+                <div className="p-0.5 bg-white text-[#2FA7A7] rounded-xl border-2 border-teal-400 ring-2 ring-white shadow-md flex items-center justify-center shrink-0 w-12 h-12 overflow-hidden relative">
                   {activeLogo ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img src={activeLogo.url} alt="AHRQ Logo" className="w-full h-full object-contain scale-125 p-0.5" />
                   ) : (
-                    <ShieldCheck className="w-9 h-9 text-blue-600" />
+                    <ShieldCheck className="w-8 h-8 text-[#2FA7A7]" />
                   )}
                 </div>
               </div>
               {!isSidebarCollapsed && (
                 <div className="w-full overflow-hidden text-center transition-all duration-200">
-                  <span className="font-sans font-black text-[17px] text-white tracking-tight block leading-snug">
+                  <span className="font-sans font-black text-[20px] text-[#f7fcfc] tracking-tight block leading-snug">
                     Medclin
                   </span>
-                  <span className="font-sans font-extrabold text-[15px] text-white tracking-tight block leading-snug">
+                  <span className="font-sans font-extrabold text-[18px] text-[#f5fbfc] tracking-tight block leading-snug">
                     Pro Academy
                   </span>
                 </div>
@@ -465,8 +501,8 @@ export default function Dashboard({
                       isSidebarCollapsed ? 'md:justify-center md:px-0' : 'md:justify-start md:px-3.5'
                     } flex-1 md:flex-none py-2 md:py-2.5 w-full font-bold transition-all cursor-pointer ${
                       isActive
-                        ? 'bg-white/20 md:bg-[#FAFBFB] text-white md:text-blue-900 md:rounded-l-2xl md:rounded-r-none rounded-xl z-20 shadow-xs md:mr-0'
-                        : 'text-blue-100 hover:text-white md:hover:bg-white/10 rounded-xl md:mr-3 border border-transparent'
+                        ? 'bg-white md:bg-[#FAFBFB] text-[#1E6F73] md:rounded-l-2xl md:rounded-r-none rounded-xl z-20 shadow-xs md:mr-0'
+                        : 'text-white hover:text-white md:hover:bg-white/10 rounded-xl md:mr-3 border border-transparent'
                     }`}
                   >
                     {/* Top Inverted Curve Cutout on Desktop */}
@@ -489,7 +525,7 @@ export default function Dashboard({
 
                     {/* Icon */}
                     <motion.div 
-                      className={`p-1 rounded-lg shrink-0 ${isActive ? 'text-amber-300 md:text-blue-700' : 'text-blue-200'}`}
+                      className={`p-1 rounded-lg shrink-0 ${isActive ? 'text-[#1E6F73]' : 'text-white'}`}
                       animate={
                         isActive
                           ? {
@@ -542,9 +578,9 @@ export default function Dashboard({
                 <button
                   onClick={onLogout}
                   title={isSidebarCollapsed ? "Log Out Akun" : undefined}
-                  className={`w-full py-2 ${isSidebarCollapsed ? 'px-0 justify-center' : 'px-3 gap-2.5'} text-blue-200 hover:text-white hover:bg-white/10 rounded-xl text-[15px] font-bold flex items-center transition-all cursor-pointer`}
+                  className={`w-full py-2 ${isSidebarCollapsed ? 'px-0 justify-center' : 'px-3 gap-2.5'} text-white/90 hover:text-white hover:bg-white/10 rounded-xl text-[15px] font-bold flex items-center transition-all cursor-pointer`}
                 >
-                  <LogOut className="w-4.5 h-4.5 shrink-0 transition-all text-blue-200" />
+                  <LogOut className="w-4.5 h-4.5 shrink-0 transition-all text-white/90" />
                   {!isSidebarCollapsed && <span className="whitespace-nowrap font-bold text-[15px]">Log Out Akun</span>}
                 </button>
               </div>
@@ -815,11 +851,11 @@ export default function Dashboard({
 
         {activeTab === 'laporan' && (
           <LaporanTab 
-            surveys={surveys}
+            surveys={activeHospitalSurveys}
             role={role}
-            identifier={identifier}
-            hospitalId={hospitalId || ''}
-            namaRs={namaRs}
+            identifier={role === 'admin' ? selectedRsFilter : identifier}
+            hospitalId={role === 'admin' ? selectedRsFilter : (hospitalId || '')}
+            namaRs={activeHospitalNameForLaporan}
             accounts={accounts}
             requests={benchmarkRequests}
             activeLogo={activeLogo}

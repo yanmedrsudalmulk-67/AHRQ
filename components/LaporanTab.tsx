@@ -497,10 +497,10 @@ export default function LaporanTab({
         pengesahan: {
           kota: pengesahanConfig?.kota || 'Sukabumi',
           tanggal: pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-          penanggungJawabNama: `${pengesahanConfig?.pjNama || 'dr. Budi Santoso'}${pengesahanConfig?.pjGelar && !pengesahanConfig.pjNama.includes(pengesahanConfig.pjGelar) ? `, ${pengesahanConfig.pjGelar}` : ''}`,
+          penanggungJawabNama: (pengesahanConfig?.pjNama || 'dr. Budi Santoso') + (pengesahanConfig?.pjGelar && !pengesahanConfig.pjNama?.includes(pengesahanConfig.pjGelar) ? ', ' + pengesahanConfig.pjGelar : ''),
           penanggungJawabJabatan: pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien',
           penanggungJawabNip: pengesahanConfig?.pjNip || '19820315 200804 1 005',
-          direkturNama: `${pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya'}${pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama.includes(pengesahanConfig.direkturGelar) ? `, ${pengesahanConfig.direkturGelar}` : ''}`,
+          direkturNama: (pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya') + (pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama?.includes(pengesahanConfig.direkturGelar) ? ', ' + pengesahanConfig.direkturGelar : ''),
           direkturJabatan: pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit',
           direkturNip: pengesahanConfig?.direkturNip || '19780512 200501 1 002'
         }
@@ -529,7 +529,7 @@ export default function LaporanTab({
             </div>
             <div>
               <h2 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                Laporan Resmi Survei Budaya Keselamatan Pasien
+                Laporan Survei Budaya Keselamatan Pasien
                 <span className="text-[10px] uppercase tracking-wider bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full border border-teal-200">
                   AHRQ SOPS v2.0
                 </span>
@@ -626,788 +626,756 @@ export default function LaporanTab({
 
           </div>
         </div>
-      </div>
+            <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body * {
+            visibility: hidden;
+          }
+          #print-area, #print-area * {
+            visibility: visible;
+          }
+          #print-area {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 210mm;
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+          }
+          .print-page {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            height: 297mm !important;
+            page-break-after: always !important;
+            page-break-inside: avoid !important;
+            margin: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            padding-top: 3cm !important;
+            padding-bottom: 3cm !important;
+            padding-left: 4cm !important;
+            padding-right: 3cm !important;
+            box-sizing: border-box !important;
+            background: white !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+          }
+          .recharts-responsive-container {
+            width: 100% !important;
+            height: 180px !important;
+          }
+        }
+        .preview-container {
+          background-color: #f1f5f9;
+          border: 1px solid #cbd5e1;
+          box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+        }
+        .word-page {
+          width: 210mm;
+          min-height: 297mm;
+          background-color: white;
+          box-sizing: border-box;
+          padding-top: 3cm;
+          padding-bottom: 3cm;
+          padding-left: 4cm;
+          padding-right: 3cm;
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+          border: 1px solid #e2e8f0;
+          border-radius: 4px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+        }
+        @media (max-width: 220mm) {
+          .word-page {
+            width: 100%;
+            min-height: auto;
+            padding: 24px !important;
+          }
+        }
+      ` }} />
 
       {/* DOCUMENT PAPER DISPLAY CONTAINER (A4 SEPARATED SHEETS) */}
-      <div 
-        ref={printRef}
-        className="flex flex-col items-center gap-10 print:gap-0 font-sans leading-relaxed"
-      >
+      <div className="print:hidden w-full preview-container rounded-2xl p-4 sm:p-8 flex flex-col items-center gap-8 overflow-x-auto">
+        <div 
+          ref={printRef}
+          id="print-area"
+          className="flex flex-col items-center gap-8 print:gap-0 font-sans leading-relaxed w-full max-w-[210mm]"
+        >
 
-        {/* LEMBAR 1: COVER PAGE */}
-        <div className="w-full flex flex-col items-center">
-          <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-            <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 1: Halaman Cover
-          </div>
-          <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl rounded-2xl p-8 sm:p-14 border border-slate-200/90 flex flex-col justify-between print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none print:min-h-screen print:page-break-after-always">
-            
-            <div className="text-center pt-8 space-y-4">
-              <h1 className="text-[26px] font-black uppercase tracking-tight text-slate-900 leading-snug">
-                LAPORAN SURVEI BUDAYA KESELAMATAN PASIEN
-              </h1>
-              <h2 className="text-3xl sm:text-4xl font-black text-teal-700 uppercase tracking-tight">
-                {namaRs}
-              </h2>
-              <div className="h-1 w-32 bg-teal-600 mx-auto rounded-full"></div>
-              <h3 className="text-lg font-extrabold text-slate-600 uppercase tracking-widest pt-2">
-                PERIODE TAHUN {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
-              </h3>
+          {/* LEMBAR 1: COVER PAGE */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 1: Halaman Cover
             </div>
+            <div className="word-page print-page">
+              <div className="text-center pt-4 space-y-4">
+                <h1 className="text-[24px] font-black uppercase tracking-tight text-slate-900 leading-snug">
+                  LAPORAN SURVEI BUDAYA KESELAMATAN PASIEN
+                </h1>
+                <h2 className="text-3xl font-black text-teal-700 uppercase tracking-tight">
+                  {namaRs}
+                </h2>
+                <div className="h-1 w-24 bg-teal-600 mx-auto rounded-full"></div>
+                <h3 className="text-base font-extrabold text-slate-600 uppercase tracking-widest pt-2">
+                  PERIODE TAHUN {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
+                </h3>
+              </div>
 
-            <div className="my-16 flex flex-col items-center justify-center space-y-6">
-              {activeLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img 
-                  src={activeLogo.url} 
-                  alt="Logo Rumah Sakit" 
-                  className="w-32 h-32 object-contain drop-shadow-md"
-                />
-              ) : (
-                <div className="w-28 h-28 rounded-3xl bg-teal-50 border border-teal-200 flex items-center justify-center text-teal-700 shadow-inner">
-                  <ShieldCheck className="w-16 h-16" />
-                </div>
-              )}
-
-              <div className="text-center space-y-1">
-                <p className="text-xs font-black uppercase tracking-widest text-slate-800">
-                  SISTEM SURVEI BUDAYA KESELAMATAN PASIEN
-                </p>
-                <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <div className="text-center space-y-1 pt-16 pb-12">
+                <p className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider">
                   INSTRUMEN AHRQ HOSPITAL SURVEY ON PATIENT SAFETY CULTURE (SOPS®) V2.0
                 </p>
               </div>
             </div>
-
-            <div className="text-center space-y-1 border-t border-slate-200 pt-6">
-              <p className="text-sm font-extrabold text-slate-800">Medclin Pro Academy</p>
-              <p className="text-xs text-slate-500 font-medium">Laporan Resmi Hasil Evaluasi Mutu & Keselamatan Pasien</p>
-            </div>
           </div>
-        </div>
 
-        {/* LEMBAR 2: BAB I PENDAHULUAN */}
-        <div className="w-full flex flex-col items-center">
-          <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-            <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 2: BAB I — Pendahuluan
-          </div>
-          <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl rounded-2xl p-8 sm:p-14 border border-slate-200/90 flex flex-col justify-between print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none print:min-h-screen print:page-break-after-always">
-            <div>
-              {/* Running Header */}
-              <div className="border-b border-slate-200 pb-3 mb-6 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
-                <span className="text-teal-700 font-extrabold">{namaRs}</span>
-              </div>
-
-              <section className="space-y-6">
-            <div className="border-b-2 border-teal-600 pb-2">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                BAB I PENDAHULUAN
-              </h2>
+          {/* LEMBAR 2: DAFTAR ISI */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 2: Daftar Isi
             </div>
-
-            <div className="space-y-4 text-sm text-slate-700 leading-relaxed text-justify">
-              <h3 className="text-base font-bold text-slate-900">1.1 Latar Belakang</h3>
-              <p>
-                Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Berdasarkan pandangan global dan standar akreditasi rumah sakit, upaya peningkatan keselamatan pasien tidak hanya berfokus pada penerapan prosedur operasional standar dan penyediaan sarana prasarana, tetapi juga sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi.
-              </p>
-              <p>
-                Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma yang dibagikan oleh staf rumah sakit mengenai apa yang penting dan bagaimana perilaku terkait keselamatan diwujudkan. Budaya yang kuat memfasilitasi komunikasi yang terbuka, pelaporan insiden tanpa rasa takut akan hukuman (non-punitive environment), pembelajaran berkelanjutan dari kesalahan, serta kerja sama tim yang solid antar unit.
-              </p>
-              <p>
-                Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0.
-              </p>
-              <p>
-                Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan (strengths) serta area yang membutuhkan peningkatan (areas for improvement) di <strong className="text-slate-900">{namaRs}</strong>. Hasil dari survei ini menjadi landasan berbasis data (data-driven) dalam merumuskan strategi perbaikan mutu dan keselamatan pasien secara terarah dan berkelanjutan.
-              </p>
-            </div>
-
-            <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
-              <h3 className="text-base font-bold text-slate-900">1.2 Tujuan</h3>
-              <div className="pl-4 space-y-2">
-                <h4 className="font-bold text-slate-800">1.2.1 Tujuan Umum</h4>
-                <p>
-                  Mengetahui gambaran penerapan budaya keselamatan pasien di <strong className="text-slate-900">{namaRs}</strong> menggunakan instrumen AHRQ Versi 2.0 sebagai dasar penyusunan program peningkatan mutu dan keselamatan pasien.
-                </p>
-                <h4 className="font-bold text-slate-800 pt-2">1.2.2 Tujuan Khusus</h4>
-                <ul className="list-decimal pl-5 space-y-1">
-                  <li>Mengidentifikasi karakteristik responden berdasarkan unit kerja, profesi, lama bekerja, dan jam kerja per minggu.</li>
-                  <li>Menganalisis persentase respon positif (% Positive Response) pada 10 dimensi budaya keselamatan pasien AHRQ Versi 2.0.</li>
-                  <li>Mengetahui persepsi staf terhadap tingkat keselamatan pasien secara keseluruhan (Overall Patient Safety Rating) di {namaRs}.</li>
-                  <li>Mengidentifikasi dimensi yang menjadi kekuatan area (strengths, ≥ 75% respon positif) dan area yang memerlukan perbaikan (areas for improvement, &lt; 50% respon positif).</li>
-                  <li>Menyediakan data acuan (baseline data) untuk evaluasi berkala dan pembandingan (benchmarking) budaya keselamatan pasien di masa mendatang.</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
-              <h3 className="text-base font-bold text-slate-900">1.3 Manfaat</h3>
-              <div className="pl-4 space-y-3">
-                <div>
-                  <h4 className="font-bold text-slate-800">1.3.1 Bagi Manajemen Rumah Sakit</h4>
-                  <ul className="list-disc pl-5 space-y-1 pt-1">
-                    <li>Menyediakan data objektif mengenai persepsi staf terhadap budaya keselamatan pasien di seluruh tingkatan unit.</li>
-                    <li>Menjadi acuan pengambilan keputusan strategis dan alokasi sumber daya dalam program keselamatan pasien.</li>
-                    <li>Membantu kepemimpinan rumah sakit dalam membangun lingkungan kerja yang mendukung pelaporan insiden tanpa rasa takut (just culture).</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-800">1.3.2 Bagi Pengelola Mutu dan Keselamatan Pasien Rumah Sakit</h4>
-                  <ul className="list-disc pl-5 space-y-1 pt-1">
-                    <li>Mempermudah pemetaan fokus intervensi dan prioritas perbaikan mutu di unit-unit kerja yang membutuhkan pendampingan khusus.</li>
-                    <li>Memenuhi persyaratan standar akreditasi rumah sakit terkait pengukuran berkala budaya keselamatan pasien.</li>
-                  </ul>
-                </div>
-                <div>
-                  <h4 className="font-bold text-slate-800">1.3.3 Bagi Staf dan Unit Kerja</h4>
-                  <ul className="list-disc pl-5 space-y-1 pt-1">
-                    <li>Menjadi sarana bagi staf untuk menyuarakan persepsi, kendala, dan masukan terkait keselamatan pasien secara anonim dan terstruktur.</li>
-                    <li>Mendorong kolaborasi, komunikasi interprofesi, dan kesadaran kolektif antar unit kerja untuk menciptakan lingkungan pelayanan yang aman bagi pasien.</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-
-            </div>
-
-            {/* Running Footer */}
-            <div className="border-t border-slate-200 pt-3 mt-8 flex items-center justify-between text-[10px] font-bold text-slate-400">
-              <span>Medclin Pro Academy • AHRQ SOPS® v2.0</span>
-              <span>Halaman 2 dari 6</span>
-            </div>
-          </div>
-        </div>
-
-        {/* LEMBAR 3: BAB II METODOLOGI SURVEI */}
-        <div className="w-full flex flex-col items-center">
-          <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-            <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 3: BAB II — Metodologi Survei
-          </div>
-          <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl rounded-2xl p-8 sm:p-14 border border-slate-200/90 flex flex-col justify-between print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none print:min-h-screen print:page-break-after-always">
-            <div>
-              {/* Running Header */}
-              <div className="border-b border-slate-200 pb-3 mb-6 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
-                <span className="text-teal-700 font-extrabold">{namaRs}</span>
-              </div>
-
-          {/* BAB II METODOLOGI SURVEI */}
-          <section className="space-y-6">
-            <div className="border-b-2 border-teal-600 pb-2">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                BAB II METODOLOGI SURVEI
-              </h2>
-            </div>
-
-            <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
-              <h3 className="text-base font-bold text-slate-900">2.1 Desain Penelitian / Survei</h3>
-              <p className="text-justify">
-                Survei ini menggunakan desain deskriptif kuantitatif dengan pendekatan cross-sectional. Pendekatan ini digunakan untuk mengukur dan menggambarkan persepsi staf rumah sakit terhadap budaya keselamatan pasien pada satu kurun waktu tertentu tanpa memberikan intervensi langsung saat pengukuran berlangsung.
-              </p>
-
-              <h3 className="text-base font-bold text-slate-900 pt-2">2.2 Waktu dan Lokasi Pelaksanaan</h3>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong className="text-slate-800">Lokasi Pelaksanaan:</strong> Seluruh unit kerja/instalasi di <strong className="text-slate-900">{namaRs}</strong> (meliputi unit pelayanan medis, keperawatan, penunjang medis, serta administrasi/manajemen).</li>
-                <li><strong className="text-slate-800">Waktu Pelaksanaan:</strong> Survei dilaksanakan pada periode <strong className="text-teal-700">{periodeSurvei}</strong>.</li>
-              </ul>
-
-              <h3 className="text-base font-bold text-slate-900 pt-2">2.3 Populasi dan Sampel</h3>
-              <div className="pl-4 space-y-2">
-                <h4 className="font-bold text-slate-800">2.3.1 Populasi</h4>
-                <p>
-                  Populasi dalam survei ini adalah seluruh pegawai yang bekerja di <strong className="text-slate-900">{namaRs}</strong>, baik manajemen, staf medis, keperawatan, tenaga kesehatan lainnya, maupun staf non-klinis/administrasi.
-                </p>
-                <h4 className="font-bold text-slate-800 pt-1">2.3.2 Kriteria Inklusi dan Eksklusi</h4>
-                <ul className="list-decimal pl-5 space-y-1">
-                  <li><strong>Kriteria Inklusi:</strong> Pegawai (purna waktu maupun paruh waktu) yang telah bekerja minimal 3 bulan, memiliki interaksi pelayanan, dan mengisi kuesioner secara sukarela.</li>
-                  <li><strong>Kriteria Eksklusi:</strong> Staf yang sedang menjalani cuti panjang serta mahasiswa/siswa praktik yang belum menjadi pegawai resmi.</li>
-                </ul>
-                <h4 className="font-bold text-slate-800 pt-1">2.3.3 Teknik Sampling dan Ukuran Sampel</h4>
-                <p>
-                  Teknik pengambilan sampel menggunakan <strong>Total Sampling</strong>. Dari estimasi populasi target sebanyak <strong>{totalTarget}</strong> pegawai, kuesioner yang berhasil terkumpul dan valid untuk dianalisis adalah sebanyak <strong>{totalActual}</strong> kuesioner, menghasilkan tingkat partisipasi (Response Rate) sebesar <strong className="text-teal-700">{responseRateStr}</strong>. Tingkat partisipasi ini telah memenuhi standar kelayakan minimal AHRQ (≥ 60%).
-                </p>
-              </div>
-
-              <h3 className="text-base font-bold text-slate-900 pt-2">2.4 Instrumen Survei</h3>
-              <p className="text-justify">
-                Instrumen yang digunakan adalah AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0 yang telah diterjemahkan ke dalam bahasa Indonesia dan mengukur 10 Dimensi Budaya Keselamatan Pasien (32 item pertanyaan primer), ditambah bagian penilaian tingkat keselamatan pasien (overall rating), frekuensi pelaporan insiden, dan karakteristik demografi responden.
-              </p>
-
-              <h3 className="text-base font-bold text-slate-900 pt-2">2.5 Metode Pengumpulan Data</h3>
-              <p className="text-justify">
-                Pengumpulan data dilakukan secara elektronik/online (e-survey) menggunakan link aplikasi pengukuran budaya keselamatan dengan memperhitungkan kerahasiaan (anonymity). Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kejujuran jawaban tanpa kekhawatiran akan sanksi personal.
-              </p>
-
-              <h3 className="text-base font-bold text-slate-900 pt-2">2.6 Analisis Data</h3>
-              <p className="text-justify">
-                Pengolahan dan analisis data dilakukan mengikuti panduan resmi pengolahan data AHRQ SOPS® Version 2.0. Jawaban skala Likert 5 poin dikalkulasikan ke dalam Persentase Respon Positif (% Positive Response) untuk setiap dimensi. Kriteria kategori dimensi dikelompokkan menjadi:
-              </p>
-              <ul className="list-disc pl-5 space-y-1">
-                <li><strong className="text-emerald-700">Area Keunggulan / Kekuatan (Strengths):</strong> Dimensi dengan persentase respon positif ≥ 75%.</li>
-                <li><strong className="text-amber-700">Area Moderat / Sedang:</strong> Dimensi dengan persentase respon positif antara 50% − 74%.</li>
-                <li><strong className="text-red-700">Area Perlu Perbaikan (Areas for Improvement):</strong> Dimensi dengan persentase respon positif &lt; 50%.</li>
-              </ul>
-            </div>
-          </section>
-
-            </div>
-
-            {/* Running Footer */}
-            <div className="border-t border-slate-200 pt-3 mt-8 flex items-center justify-between text-[10px] font-bold text-slate-400">
-              <span>Medclin Pro Academy • AHRQ SOPS® v2.0</span>
-              <span>Halaman 3 dari 6</span>
-            </div>
-          </div>
-        </div>
-
-        {/* LEMBAR 4: BAB III HASIL DAN PEMBAHASAN */}
-        <div className="w-full flex flex-col items-center">
-          <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-            <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 4: BAB III — Hasil & Pembahasan
-          </div>
-          <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl rounded-2xl p-8 sm:p-14 border border-slate-200/90 flex flex-col justify-between print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none print:min-h-screen print:page-break-after-always">
-            <div>
-              {/* Running Header */}
-              <div className="border-b border-slate-200 pb-3 mb-6 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
-                <span className="text-teal-700 font-extrabold">{namaRs}</span>
-              </div>
-
-          {/* BAB III HASIL DAN PEMBAHASAN */}
-          <section className="space-y-6">
-            <div className="border-b-2 border-teal-600 pb-2">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                BAB III HASIL DAN PEMBAHASAN
-              </h2>
-            </div>
-
-            {/* 3.1 Response Rate & Demografi */}
-            <div className="space-y-4">
-              <h3 className="text-base font-bold text-slate-900">3.1 Gambaran Umum Respon Rate dan Karakteristik Responden</h3>
-              
-              <div className="text-sm text-slate-700 leading-relaxed space-y-2">
-                <h4 className="font-bold text-slate-800">3.1.1 Tingkat Partisipasi (Response Rate)</h4>
-                <p>
-                  Survei dilaksanakan pada periode <strong className="text-slate-900">{periodeSurvei}</strong>. Dari total <strong>{totalTarget}</strong> kuesioner yang disebarkan ke seluruh unit kerja di <strong className="text-slate-900">{namaRs}</strong>, diperoleh kuesioner kembali dan memenuhi syarat untuk dianalisis sebanyak <strong className="text-teal-700">{totalActual}</strong> kuesioner (Response Rate: <strong className="text-teal-700">{responseRateStr}</strong>).
-                </p>
-              </div>
-
-              <div className="space-y-3 pt-2">
-                <h4 className="font-bold text-slate-800 text-sm">3.1.2 Demografi Responden</h4>
-                <p className="text-xs text-slate-500">Tabel 3.1 Karakteristik Demografi Responden Survei Budaya Keselamatan Pasien</p>
-
-                {/* Table 3.1 */}
-                <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-teal-700 text-white font-bold">
-                        <th className="p-3 border-r border-teal-600 w-1/3">Karakteristik</th>
-                        <th className="p-3 border-r border-teal-600 w-1/3">Kategori</th>
-                        <th className="p-3 border-r border-teal-600 text-center w-1/6">Jumlah (n)</th>
-                        <th className="p-3 text-center w-1/6">Persentase (%)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {demographics.profesi.map((pItem, idx) => (
-                        <tr key={`prof-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                          {idx === 0 && <td rowSpan={demographics.profesi.length} className="p-3 font-extrabold text-slate-800 border-r border-slate-200 align-top">Profesi / Peran</td>}
-                          <td className="p-3 border-r border-slate-200 font-medium text-slate-700">{pItem.category}</td>
-                          <td className="p-3 border-r border-slate-200 text-center font-bold text-slate-800">{pItem.count}</td>
-                          <td className="p-3 text-center font-bold text-teal-700">{pItem.percentage}</td>
-                        </tr>
-                      ))}
-                      {demographics.masaKerja.map((mItem, idx) => (
-                        <tr key={`masa-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                          {idx === 0 && <td rowSpan={demographics.masaKerja.length} className="p-3 font-extrabold text-slate-800 border-r border-slate-200 align-top">Masa Kerja di RS</td>}
-                          <td className="p-3 border-r border-slate-200 font-medium text-slate-700">{mItem.category}</td>
-                          <td className="p-3 border-r border-slate-200 text-center font-bold text-slate-800">{mItem.count}</td>
-                          <td className="p-3 text-center font-bold text-teal-700">{mItem.percentage}</td>
-                        </tr>
-                      ))}
-                      {demographics.jamKerja.map((jItem, idx) => (
-                        <tr key={`jam-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                          {idx === 0 && <td rowSpan={demographics.jamKerja.length} className="p-3 font-extrabold text-slate-800 border-r border-slate-200 align-top">Jam Kerja / Minggu</td>}
-                          <td className="p-3 border-r border-slate-200 font-medium text-slate-700">{jItem.category}</td>
-                          <td className="p-3 border-r border-slate-200 text-center font-bold text-slate-800">{jItem.count}</td>
-                          <td className="p-3 text-center font-bold text-teal-700">{jItem.percentage}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
                 </div>
 
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs text-slate-600 leading-relaxed">
-                  <strong className="text-slate-800 block mb-1 font-bold">Interpretasi Demografi Responden:</strong>
-                  Berdasarkan data di atas, kelompok responden terbesar didominasi oleh profesi <strong>{demographics.profesi[0]?.category} ({demographics.profesi[0]?.percentage})</strong>. Sebagian besar staf memiliki masa kerja <strong>{demographics.masaKerja[1]?.category} ({demographics.masaKerja[1]?.percentage})</strong> yang menandakan tingkat pemahaman operasional yang cukup matang terhadap budaya pelayanan di {namaRs}.
-                </div>
-              </div>
-            </div>
-
-            {/* 3.2 Hasil Pengukuran 10 Dimensi */}
-            <div className="space-y-4 pt-4">
-              <h3 className="text-base font-bold text-slate-900">3.2 Hasil Pengukuran Budaya Keselamatan Pasien (AHRQ 2.0)</h3>
-              <p className="text-sm text-slate-700 leading-relaxed">
-                Berdasarkan kalkulasi terhadap 10 dimensi AHRQ Versi 2.0, rata-rata tingkat respon positif budaya keselamatan pasien di <strong className="text-slate-900">{namaRs}</strong> adalah <strong className="text-teal-700 text-base">{overallAverage.toFixed(1)}%</strong>.
-              </p>
-
-              <div className="space-y-3 pt-2">
-                <h4 className="font-bold text-slate-800 text-sm">3.2.1 Respon Positif Berdasarkan 10 Dimensi Budaya Keselamatan Pasien</h4>
-                
-                {/* Recharts Bar Chart 10 Dimensions */}
-                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 h-80 my-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={dimensionScores} margin={{ top: 10, right: 10, left: -20, bottom: 40 }}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                      <XAxis dataKey="kode" tick={{ fontSize: 11, fontWeight: 700, fill: '#475569' }} />
-                      <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: '#475569' }} unit="%" />
-                      <Tooltip 
-                        formatter={(val: any) => [`${Number(val).toFixed(1)}%`, 'Respon Positif']}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '12px', fontWeight: 600 }}
-                      />
-                      <Bar dataKey="percentage" radius={[6, 6, 0, 0]}>
-                        {dimensionScores.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={entry.percentage >= 75 ? '#10b981' : entry.percentage < 50 ? '#ef4444' : '#f59e0b'} 
-                          />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                <div className="text-center mb-6">
+                  <h2 className="text-base font-black text-slate-900 tracking-wider uppercase">DAFTAR ISI</h2>
+                  <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
                 </div>
 
-                {/* Table 3.2 10 Dimensions */}
-                <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-teal-700 text-white font-bold">
-                        <th className="p-3 border-r border-teal-600 text-center w-16">Kode</th>
-                        <th className="p-3 border-r border-teal-600">Dimensi Budaya Keselamatan Pasien</th>
-                        <th className="p-3 border-r border-teal-600 text-center w-28">% Respon Positif</th>
-                        <th className="p-3 text-center w-32">Kategori</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {dimensionScores.map((dim, idx) => (
-                        <tr key={dim.id} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                          <td className="p-3 text-center font-extrabold text-slate-800 border-r border-slate-200">{dim.kode}</td>
-                          <td className="p-3 border-r border-slate-200 font-semibold text-slate-800">{dim.nama}</td>
-                          <td className="p-3 border-r border-slate-200 text-center font-black text-slate-900">{dim.percentage.toFixed(1)}%</td>
-                          <td className="p-3 text-center font-bold">
-                            {dim.percentage >= 75 ? (
-                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px]">
-                                Kekuatan (≥75%)
-                              </span>
-                            ) : dim.percentage < 50 ? (
-                              <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-800 border border-red-200 text-[10px]">
-                                Perlu Perbaikan (&lt;50%)
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 text-[10px]">
-                                Moderat (50-74%)
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* 3.2.2 Rating Keselamatan Pasien */}
-              <div className="space-y-3 pt-4">
-                <h4 className="font-bold text-slate-800 text-sm">3.2.2 Tingkat Keselamatan Pasien Keseluruhan (Overall Rating)</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Sebanyak <strong className="text-teal-700">{safetyRatingData.positivePct.toFixed(1)}%</strong> staf menilai mutu keselamatan pasien di {namaRs} berada dalam kategori <strong>Baik</strong> hingga <strong>Sangat Baik</strong>.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-teal-700 text-white font-bold">
-                          <th className="p-2.5 border-r border-teal-600">Kategori Rating</th>
-                          <th className="p-2.5 text-center border-r border-teal-600">Jumlah (n)</th>
-                          <th className="p-2.5 text-center">Persentase (%)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {safetyRatingData.distribution.map((r, i) => (
-                          <tr key={i} className={i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                            <td className="p-2.5 font-bold text-slate-800 border-r border-slate-200">{r.name}</td>
-                            <td className="p-2.5 text-center font-bold border-r border-slate-200">{r.count}</td>
-                            <td className="p-2.5 text-center font-bold text-teal-700">{r.percentage}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                <div className="space-y-3 text-xs text-slate-700">
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-bold">HALAMAN COVER</span>
+                    <span className="font-bold">i</span>
+                  </div>
+                  <div className="flex items-baseline justify-between">
+                    <span className="font-bold">DAFTAR ISI</span>
+                    <span className="font-bold">ii</span>
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <div className="flex items-baseline justify-between font-bold">
+                      <span>BAB I PENDAHULUAN</span>
+                      <span>1</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>1.1 Latar Belakang</span>
+                      <span>1</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>1.2 Tujuan</span>
+                      <span>1</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>1.3 Manfaat</span>
+                      <span>2</span>
+                    </div>
                   </div>
 
-                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 h-48 flex items-center justify-center">
+                  <div className="space-y-1">
+                    <div className="flex items-baseline justify-between font-bold">
+                      <span>BAB II METODOLOGI SURVEI</span>
+                      <span>3</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>2.1 Desain Penelitian / Survei</span>
+                      <span>3</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>2.2 Waktu dan Lokasi</span>
+                      <span>3</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>2.3 Populasi dan Sampel</span>
+                      <span>3</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-baseline justify-between font-bold">
+                      <span>BAB III HASIL DAN PEMBAHASAN</span>
+                      <span>4</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.1 Karakteristik Demografi & Tingkat Respon</span>
+                      <span>4</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.2 Hasil Pengukuran 10 Dimensi AHRQ</span>
+                      <span>5</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.3 Pembahasan Analisis Kualitatif</span>
+                      <span>6</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex items-baseline justify-between font-bold">
+                      <span>BAB IV KESIMPULAN, REKOMENDASI & PENGESAHAN</span>
+                      <span>7</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>4.1 Kesimpulan</span>
+                      <span>7</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>4.2 Rekomendasi Strategic Action Plan & Pengesahan</span>
+                      <span>7</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman ii</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 3: BAB I PENDAHULUAN */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 4: BAB I — Pendahuluan
+            </div>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <div className="text-center mb-6 space-y-1">
+                    <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB I</h2>
+                    <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">PENDAHULUAN</h2>
+                    <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
+                  </div>
+
+                  <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
+                    <h3 className="font-bold text-slate-900">1.1 Latar Belakang</h3>
+                    <p>
+                      Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Upaya peningkatan keselamatan pasien sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi.
+                    </p>
+                    <p>
+                      Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma staf rumah sakit mengenai perilaku terkait keselamatan. Budaya yang kuat memfasilitasi komunikasi terbuka, pelaporan tanpa hukuman (non-punitive environment), pembelajaran dari kesalahan, dan kerja sama tim yang solid.
+                    </p>
+                    <p>
+                      Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan serta area yang memerlukan perbaikan kritis di <strong className="text-slate-900">{namaRs}</strong> sebagai landasan perbaikan mutu terarah.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
+                    <h3 className="font-bold text-slate-900">1.2 Tujuan</h3>
+                    <p>
+                      <strong>Tujuan Umum:</strong> Mengetahui gambaran penerapan budaya keselamatan pasien di <strong className="text-slate-900">{namaRs}</strong> menggunakan instrumen AHRQ Versi 2.0 sebagai dasar penyusunan program mutu.
+                    </p>
+                    <p>
+                      <strong>Tujuan Khusus:</strong> Mengidentifikasi karakteristik responden, menganalisis 10 dimensi AHRQ, memetakan keunggulan dan area perbaikan kualitatif, serta menyediakan database acuan (baseline).
+                    </p>
+                  </div>
+
+                  <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
+                    <h3 className="font-bold text-slate-900">1.3 Manfaat</h3>
+                    <p>
+                      Menyediakan data objektif bagi Manajemen RS, mempermudah tim pengelola mutu dalam menetapkan intervensi prioritas, serta mendorong keterbukaan pelaporan bagi staf klinis.
+                    </p>
+                  </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 1 dari 7</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 5: BAB II METODOLOGI SURVEI */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5: BAB II — Metodologi Survei
+            </div>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <div className="text-center mb-6 space-y-1">
+                    <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB II</h2>
+                    <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">METODOLOGI SURVEI</h2>
+                    <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
+                  </div>
+
+                  <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
+                    <h3 className="font-bold text-slate-900">2.1 Desain Penelitian / Survei</h3>
+                    <p>
+                      Survei ini menggunakan desain deskriptif kuantitatif dengan pendekatan cross-sectional untuk menggambarkan persepsi staf pada kurun waktu tertentu tanpa intervensi langsung.
+                    </p>
+
+                    <h3 className="font-bold text-slate-900 pt-1">2.2 Waktu dan Lokasi</h3>
+                    <p>
+                      Dilaksanakan di seluruh instalasi/unit kerja <strong className="text-slate-900">{namaRs}</strong> pada kurun waktu survei <strong className="text-teal-700">{periodeSurvei}</strong>.
+                    </p>
+
+                    <h3 className="font-bold text-slate-900 pt-1">2.3 Populasi dan Sampel</h3>
+                    <p>
+                      Menggunakan teknik <strong>Total Sampling</strong>. Kuesioner berhasil dikumpulkan dari sebanyak <strong className="text-teal-700">{totalActual}</strong> responden aktif dari estimasi total target populasi <strong className="text-slate-800">{totalTarget}</strong> pegawai, dengan Response Rate mencapai <strong className="text-teal-700">{responseRateStr}</strong>.
+                    </p>
+
+                    <h3 className="font-bold text-slate-900 pt-1">2.4 Instrumen dan Metode Pengumpulan Data</h3>
+                    <p>
+                      Menggunakan instrumen resmi AHRQ SOPS® Version 2.0 yang ditranslasikan dengan skala Likert 5-poin. Pengisian dilakukan secara elektronik mandiri (e-survey) yang terjamin kerahasiaannya (anonymous).
+                    </p>
+
+                    <h3 className="font-bold text-slate-900 pt-1">2.5 Analisis Data</h3>
+                    <p>
+                      Skor dihitung sebagai Persentase Respon Positif (% Positive Response) untuk masing-masing dimensi. Hasil dikelompokkan ke dalam kategori: <strong>Kekuatan (≥ 75%)</strong>, <strong>Moderat (50% - 74%)</strong>, dan <strong>Perlu Perbaikan (&lt; 50%)</strong>.
+                    </p>
+                  </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 2 dari 7</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 6: BAB III — Karakteristik & Demografi
+            </div>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <div className="text-center mb-6 space-y-1">
+                    <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB III</h2>
+                    <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">HASIL DAN PEMBAHASAN</h2>
+                    <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h3 className="font-bold text-slate-900 text-xs">3.1 Karakteristik Demografi Responden</h3>
+                    <p className="text-[10px] text-slate-500">Tabel 3.1 Distribusi Karakteristik Responden Survei Budaya Keselamatan Pasien</p>
+
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl text-[10px]">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-teal-700 text-white font-bold">
+                            <th className="p-2 border-r border-teal-600">Karakteristik</th>
+                            <th className="p-2 border-r border-teal-600">Kategori</th>
+                            <th className="p-2 border-r border-teal-600 text-center">Jumlah (n)</th>
+                            <th className="p-2 text-center">Persentase (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {demographics.profesi.slice(0, 3).map((pItem, idx) => (
+                            <tr key={`prof-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                              {idx === 0 && <td rowSpan={3} className="p-2 font-bold text-slate-800 border-r border-slate-200 align-top">Profesi</td>}
+                              <td className="p-2 border-r border-slate-200 text-slate-700">{pItem.category}</td>
+                              <td className="p-2 border-r border-slate-200 text-center font-bold">{pItem.count}</td>
+                              <td className="p-2 text-center font-bold text-teal-700">{pItem.percentage}</td>
+                            </tr>
+                          ))}
+                          {demographics.masaKerja.slice(0, 3).map((mItem, idx) => (
+                            <tr key={`masa-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                              {idx === 0 && <td rowSpan={3} className="p-2 font-bold text-slate-800 border-r border-slate-200 align-top">Masa Kerja</td>}
+                              <td className="p-2 border-r border-slate-200 text-slate-700">{mItem.category}</td>
+                              <td className="p-2 border-r border-slate-200 text-center font-bold">{mItem.count}</td>
+                              <td className="p-2 text-center font-bold text-teal-700">{mItem.percentage}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[10px] text-slate-600 leading-relaxed">
+                      <strong>Interpretasi Singkat:</strong> Responden terbesar merupakan profesi <strong>{demographics.profesi[0]?.category} ({demographics.profesi[0]?.percentage})</strong>. Dominasi masa kerja berkisar pada <strong>{demographics.masaKerja[1]?.category} ({demographics.masaKerja[1]?.percentage})</strong> yang menunjukkan tingkat kematangan operasional di {namaRs}.
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 3 dari 7</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 4: BAB III HASIL & PEMBAHASAN - Hasil Pengukuran 10 Dimensi */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 4: BAB III — Pengukuran 10 Dimensi
+            </div>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <h3 className="font-bold text-slate-900 text-xs">3.2 Hasil Pengukuran Budaya Keselamatan Pasien (AHRQ 2.0)</h3>
+                  <p className="text-[11px] text-slate-700 leading-relaxed">
+                    Data hasil pengukuran 10 dimensi budaya keselamatan pasien di <strong className="text-slate-900">{namaRs}</strong> di bawah ini terintegrasi secara langsung dari menu Analisa Data (Hasil Pengukuran Dimensi) yang tersimpan di database Supabase. Capaian rata-rata respon positif adalah <strong className="text-teal-700 text-xs">{overallAverage.toFixed(1)}%</strong>.
+                  </p>
+
+                  {/* Recharts Chart */}
+                  <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 h-40 my-2">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={safetyRatingData.distribution} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                      <BarChart data={dimensionScores} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="name" tick={{ fontSize: 9, fill: '#475569' }} />
-                        <YAxis tick={{ fontSize: 9, fill: '#475569' }} />
-                        <Bar dataKey="count" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                        <XAxis dataKey="kode" tick={{ fontSize: 9, fontWeight: 700, fill: '#475569' }} />
+                        <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#475569' }} />
+                        <Bar dataKey="percentage" radius={[4, 4, 0, 0]}>
+                          {dimensionScores.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={entry.percentage >= 75 ? '#10b981' : entry.percentage < 50 ? '#ef4444' : '#f59e0b'} 
+                            />
+                          ))}
+                        </Bar>
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
-                </div>
-              </div>
 
-              {/* 3.2.3 Insiden Dilaporkan */}
-              <div className="space-y-3 pt-4">
-                <h4 className="font-bold text-slate-800 text-sm">3.2.3 Jumlah Insiden Keselamatan Pasien Yang Dilaporkan</h4>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Sebanyak <strong className="text-teal-700">{reportedEventsData.reportedAnyPct.toFixed(1)}%</strong> staf menyatakan telah melaporkan setidaknya 1 insiden keselamatan pasien dalam 12 bulan terakhir.
-                </p>
-
-                <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                  <table className="w-full text-left text-xs border-collapse">
-                    <thead>
-                      <tr className="bg-teal-700 text-white font-bold">
-                        <th className="p-2.5 border-r border-teal-600">Frekuensi Pelaporan Insiden</th>
-                        <th className="p-2.5 text-center border-r border-teal-600">Jumlah (n)</th>
-                        <th className="p-2.5 text-center">Persentase (%)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-200">
-                      {reportedEventsData.distribution.map((e, i) => (
-                        <tr key={i} className={i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                          <td className="p-2.5 font-bold text-slate-800 border-r border-slate-200">{e.name}</td>
-                          <td className="p-2.5 text-center font-bold border-r border-slate-200">{e.count}</td>
-                          <td className="p-2.5 text-center font-bold text-teal-700">{e.percentage}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Benchmark Comparison section if selected */}
-              {benchmarkData && selectedBenchmarkHospital && (
-                <div className="space-y-3 pt-6 border-t border-slate-200">
-                  <h4 className="font-bold text-indigo-900 text-sm flex items-center gap-2">
-                    <Globe className="w-4 h-4 text-indigo-600" />
-                    3.2.4 Perbandingan Benchmark dengan {selectedBenchmarkHospital.namaRs}
-                  </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Berikut perbandingan persentase respon positif antara <strong className="text-slate-900">{namaRs}</strong> dengan rumah sakit pembanding <strong className="text-indigo-700">{selectedBenchmarkHospital.namaRs}</strong>:
-                  </p>
-
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                    <table className="w-full text-left text-xs border-collapse">
+                  {/* Table 3.2 10 Dimensions */}
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                    <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-indigo-900 text-white font-bold">
-                          <th className="p-2.5 border-r border-indigo-700 text-center w-16">Kode</th>
-                          <th className="p-2.5 border-r border-indigo-700">Dimensi</th>
-                          <th className="p-2.5 text-center border-r border-indigo-700">{namaRs}</th>
-                          <th className="p-2.5 text-center border-r border-indigo-700">{selectedBenchmarkHospital.namaRs}</th>
-                          <th className="p-2.5 text-center">Selisih (%)</th>
+                        <tr className="bg-teal-700 text-white font-bold">
+                          <th className="p-1 border-r border-teal-600 text-center w-10">Kode</th>
+                          <th className="p-1 border-r border-teal-600">Dimensi Budaya Keselamatan</th>
+                          <th className="p-1 border-r border-teal-600 text-center w-16">Skor (%)</th>
+                          <th className="p-1 text-center w-24">Kategori</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {benchmarkData.map((b, i) => (
-                          <tr key={i} className={i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                            <td className="p-2.5 text-center font-extrabold border-r border-slate-200">{b.kode}</td>
-                            <td className="p-2.5 font-bold text-slate-800 border-r border-slate-200">{b.nama}</td>
-                            <td className="p-2.5 text-center font-extrabold text-teal-700 border-r border-slate-200">{b.rsPct.toFixed(1)}%</td>
-                            <td className="p-2.5 text-center font-bold text-slate-600 border-r border-slate-200">{b.benchPct.toFixed(1)}%</td>
-                            <td className={`p-2.5 text-center font-black ${b.diff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                              {b.diff >= 0 ? `+${b.diff.toFixed(1)}%` : `${b.diff.toFixed(1)}%`}
+                        {dimensionScores.map((dim, idx) => (
+                          <tr key={dim.id} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                            <td className="p-1 text-center font-extrabold border-r border-slate-200">{dim.kode}</td>
+                            <td className="p-1 border-r border-slate-200 font-semibold text-slate-800">{dim.nama}</td>
+                            <td className="p-1 border-r border-slate-200 text-center font-black">{dim.percentage.toFixed(1)}%</td>
+                            <td className="p-1 text-center font-bold">
+                              {dim.percentage >= 75 ? (
+                                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[8px]">Kekuatan</span>
+                              ) : dim.percentage < 50 ? (
+                                <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-800 text-[8px]">Perbaikan</span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[8px]">Moderat</span>
+                              )}
                             </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
+                  <p className="text-[9px] text-slate-400 italic text-right">*Data 10 dimensi terintegrasi secara otomatis dari menu Analisa Data (Hasil Pengukuran Dimensi {namaRs}).</p>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 4 dari 7</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 5: BAB III HASIL & PEMBAHASAN - Overall, Insiden & Benchmark */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5: BAB III — Overall Rating & Insiden
+            </div>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
                 </div>
-              )}
 
-              {/* Yearly Trend Section if data exists */}
-              {yearComparisonData && (
-                <div className="space-y-3 pt-6 border-t border-slate-200">
-                  <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4 text-teal-600" />
-                    3.2.5 Analisis Tren Perbandingan Antar Tahun
-                  </h4>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Evaluasi tren capaian rata-rata budaya keselamatan pasien di {namaRs} selama beberapa tahun terakhir:
-                  </p>
+                <section className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Overall Rating */}
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-slate-800 text-xs">3.2.2 Keselamatan Pasien Keseluruhan (Overall Rating)</h4>
+                      <p className="text-[10px] text-slate-600">
+                        Sebanyak <strong className="text-teal-700">{safetyRatingData.positivePct.toFixed(1)}%</strong> staf menilai mutu dalam kategori <strong>Baik - Sangat Baik</strong>.
+                      </p>
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                        <table className="w-full text-left">
+                          <tbody className="divide-y divide-slate-200">
+                            {safetyRatingData.distribution.slice(0, 3).map((r, i) => (
+                              <tr key={i} className="bg-white">
+                                <td className="p-1.5 font-bold border-r border-slate-200">{r.name}</td>
+                                <td className="p-1.5 text-center font-bold text-teal-700">{r.percentage}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
 
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl max-w-md">
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="bg-teal-700 text-white font-bold">
-                          <th className="p-2.5 border-r border-teal-600">Tahun Survei</th>
-                          <th className="p-2.5 text-center">Rata-rata Respon Positif (%)</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-200">
-                        {yearComparisonData.map((y, i) => (
-                          <tr key={i} className={i % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                            <td className="p-2.5 font-extrabold text-slate-800 border-r border-slate-200">{y.year}</td>
-                            <td className="p-2.5 text-center font-black text-teal-700">{y.average.toFixed(1)}%</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                    {/* Reported Events */}
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-slate-800 text-xs">3.2.3 Frekuensi Pelaporan Insiden</h4>
+                      <p className="text-[10px] text-slate-600">
+                        Sebanyak <strong className="text-teal-700">{reportedEventsData.reportedAnyPct.toFixed(1)}%</strong> staf melaporkan minimal 1 insiden keselamatan.
+                      </p>
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                        <table className="w-full text-left">
+                          <tbody className="divide-y divide-slate-200">
+                            {reportedEventsData.distribution.slice(0, 3).map((e, i) => (
+                              <tr key={i} className="bg-white">
+                                <td className="p-1.5 font-bold border-r border-slate-200">{e.name}</td>
+                                <td className="p-1.5 text-center font-bold text-teal-700">{e.percentage}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              )}
 
+                  {/* Benchmark & Trend Table in concise format */}
+                  {benchmarkData && selectedBenchmarkHospital && (
+                    <div className="space-y-2 border-t border-slate-200 pt-3">
+                      <h4 className="font-bold text-indigo-900 text-xs flex items-center gap-1">
+                        <Globe className="w-3 h-3 text-indigo-600" />
+                        3.2.4 Analisis Perbandingan Benchmark dengan {selectedBenchmarkHospital.namaRs}
+                      </h4>
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-indigo-900 text-white font-bold">
+                              <th className="p-1.5 border-r border-indigo-700">Dimensi</th>
+                              <th className="p-1.5 text-center border-r border-indigo-700">{namaRs}</th>
+                              <th className="p-1.5 text-center border-r border-indigo-700">Benchmark</th>
+                              <th className="p-1.5 text-center">Selisih</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {benchmarkData.slice(0, 4).map((b, i) => (
+                              <tr key={i} className="bg-white">
+                                <td className="p-1.5 border-r border-slate-200 font-semibold">{b.nama}</td>
+                                <td className="p-1.5 text-center font-bold border-r border-slate-200 text-teal-700">{b.rsPct.toFixed(1)}%</td>
+                                <td className="p-1.5 text-center border-r border-slate-200 text-slate-500">{b.benchPct.toFixed(1)}%</td>
+                                <td className={`p-1.5 text-center font-black ${b.diff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                  {b.diff >= 0 ? `+${b.diff.toFixed(1)}%` : `${b.diff.toFixed(1)}%`}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 5 dari 7</span>
+              </div>
             </div>
+          </div>
 
-            {/* 3.3 Pembahasan */}
-            <div className="space-y-4 pt-6 border-t border-slate-200">
-              <h3 className="text-base font-bold text-slate-900">3.3 Pembahasan Analisis Kualitatif</h3>
+          {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Pembahasan Analisis Kualitatif */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 6: BAB III — Pembahasan Kualitatif
+            </div>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                </div>
 
-              <div className="space-y-3 text-sm text-slate-700 leading-relaxed">
-                <h4 className="font-bold text-emerald-800 text-sm flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                  3.3.1 Area Keunggulan (Strengths ≥ 75%)
-                </h4>
-                {strengths.length > 0 ? (
-                  <ul className="space-y-2 pl-2">
-                    {strengths.map((s, idx) => (
-                      <li key={idx} className="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 text-xs">
-                        <strong className="text-emerald-900 text-sm block mb-1">
-                          {s.kode} - {s.nama} ({s.percentage.toFixed(1)}%)
+                <section className="space-y-4">
+                  <h3 className="font-bold text-slate-900 text-xs">3.3 Pembahasan Analisis Kualitatif</h3>
+
+                  <div className="space-y-3 text-[11px] text-slate-700 leading-relaxed">
+                    <h4 className="font-bold text-emerald-800 flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      3.3.1 Area Keunggulan (Strengths ≥ 75%)
+                    </h4>
+                    {strengths.length > 0 ? (
+                      <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 text-[10px]">
+                        <strong>{strengths[0].kode} - {strengths[0].nama} ({strengths[0].percentage.toFixed(1)}%):</strong> {strengths[0].interpretasi}
+                      </div>
+                    ) : (
+                      <p className="italic text-[10px] text-slate-500 pl-2">Belum ada dimensi keselamatan yang menembus target kekuatan ≥ 75%.</p>
+                    )}
+
+                    <h4 className="font-bold text-red-800 flex items-center gap-1 pt-2">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                      3.3.2 Area yang Memerlukan Perbaikan Kritis (Areas for Improvement &lt; 50%)
+                    </h4>
+                    {improvements.length > 0 ? (
+                      <div className="bg-red-50/50 p-2.5 rounded-xl border border-red-100 text-[10px]">
+                        <strong>{improvements[0].kode} - {improvements[0].nama} ({improvements[0].percentage.toFixed(1)}%):</strong> {improvements[0].interpretasi}
+                      </div>
+                    ) : (
+                      <p className="italic text-[10px] text-slate-500 pl-2">Tidak terdeteksi adanya dimensi kritis di bawah ambang batas 50%.</p>
+                    )}
+
+                    <h4 className="font-bold text-amber-800 flex items-center gap-1 pt-2">
+                      <Activity className="w-3.5 h-3.5 text-amber-600" />
+                      3.3.3 Area Sedang / Moderat (50% - 74%)
+                    </h4>
+                    {moderates.length > 0 ? (
+                      <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-100 text-[10px]">
+                        <strong>{moderates[0].kode} - {moderates[0].nama} ({moderates[0].percentage.toFixed(1)}%):</strong> {moderates[0].interpretasi}
+                      </div>
+                    ) : (
+                      <p className="italic text-[10px] text-slate-500 pl-2">Seluruh dimensi telah keluar dari status moderat.</p>
+                    )}
+                  </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 6 dari 7</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 7: BAB IV KESIMPULAN DAN REKOMENDASI */}
+          <div className="w-full flex flex-col items-center">
+            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 7: BAB IV — Kesimpulan & Rekomendasi
+            </div>
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span></span>
+                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <div className="text-center mb-6 space-y-1">
+                    <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB IV</h2>
+                    <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">KESIMPULAN DAN REKOMENDASI</h2>
+                    <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
+                  </div>
+
+                  <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
+                    <h3 className="font-bold text-slate-900 text-xs">4.1 Kesimpulan</h3>
+                    <p>
+                      Berdasarkan hasil survei budaya keselamatan pasien berbasis AHRQ SOPS® Version 2.0 di <strong className="text-slate-900">{namaRs}</strong>, disimpulkan poin-poin penting berikut:
+                    </p>
+                    <ul className="list-disc pl-4 space-y-1 text-[11px]">
+                      <li>Rata-rata pencapaian respon positif budaya keselamatan pasien berada pada angka <strong>{overallAverage.toFixed(1)}%</strong>.</li>
+                      <li>Sebanyak <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong> staf menilai mutu keselamatan pasien di rumah sakit berada pada kategori Baik - Sangat Baik.</li>
+                      <li>Terdapat <strong>{strengths.length}</strong> dimensi yang masuk kategori kekuatan utama (Strengths) dan <strong>{improvements.length}</strong> dimensi kritis perlu perbaikan.</li>
+                    </ul>
+
+                    <h3 className="font-bold text-slate-900 text-xs pt-1">4.2 Rekomendasi Strategic Action Plan</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2 pt-1 text-[10px]">
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 space-y-1">
+                        <strong className="text-teal-950 uppercase flex items-center gap-1 font-extrabold">
+                          <Clock className="w-3.5 h-3.5 text-teal-600" /> Jangka Pendek
                         </strong>
-                        <p className="text-slate-700">{s.interpretasi}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-slate-500 italic pl-2">
-                    Belum ada dimensi yang mencapai target keunggulan ≥ 75%. Pembenahan menyeluruh perlu dilanjutkan.
-                  </p>
-                )}
-
-                <h4 className="font-bold text-red-800 text-sm flex items-center gap-2 pt-3">
-                  <AlertTriangle className="w-4 h-4 text-red-600" />
-                  3.3.2 Area yang Memerlukan Perbaikan Kritis (Areas for Improvement &lt; 50%)
-                </h4>
-                {improvements.length > 0 ? (
-                  <ul className="space-y-2 pl-2">
-                    {improvements.map((imp, idx) => (
-                      <li key={idx} className="bg-red-50/50 p-3 rounded-xl border border-red-100 text-xs">
-                        <strong className="text-red-900 text-sm block mb-1">
-                          {imp.kode} - {imp.nama} ({imp.percentage.toFixed(1)}%)
+                        <p className="text-slate-600">{recommendations.jangkaPendek[0] || 'Sosialisasi prinsip Just Culture pelaporan insiden.'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 space-y-1">
+                        <strong className="text-indigo-950 uppercase flex items-center gap-1 font-extrabold">
+                          <Target className="w-3.5 h-3.5 text-indigo-600" /> Jangka Menengah
                         </strong>
-                        <p className="text-slate-700">{imp.interpretasi}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-slate-500 italic pl-2">
-                    Tidak ada dimensi di bawah 50%. Ini menunjukkan iklim keselamatan berada pada standar dasar yang baik.
-                  </p>
-                )}
-
-                <h4 className="font-bold text-amber-800 text-sm flex items-center gap-2 pt-3">
-                  <Activity className="w-4 h-4 text-amber-600" />
-                  3.3.3 Area Sedang / Moderat (50% - 74%)
-                </h4>
-                {moderates.length > 0 ? (
-                  <ul className="space-y-2 pl-2">
-                    {moderates.map((m, idx) => (
-                      <li key={idx} className="bg-amber-50/50 p-3 rounded-xl border border-amber-100 text-xs">
-                        <strong className="text-amber-900 text-sm block mb-1">
-                          {m.kode} - {m.nama} ({m.percentage.toFixed(1)}%)
+                        <p className="text-slate-600">{recommendations.jangkaMenengah[0] || 'Audit internal pelaporan dan tindak lanjut keselamatan.'}</p>
+                      </div>
+                      <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 space-y-1">
+                        <strong className="text-slate-950 uppercase flex items-center gap-1 font-extrabold">
+                          <Award className="w-3.5 h-3.5 text-slate-600" /> Jangka Panjang
                         </strong>
-                        <p className="text-slate-700">{m.interpretasi}</p>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p className="text-xs text-slate-500 italic pl-2">
-                    Tidak ada dimensi di kategori moderat.
-                  </p>
-                )}
-              </div>
-            </div>
-          </section>
-            </div>
+                        <p className="text-slate-600">{recommendations.jangkaPanjang[0] || 'Integrasi indikator keselamatan dalam penilaian kinerja.'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* PENGESAHAN */}
+                  <div className="pt-8">
+                    <p className="text-right text-xs text-slate-600 leading-relaxed font-semibold mb-4">
+                      {pengesahanConfig?.kota || 'Sukabumi'}, {pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    </p>
+                    <div className="grid grid-cols-2 gap-6 pt-4 text-center text-[10px]">
+                      <div className="space-y-12">
+                        <div>
+                          <p className="font-bold text-slate-800">Mengetahui,</p>
+                          <p className="font-bold text-slate-900">{pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit'}</p>
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-slate-900 underline">
+                            {pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya'}{pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama.includes(pengesahanConfig.direkturGelar) ? ", " + pengesahanConfig.direkturGelar : ''}
+                          </p>
+                          <p className="text-slate-500 font-medium">NIP/ID: {pengesahanConfig?.direkturNip || '19780512 200501 1 002'}</p>
+                        </div>
+                      </div>
 
-            {/* Running Footer */}
-            <div className="border-t border-slate-200 pt-3 mt-8 flex items-center justify-between text-[10px] font-bold text-slate-400">
-              <span>Medclin Pro Academy • AHRQ SOPS® v2.0</span>
-              <span>Halaman 4 dari 6</span>
+                      <div className="space-y-12">
+                        <div>
+                          <p className="font-bold text-slate-800">Disiapkan oleh,</p>
+                          <p className="font-bold text-slate-900">{pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien'}</p>
+                        </div>
+                        <div>
+                          <p className="font-extrabold text-slate-900 underline">
+                            {pengesahanConfig?.pjNama || 'dr. Budi Santoso'}{pengesahanConfig?.pjGelar && !pengesahanConfig.pjNama.includes(pengesahanConfig.pjGelar) ? ", " + pengesahanConfig.pjGelar : ''}
+                          </p>
+                          <p className="text-slate-500 font-medium">NIP/ID: {pengesahanConfig?.pjNip || '19820315 200804 1 005'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 7 dari 7</span>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* LEMBAR 5: BAB IV KESIMPULAN DAN REKOMENDASI */}
-        <div className="w-full flex flex-col items-center">
-          <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-            <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5: BAB IV — Kesimpulan & Rekomendasi
-          </div>
-          <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl rounded-2xl p-8 sm:p-14 border border-slate-200/90 flex flex-col justify-between print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none print:min-h-screen print:page-break-after-always">
-            <div>
-              {/* Running Header */}
-              <div className="border-b border-slate-200 pb-3 mb-6 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
-                <span className="text-teal-700 font-extrabold">{namaRs}</span>
-              </div>
-
-          {/* BAB IV KESIMPULAN DAN REKOMENDASI */}
-          <section className="space-y-6">
-            <div className="border-b-2 border-teal-600 pb-2">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                BAB IV KESIMPULAN DAN REKOMENDASI
-              </h2>
-            </div>
-
-            <div className="space-y-4 text-sm text-slate-700 leading-relaxed">
-              <h3 className="text-base font-bold text-slate-900">4.1 Kesimpulan</h3>
-              <p className="text-justify">
-                Berdasarkan hasil survei budaya keselamatan pasien menggunakan instrumen AHRQ SOPS® Version 2.0 di <strong className="text-slate-900">{namaRs}</strong> dengan tingkat partisipasi sebesar <strong className="text-teal-700">{responseRateStr}</strong> (N = {totalActual}), disimpulkan hal-hal sebagai berikut:
-              </p>
-              <ol className="list-decimal pl-5 space-y-2">
-                <li>
-                  <strong>Gambaran Umum Budaya Keselamatan:</strong> Rata-rata pencapaian respon positif dari 10 dimensi budaya keselamatan pasien di {namaRs} berada pada angka <strong>{overallAverage.toFixed(1)}%</strong>. Sebanyak <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong> staf menilai mutu keselamatan pasien berada pada kategori &quot;Baik&quot; hingga &quot;Sangat Baik&quot;.
-                </li>
-                <li>
-                  <strong>Area Keunggulan (Strengths):</strong> Terdapat <strong>{strengths.length}</strong> dimensi yang menjadi kekuatan utama budaya keselamatan (≥ 75% respon positif).
-                </li>
-                <li>
-                  <strong>Area Perlu Perbaikan Kritis (Areas for Improvement):</strong> Terdapat <strong>{improvements.length}</strong> dimensi kritis yang capaiannya di bawah 50% dan menjadi prioritas intervensi manajemen.
-                </li>
-              </ol>
-
-              <h3 className="text-base font-bold text-slate-900 pt-4">4.2 Rekomendasi Strategic Action Plan</h3>
-              <p className="text-justify">
-                Untuk menindaklanjuti temuan survei ini dan memperkuat budaya keselamatan pasien secara berkelanjutan, dirumuskan rekomendasi tindakan terarah berdasarkan skala dampaknya:
-              </p>
-
-              <div className="space-y-3 pt-2">
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                  <h4 className="font-extrabold text-teal-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                    <Clock className="w-4 h-4 text-teal-600" />
-                    Prioritas Jangka Pendek (1 - 3 Bulan)
-                  </h4>
-                  <ul className="list-disc pl-5 space-y-1 text-xs text-slate-700">
-                    {recommendations.jangkaPendek.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                  <h4 className="font-extrabold text-indigo-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                    <Target className="w-4 h-4 text-indigo-600" />
-                    Prioritas Jangka Menengah (3 - 6 Bulan)
-                  </h4>
-                  <ul className="list-disc pl-5 space-y-1 text-xs text-slate-700">
-                    {recommendations.jangkaMenengah.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                  <h4 className="font-extrabold text-slate-900 text-xs uppercase tracking-wider flex items-center gap-2">
-                    <Award className="w-4 h-4 text-slate-600" />
-                    Prioritas Jangka Panjang (6 - 12 Bulan)
-                  </h4>
-                  <ul className="list-disc pl-5 space-y-1 text-xs text-slate-700">
-                    {recommendations.jangkaPanjang.map((r, i) => (
-                      <li key={i}>{r}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </section>
-            </div>
-
-            {/* Running Footer */}
-            <div className="border-t border-slate-200 pt-3 mt-8 flex items-center justify-between text-[10px] font-bold text-slate-400">
-              <span>Medclin Pro Academy • AHRQ SOPS® v2.0</span>
-              <span>Halaman 5 dari 6</span>
-            </div>
-          </div>
-        </div>
-
-        {/* LEMBAR 6: HALAMAN PENGESAHAN */}
-        <div className="w-full flex flex-col items-center">
-          <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-            <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 6: Halaman Pengesahan
-          </div>
-          <div className="w-full max-w-[210mm] min-h-[297mm] bg-white text-slate-900 shadow-2xl rounded-2xl p-8 sm:p-14 border border-slate-200/90 flex flex-col justify-between print:shadow-none print:border-none print:p-0 print:m-0 print:max-w-none print:w-full print:rounded-none print:min-h-screen">
-            <div>
-              {/* Running Header */}
-              <div className="border-b border-slate-200 pb-3 mb-6 flex items-center justify-between text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
-                <span className="text-teal-700 font-extrabold">{namaRs}</span>
-              </div>
-
-          {/* HALAMAN PENGESAHAN */}
-          <section className="space-y-8 pt-6">
-            <div className="border-b-2 border-teal-600 pb-2 text-center flex flex-col items-center gap-2">
-              {(pengesahanConfig?.logoRs || activeLogo?.data) && (
-                <img 
-                  src={pengesahanConfig?.logoRs || activeLogo?.data} 
-                  alt="Logo Rumah Sakit" 
-                  className="h-16 w-auto object-contain mb-1" 
-                />
-              )}
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight">
-                HALAMAN PENGESAHAN
-              </h2>
-              <p className="text-xs font-bold text-teal-800 uppercase tracking-wider">
-                {pengesahanConfig?.namaRs || namaRs}
-              </p>
-            </div>
-
-            <p className="text-center text-xs text-slate-600">
-              Laporan Resmi Hasil Survei Budaya Keselamatan Pasien berbasis AHRQ SOPS® Version 2.0 ini disahkan di {pengesahanConfig?.kota || 'Sukabumi'} pada tanggal {pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}.
-            </p>
-
-            <div className="grid grid-cols-2 gap-8 pt-12 text-center text-xs">
-              
-              <div className="space-y-16">
-                <div>
-                  <p className="font-bold text-slate-800">Mengetahui,</p>
-                  <p className="font-bold text-slate-900 text-sm">{pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit'}</p>
-                </div>
-                <div>
-                  <p className="font-extrabold text-slate-900 text-sm underline">
-                    {pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya'}{pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama.includes(pengesahanConfig.direkturGelar) ? `, ${pengesahanConfig.direkturGelar}` : ''}
-                  </p>
-                  <p className="text-slate-500 font-medium">NIP / ID: {pengesahanConfig?.direkturNip || '19780512 200501 1 002'}</p>
-                </div>
-              </div>
-
-              <div className="space-y-16">
-                <div>
-                  <p className="font-bold text-slate-800">Disiapkan oleh,</p>
-                  <p className="font-bold text-slate-900 text-sm">{pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien'}</p>
-                </div>
-                <div>
-                  <p className="font-extrabold text-slate-900 text-sm underline">
-                    {pengesahanConfig?.pjNama || 'dr. Budi Santoso'}{pengesahanConfig?.pjGelar && !pengesahanConfig.pjNama.includes(pengesahanConfig.pjGelar) ? `, ${pengesahanConfig.pjGelar}` : ''}
-                  </p>
-                  <p className="text-slate-500 font-medium">NIP / ID: {pengesahanConfig?.pjNip || '19820315 200804 1 005'}</p>
-                </div>
-              </div>
-
-            </div>
-          </section>
-
-            </div>
-
-            {/* Running Footer */}
-            <div className="border-t border-slate-200 pt-3 mt-8 flex items-center justify-between text-[10px] font-bold text-slate-400">
-              <span>Medclin Pro Academy • AHRQ SOPS® v2.0</span>
-              <span>Halaman 6 dari 6</span>
-            </div>
-          </div>
         </div>
       </div>
+    </div>
 
     </div>
   );

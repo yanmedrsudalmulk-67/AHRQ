@@ -128,20 +128,33 @@ export async function exportReportToDocx(data: ReportData) {
     });
   };
 
-  const heading1 = (text: string) => {
-    return new Paragraph({
-      heading: HeadingLevel.HEADING_1,
-      alignment: AlignmentType.CENTER,
-      spacing: { before: 360, after: 180 },
-      children: [
+  const heading1 = (line1: string, line2?: string) => {
+    const children = [
+      new TextRun({
+        text: line1.toUpperCase(),
+        bold: true,
+        font: "Calibri",
+        size: 28, // 14pt
+        color: "0F172A",
+      }),
+    ];
+    if (line2) {
+      children.push(
         new TextRun({
-          text,
+          text: line2.toUpperCase(),
           bold: true,
           font: "Calibri",
           size: 28, // 14pt
           color: "0F172A",
-        }),
-      ],
+          break: 1,
+        })
+      );
+    }
+    return new Paragraph({
+      heading: HeadingLevel.HEADING_1,
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 360, after: 180 },
+      children,
     });
   };
 
@@ -199,13 +212,17 @@ export async function exportReportToDocx(data: ReportData) {
       {
         properties: {
           page: {
-            margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 }, // 1 inch = 1440 dxa
+            size: {
+              width: 11906, // A4 Portrait width in dxa (210mm)
+              height: 16838, // A4 Portrait height in dxa (297mm)
+            },
+            margin: { top: 1700, bottom: 1700, left: 2270, right: 1700 }, // Top/Bottom/Right: 3cm (~1700 dxa), Left: 4cm (~2270 dxa)
           },
         },
         headers: {
           default: new Header({
             children: [
-              p(`Laporan Resmi Survei Budaya Keselamatan Pasien - ${data.namaRs}`, {
+              p(`Laporan Survei Budaya Keselamatan Pasien - ${data.namaRs}`, {
                 italic: true,
                 size: 18,
                 color: "64748B",
@@ -234,7 +251,7 @@ export async function exportReportToDocx(data: ReportData) {
           // COVER PAGE
           new Paragraph({
             alignment: AlignmentType.CENTER,
-            spacing: { before: 1440, after: 240 },
+            spacing: { before: 2880, after: 240 },
             children: [
               new TextRun({
                 text: "LAPORAN SURVEI BUDAYA KESELAMATAN PASIEN",
@@ -272,18 +289,38 @@ export async function exportReportToDocx(data: ReportData) {
             ],
           }),
 
-          p("SISTEM SURVEI BUDAYA KESELAMATAN PASIEN", { align: AlignmentType.CENTER, bold: true, size: 24, color: "0F172A" }),
           p("INSTRUMEN AHRQ HOSPITAL SURVEY ON PATIENT SAFETY CULTURE (SOPS®) V2.0", { align: AlignmentType.CENTER, bold: true, size: 20, color: "475569" }),
-          p(`Medclin Pro Academy • ${data.tahun}`, { align: AlignmentType.CENTER, italic: true, size: 18, color: "64748B", spaceBefore: 240 }),
+
+          pageBreak(),
+
+          // DAFTAR ISI
+          heading1("DAFTAR ISI"),
+          p("HALAMAN COVER ........................................................................................................... i", { bold: true, spaceAfter: 80 }),
+          p("DAFTAR ISI .................................................................................................................. ii", { bold: true, spaceAfter: 80 }),
+          p("BAB I PENDAHULUAN ..................................................................................................... 1", { bold: true, spaceAfter: 80 }),
+          p("    1.1 Latar Belakang .................................................................................................... 1", { spaceAfter: 60 }),
+          p("    1.2 Tujuan .................................................................................................................. 1", { spaceAfter: 60 }),
+          p("    1.3 Manfaat ................................................................................................................. 1", { spaceAfter: 60 }),
+          p("BAB II METODOLOGI SURVEI ............................................................................................ 2", { bold: true, spaceAfter: 80 }),
+          p("    2.1 Desain Penelitian / Survei ........................................................................................ 2", { spaceAfter: 60 }),
+          p("    2.2 Waktu dan Lokasi .................................................................................................... 2", { spaceAfter: 60 }),
+          p("    2.3 Populasi dan Sampel ................................................................................................ 2", { spaceAfter: 60 }),
+          p("BAB III HASIL DAN PEMBAHASAN ..................................................................................... 3", { bold: true, spaceAfter: 80 }),
+          p("    3.1 Karakteristik Demografi & Tingkat Respon ............................................................. 3", { spaceAfter: 60 }),
+          p("    3.2 Hasil Pengukuran 10 Dimensi AHRQ ..................................................................... 4", { spaceAfter: 60 }),
+          p("    3.3 Pembahasan Analisis Kualitatif ............................................................................... 6", { spaceAfter: 60 }),
+          p("BAB IV KESIMPULAN, REKOMENDASI & LEMBAR PENGESAHAN ..................................... 7", { bold: true, spaceAfter: 80 }),
+          p("    4.1 Kesimpulan ............................................................................................................ 7", { spaceAfter: 60 }),
+          p("    4.2 Rekomendasi Strategic Action Plan & Pengesahan .................................................... 7", { spaceAfter: 60 }),
 
           pageBreak(),
 
           // BAB I PENDAHULUAN
-          heading1("BAB I\nPENDAHULUAN"),
+          heading1("BAB I", "PENDAHULUAN"),
           
           heading2("1.1 Latar Belakang"),
           p("Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Berdasarkan pandangan global dan standar akreditasi rumah sakit, upaya peningkatan keselamatan pasien tidak hanya berfokus pada penerapan prosedur operasional standar dan penyediaan sarana prasarana, tetapi juga sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi."),
-          p("Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma yang dibagikan oleh staf rumah sakit mengenai apa yang penting dan bagaimana perilaku terkait keselamatan diwujudkan. Budaya yang kuat memfasilitasi komunikasi yang terbuka, pelaporan insiden tanpa rasa takut akan hukuman (non-punitive environment), pembelajaran berkelanjutan dari kesalahan, serta kerja sama tim yang solid antar unit."),
+          p("Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma yang dibagikan oleh staf rumah sakit mengenai apa yang penting dan bagaimana perilaku terkait keselamatan diwujudkan. Budaya yang kuat memafasilitasi komunikasi yang terbuka, pelaporan insiden tanpa rasa takut akan hukuman (non-punitive environment), pembelajaran berkelanjutan dari kesalahan, serta kerja sama tim yang solid antar unit."),
           p("Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0."),
           p(`Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan (strengths) serta area yang membutuhkan peningkatan (areas for improvement) di ${data.namaRs}. Hasil dari survei ini menjadi landasan berbasis data (data-driven) dalam merumuskan strategi perbaikan mutu dan keselamatan pasien secara terarah dan berkelanjutan.`),
 
@@ -312,7 +349,7 @@ export async function exportReportToDocx(data: ReportData) {
           pageBreak(),
 
           // BAB II METODOLOGI SURVEI
-          heading1("BAB II\nMETODOLOGI SURVEI"),
+          heading1("BAB II", "METODOLOGI SURVEI"),
           
           heading2("2.1 Desain Penelitian / Survei"),
           p("Survei ini menggunakan desain deskriptif kuantitatif dengan pendekatan cross-sectional. Pendekatan ini digunakan untuk mengukur dan menggambarkan persepsi staf rumah sakit terhadap budaya keselamatan pasien pada satu kurun waktu tertentu tanpa memberikan intervensi langsung saat pengukuran berlangsung."),
@@ -345,7 +382,7 @@ export async function exportReportToDocx(data: ReportData) {
           pageBreak(),
 
           // BAB III HASIL DAN PEMBAHASAN
-          heading1("BAB III\nHASIL DAN PEMBAHASAN"),
+          heading1("BAB III", "HASIL DAN PEMBAHASAN"),
 
           heading2("3.1 Gambaran Umum Respon Rate dan Karakteristik Responden"),
           heading3("3.1.1 Tingkat Partisipasi (Response Rate)"),
@@ -400,7 +437,7 @@ export async function exportReportToDocx(data: ReportData) {
           }),
 
           heading2("3.2 Hasil Pengukuran Budaya Keselamatan Pasien (AHRQ 2.0)"),
-          p(`Berdasarkan kalkulasi terhadap 10 dimensi AHRQ Versi 2.0, rata-rata tingkat respon positif budaya keselamatan pasien di ${data.namaRs} adalah ${data.overallAverage.toFixed(1)}%.`),
+          p(`Data hasil pengukuran 10 dimensi budaya keselamatan pasien di ${data.namaRs} di bawah ini terintegrasi secara langsung dari menu Analisa Data (Hasil Pengukuran Dimensi) yang tersimpan di database Supabase. Capaian rata-rata respon positif adalah ${data.overallAverage.toFixed(1)}%.`),
 
           heading3("3.2.1 Respon Positif Berdasarkan 10 Dimensi Budaya Keselamatan Pasien"),
           
@@ -460,7 +497,7 @@ export async function exportReportToDocx(data: ReportData) {
           pageBreak(),
 
           // BAB IV KESIMPULAN DAN REKOMENDASI
-          heading1("BAB IV\nKESIMPULAN DAN REKOMENDASI"),
+          heading1("BAB IV", "KESIMPULAN DAN REKOMENDASI"),
 
           heading2("4.1 Kesimpulan"),
           bullet(`1. Gambaran Umum: Rata-rata pencapaian respon positif dari 10 dimensi budaya keselamatan pasien di ${data.namaRs} berada pada angka ${data.overallAverage.toFixed(1)}%. Sebanyak ${data.safetyRatingPositivePct.toFixed(1)}% staf menilai tingkat keselamatan pasien berada pada kategori 'Baik' hingga 'Sangat Baik'.`),
@@ -477,11 +514,7 @@ export async function exportReportToDocx(data: ReportData) {
           heading3("Prioritas Jangka Panjang (6 - 12 Bulan):"),
           ...data.recommendations.jangkaPanjang.map(r => bullet(`• ${r}`)),
 
-          pageBreak(),
-
-          // HALAMAN PENGESAHAN
-          heading1("HALAMAN PENGESAHAN"),
-          p(`Laporan Resmi Hasil Survei Budaya Keselamatan Pasien berbasis AHRQ SOPS® Version 2.0 ini disahkan di ${data.pengesahan.kota} pada tanggal ${data.pengesahan.tanggal}.`, { align: AlignmentType.CENTER, spaceAfter: 480 }),
+          p(`\n${data.pengesahan.kota || 'Sukabumi'}, ${data.pengesahan.tanggal || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, { align: AlignmentType.RIGHT, bold: true, spaceBefore: 240, spaceAfter: 180 }),
 
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
@@ -491,20 +524,20 @@ export async function exportReportToDocx(data: ReportData) {
                   new TableCell({
                     children: [
                       p("Mengetahui,", { align: AlignmentType.CENTER, bold: true }),
-                      p(data.pengesahan.direkturJabatan, { align: AlignmentType.CENTER }),
+                      p(data.pengesahan.direkturJabatan || 'Direktur Utama Rumah Sakit', { align: AlignmentType.CENTER }),
                       p("\n\n\n\n", { align: AlignmentType.CENTER }),
-                      p(data.pengesahan.direkturNama, { align: AlignmentType.CENTER, bold: true }),
-                      p(`NIP / ID: ${data.pengesahan.direkturNip || '-'}`, { align: AlignmentType.CENTER, size: 18, color: "64748B" }),
+                      p(data.pengesahan.direkturNama || 'dr. H. Ahmad Wijaya', { align: AlignmentType.CENTER, bold: true }),
+                      p(`NIP / ID: ${data.pengesahan.direkturNip || '19780512 200501 1 002'}`, { align: AlignmentType.CENTER, size: 18, color: "64748B" }),
                     ],
                     borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
                   }),
                   new TableCell({
                     children: [
                       p("Disiapkan oleh,", { align: AlignmentType.CENTER, bold: true }),
-                      p(data.pengesahan.penanggungJawabJabatan, { align: AlignmentType.CENTER }),
+                      p(data.pengesahan.penanggungJawabJabatan || 'Ketua Komite Mutu & Keselamatan Pasien', { align: AlignmentType.CENTER }),
                       p("\n\n\n\n", { align: AlignmentType.CENTER }),
-                      p(data.pengesahan.penanggungJawabNama, { align: AlignmentType.CENTER, bold: true }),
-                      p(`NIP / ID: ${data.pengesahan.penanggungJawabNip || '-'}`, { align: AlignmentType.CENTER, size: 18, color: "64748B" }),
+                      p(data.pengesahan.penanggungJawabNama || 'dr. Budi Santoso', { align: AlignmentType.CENTER, bold: true }),
+                      p(`NIP / ID: ${data.pengesahan.penanggungJawabNip || '19820315 200804 1 005'}`, { align: AlignmentType.CENTER, size: 18, color: "64748B" }),
                     ],
                     borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE } },
                   }),

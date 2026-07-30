@@ -72,8 +72,8 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-extrabold text-lg leading-tight text-[#0e4a5b] block font-sans tracking-tight">Medclin</span>
-            <span className="font-bold text-sm leading-tight text-[#2fa8b9] block font-sans tracking-tight">Pro Academy</span>
+            <span className="font-extrabold text-lg leading-tight text-[#2E7D82] block font-sans tracking-tight">Medclin</span>
+            <span className="font-bold text-sm leading-tight text-[#48B8BE] block font-sans tracking-tight">Pro Academy</span>
           </div>
         </div>
 
@@ -113,9 +113,9 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
                 paintOrder: 'stroke fill'
               }}
             >
-              <span className="text-[#2563EB]">Sistem Survei</span> <br />
-              <span className="text-[#14B8A6]">Budaya</span>{' '}
-              <span className="text-[#7C3AED]">Keselamatan Pasien</span>
+              <span className="text-[#5CC8C9]">Sistem Survei</span> <br />
+              <span className="text-[#2FA7A7]">Budaya</span>{' '}
+              <span className="text-[#1E6F73]">Keselamatan Pasien</span>
             </motion.h1>
 
             <motion.p
@@ -137,7 +137,7 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
           >
             <button
               onClick={onEnter}
-              className="group px-8 py-4 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] hover:from-[#1D4ED8] hover:to-[#1E40AF] text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-md shadow-blue-500/15 hover:shadow-lg hover:shadow-blue-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu duration-300 cursor-pointer text-sm tracking-wide"
+              className="group px-8 py-4 bg-gradient-to-r from-[#43B8BD] to-[#2FA7A7] hover:from-[#369C9F] hover:to-[#1E6F73] text-white font-extrabold rounded-2xl inline-flex items-center gap-3.5 shadow-md shadow-teal-500/20 hover:shadow-lg hover:shadow-teal-500/30 hover:scale-[1.02] active:scale-[0.98] transition-all transform-gpu duration-300 cursor-pointer text-sm tracking-wide"
             >
               MULAI SURVEI
               <motion.div
