@@ -355,29 +355,140 @@ export async function exportReportToDocx(data: ReportData) {
           p("Survei ini menggunakan desain deskriptif kuantitatif dengan pendekatan cross-sectional. Pendekatan ini digunakan untuk mengukur dan menggambarkan persepsi staf rumah sakit terhadap budaya keselamatan pasien pada satu kurun waktu tertentu tanpa memberikan intervensi langsung saat pengukuran berlangsung."),
 
           heading2("2.2 Waktu dan Lokasi Pelaksanaan"),
-          bullet(`• Lokasi Pelaksanaan: Seluruh unit kerja/instalasi di ${data.namaRs} (meliputi unit pelayanan medis, keperawatan, penunjang medis, serta administrasi/manajemen).`),
-          bullet(`• Waktu Pelaksanaan: Survei dilaksanakan pada periode ${data.periodeSurvei}.`),
+          heading3("Lokasi Pelaksanaan"),
+          p(`Seluruh unit kerja/instalasi di ${data.namaRs}, meliputi:`),
+          bullet("• Unit Pelayanan Medis"),
+          bullet("• Unit Keperawatan"),
+          bullet("• Unit Penunjang Medis"),
+          bullet("• Unit Administrasi"),
+          bullet("• Unit Manajemen"),
+          
+          heading3("Waktu Pelaksanaan"),
+          p("Survei dilaksanakan selama periode:"),
+          p(data.periodeSurvei, { bold: true }), // Bold
 
           heading2("2.3 Populasi dan Sampel"),
           heading3("2.3.1 Populasi"),
-          p(`Populasi dalam survei ini adalah seluruh pegawai yang bekerja di ${data.namaRs}, baik manajemen, staf medis, keperawatan, tenaga kesehatan lainnya, maupun staf non-klinis/administrasi.`),
+          p(`Populasi dalam survei ini adalah seluruh pegawai yang bekerja di ${data.namaRs}, baik manajemen, staf medis, keperawatan, tenaga kesehatan lainnya maupun staf administrasi/non klinis.`),
+          
           heading3("2.3.2 Kriteria Inklusi dan Eksklusi"),
-          bullet(`1. Kriteria Inklusi: Pegawai purna waktu maupun paruh waktu yang telah bekerja di ${data.namaRs} minimal 3 bulan, memiliki interaksi langsung/tidak langsung dengan pelayanan, dan bersedia mengisi secara sukarela.`),
-          bullet("2. Kriteria Eksklusi: Staf yang sedang menjalani cuti panjang, serta siswa/mahasiswa praktik atau residen yang belum menjadi pegawai tetap/kontrak."),
-          heading3("2.3.3 Teknik Sampling dan Ukuran Sampel"),
-          p(`Pengambilan sampel dilakukan menggunakan teknik Total Sampling. Dari target populasi sebanyak ${data.totalTarget} responden, kuesioner yang berhasil dikumpulkan dan memenuhi syarat analisis adalah sebanyak ${data.totalActual} kuesioner (${data.responseRate}). Tingkat partisipasi ini telah memenuhi ambang batas minimal yang direkomendasikan AHRQ (≥ 60%).`),
+          heading3("Kriteria Inklusi"),
+          bullet("• Pegawai tetap maupun kontrak yang telah bekerja minimal 3 bulan."),
+          bullet("• Memiliki interaksi langsung maupun tidak langsung terhadap pelayanan pasien."),
+          bullet("• Bersedia mengisi kuesioner secara sukarela."),
+          
+          heading3("Kriteria Eksklusi"),
+          bullet("• Pegawai yang sedang menjalani cuti panjang."),
+          bullet("• Mahasiswa praktik."),
+          bullet("• Siswa praktik."),
+          bullet("• Residen yang belum menjadi pegawai rumah sakit."),
+
+          heading3("2.3.3 Teknik Sampling dan Jumlah Sampel"),
+          heading3("Teknik Sampling"),
+          p("Pengambilan sampel dilakukan menggunakan:"),
+          bullet("• Total Sampling"),
+          p("atau"),
+          bullet("• Proportionate Stratified Random Sampling"),
+          p("(sesuai pengaturan aplikasi)."),
+
+          heading3("Ukuran Sampel"),
+          p("Target jumlah responden mengikuti rekomendasi AHRQ."),
+          bullet(`• Jumlah Target Responden: ${data.totalTarget}`),
+          bullet(`• Jumlah Responden Mengisi: ${data.totalActual}`),
+          bullet(`• Persentase Response Rate: ${data.responseRate}`),
 
           heading2("2.4 Instrumen Survei"),
-          p("Instrumen yang digunakan adalah AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0 yang terdiri dari 10 dimensi utama (32 item pertanyaan primer), ditambah bagian evaluasi penilaian tingkat keselamatan pasien (overall rating), frekuensi pelaporan insiden, dan karakteristik demografi responden."),
+          p("Instrumen yang digunakan adalah:"),
+          p("AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0", { bold: true }),
+          p("yang telah diterjemahkan ke Bahasa Indonesia."),
+          p("Instrumen terdiri atas 10 Dimensi Budaya Keselamatan Pasien:"),
+          bullet("1. Teamwork (Kerja Sama Tim) – 3 item"),
+          bullet("2. Staffing and Work Pace – 4 item"),
+          bullet("3. Organizational Learning—Continuous Improvement – 3 item"),
+          bullet("4. Response to Error – 4 item"),
+          bullet("5. Supervisor/Manager Support – 3 item"),
+          bullet("6. Management Support – 3 item"),
+          bullet("7. Communication Openness – 4 item"),
+          bullet("8. Reporting Patient Safety Events – 2 item"),
+          bullet("9. Hospital Handoffs and Information Exchange – 3 item"),
+          bullet("10. Communication About Error – 3 item"),
+          p("Selain itu terdapat:"),
+          bullet("• Overall Patient Safety Rating"),
+          bullet("• Pertanyaan Demografi Responden"),
 
           heading2("2.5 Metode Pengumpulan Data"),
-          p("Pengumpulan data dilakukan secara elektronik/online (e-survey) melalui aplikasi terintegrasi dengan menjamin kerahasiaan penuh (anonymity). Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kejujuran jawaban tanpa kekhawatiran akan sanksi personal."),
+          p("Pengumpulan data dilakukan secara elektronik (e-Survey) melalui aplikasi Survei Budaya Keselamatan Pasien."),
+          p("Meliputi:"),
+          
+          heading3("Penyebaran Kuesioner"),
+          p("Melalui koordinasi:"),
+          bullet("• Kepala Unit"),
+          bullet("• Kepala Ruangan"),
+          bullet("• Tim Komite Mutu"),
+
+          heading3("Prinsip Anonimitas"),
+          p("Responden tidak diminta mengisi:"),
+          bullet("• Nama"),
+          bullet("• NIP"),
+          p("untuk menjamin kerahasiaan identitas."),
+
+          heading3("Monitoring Response Rate"),
+          p("Monitoring dilakukan setiap hari terhadap tingkat partisipasi seluruh unit kerja."),
 
           heading2("2.6 Analisis Data"),
-          p("Pengolahan data dilakukan mengikuti panduan resmi AHRQ SOPS® Version 2.0:"),
-          bullet("1. Item Berpernyataan Positif: Jawaban 4 (Setuju/Sering) dan 5 (Sangat Setuju/Selalu) dihitung sebagai respon positif."),
-          bullet("2. Item Berpernyataan Negatif (Reverse Items): Jawaban 1 (Sangat Tidak Setuju/Tidak Pernah) and 2 (Tidak Setuju/Jarang) dihitung sebagai respon positif."),
-          bullet("3. Kategori Kriteria Dimensi: Area Keunggulan / Kekuatan (Strengths, ≥ 75%), Area Perlu Perbaikan (Areas for Improvement, < 50%), dan Area Moderat (50% - 74%)."),
+          p("Pengolahan data mengikuti pedoman resmi:"),
+          p("AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0", { bold: true }),
+          p("meliputi:"),
+
+          heading3("Analisis Demografi"),
+          p("Menghitung:"),
+          bullet("• Frekuensi"),
+          bullet("• Persentase"),
+          p("berdasarkan:"),
+          bullet("• Profesi"),
+          bullet("• Unit Kerja"),
+          bullet("• Masa Kerja"),
+          bullet("• Jam Kerja"),
+
+          heading3("Kalkulasi Persentase Respon Positif"),
+          p("Skala Agreement:", { bold: true }),
+          bullet("1. Sangat Tidak Setuju"),
+          bullet("2. Tidak Setuju"),
+          bullet("3. Netral"),
+          bullet("4. Setuju"),
+          bullet("5. Sangat Setuju"),
+          p("Skala Frequency:", { bold: true }),
+          bullet("1. Tidak Pernah"),
+          bullet("2. Jarang"),
+          bullet("3. Kadang-kadang"),
+          bullet("4. Sering"),
+          bullet("5. Selalu"),
+
+          heading3("Perhitungan Item Positif"),
+          p("Respon:"),
+          bullet("• 4"),
+          bullet("• 5"),
+          p("dihitung sebagai respon positif."),
+
+          heading3("Perhitungan Item Negatif"),
+          p("Respon:"),
+          bullet("• 1"),
+          bullet("• 2"),
+          p("dihitung sebagai respon positif (Reverse Scoring)."),
+
+          heading3("Formula"),
+          p("% Respon Positif Dimensi = (Total Jawaban Positif pada seluruh item dimensi ÷ Total Jawaban Terisi pada seluruh item dimensi) × 100%", { bold: true }),
+
+          heading3("Kriteria Penilaian"),
+          p("Area Keunggulan (Strengths)", { bold: true }),
+          p("≥ 75%"),
+          p("Area Sedang / Netral", { bold: true }),
+          p("50%–74%"),
+          p("Area Perlu Perbaikan", { bold: true }),
+          p("< 50%"),
+
+          heading3("Analisis Tingkat Keselamatan Pasien"),
+          p("Menghitung distribusi persentase penilaian responden terhadap tingkat keselamatan pasien secara keseluruhan."),
 
           pageBreak(),
 
@@ -436,10 +547,10 @@ export async function exportReportToDocx(data: ReportData) {
             ],
           }),
 
-          heading2("3.2 Hasil Pengukuran Budaya Keselamatan Pasien (AHRQ 2.0)"),
-          p(`Data hasil pengukuran 10 dimensi budaya keselamatan pasien di ${data.namaRs} di bawah ini terintegrasi secara langsung dari menu Analisa Data (Hasil Pengukuran Dimensi) yang tersimpan di database Supabase. Capaian rata-rata respon positif adalah ${data.overallAverage.toFixed(1)}%.`),
+          heading2(`3.2 Hasil Pengukuran Budaya Keselamatan Pasien ${data.namaRs}`),
+          p(`Berdasarkan hasil pengukuran budaya keselamatan pasien periode Tahun ${data.periodeSurvei.includes('20') ? data.periodeSurvei : new Date().getFullYear()} pada ${data.namaRs}, diperoleh rata-rata respons positif sebesar ${data.overallAverage.toFixed(1)}%. Data berikut merupakan hasil pengukuran terhadap 10 dimensi budaya keselamatan pasien yang diperoleh secara otomatis dari Menu Analisa Data dan tersimpan pada database Supabase berdasarkan akun rumah sakit yang sedang aktif.`),
 
-          heading3("3.2.1 Respon Positif Berdasarkan 10 Dimensi Budaya Keselamatan Pasien"),
+          heading3("3.2.1 Detail Pengukuran Dimensi Budaya Keselamatan Pasien"),
           
           // Table 3.2 10 Dimensi
           new Table({
@@ -447,20 +558,22 @@ export async function exportReportToDocx(data: ReportData) {
             rows: [
               new TableRow({
                 children: [
+                  createHeaderCell("No.", AlignmentType.CENTER),
                   createHeaderCell("Kode", AlignmentType.CENTER),
-                  createHeaderCell("Dimensi Budaya Keselamatan Pasien", AlignmentType.LEFT),
+                  createHeaderCell("Komponen / Dimensi Budaya Keselamatan Pasien", AlignmentType.LEFT),
                   createHeaderCell("% Respon Positif", AlignmentType.CENTER),
-                  createHeaderCell("Kategori", AlignmentType.CENTER),
+                  createHeaderCell("Kategori Penilaian", AlignmentType.CENTER),
                 ],
               }),
-              ...data.dimensionScores.map(d => 
+              ...data.dimensionScores.map((d, idx) => 
                 new TableRow({
                   children: [
+                    createCell(`${idx + 1}.`, false, AlignmentType.CENTER),
                     createCell(d.kode, true, AlignmentType.CENTER),
                     createCell(d.nama),
                     createCell(`${d.percentage.toFixed(1)}%`, true, AlignmentType.CENTER),
                     createCell(
-                      d.percentage >= 75 ? "Kekuatan (≥75%)" : d.percentage < 50 ? "Area Perbaikan (<50%)" : "Moderat (50-74%)",
+                      d.percentage >= 75 ? "Area Kekuatan (≥75%)" : d.percentage < 50 ? "Area Perbaikan (<50%)" : "Moderat (50-74%)",
                       true,
                       AlignmentType.CENTER,
                       d.percentage >= 75 ? "DCFCE7" : d.percentage < 50 ? "FEE2E2" : "FEF3C7"
@@ -468,8 +581,19 @@ export async function exportReportToDocx(data: ReportData) {
                   ],
                 })
               ),
+              new TableRow({
+                children: [
+                  createCell("Rata-Rata Seluruh 10 Dimensi", true, AlignmentType.RIGHT, "CCFBF1"),
+                  createCell("", false, AlignmentType.LEFT, "CCFBF1"),
+                  createCell("", false, AlignmentType.LEFT, "CCFBF1"),
+                  createCell(`${data.overallAverage.toFixed(1)}%`, true, AlignmentType.CENTER, "CCFBF1", "0D9488"),
+                  createCell("Skor Terintegrasi Realtime", true, AlignmentType.CENTER, "CCFBF1", "0F766E"),
+                ]
+              })
             ],
           }),
+
+          p(`Interpretasi Otomatis: Berdasarkan hasil survei budaya keselamatan pasien di ${data.namaRs}, diperoleh bahwa dimensi dengan capaian tertinggi adalah ${data.dimensionScores.slice().sort((a,b)=>b.percentage-a.percentage)[0]?.nama || '-'} (${data.dimensionScores.slice().sort((a,b)=>b.percentage-a.percentage)[0]?.kode}) sebesar ${data.dimensionScores.slice().sort((a,b)=>b.percentage-a.percentage)[0]?.percentage.toFixed(1)}%, sedangkan dimensi dengan nilai terendah adalah ${data.dimensionScores.slice().sort((a,b)=>a.percentage-b.percentage)[0]?.nama || '-'} (${data.dimensionScores.slice().sort((a,b)=>a.percentage-b.percentage)[0]?.kode}) sebesar ${data.dimensionScores.slice().sort((a,b)=>a.percentage-b.percentage)[0]?.percentage.toFixed(1)}%. Capaian rata-rata respon positif seluruh 10 dimensi berada pada angka ${data.overallAverage.toFixed(1)}%.`, { italic: true, bold: false, size: 20, color: "0F766E", spaceBefore: 120, spaceAfter: 180 }),
 
           heading3("3.2.2 Rating Keselamatan Pasien Keseluruhan (Overall Patient Safety Rating)"),
           p(`Sebanyak ${data.safetyRatingPositivePct.toFixed(1)}% responden menilai tingkat keselamatan pasien di ${data.namaRs} berada pada kategori 'Baik' hingga 'Sangat Baik'.`),
@@ -477,22 +601,22 @@ export async function exportReportToDocx(data: ReportData) {
           heading3("3.2.3 Jumlah Insiden Keselamatan Pasien Yang Dilaporkan"),
           p(`Sebanyak ${data.reportedEventsAnyPct.toFixed(1)}% responden melaporkan setidaknya 1 insiden keselamatan pasien dalam 12 bulan terakhir.`),
 
-          heading2("3.3 Pembahasan"),
+          heading2("3.3 Analisis Naratif Otomatis Pengukuran Dimensi"),
           
-          heading3(`3.3.1 Area Keunggulan (Strengths ≥ 75%)`),
+          heading3(`3.3.1 Kekuatan Organisasi (Capaian Respon Positif ≥ 75%)`),
           ...(data.strengths.length > 0 
-            ? data.strengths.map(s => bullet(`• ${s.nama} (${s.kode}) — [${s.percentage.toFixed(1)}%]: ${s.interpretasi}`))
-            : [p("Belum ada dimensi yang mencapai batas kekuatan ≥ 75%. Seluruh dimensi membutuhkan pembenahan berkelanjutan.", { italic: true })]),
+            ? data.strengths.map(s => bullet(`• ${s.kode} - ${s.nama} (${s.percentage.toFixed(1)}%): ${s.interpretasi}`))
+            : [p(`Saat ini belum ada dimensi yang mencapai batas area kekuatan (≥ 75%). Diperlukan strategi penguatan terpadu di seluruh unit kerja ${data.namaRs}.`, { italic: true })]),
 
-          heading3(`3.3.2 Area yang Memerlukan Perbaikan (Areas for Improvement < 50%)`),
-          ...(data.improvements.length > 0
-            ? data.improvements.map(i => bullet(`• ${i.nama} (${i.kode}) — [${i.percentage.toFixed(1)}%]: ${i.interpretasi}`))
-            : [p("Tidak ada dimensi yang berada di bawah 50%. Ini menunjukkan fondasi budaya keselamatan di rumah sakit berada pada jalur yang positif.", { italic: true })]),
-
-          heading3(`3.3.3 Area Sedang / Moderat (50% - 74%)`),
+          heading3(`3.3.2 Area yang Masih Perlu Ditingkatkan (Capaian 50% - 74%)`),
           ...(data.moderates.length > 0
-            ? data.moderates.map(m => bullet(`• ${m.nama} (${m.kode}) — [${m.percentage.toFixed(1)}%]: ${m.interpretasi}`))
-            : [p("Tidak ada dimensi di kategori moderat.", { italic: true })]),
+            ? data.moderates.map(m => bullet(`• ${m.kode} - ${m.nama} (${m.percentage.toFixed(1)}%): ${m.interpretasi}`))
+            : [p("Tidak ada dimensi yang berada dalam kategori moderat (50% - 74%).", { italic: true })]),
+
+          heading3(`3.3.3 Prioritas Utama Perbaikan (Capaian < 50%)`),
+          ...(data.improvements.length > 0
+            ? data.improvements.map(i => bullet(`• ${i.kode} - ${i.nama} (${i.percentage.toFixed(1)}%): ${i.interpretasi}`))
+            : [p(`Tidak ada dimensi yang berada di bawah 50%. Ini menunjukkan budaya keselamatan di ${data.namaRs} berjalan stabil tanpa hambatan kritis.`, { italic: true })]),
 
           pageBreak(),
 

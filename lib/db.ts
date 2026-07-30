@@ -80,6 +80,27 @@ export interface SurveySubmission {
 }
 
 // Helpers for data mapping
+export const isSurveyResponse = (s: any): boolean => {
+  if (!s || !s.id) return false;
+  const idStr = String(s.id);
+  if (idStr.startsWith('LINK_CONFIG_') || 
+      idStr.startsWith('PENGESAHAN_') || 
+      idStr.startsWith('MASTER_') || 
+      idStr.startsWith('_MASTER_')) {
+    return false;
+  }
+  if (s.unitKerja === 'PENGESAHAN_CONFIG' || s.unit_kerja === 'PENGESAHAN_CONFIG') {
+    return false;
+  }
+  if (s.namaRs === '_LINK_CONFIG_' || s.nama_rs === '_LINK_CONFIG_' || s.namaRs === '_PENGESAHAN_CONFIG_') {
+    return false;
+  }
+  if (s.dimensiScores && typeof s.dimensiScores === 'object' && 'token' in (s.dimensiScores as any)) {
+    return false;
+  }
+  return true;
+};
+
 export const mapToSurveyData = (item: any): SurveyData => ({
   id: item.id,
   namaRs: item.nama_rs || item.namaRs || '',
@@ -235,7 +256,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
             .order('created_at', { ascending: false });
 
           if (!error && data) {
-            return data.map(mapToSurveyData).filter((s: any) => s && s.id && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
+            return data.map(mapToSurveyData).filter(isSurveyResponse);
           }
           if (error) {
             if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
@@ -268,7 +289,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
               .order('created_at', { ascending: false });
 
             if (!error && data) {
-              return data.map(mapToSurveyData).filter((s: any) => s && s.id && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
+              return data.map(mapToSurveyData).filter(isSurveyResponse);
             }
             if (error && !error.message?.includes('Failed to fetch') && !error.details?.includes('Failed to fetch')) {
               console.error("Fallback query failed:", error.message || error);
@@ -286,7 +307,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          return data.map(mapToSurveyData).filter((s: any) => s && s.id && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
+          return data.map(mapToSurveyData).filter(isSurveyResponse);
         }
         if (error) {
           if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
@@ -2127,7 +2148,7 @@ export async function savePengesahanConfig(hospitalIdOrUsername: string, config:
         id: `PENGESAHAN_${identifier}`,
         nama_rs: config.namaRs || '_CONFIG_',
         unit_kerja: 'PENGESAHAN_CONFIG',
-        jumlah_responden: 1,
+        jumlah_responden: 0,
         tanggal_input: new Date().toISOString(),
         dimensi_scores: { pengesahan: config }
       });

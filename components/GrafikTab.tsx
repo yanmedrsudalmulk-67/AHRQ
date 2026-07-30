@@ -10,7 +10,7 @@ import {
   Calendar, Building2, BrainCircuit, Lightbulb, FileText, Download, CheckCircle2,
   ListFilter
 } from 'lucide-react';
-import { SurveyData } from '../lib/db';
+import { SurveyData, isSurveyResponse } from '../lib/db';
 import { computeDimensionScores } from '../lib/scoring';
 
 interface GrafikTabProps {
@@ -156,7 +156,7 @@ function generateAHRQReport(combinedData: any[], mode: 'Tunggal' | 'Perbandingan
 
 export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS Uji Coba" }: GrafikTabProps) {
   const rsName = namaRs || 'Rumah Sakit';
-  const actualSurveys = useMemo(() => surveys.filter(s => s.id !== 'MASTER_BENCHMARK'), [surveys]);
+  const actualSurveys = useMemo(() => surveys.filter(s => isSurveyResponse(s) && s.id !== 'MASTER_BENCHMARK'), [surveys]);
 
   const actualDataYears = useMemo(() => {
     const years = new Set<string>();

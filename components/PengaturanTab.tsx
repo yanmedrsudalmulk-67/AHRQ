@@ -297,10 +297,7 @@ export default function PengaturanTab({
     setIsSavingPengesahan(true);
     try {
       await savePengesahanConfig(identifier || namaRs, pengesahanForm);
-      if (pengesahanForm.namaRs && pengesahanForm.namaRs !== namaRs) {
-        onUpdateRsName(pengesahanForm.namaRs.trim());
-      }
-      showToast("✅ Pengaturan Halaman Pengesahan berhasil disimpan ke database.", "success");
+      showToast("✅ Pengaturan Halaman Pengesahan berhasil disimpan. Perubahan ini berlaku khusus untuk Laporan Resmi pada menu Laporan Survei.", "success");
     } catch (err: any) {
       showToast(`❌ Gagal menyimpan Halaman Pengesahan: ${err.message || err}`, "error");
     } finally {
@@ -1959,14 +1956,14 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
       {activeSettingsSection === 'pengesahan' && (
         <form onSubmit={handleSavePengesahan} className="space-y-6 animate-fadeIn">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-teal-700 via-teal-800 to-emerald-900 rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
             <div className="relative z-10 space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-600/50 border border-teal-400/30 text-xs font-semibold backdrop-blur-md">
                 <FileCheck className="w-3.5 h-3.5 text-teal-200" /> Form Lembar Pengesahan Laporan Resmi
               </div>
               <h2 className="text-xl font-black tracking-tight">Pengaturan Halaman Pengesahan</h2>
               <p className="text-xs text-teal-100/80 max-w-2xl leading-relaxed">
-                Kelola data Rumah Sakit, kota, tanggal pengesahan, identitas Direktur, dan Penanggung Jawab Survei. Data ini tersimpan di database Supabase dan otomatis tercantum pada Lembar 6 Pengesahan di setiap laporan survei AHRQ SOPS® v2.0.
+                Kelola data Rumah Sakit, kota, tanggal pengesahan, identitas Direktur, dan Penanggung Jawab Survei. Perubahan data ini tersimpan khusus untuk Halaman Pengesahan dan Cover Laporan Resmi di menu Laporan Survei. Data ini tidak terintegrasi menjadi input responden serta tidak muncul di Dashboard maupun Analisa Data.
               </p>
             </div>
           </div>

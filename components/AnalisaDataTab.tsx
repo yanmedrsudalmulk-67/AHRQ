@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, Fragment, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import CountUp from './CountUp';
-import { HospitalAccount, BenchmarkRequest, createBenchmarkRequest, getSurveys } from '../lib/db';
+import { HospitalAccount, BenchmarkRequest, createBenchmarkRequest, getSurveys, isSurveyResponse } from '../lib/db';
 import { 
   Building, 
   Building2,
@@ -438,7 +438,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     setCurrentPageTenureEvent(1);
   }, [searchTenureEventQuery]);
   
-  const actualSurveys = useMemo(() => surveys.filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {}))), [surveys]);
+  const actualSurveys = useMemo(() => surveys.filter(s => s && isSurveyResponse(s) && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {}))), [surveys]);
 
   const uniqueUnits = useMemo(() => {
     const units = new Set<string>();
@@ -2893,7 +2893,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
             exit={{ opacity: 0, y: -20 }}
             className="max-w-7xl mx-auto"
           >
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] rounded-[32px] p-8 md:p-10 shadow-2xl shadow-blue-900/30 mb-8 border border-white/20 backdrop-blur-xl group">
+            <div className="relative overflow-hidden bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] rounded-[32px] p-8 md:p-10 shadow-2xl shadow-teal-950/30 mb-8 border border-white/20 backdrop-blur-xl group">
               {/* Decorative Glass Elements */}
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-all duration-700"></div>
               <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-3xl"></div>
@@ -3688,7 +3688,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   {/* Main Chart Card - Glassmorphism 2.0 style */}
                   <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(37,99,235,0.12)] border border-[rgba(37,99,235,0.10)] overflow-hidden">
                     {/* Header Card */}
-                    <div className="bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] p-8 text-white flex items-center justify-between">
+                    <div className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] p-8 text-white flex items-center justify-between">
                       <div className="space-y-1.5">
                         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Perbandingan Jumlah Insiden Keselamatan Pasien yang Dilaporkan</h2>
                         <p className="text-xs md:text-sm text-blue-100/80 font-medium">Membandingkan distribusi frekuensi pelaporan insiden keselamatan pasien dengan {activeBenchmarkLabel}</p>
@@ -5075,7 +5075,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   {/* Main Chart Card - Glassmorphism 2.0 style */}
                   <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(139,92,246,0.12)] border border-[rgba(139,92,246,0.10)] overflow-hidden">
                     {/* Header Card */}
-                    <div className="bg-gradient-to-r from-purple-600 to-indigo-800 p-8 text-white flex items-center justify-between">
+                    <div className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] p-8 text-white flex items-center justify-between">
                       <div className="space-y-1.5">
                         <h2 className="text-xl md:text-2xl font-extrabold tracking-tight">Detail Distribusi Jumlah Insiden Keselamatan Pasien yang Dilaporkan</h2>
                         <p className="text-xs md:text-sm text-purple-100/80 font-medium">Distribusi frekuensi pelaporan insiden keselamatan pasien berdasarkan data responden rumah sakit Anda</p>

@@ -31,7 +31,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RechartsTooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar } from 'recharts';
-import { getSurveys, SurveyData } from '../lib/db';
+import { getSurveys, SurveyData, isSurveyResponse } from '../lib/db';
 import { computeDimensionScores, DIMENSI_INFO, DIMENSI_ITEMS } from '../lib/scoring';
 import DimensiDetailModal from './DimensiDetailModal';
 
@@ -414,6 +414,7 @@ export default function DashboardTable({ role, namaRs, identifier, hospitalId, s
   // Apply filters to raw surveys
   const filteredSurveys = useMemo(() => {
     return surveys.filter(s => {
+      if (!isSurveyResponse(s)) return false;
       // 1. Hospital Filter (Admin has option, RS locked)
       if (role === 'rs') {
         const surveyUser = (s.dimensiScores as any)?.username;

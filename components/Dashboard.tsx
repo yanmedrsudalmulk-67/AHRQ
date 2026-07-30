@@ -34,7 +34,7 @@ import PengaturanTab from './PengaturanTab';
 import PersetujuanTab from './PersetujuanTab';
 import PersetujuanBenchmarkTab from './PersetujuanBenchmarkTab';
 import DashboardTable from './DashboardTable';
-import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey, getBenchmarkRequests } from '../lib/db';
+import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey, getBenchmarkRequests, isSurveyResponse } from '../lib/db';
 import { computeDimensionScores } from '../lib/scoring';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
@@ -161,8 +161,8 @@ export default function Dashboard({
     }
   }, [role, accounts, hospitalId, identifier, onLogout]);
 
-  // Filter surveys: Admin sees all, RS sees only their own
-  const validSurveys = surveys.filter(s => s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
+  // Filter surveys: Admin sees all, RS sees only their own (and excludes config/pengesahan rows)
+  const validSurveys = surveys.filter(s => isSurveyResponse(s) && s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
 
   const activeHospitalNameForLaporan = useMemo(() => {
     if (role === 'admin') {
@@ -425,8 +425,8 @@ export default function Dashboard({
               )}
             </div>
             <div>
-              <span className="font-sans font-bold text-sm text-slate-800 tracking-tight block leading-tight">Medclin</span>
-              <span className="text-xs text-blue-600 font-bold block leading-tight">Pro Academy</span>
+              <span className="font-sans font-extrabold text-sm text-[#2E7D82] tracking-tight block leading-tight">Medclin</span>
+              <span className="font-sans font-bold text-xs text-[#48B8BE] tracking-tight block leading-tight">Pro Academy</span>
             </div>
           </div>
           <button
@@ -439,7 +439,7 @@ export default function Dashboard({
         </header>
 
         {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-teal-950/45 bg-gradient-to-r from-[#5CC8C9] via-[#2FA7A7] to-[#1E6F73] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-gradient-to-b md:from-[#5CC8C9] md:via-[#2FA7A7] md:to-[#1E6F73] md:pt-5 md:pb-5`}>
+        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-teal-950/45 bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-gradient-to-b md:from-[#14B8A6] md:via-[#0F766E] md:to-[#0A3335] md:pt-5 md:pb-5`}>
           
           {/* Tombol Collapse / Hide Sidebar - Terletak Sejajar Dengan Tulisan AHRQ SOPS v2.0 */}
           <button

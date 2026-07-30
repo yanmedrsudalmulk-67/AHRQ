@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import hospitalBg from '../src/assets/images/hospital_cover_bg_1785397361439.jpg';
 import { 
   FileText, 
   Download, 
@@ -24,7 +25,8 @@ import {
   Target,
   Clock,
   Briefcase,
-  Globe
+  Globe,
+  BarChart2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -39,7 +41,7 @@ import {
 } from 'recharts';
 import { computeDimensionScores, DIMENSI_INFO } from '../lib/scoring';
 import { exportReportToDocx, ReportData } from '../lib/docxExporter';
-import { getPengesahanConfig, PengesahanConfig } from '../lib/db';
+import { getPengesahanConfig, PengesahanConfig, isSurveyResponse } from '../lib/db';
 
 interface SurveyData {
   id: string;
@@ -92,6 +94,7 @@ export default function LaporanTab({
   const validSurveys = useMemo(() => {
     return surveys.filter(s => 
       s && 
+      isSurveyResponse(s) &&
       s.id !== 'MASTER_BENCHMARK' && 
       !s.id.startsWith('LINK_CONFIG_') && 
       !s.id.startsWith('_MASTER_')
@@ -158,6 +161,30 @@ export default function LaporanTab({
     if (dimensionScores.length === 0) return 0;
     const sum = dimensionScores.reduce((acc, d) => acc + d.percentage, 0);
     return sum / dimensionScores.length;
+  }, [dimensionScores]);
+
+  const activeHospitalName = useMemo(() => {
+    return (pengesahanConfig?.namaRs && pengesahanConfig.namaRs.trim()) || (namaRs && namaRs.trim()) || 'Rumah Sakit';
+  }, [pengesahanConfig?.namaRs, namaRs]);
+
+  const displayYear = useMemo(() => {
+    if (selectedYear && selectedYear !== 'Semua Tahun') return selectedYear;
+    return new Date().getFullYear().toString();
+  }, [selectedYear]);
+
+  // Keep dimensionScores order as primary source of truth (D7, D6, D10, D9, D3, D8, D4, D2, D5, D1)
+  const sortedDimensionScores = useMemo(() => {
+    return dimensionScores;
+  }, [dimensionScores]);
+
+  const highestDim = useMemo(() => {
+    if (!dimensionScores || dimensionScores.length === 0) return null;
+    return [...dimensionScores].sort((a, b) => b.percentage - a.percentage)[0];
+  }, [dimensionScores]);
+
+  const lowestDim = useMemo(() => {
+    if (!dimensionScores || dimensionScores.length === 0) return null;
+    return [...dimensionScores].sort((a, b) => a.percentage - b.percentage)[0];
   }, [dimensionScores]);
 
   // Demographics Breakdown
@@ -578,7 +605,7 @@ export default function LaporanTab({
             <div className="relative">
               <button
                 onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
-                className="flex items-center gap-2 bg-gradient-to-r from-teal-700 to-indigo-700 hover:from-teal-800 hover:to-indigo-800 text-white font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-teal-500/10 transition-all cursor-pointer active:scale-95"
+                className="flex items-center gap-2 bg-gradient-to-r from-[#43B8BD] to-[#2FA7A7] hover:from-[#369C9F] hover:to-[#1E6F73] text-white font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-teal-500/20 hover:shadow-lg hover:shadow-teal-500/30 transition-all transform-gpu duration-300 cursor-pointer active:scale-95"
               >
                 <Download className="w-4 h-4" />
                 <span>Download Laporan</span>
@@ -688,11 +715,28 @@ export default function LaporanTab({
           flex-direction: column;
           justify-content: space-between;
         }
+        .word-page.cover-page {
+          padding: 0 !important;
+          position: relative !important;
+          overflow: hidden !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: space-between !important;
+        }
+        @media print {
+          .print-page.cover-page {
+            padding: 0 !important;
+          }
+        }
         @media (max-width: 220mm) {
           .word-page {
             width: 100%;
             min-height: auto;
             padding: 24px !important;
+          }
+          .word-page.cover-page {
+            padding: 0 !important;
+            min-height: 297mm;
           }
         }
       ` }} />
@@ -710,25 +754,215 @@ export default function LaporanTab({
             <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
               <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 1: Halaman Cover
             </div>
-            <div className="word-page print-page">
-              <div className="text-center pt-4 space-y-4">
-                <h1 className="text-[24px] font-black uppercase tracking-tight text-slate-900 leading-snug">
-                  LAPORAN SURVEI BUDAYA KESELAMATAN PASIEN
-                </h1>
-                <h2 className="text-3xl font-black text-teal-700 uppercase tracking-tight">
-                  {namaRs}
-                </h2>
-                <div className="h-1 w-24 bg-teal-600 mx-auto rounded-full"></div>
-                <h3 className="text-base font-extrabold text-slate-600 uppercase tracking-widest pt-2">
-                  PERIODE TAHUN {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
-                </h3>
+            <div className="word-page cover-page print-page bg-white relative overflow-hidden flex flex-col justify-between select-none">
+              
+              {/* TOP VECTOR ARTWORK & HALFTONE DOT MATRIX */}
+              <div className="absolute top-0 left-0 right-0 h-[220px] pointer-events-none z-0">
+                <svg className="w-full h-full" viewBox="0 0 800 220" preserveAspectRatio="none" fill="none">
+                  <defs>
+                    <pattern id="cover-top-dots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="1.3" fill="#0D9488" opacity="0.3" />
+                      <circle cx="10" cy="10" r="1.3" fill="#0D9488" opacity="0.2" />
+                    </pattern>
+                    <linearGradient id="top-wave-grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#042F31" />
+                      <stop offset="50%" stopColor="#0F766E" />
+                      <stop offset="100%" stopColor="#14B8A6" />
+                    </linearGradient>
+                    <linearGradient id="top-wave-grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#021C1E" />
+                      <stop offset="100%" stopColor="#0B4A4D" />
+                    </linearGradient>
+                  </defs>
+
+                  {/* Top Left Halftone Dots */}
+                  <rect x="0" y="0" width="340" height="180" fill="url(#cover-top-dots)" />
+                  
+                  {/* Top Right Dynamic Curved Waves */}
+                  <path
+                    d="M 380 0 C 500 70, 680 130, 800 145 L 800 0 Z"
+                    fill="url(#top-wave-grad2)"
+                  />
+                  <path
+                    d="M 450 0 C 550 55, 690 100, 800 105 L 800 0 Z"
+                    fill="url(#top-wave-grad1)"
+                  />
+                  <path
+                    d="M 530 0 C 620 45, 720 80, 800 85 L 800 0 Z"
+                    fill="#2FA7A7"
+                    opacity="0.85"
+                  />
+                  <path
+                    d="M 380 0 C 500 70, 680 130, 800 145"
+                    stroke="rgba(255,255,255,0.7)"
+                    strokeWidth="2"
+                    fill="none"
+                  />
+                </svg>
               </div>
 
-              <div className="text-center space-y-1 pt-16 pb-12">
-                <p className="text-[11px] font-extrabold text-slate-600 uppercase tracking-wider">
-                  INSTRUMEN AHRQ HOSPITAL SURVEY ON PATIENT SAFETY CULTURE (SOPS®) V2.0
-                </p>
+              {/* CENTER TYPOGRAPHY CONTENT */}
+              <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center px-8 pt-20 pb-4">
+                
+                {/* LAPORAN Subtitle */}
+                <div className="space-y-1.5 mb-5">
+                  <h3 className="text-[15px] sm:text-[17px] font-extrabold uppercase tracking-[0.45em] text-[#2C404E] font-sans">
+                    L A P O R A N
+                  </h3>
+                  <div className="relative w-44 h-[2px] bg-gradient-to-r from-transparent via-[#0D9488]/60 to-transparent mx-auto flex items-center justify-center my-1.5">
+                    <div className="w-8 h-[3px] bg-[#0D9488] rounded-full"></div>
+                  </div>
+                </div>
+
+                {/* SURVEI BUDAYA KESELAMATAN PASIEN */}
+                <div className="space-y-0.5 my-2">
+                  <h1 className="text-[32px] sm:text-[40px] font-black tracking-tight text-[#007A78] uppercase leading-[1.1] font-sans">
+                    SURVEI BUDAYA
+                  </h1>
+                  <h1 className="text-[32px] sm:text-[40px] font-black tracking-tight text-[#0B3C3D] uppercase leading-[1.1] font-sans">
+                    KESELAMATAN PASIEN
+                  </h1>
+                </div>
+
+                {/* BERDASARKAN INSTRUMEN */}
+                <div className="mt-7 mb-2.5">
+                  <p className="text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.24em] text-[#475569]">
+                    BERDASARKAN INSTRUMEN
+                  </p>
+                </div>
+
+                {/* Badge Pill: AHRQ SOPS® v2.0 */}
+                <div className="my-2">
+                  <div className="inline-flex items-center justify-center bg-gradient-to-r from-[#008080] via-[#0D9488] to-[#0A4D50] text-white font-black text-sm sm:text-[16px] px-9 py-2.5 rounded-full shadow-lg shadow-teal-900/25 border border-teal-300/40 tracking-wider">
+                    AHRQ SOPS<sup>®</sup> v2.0
+                  </div>
+                </div>
+
+                {/* Decorative Diamond Line */}
+                <div className="relative w-28 h-[1px] bg-[#0D9488]/30 mx-auto flex items-center justify-center my-5">
+                  <div className="w-2.5 h-2.5 bg-[#0D9488] rotate-45 rounded-[1px]"></div>
+                </div>
+
+                {/* RSUD AL-MULK (Dynamic Hospital Name) */}
+                <div className="my-1">
+                  <h2 className="text-[28px] sm:text-[34px] font-black text-[#0A2E30] uppercase tracking-wide px-4">
+                    {pengesahanConfig?.namaRs || namaRs}
+                  </h2>
+                </div>
+
+                {/* Line below RS Name */}
+                <div className="w-20 h-[2px] bg-[#0D9488]/50 mx-auto my-2.5 rounded-full"></div>
+
+                {/* PERIODE TAHUN 2026 */}
+                <div className="mt-1">
+                  <p className="text-[12px] sm:text-[13px] font-extrabold uppercase tracking-[0.22em] text-[#475569]">
+                    PERIODE TAHUN <span className="text-[#009688] font-black">{selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}</span>
+                  </p>
+                </div>
+
               </div>
+
+              {/* HOSPITAL BUILDING PHOTO WATERMARK BACKDROP */}
+              <div className="absolute inset-x-0 bottom-[100px] h-[380px] pointer-events-none z-0 flex items-end justify-center overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img 
+                  src={typeof hospitalBg === 'string' ? hospitalBg : hospitalBg.src} 
+                  alt="Hospital Building Backdrop" 
+                  className="w-full h-full object-cover object-bottom opacity-30 mix-blend-multiply filter contrast-105"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+
+              {/* BOTTOM DYNAMIC ORGANIC WAVE GRAPHICS */}
+              <div className="relative w-full h-[250px] sm:h-[280px] pointer-events-none z-10 overflow-hidden">
+                <svg className="w-full h-full" viewBox="0 0 800 280" preserveAspectRatio="none" fill="none">
+                  <defs>
+                    <linearGradient id="bottom-wave-grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#0B4A4D" />
+                      <stop offset="40%" stopColor="#0F766E" />
+                      <stop offset="80%" stopColor="#0A3335" />
+                      <stop offset="100%" stopColor="#021C1E" />
+                    </linearGradient>
+
+                    <linearGradient id="bottom-wave-grad2" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#0D9488" />
+                      <stop offset="50%" stopColor="#14B8A6" />
+                      <stop offset="100%" stopColor="#0B4A4D" />
+                    </linearGradient>
+
+                    <linearGradient id="bottom-wave-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor="#032224" />
+                      <stop offset="100%" stopColor="#011011" />
+                    </linearGradient>
+
+                    <pattern id="bottom-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
+                      <circle cx="2" cy="2" r="1" fill="#2FA7A7" opacity="0.35" />
+                    </pattern>
+
+                    {/* Hexagon Pattern */}
+                    <pattern id="bottom-hex-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                      <path d="M 20 0 L 40 11.5 L 40 34.5 L 20 46 L 0 34.5 L 0 11.5 Z" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
+                    </pattern>
+                  </defs>
+
+                  {/* Layer 1: Dark Deep Wave */}
+                  <path
+                    d="M 0 120 C 180 220, 500 50, 800 150 L 800 280 L 0 280 Z"
+                    fill="url(#bottom-wave-dark)"
+                  />
+
+                  {/* Layer 2: Main Rich Teal Wave matching reference S-curve */}
+                  <path
+                    d="M 0 160 C 220 80, 520 220, 800 90 L 800 280 L 0 280 Z"
+                    fill="url(#bottom-wave-grad1)"
+                  />
+
+                  {/* Layer 3: Accent Front Bright Wave */}
+                  <path
+                    d="M 0 200 C 180 140, 480 210, 800 130 L 800 280 L 0 280 Z"
+                    fill="url(#bottom-wave-grad2)"
+                    opacity="0.88"
+                  />
+
+                  {/* Hexagon Mesh Overlay on Right */}
+                  <rect x="500" y="100" width="300" height="180" fill="url(#bottom-hex-pattern)" opacity="0.7" />
+
+                  {/* Glowing Outline Contour Lines */}
+                  <path
+                    d="M 0 160 C 220 80, 520 220, 800 90"
+                    stroke="rgba(255, 255, 255, 0.85)"
+                    strokeWidth="2.5"
+                    fill="none"
+                  />
+
+                  <path
+                    d="M 0 200 C 180 140, 480 210, 800 130"
+                    stroke="rgba(167, 243, 208, 0.75)"
+                    strokeWidth="1.8"
+                    fill="none"
+                  />
+
+                  {/* ECG Heartbeat Pulse Trace Overlay */}
+                  <path
+                    d="M 260 240 L 300 240 L 310 225 L 320 260 L 330 215 L 340 245 L 350 238 L 360 240 L 420 240"
+                    stroke="rgba(255, 255, 255, 0.75)"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+
+                  {/* Bottom Halftone Dots */}
+                  <rect x="20" y="170" width="200" height="100" fill="url(#bottom-dots)" opacity="0.6" />
+                  <rect x="620" y="150" width="180" height="120" fill="url(#bottom-dots)" opacity="0.5" />
+
+                  {/* Soft Glowing Light Dots / Bokeh */}
+                  <circle cx="680" cy="220" r="3.5" fill="#A7F3D0" opacity="0.8" />
+                  <circle cx="720" cy="205" r="2.5" fill="#FFFFFF" opacity="0.9" />
+                  <circle cx="150" cy="230" r="3" fill="#A7F3D0" opacity="0.7" />
+                </svg>
+              </div>
+
             </div>
           </div>
 
@@ -922,31 +1156,241 @@ export default function LaporanTab({
                     <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
                   </div>
 
-                  <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
-                    <h3 className="font-bold text-slate-900">2.1 Desain Penelitian / Survei</h3>
-                    <p>
-                      Survei ini menggunakan desain deskriptif kuantitatif dengan pendekatan cross-sectional untuk menggambarkan persepsi staf pada kurun waktu tertentu tanpa intervensi langsung.
-                    </p>
+                  <div className="space-y-4 text-xs text-slate-700 leading-relaxed text-justify">
+                    <div>
+                      <h3 className="font-bold text-slate-900 mb-1">2.1 Desain Penelitian / Survei</h3>
+                      <p>
+                        Survei ini menggunakan desain <strong>deskriptif kuantitatif</strong> dengan pendekatan <strong>cross-sectional</strong>. Pendekatan ini digunakan untuk mengukur dan menggambarkan persepsi staf rumah sakit terhadap budaya keselamatan pasien pada satu kurun waktu tertentu tanpa memberikan intervensi langsung saat pengukuran berlangsung.
+                      </p>
+                    </div>
 
-                    <h3 className="font-bold text-slate-900 pt-1">2.2 Waktu dan Lokasi</h3>
-                    <p>
-                      Dilaksanakan di seluruh instalasi/unit kerja <strong className="text-slate-900">{namaRs}</strong> pada kurun waktu survei <strong className="text-teal-700">{periodeSurvei}</strong>.
-                    </p>
+                    <div>
+                      <h3 className="font-bold text-slate-900 mb-1">2.2 Waktu dan Lokasi Pelaksanaan</h3>
+                      <div className="mb-2">
+                        <strong className="text-slate-800">Lokasi Pelaksanaan</strong>
+                        <p className="mt-1">Seluruh unit kerja/instalasi di <strong className="text-teal-700">{namaRs}</strong>, meliputi:</p>
+                        <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                          <li>Unit Pelayanan Medis</li>
+                          <li>Unit Keperawatan</li>
+                          <li>Unit Penunjang Medis</li>
+                          <li>Unit Administrasi</li>
+                          <li>Unit Manajemen</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <strong className="text-slate-800">Waktu Pelaksanaan</strong>
+                        <p className="mt-1">Survei dilaksanakan selama periode:</p>
+                        <p className="font-bold text-teal-700 mt-0.5">{periodeSurvei}</p>
+                      </div>
+                    </div>
 
-                    <h3 className="font-bold text-slate-900 pt-1">2.3 Populasi dan Sampel</h3>
-                    <p>
-                      Menggunakan teknik <strong>Total Sampling</strong>. Kuesioner berhasil dikumpulkan dari sebanyak <strong className="text-teal-700">{totalActual}</strong> responden aktif dari estimasi total target populasi <strong className="text-slate-800">{totalTarget}</strong> pegawai, dengan Response Rate mencapai <strong className="text-teal-700">{responseRateStr}</strong>.
-                    </p>
+                    <div>
+                      <h3 className="font-bold text-slate-900 mb-1">2.3 Populasi dan Sampel</h3>
+                      
+                      <div className="mb-2">
+                        <h4 className="font-semibold text-slate-800 mb-1">2.3.1 Populasi</h4>
+                        <p>Populasi dalam survei ini adalah seluruh pegawai yang bekerja di <strong className="text-teal-700">{namaRs}</strong>, baik manajemen, staf medis, keperawatan, tenaga kesehatan lainnya maupun staf administrasi/non klinis.</p>
+                      </div>
 
-                    <h3 className="font-bold text-slate-900 pt-1">2.4 Instrumen dan Metode Pengumpulan Data</h3>
-                    <p>
-                      Menggunakan instrumen resmi AHRQ SOPS® Version 2.0 yang ditranslasikan dengan skala Likert 5-poin. Pengisian dilakukan secara elektronik mandiri (e-survey) yang terjamin kerahasiaannya (anonymous).
-                    </p>
+                      <div className="mb-2">
+                        <h4 className="font-semibold text-slate-800 mb-1">2.3.2 Kriteria Inklusi dan Eksklusi</h4>
+                        <div className="mb-1.5">
+                          <strong className="text-slate-700">Kriteria Inklusi</strong>
+                          <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                            <li>Pegawai tetap maupun kontrak yang telah bekerja minimal 3 bulan.</li>
+                            <li>Memiliki interaksi langsung maupun tidak langsung terhadap pelayanan pasien.</li>
+                            <li>Bersedia mengisi kuesioner secara sukarela.</li>
+                          </ul>
+                        </div>
+                        <div>
+                          <strong className="text-slate-700">Kriteria Eksklusi</strong>
+                          <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                            <li>Pegawai yang sedang menjalani cuti panjang.</li>
+                            <li>Mahasiswa praktik.</li>
+                            <li>Siswa praktik.</li>
+                            <li>Residen yang belum menjadi pegawai rumah sakit.</li>
+                          </ul>
+                        </div>
+                      </div>
 
-                    <h3 className="font-bold text-slate-900 pt-1">2.5 Analisis Data</h3>
-                    <p>
-                      Skor dihitung sebagai Persentase Respon Positif (% Positive Response) untuk masing-masing dimensi. Hasil dikelompokkan ke dalam kategori: <strong>Kekuatan (≥ 75%)</strong>, <strong>Moderat (50% - 74%)</strong>, dan <strong>Perlu Perbaikan (&lt; 50%)</strong>.
-                    </p>
+                      <div>
+                        <h4 className="font-semibold text-slate-800 mb-1">2.3.3 Teknik Sampling dan Jumlah Sampel</h4>
+                        <div className="mb-1.5">
+                          <strong className="text-slate-700">Teknik Sampling</strong>
+                          <p className="mt-0.5">Pengambilan sampel dilakukan menggunakan:</p>
+                          <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                            <li>Total Sampling</li>
+                          </ul>
+                          <p className="mt-0.5">atau</p>
+                          <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                            <li>Proportionate Stratified Random Sampling</li>
+                          </ul>
+                          <p className="mt-0.5 italic text-slate-500">(sesuai pengaturan aplikasi).</p>
+                        </div>
+                        <div>
+                          <strong className="text-slate-700">Ukuran Sampel</strong>
+                          <p className="mt-0.5">Target jumlah responden mengikuti rekomendasi AHRQ.</p>
+                          <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                            <li>Jumlah Target Responden: <strong className="text-teal-700">{totalTarget}</strong></li>
+                            <li>Jumlah Responden Mengisi: <strong className="text-teal-700">{totalActual}</strong></li>
+                            <li>Persentase Response Rate: <strong className="text-teal-700">{responseRateStr}</strong></li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-slate-900 mb-1">2.4 Instrumen Survei</h3>
+                      <p>Instrumen yang digunakan adalah:</p>
+                      <p className="font-bold text-slate-800 my-1">AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0</p>
+                      <p>yang telah diterjemahkan ke Bahasa Indonesia.</p>
+                      <p className="mt-2">Instrumen terdiri atas 10 Dimensi Budaya Keselamatan Pasien:</p>
+                      <ol className="list-decimal pl-5 mt-1 space-y-0.5">
+                        <li>Teamwork (Kerja Sama Tim) – 3 item</li>
+                        <li>Staffing and Work Pace – 4 item</li>
+                        <li>Organizational Learning—Continuous Improvement – 3 item</li>
+                        <li>Response to Error – 4 item</li>
+                        <li>Supervisor/Manager Support – 3 item</li>
+                        <li>Management Support – 3 item</li>
+                        <li>Communication Openness – 4 item</li>
+                        <li>Reporting Patient Safety Events – 2 item</li>
+                        <li>Hospital Handoffs and Information Exchange – 3 item</li>
+                        <li>Communication About Error – 3 item</li>
+                      </ol>
+                      <p className="mt-2">Selain itu terdapat:</p>
+                      <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                        <li>Overall Patient Safety Rating</li>
+                        <li>Pertanyaan Demografi Responden</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-slate-900 mb-1">2.5 Metode Pengumpulan Data</h3>
+                      <p>Pengumpulan data dilakukan secara elektronik (e-Survey) melalui aplikasi Survei Budaya Keselamatan Pasien.</p>
+                      <p className="mt-1">Meliputi:</p>
+                      
+                      <div className="mt-2 mb-1.5">
+                        <strong className="text-slate-800">Penyebaran Kuesioner</strong>
+                        <p className="mt-0.5">Melalui koordinasi:</p>
+                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                          <li>Kepala Unit</li>
+                          <li>Kepala Ruangan</li>
+                          <li>Tim Komite Mutu</li>
+                        </ul>
+                      </div>
+
+                      <div className="mb-1.5">
+                        <strong className="text-slate-800">Prinsip Anonimitas</strong>
+                        <p className="mt-0.5">Responden tidak diminta mengisi:</p>
+                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                          <li>Nama</li>
+                          <li>NIP</li>
+                        </ul>
+                        <p className="mt-0.5">untuk menjamin kerahasiaan identitas.</p>
+                      </div>
+
+                      <div>
+                        <strong className="text-slate-800">Monitoring Response Rate</strong>
+                        <p className="mt-0.5">Monitoring dilakukan setiap hari terhadap tingkat partisipasi seluruh unit kerja.</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="font-bold text-slate-900 mb-1">2.6 Analisis Data</h3>
+                      <p>Pengolahan data mengikuti pedoman resmi:</p>
+                      <p className="font-bold text-slate-800 my-1">AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0</p>
+                      <p>meliputi:</p>
+
+                      <div className="mt-2 mb-2">
+                        <strong className="text-slate-800">Analisis Demografi</strong>
+                        <p className="mt-0.5">Menghitung:</p>
+                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                          <li>Frekuensi</li>
+                          <li>Persentase</li>
+                        </ul>
+                        <p className="mt-0.5">berdasarkan:</p>
+                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                          <li>Profesi</li>
+                          <li>Unit Kerja</li>
+                          <li>Masa Kerja</li>
+                          <li>Jam Kerja</li>
+                        </ul>
+                      </div>
+
+                      <div className="mb-2">
+                        <strong className="text-slate-800">Kalkulasi Persentase Respon Positif</strong>
+                        <div className="mt-1">
+                          <span className="font-medium">Skala Agreement:</span>
+                          <ol className="list-decimal pl-5 mt-0.5 space-y-0.5">
+                            <li>Sangat Tidak Setuju</li>
+                            <li>Tidak Setuju</li>
+                            <li>Netral</li>
+                            <li>Setuju</li>
+                            <li>Sangat Setuju</li>
+                          </ol>
+                        </div>
+                        <div className="mt-1.5">
+                          <span className="font-medium">Skala Frequency:</span>
+                          <ol className="list-decimal pl-5 mt-0.5 space-y-0.5">
+                            <li>Tidak Pernah</li>
+                            <li>Jarang</li>
+                            <li>Kadang-kadang</li>
+                            <li>Sering</li>
+                            <li>Selalu</li>
+                          </ol>
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <strong className="text-slate-800">Perhitungan Item Positif</strong>
+                        <p className="mt-0.5">Respon:</p>
+                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                          <li>4</li>
+                          <li>5</li>
+                        </ul>
+                        <p className="mt-0.5">dihitung sebagai respon positif.</p>
+                      </div>
+
+                      <div className="mb-2">
+                        <strong className="text-slate-800">Perhitungan Item Negatif</strong>
+                        <p className="mt-0.5">Respon:</p>
+                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                          <li>1</li>
+                          <li>2</li>
+                        </ul>
+                        <p className="mt-0.5">dihitung sebagai respon positif (Reverse Scoring).</p>
+                      </div>
+
+                      <div className="mb-2">
+                        <strong className="text-slate-800">Formula</strong>
+                        <div className="mt-1 p-2 bg-teal-50 border border-teal-200 rounded text-center text-[10px] font-bold text-teal-900">
+                          % Respon Positif Dimensi = (Total Jawaban Positif pada seluruh item dimensi ÷ Total Jawaban Terisi pada seluruh item dimensi) × 100%
+                        </div>
+                      </div>
+
+                      <div className="mb-2">
+                        <strong className="text-slate-800">Kriteria Penilaian</strong>
+                        <div className="mt-1 space-y-1">
+                          <div>
+                            <span className="font-bold text-teal-700">Area Keunggulan (Strengths)</span>
+                            <p>≥ 75%</p>
+                          </div>
+                          <div>
+                            <span className="font-bold text-yellow-600">Area Sedang / Netral</span>
+                            <p>50%–74%</p>
+                          </div>
+                          <div>
+                            <span className="font-bold text-red-600">Area Perlu Perbaikan</span>
+                            <p>&lt; 50%</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div>
+                        <strong className="text-slate-800">Analisis Tingkat Keselamatan Pasien</strong>
+                        <p className="mt-0.5">Menghitung distribusi persentase penilaian responden terhadap tingkat keselamatan pasien secara keseluruhan.</p>
+                      </div>
+                    </div>
                   </div>
                 </section>
               </div>
@@ -986,11 +1430,11 @@ export default function LaporanTab({
                     <div className="overflow-x-auto border border-slate-200 rounded-xl text-[10px]">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-teal-700 text-white font-bold">
-                            <th className="p-2 border-r border-teal-600">Karakteristik</th>
-                            <th className="p-2 border-r border-teal-600">Kategori</th>
-                            <th className="p-2 border-r border-teal-600 text-center">Jumlah (n)</th>
-                            <th className="p-2 text-center">Persentase (%)</th>
+                          <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[9px]">
+                            <th className="p-2.5 border-r border-white/20">Karakteristik</th>
+                            <th className="p-2.5 border-r border-white/20">Kategori</th>
+                            <th className="p-2.5 border-r border-white/20 text-center">Jumlah (n)</th>
+                            <th className="p-2.5 text-center">Persentase (%)</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
@@ -1032,73 +1476,136 @@ export default function LaporanTab({
           {/* LEMBAR 4: BAB III HASIL & PEMBAHASAN - Hasil Pengukuran 10 Dimensi */}
           <div className="w-full flex flex-col items-center">
             <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 4: BAB III — Pengukuran 10 Dimensi
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 4: BAB III — Pengukuran 10 Dimensi ({activeHospitalName})
             </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
-                <section className="space-y-4">
-                  <h3 className="font-bold text-slate-900 text-xs">3.2 Hasil Pengukuran Budaya Keselamatan Pasien (AHRQ 2.0)</h3>
-                  <p className="text-[11px] text-slate-700 leading-relaxed">
-                    Data hasil pengukuran 10 dimensi budaya keselamatan pasien di <strong className="text-slate-900">{namaRs}</strong> di bawah ini terintegrasi secara langsung dari menu Analisa Data (Hasil Pengukuran Dimensi) yang tersimpan di database Supabase. Capaian rata-rata respon positif adalah <strong className="text-teal-700 text-xs">{overallAverage.toFixed(1)}%</strong>.
+                <section className="space-y-3">
+                  <div className="border-b border-slate-200 pb-1.5">
+                    <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
+                      3.2 Hasil Pengukuran Dimensi Budaya Keselamatan Pasien {activeHospitalName}
+                    </h3>
+                  </div>
+
+                  <p className="text-[10.5px] text-slate-700 leading-relaxed">
+                    Berdasarkan hasil pengukuran budaya keselamatan pasien periode Tahun <strong className="text-slate-900">{displayYear}</strong> pada <strong className="text-slate-900">{activeHospitalName}</strong>, diperoleh rata-rata respons positif sebesar <strong className="text-teal-700 font-extrabold">{overallAverage.toFixed(1)}%</strong>. Data berikut merupakan hasil pengukuran terhadap 10 dimensi budaya keselamatan pasien yang diperoleh secara otomatis dari Menu Analisa Data dan tersimpan pada database Supabase berdasarkan akun rumah sakit yang sedang aktif.
                   </p>
 
-                  {/* Recharts Chart */}
-                  <div className="bg-slate-50 p-2 rounded-xl border border-slate-200 h-40 my-2">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={dimensionScores} margin={{ top: 5, right: 5, left: -25, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                        <XAxis dataKey="kode" tick={{ fontSize: 9, fontWeight: 700, fill: '#475569' }} />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#475569' }} />
-                        <Bar dataKey="percentage" radius={[4, 4, 0, 0]}>
-                          {dimensionScores.map((entry, index) => (
-                            <Cell 
-                              key={`cell-${index}`} 
-                              fill={entry.percentage >= 75 ? '#10b981' : entry.percentage < 50 ? '#ef4444' : '#f59e0b'} 
-                            />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                  {/* Visualisasi Detail Pengukuran Dimensi (Sesuai Visual Menu Analisa Data) */}
+                  <div className="bg-white border border-slate-200/90 p-3 rounded-xl shadow-xs my-1.5">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                      <h4 className="text-[10.5px] font-bold text-slate-800 flex items-center gap-1.5">
+                        <BarChart2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Detail Pengukuran Dimensi Budaya Keselamatan Untuk {activeHospitalName}
+                      </h4>
+                      <span className="text-[8.5px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
+                        Periode: {displayYear}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2 text-[9px] font-medium">
+                      {dimensionScores.map((row, i) => {
+                        const getBarColor = (val: number) => {
+                          if (val >= 85) return 'bg-blue-500';
+                          if (val >= 70) return 'bg-emerald-500';
+                          if (val >= 50) return 'bg-yellow-500';
+                          return 'bg-red-500';
+                        };
+
+                        return (
+                          <div key={row.id} className="flex items-center gap-2">
+                            <span className="w-5 text-center font-bold text-slate-400">{i + 1}.</span>
+                            <span className="w-52 font-semibold text-slate-700 text-[9px] truncate" title={row.nama}>
+                              {row.nama}
+                            </span>
+                            <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200">
+                              <div 
+                                style={{ width: `${Math.min(100, Math.max(0, row.percentage))}%` }}
+                                className={`h-full ${getBarColor(row.percentage)} relative transition-all duration-300`}
+                              >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                              </div>
+                            </div>
+                            <span className="w-10 text-right font-bold text-slate-800 text-[9.5px]">
+                              {row.percentage.toFixed(0)}%
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-100 flex flex-wrap gap-3 items-center justify-center text-[8px] font-bold text-slate-600">
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-red-500"></div> &lt;50% (Perlu Perbaikan)</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-yellow-500"></div> 50-69% (Cukup)</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-emerald-500"></div> 70-84% (Baik)</div>
+                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-blue-500"></div> &ge;85% (Sangat Baik)</div>
+                    </div>
                   </div>
 
                   {/* Table 3.2 10 Dimensions */}
-                  <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                  <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px] shadow-2xs">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-teal-700 text-white font-bold">
-                          <th className="p-1 border-r border-teal-600 text-center w-10">Kode</th>
-                          <th className="p-1 border-r border-teal-600">Dimensi Budaya Keselamatan</th>
-                          <th className="p-1 border-r border-teal-600 text-center w-16">Skor (%)</th>
-                          <th className="p-1 text-center w-24">Kategori</th>
+                        <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                          <th className="p-1.5 border-r border-white/20 text-center w-8">No.</th>
+                          <th className="p-1.5 border-r border-white/20 text-center w-12">Kode</th>
+                          <th className="p-1.5 border-r border-white/20">Komponen / Dimensi Budaya Keselamatan Pasien</th>
+                          <th className="p-1.5 border-r border-white/20 text-center w-24">Persentase Respons Positif (%)</th>
+                          <th className="p-1.5 text-center w-36">Kategori Penilaian</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {dimensionScores.map((dim, idx) => (
                           <tr key={dim.id} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                            <td className="p-1 text-center font-extrabold border-r border-slate-200">{dim.kode}</td>
+                            <td className="p-1 text-center font-bold text-slate-500 border-r border-slate-200">{idx + 1}.</td>
+                            <td className="p-1 text-center font-extrabold border-r border-slate-200 text-teal-800">{dim.kode}</td>
                             <td className="p-1 border-r border-slate-200 font-semibold text-slate-800">{dim.nama}</td>
-                            <td className="p-1 border-r border-slate-200 text-center font-black">{dim.percentage.toFixed(1)}%</td>
+                            <td className="p-1 border-r border-slate-200 text-center font-black text-slate-900">{dim.percentage.toFixed(1)}%</td>
                             <td className="p-1 text-center font-bold">
                               {dim.percentage >= 75 ? (
-                                <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 text-[8px]">Kekuatan</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[8px] font-extrabold border border-emerald-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Area Kekuatan
+                                </span>
                               ) : dim.percentage < 50 ? (
-                                <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-800 text-[8px]">Perbaikan</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 text-red-800 text-[8px] font-extrabold border border-red-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span> Area Perbaikan
+                                </span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[8px]">Moderat</span>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[8px] font-extrabold border border-amber-200">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Moderat
+                                </span>
                               )}
                             </td>
                           </tr>
                         ))}
                       </tbody>
+                      <tfoot>
+                        <tr className="bg-teal-50/80 font-extrabold text-teal-950 border-t border-slate-300">
+                          <td colSpan={3} className="p-1.5 text-right uppercase text-[8.5px] border-r border-slate-200">Rata-Rata Seluruh 10 Dimensi</td>
+                          <td className="p-1.5 text-center text-teal-800 font-black text-[9.5px] border-r border-slate-200">{overallAverage.toFixed(1)}%</td>
+                          <td className="p-1.5 text-center text-[8px] text-teal-700 font-semibold">Skor Terintegrasi Realtime</td>
+                        </tr>
+                      </tfoot>
                     </table>
                   </div>
-                  <p className="text-[9px] text-slate-400 italic text-right">*Data 10 dimensi terintegrasi secara otomatis dari menu Analisa Data (Hasil Pengukuran Dimensi {namaRs}).</p>
+
+                  {/* Interpretasi Otomatis Box */}
+                  <div className="bg-teal-50/70 border border-teal-200/90 p-2.5 rounded-xl space-y-1 text-[10px] text-slate-700">
+                    <h4 className="font-extrabold text-teal-900 flex items-center gap-1 text-[10.5px]">
+                      <Sparkles className="w-3.5 h-3.5 text-teal-600" /> Interpretasi Otomatis
+                    </h4>
+                    <p className="leading-relaxed">
+                      Berdasarkan hasil survei budaya keselamatan pasien di <strong className="text-slate-900">{activeHospitalName}</strong>, diperoleh bahwa dimensi dengan capaian tertinggi adalah <strong className="text-emerald-700">{highestDim?.nama || '-'} ({highestDim?.kode})</strong> sebesar <strong className="text-emerald-700">{highestDim?.percentage.toFixed(1) || 0}%</strong>, sedangkan dimensi dengan nilai terendah adalah <strong className="text-red-700">{lowestDim?.nama || '-'} ({lowestDim?.kode})</strong> sebesar <strong className="text-red-700">{lowestDim?.percentage.toFixed(1) || 0}%</strong>. Capaian rata-rata respon positif seluruh 10 dimensi berada pada angka <strong className="text-teal-700 font-extrabold">{overallAverage.toFixed(1)}%</strong>.
+                    </p>
+                  </div>
+
+                  <p className="text-[8.5px] text-slate-400 italic text-right">*Data 10 dimensi terintegrasi secara otomatis dari menu Analisa Data ({activeHospitalName}).</p>
                 </section>
               </div>
 
@@ -1176,10 +1683,10 @@ export default function LaporanTab({
                       <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
                         <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className="bg-indigo-900 text-white font-bold">
-                              <th className="p-1.5 border-r border-indigo-700">Dimensi</th>
-                              <th className="p-1.5 text-center border-r border-indigo-700">{namaRs}</th>
-                              <th className="p-1.5 text-center border-r border-indigo-700">Benchmark</th>
+                            <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                              <th className="p-1.5 border-r border-white/20">Dimensi</th>
+                              <th className="p-1.5 text-center border-r border-white/20">{namaRs}</th>
+                              <th className="p-1.5 text-center border-r border-white/20">Benchmark</th>
                               <th className="p-1.5 text-center">Selisih</th>
                             </tr>
                           </thead>
@@ -1213,55 +1720,95 @@ export default function LaporanTab({
           {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Pembahasan Analisis Kualitatif */}
           <div className="w-full flex flex-col items-center">
             <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 6: BAB III — Pembahasan Kualitatif
+              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 6: BAB III — Analisis Naratif Otomatis ({activeHospitalName})
             </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span>Analisis Naratif Budaya Keselamatan Pasien</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
-                <section className="space-y-4">
-                  <h3 className="font-bold text-slate-900 text-xs">3.3 Pembahasan Analisis Kualitatif</h3>
+                <section className="space-y-3.5">
+                  <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">3.3 Analisis Naratif Otomatis Hasil Pengukuran Dimensi</h3>
 
-                  <div className="space-y-3 text-[11px] text-slate-700 leading-relaxed">
-                    <h4 className="font-bold text-emerald-800 flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      3.3.1 Area Keunggulan (Strengths ≥ 75%)
-                    </h4>
-                    {strengths.length > 0 ? (
-                      <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 text-[10px]">
-                        <strong>{strengths[0].kode} - {strengths[0].nama} ({strengths[0].percentage.toFixed(1)}%):</strong> {strengths[0].interpretasi}
-                      </div>
-                    ) : (
-                      <p className="italic text-[10px] text-slate-500 pl-2">Belum ada dimensi keselamatan yang menembus target kekuatan ≥ 75%.</p>
-                    )}
+                  <p className="text-[10px] text-slate-600 leading-relaxed">
+                    Berikut adalah analisis naratif dinamis berdasarkan pengelompokan tingkat capaian budaya keselamatan pasien di <strong className="text-slate-800">{activeHospitalName}</strong> yang diperbarui secara otomatis dari database Supabase:
+                  </p>
 
-                    <h4 className="font-bold text-red-800 flex items-center gap-1 pt-2">
-                      <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-                      3.3.2 Area yang Memerlukan Perbaikan Kritis (Areas for Improvement &lt; 50%)
-                    </h4>
-                    {improvements.length > 0 ? (
-                      <div className="bg-red-50/50 p-2.5 rounded-xl border border-red-100 text-[10px]">
-                        <strong>{improvements[0].kode} - {improvements[0].nama} ({improvements[0].percentage.toFixed(1)}%):</strong> {improvements[0].interpretasi}
-                      </div>
-                    ) : (
-                      <p className="italic text-[10px] text-slate-500 pl-2">Tidak terdeteksi adanya dimensi kritis di bawah ambang batas 50%.</p>
-                    )}
+                  <div className="space-y-3 text-[10.5px] text-slate-700 leading-relaxed">
+                    {/* Kekuatan Organisasi (≥ 75%) */}
+                    <div className="space-y-1">
+                      <h4 className="font-bold text-emerald-800 flex items-center gap-1 text-[10.5px]">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        3.3.1 Kekuatan Organisasi (Capaian Respon Positif ≥ 75%)
+                      </h4>
+                      {strengths.length > 0 ? (
+                        <div className="space-y-1.5 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-200/80 text-[9.5px]">
+                          {strengths.map(s => (
+                            <div key={s.kode} className="flex flex-col gap-0.5 border-b border-emerald-100/80 last:border-none pb-1 last:pb-0">
+                              <span className="font-bold text-emerald-950">
+                                • {s.kode} - {s.nama} ({s.percentage.toFixed(1)}%):
+                              </span>
+                              <span className="text-slate-700 pl-2.5">{s.interpretasi}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="italic text-[9.5px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                          Saat ini belum ada dimensi yang mencapai target area kekuatan (≥ 75%). Diperlukan strategi penguatan terpadu di seluruh unit kerja {activeHospitalName}.
+                        </p>
+                      )}
+                    </div>
 
-                    <h4 className="font-bold text-amber-800 flex items-center gap-1 pt-2">
-                      <Activity className="w-3.5 h-3.5 text-amber-600" />
-                      3.3.3 Area Sedang / Moderat (50% - 74%)
-                    </h4>
-                    {moderates.length > 0 ? (
-                      <div className="bg-amber-50/50 p-2.5 rounded-xl border border-amber-100 text-[10px]">
-                        <strong>{moderates[0].kode} - {moderates[0].nama} ({moderates[0].percentage.toFixed(1)}%):</strong> {moderates[0].interpretasi}
-                      </div>
-                    ) : (
-                      <p className="italic text-[10px] text-slate-500 pl-2">Seluruh dimensi telah keluar dari status moderat.</p>
-                    )}
+                    {/* Area Moderat (50% - 74%) */}
+                    <div className="space-y-1 pt-1">
+                      <h4 className="font-bold text-amber-800 flex items-center gap-1 text-[10.5px]">
+                        <Activity className="w-3.5 h-3.5 text-amber-600" />
+                        3.3.2 Area yang Masih Perlu Ditingkatkan (Capaian 50% - 74%)
+                      </h4>
+                      {moderates.length > 0 ? (
+                        <div className="space-y-1.5 bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/80 text-[9.5px]">
+                          {moderates.map(m => (
+                            <div key={m.kode} className="flex flex-col gap-0.5 border-b border-amber-100/80 last:border-none pb-1 last:pb-0">
+                              <span className="font-bold text-amber-950">
+                                • {m.kode} - {m.nama} ({m.percentage.toFixed(1)}%):
+                              </span>
+                              <span className="text-slate-700 pl-2.5">{m.interpretasi}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="italic text-[9.5px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                          Tidak ada dimensi yang berada dalam kategori moderat (50% - 74%).
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Perbaikan Kritis (< 50%) */}
+                    <div className="space-y-1 pt-1">
+                      <h4 className="font-bold text-red-800 flex items-center gap-1 text-[10.5px]">
+                        <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                        3.3.3 Prioritas Utama Perbaikan (Capaian &lt; 50%)
+                      </h4>
+                      {improvements.length > 0 ? (
+                        <div className="space-y-1.5 bg-red-50/60 p-2.5 rounded-xl border border-red-200/80 text-[9.5px]">
+                          {improvements.map(imp => (
+                            <div key={imp.kode} className="flex flex-col gap-0.5 border-b border-red-100/80 last:border-none pb-1 last:pb-0">
+                              <span className="font-bold text-red-950">
+                                • {imp.kode} - {imp.nama} ({imp.percentage.toFixed(1)}%):
+                              </span>
+                              <span className="text-slate-700 pl-2.5">{imp.interpretasi}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100 text-[9.5px] text-emerald-800 font-medium">
+                          Tidak ada dimensi yang berada pada kategori perbaikan kritis (&lt; 50%). Ini menunjukkan budaya keselamatan di {activeHospitalName} berjalan stabil tanpa hambatan kritis.
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </section>
               </div>

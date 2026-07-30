@@ -438,7 +438,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
             <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
               <motion.div 
                 variants={sapaanVariants}
-                className="text-[22px] md:text-[36px] font-black text-[#435492] leading-tight md:leading-none tracking-tight whitespace-normal break-words font-['Poppins',sans-serif]"
+                className="text-[22px] md:text-[36px] font-black text-[#5CC8C9] leading-tight md:leading-none tracking-tight whitespace-normal break-words font-['Poppins',sans-serif]"
               >
                 {greeting.text}
               </motion.div>
@@ -462,9 +462,9 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
             {/* Row 2: Hospital Title with Gradient Accent & Glow */}
             <motion.h2 
               variants={namaRsVariants}
-              className="text-[28px] md:text-[48px] font-extrabold text-[#435492] tracking-tight leading-tight md:leading-none break-words whitespace-normal font-sans"
+              className="text-[28px] md:text-[48px] font-extrabold text-[#2FA7A7] tracking-tight leading-tight md:leading-none break-words whitespace-normal font-sans"
             >
-              Hai, Sobat <span className="bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600 bg-clip-text text-transparent drop-shadow-xs font-extrabold">{displayHospital}</span>
+              Hai, Sobat <span className="text-[#2FA7A7] font-extrabold">{displayHospital}</span>
             </motion.h2>
           </div>
 
@@ -472,9 +472,9 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
           <div className="space-y-2">
             <motion.p 
               variants={subjudulVariants}
-              className="text-[18px] md:text-[22px] font-bold text-[#435492] leading-tight"
+              className="text-[18px] md:text-[22px] font-bold text-[#1E6F73] leading-tight"
             >
-              Selamat Datang di Aplikasi <span className="font-extrabold bg-gradient-to-r from-teal-600 via-teal-500 to-blue-600 bg-clip-text text-transparent">Sistem Survei Budaya Keselamatan Pasien</span>
+              Selamat Datang di Aplikasi <span className="font-extrabold text-[#1E6F73]">Sistem Survei Budaya Keselamatan Pasien</span>
             </motion.p>
             <motion.p 
               variants={deskripsiVariants}
