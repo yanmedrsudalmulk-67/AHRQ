@@ -132,10 +132,19 @@ export default function LaporanTab({
     return activeSurveys.reduce((acc, s) => acc + (s.jumlahResponden || 1), 0);
   }, [activeSurveys]);
 
+  const linkConfig = useMemo(() => {
+    const configRow = surveys.find(s => s.id.startsWith('LINK_CONFIG_'));
+    return configRow?.dimensiScores || null;
+  }, [surveys]);
+
   const totalTarget = useMemo(() => {
+    if (linkConfig && linkConfig.maxRespondents) {
+      const parsed = parseInt(linkConfig.maxRespondents, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
     // Standard estimation or target multiplier (e.g. 1.25x or min 100)
     return Math.max(Math.ceil(totalActual * 1.25), 100);
-  }, [totalActual]);
+  }, [totalActual, linkConfig]);
 
   const responseRateNum = useMemo(() => {
     if (totalTarget === 0) return 0;
@@ -146,11 +155,16 @@ export default function LaporanTab({
 
   // Date range
   const periodeSurvei = useMemo(() => {
+    if (linkConfig && (linkConfig.startDate || linkConfig.createdAt) && linkConfig.expiryDate) {
+       const start = new Date(linkConfig.startDate || linkConfig.createdAt).toLocaleDateString('id-ID');
+       const end = new Date(linkConfig.expiryDate).toLocaleDateString('id-ID');
+       return `${start} s/d ${end}`;
+    }
     if (activeSurveys.length === 0) return 'Januari - Desember ' + (selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear);
     const dates = activeSurveys.map(s => s.tanggalInput).filter(Boolean);
     if (dates.length === 0) return 'Periode Tahun ' + selectedYear;
     return `${dates[0]} s/d ${dates[dates.length - 1]}`;
-  }, [activeSurveys, selectedYear]);
+  }, [activeSurveys, selectedYear, linkConfig]);
 
   // 10 Dimensions Scores
   const dimensionScores = useMemo(() => {
@@ -679,10 +693,10 @@ export default function LaporanTab({
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            padding-top: 3cm !important;
-            padding-bottom: 3cm !important;
-            padding-left: 4cm !important;
-            padding-right: 3cm !important;
+            padding-top: 2.5cm !important;
+            padding-bottom: 2.5cm !important;
+            padding-left: 2.5cm !important;
+            padding-right: 2.5cm !important;
             box-sizing: border-box !important;
             background: white !important;
             display: flex !important;
@@ -704,10 +718,10 @@ export default function LaporanTab({
           min-height: 297mm;
           background-color: white;
           box-sizing: border-box;
-          padding-top: 3cm;
-          padding-bottom: 3cm;
-          padding-left: 4cm;
-          padding-right: 3cm;
+          padding-top: 2.5cm;
+          padding-bottom: 2.5cm;
+          padding-left: 2.5cm;
+          padding-right: 2.5cm;
           box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
           border: 1px solid #e2e8f0;
           border-radius: 4px;
@@ -1501,10 +1515,10 @@ export default function LaporanTab({
                   </p>
 
                   {/* Visualisasi Detail Pengukuran Dimensi (Sesuai Visual Menu Analisa Data) */}
-                  <div className="bg-white border border-slate-200/90 p-3 rounded-xl shadow-xs my-1.5">
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-                      <h4 className="text-[10.5px] font-bold text-slate-800 flex items-center gap-1.5">
-                        <BarChart2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <div className="bg-white border border-slate-200/90 p-4 rounded-2xl shadow-xs my-2">
+                    <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                      <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
+                        <BarChart2 className="w-4 h-4 text-emerald-600" />
                         Detail Pengukuran Dimensi Budaya Keselamatan Untuk {activeHospitalName}
                       </h4>
                       <span className="text-[8.5px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
@@ -1512,42 +1526,56 @@ export default function LaporanTab({
                       </span>
                     </div>
 
-                    <div className="space-y-2 text-[9px] font-medium">
-                      {dimensionScores.map((row, i) => {
-                        const getBarColor = (val: number) => {
-                          if (val >= 85) return 'bg-blue-500';
-                          if (val >= 70) return 'bg-emerald-500';
-                          if (val >= 50) return 'bg-yellow-500';
-                          return 'bg-red-500';
-                        };
+                    <div className="w-full text-[9.5px]">
+                      {/* Table Header Row */}
+                      <div className="grid grid-cols-12 gap-2 pb-2 mb-2 border-b border-slate-100 font-bold uppercase tracking-wider text-slate-400 text-[8.5px]">
+                        <div className="col-span-1 text-left pl-1">NO.</div>
+                        <div className="col-span-5 text-left">KOMPONEN BUDAYA KESELAMATAN PASIEN</div>
+                        <div className="col-span-6 text-center">PERSENTASE RESPONS POSITIF</div>
+                      </div>
 
-                        return (
-                          <div key={row.id} className="flex items-center gap-2">
-                            <span className="w-5 text-center font-bold text-slate-400">{i + 1}.</span>
-                            <span className="w-52 font-semibold text-slate-700 text-[9px] truncate" title={row.nama}>
-                              {row.nama}
-                            </span>
-                            <div className="flex-1 bg-slate-100 rounded-r-md h-5 relative overflow-hidden flex items-center border-y border-r border-slate-200">
-                              <div 
-                                style={{ width: `${Math.min(100, Math.max(0, row.percentage))}%` }}
-                                className={`h-full ${getBarColor(row.percentage)} relative transition-all duration-300`}
-                              >
-                                <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                      {/* Dimension Rows */}
+                      <div className="space-y-2 font-medium">
+                        {dimensionScores.map((row, i) => {
+                          const getBarColor = (val: number) => {
+                            if (val >= 85) return 'bg-blue-500';
+                            if (val >= 70) return 'bg-emerald-500';
+                            if (val >= 50) return 'bg-yellow-500';
+                            return 'bg-red-500';
+                          };
+
+                          return (
+                            <div key={row.id} className="grid grid-cols-12 gap-2 items-center py-1 border-b border-slate-50 last:border-b-0">
+                              <div className="col-span-1 font-bold text-slate-400 text-left text-[10px] pl-1">
+                                {i + 1}.
+                              </div>
+                              <div className="col-span-5 font-bold text-slate-700 text-[9.5px] leading-snug whitespace-normal break-words pr-2">
+                                {row.nama}
+                              </div>
+                              <div className="col-span-6 flex items-center gap-2">
+                                <div className="flex-1 bg-slate-100 rounded-lg h-5 relative overflow-hidden flex items-center border border-slate-200/80 shadow-xs">
+                                  <div 
+                                    style={{ width: `${Math.min(100, Math.max(0, row.percentage))}%` }}
+                                    className={`h-full ${getBarColor(row.percentage)} relative transition-all duration-300 rounded-l-md`}
+                                  >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                  </div>
+                                </div>
+                                <span className="w-10 text-right font-extrabold text-slate-900 text-[10px] shrink-0">
+                                  {row.percentage.toFixed(0)}%
+                                </span>
                               </div>
                             </div>
-                            <span className="w-10 text-right font-bold text-slate-800 text-[9.5px]">
-                              {row.percentage.toFixed(0)}%
-                            </span>
-                          </div>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div className="mt-3 pt-2 border-t border-slate-100 flex flex-wrap gap-3 items-center justify-center text-[8px] font-bold text-slate-600">
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-red-500"></div> &lt;50% (Perlu Perbaikan)</div>
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-yellow-500"></div> 50-69% (Cukup)</div>
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-emerald-500"></div> 70-84% (Baik)</div>
-                      <div className="flex items-center gap-1"><div className="w-2.5 h-2.5 rounded-xs bg-blue-500"></div> &ge;85% (Sangat Baik)</div>
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-3.5 items-center justify-center text-[8px] font-bold text-slate-600">
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-xs bg-red-500"></div> &lt;50% (Perlu Perbaikan)</div>
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-xs bg-yellow-500"></div> 50-69% (Cukup)</div>
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-xs bg-emerald-500"></div> 70-84% (Baik)</div>
+                      <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-xs bg-blue-500"></div> &ge;85% (Sangat Baik)</div>
                     </div>
                   </div>
 

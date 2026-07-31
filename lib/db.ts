@@ -256,7 +256,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
             .order('created_at', { ascending: false });
 
           if (!error && data) {
-            return data.map(mapToSurveyData).filter(isSurveyResponse);
+            return data.map(mapToSurveyData);
           }
           if (error) {
             if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
@@ -289,7 +289,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
               .order('created_at', { ascending: false });
 
             if (!error && data) {
-              return data.map(mapToSurveyData).filter(isSurveyResponse);
+              return data.map(mapToSurveyData);
             }
             if (error && !error.message?.includes('Failed to fetch') && !error.details?.includes('Failed to fetch')) {
               console.error("Fallback query failed:", error.message || error);
@@ -307,7 +307,7 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
           .order('created_at', { ascending: false });
 
         if (!error && data) {
-          return data.map(mapToSurveyData).filter(isSurveyResponse);
+          return data.map(mapToSurveyData);
         }
         if (error) {
           if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {

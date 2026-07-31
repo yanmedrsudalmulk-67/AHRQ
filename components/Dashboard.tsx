@@ -200,6 +200,36 @@ export default function Dashboard({
     return validSurveys;
   }, [validSurveys, role, selectedRsFilter]);
 
+  const surveysWithConfig = useMemo(() => {
+    // Include the actual surveys PLUS the link config for this specific RS
+    const baseSurveys = surveys.filter(s => 
+      (isSurveyResponse(s) || s.id.startsWith('LINK_CONFIG_')) && 
+      s.namaRs !== '_MASTER_CONFIG_' && 
+      s.id !== 'MASTER_BENCHMARK'
+    );
+    if (role === 'admin') {
+      if (selectedRsFilter === 'admin') {
+        return baseSurveys.filter(s => {
+          const surveyUser = (s.dimensiScores as any)?.username || s.unitKerja;
+          return surveyUser?.toLowerCase() === 'admin' || s.namaRs === 'Administrator Pusat' || s.namaRs === '_LINK_CONFIG_';
+        });
+      } else if (selectedRsFilter === 'all') {
+        return baseSurveys;
+      } else {
+        return baseSurveys.filter(s => {
+          const surveyUser = (s.dimensiScores as any)?.username || s.unitKerja;
+          const surveyHospitalId = (s.dimensiScores as any)?.hospital_id;
+          return (surveyUser?.toLowerCase() === selectedRsFilter.toLowerCase() || 
+                  surveyHospitalId === selectedRsFilter || 
+                  s.namaRs.toLowerCase() === selectedRsFilter.toLowerCase() ||
+                  (s.namaRs === '_LINK_CONFIG_' && surveyUser?.toLowerCase() === selectedRsFilter.toLowerCase()));
+        });
+      }
+    }
+    return baseSurveys;
+  }, [surveys, role, selectedRsFilter]);
+
+
   const availableYears = useMemo(() => {
     const extractYear = (tanggalStr?: string) => {
       if (!tanggalStr) return new Date().getFullYear().toString();
@@ -851,7 +881,7 @@ export default function Dashboard({
 
         {activeTab === 'laporan' && (
           <LaporanTab 
-            surveys={activeHospitalSurveys}
+            surveys={surveysWithConfig}
             role={role}
             identifier={role === 'admin' ? selectedRsFilter : identifier}
             hospitalId={role === 'admin' ? selectedRsFilter : (hospitalId || '')}

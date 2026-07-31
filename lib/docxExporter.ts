@@ -216,7 +216,7 @@ export async function exportReportToDocx(data: ReportData) {
               width: 11906, // A4 Portrait width in dxa (210mm)
               height: 16838, // A4 Portrait height in dxa (297mm)
             },
-            margin: { top: 1700, bottom: 1700, left: 2270, right: 1700 }, // Top/Bottom/Right: 3cm (~1700 dxa), Left: 4cm (~2270 dxa)
+            margin: { top: 1417, bottom: 1417, left: 1417, right: 1417 }, // 2.5cm margin all around (~1417 dxa)
           },
         },
         headers: {

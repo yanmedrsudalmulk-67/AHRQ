@@ -32,7 +32,8 @@ import {
   Copy,
   Link as LinkIcon,
   ExternalLink,
-  Calendar
+  Calendar,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { isSupabaseConnected, getSupabaseClient } from '../lib/supabase';
@@ -350,6 +351,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
   // States for advanced configurations
   const [customDomain, setCustomDomain] = useState('');
+  const [startDate, setStartDate] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [maxRespondents, setMaxRespondents] = useState('');
   const [preventDuplicate, setPreventDuplicate] = useState(true);
@@ -366,6 +368,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
   useEffect(() => {
     if (surveyLinkConfig) {
       setCustomDomain(surveyLinkConfig.customDomain || '');
+      setStartDate(surveyLinkConfig.startDate || '');
       setExpiryDate(surveyLinkConfig.expiryDate || '');
       setMaxRespondents(surveyLinkConfig.maxRespondents || '');
       setPreventDuplicate(surveyLinkConfig.preventDuplicate !== false);
@@ -404,6 +407,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           token: scores.token || latest.tanggal_input,
           isActive: latest.jumlah_responden === 1,
           createdAt: scores.createdAt || latest.created_at || new Date().toISOString(),
+          startDate: scores.startDate || '',
           respondentCount: scores.respondentCount || 0,
           expiryDate: scores.expiryDate || '',
           maxRespondents: scores.maxRespondents || '',
@@ -477,6 +481,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
         token: token,
         isActive: true,
         createdAt: newConfig.dimensi_scores.createdAt,
+        startDate: '',
         respondentCount: 0,
         expiryDate: '',
         maxRespondents: '',
@@ -490,7 +495,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
     }
   };
 
-  const updateSurveyLinkConfig = async (fieldsToUpdate: any) => {
+  const updateSurveyLinkConfig = async (fieldsToUpdate: any, showSuccessMsg: boolean = false) => {
     if (!surveyLinkConfig) return;
     const supabase = getSupabaseClient();
     if (!supabase) return;
@@ -509,6 +514,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           token: mergedConfig.token,
           rsName: currentRsName,
           createdAt: mergedConfig.createdAt,
+          startDate: mergedConfig.startDate || '',
           respondentCount: mergedConfig.respondentCount,
           expiryDate: mergedConfig.expiryDate || '',
           maxRespondents: mergedConfig.maxRespondents || '',
@@ -527,12 +533,16 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
       if (!error) {
         setSurveyLinkConfig(mergedConfig);
+        if (showSuccessMsg) {
+          showNotification("Pengaturan tautan survei berhasil disimpan!", "success");
+        }
       } else {
         console.error("Gagal melakukan update config link", error);
-        alert(`Gagal menyimpan pengaturan link: ${error.message || 'Kesalahan database'}`);
+        showNotification(`Gagal menyimpan pengaturan link: ${error.message || 'Kesalahan database'}`, "error");
       }
     } catch (e) {
       console.error("Kesalahan saat mengupdate link config", e);
+      showNotification("Terjadi kesalahan saat menyimpan pengaturan link", "error");
     } finally {
       setIsLoadingLink(false);
     }
@@ -540,7 +550,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
   const toggleSurveyLinkStatus = async () => {
     if (!surveyLinkConfig) return;
-    await updateSurveyLinkConfig({ isActive: !surveyLinkConfig.isActive });
+    await updateSurveyLinkConfig({ isActive: !surveyLinkConfig.isActive }, true);
   };
 
   useEffect(() => {
@@ -2681,7 +2691,16 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
 
                     <div className="grid grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Masa Berlaku</label>
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Periode Mulai</label>
+                        <input 
+                          type="date" 
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-emerald-500"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Periode Selesai / Masa Berlaku</label>
                         <input 
                           type="date" 
                           value={expiryDate}
@@ -2689,16 +2708,17 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                           className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-emerald-500"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Maks. Responden</label>
-                        <input 
-                          type="number" 
-                          placeholder="Tanpa Batas" 
-                          value={maxRespondents}
-                          onChange={(e) => setMaxRespondents(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-emerald-500"
-                        />
-                      </div>
+                    </div>
+
+                    <div className="space-y-1 mt-3">
+                      <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Target Responden</label>
+                      <input 
+                        type="number" 
+                        placeholder="Tanpa Batas" 
+                        value={maxRespondents}
+                        onChange={(e) => setMaxRespondents(e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 outline-none focus:border-emerald-500"
+                      />
                     </div>
 
                     <div className="flex items-center justify-between pt-1">
@@ -2714,14 +2734,24 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       />
                     </div>
 
+                    
+                    {notification && (
+                      <div className={`p-2 rounded-lg text-xs font-medium flex items-center gap-2 ${
+                        notification.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'
+                      }`}>
+                        {notification.type === 'success' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                        <span>{notification.message}</span>
+                      </div>
+                    )}
                     <button
-                      onClick={() => {
-                        updateSurveyLinkConfig({ customDomain, expiryDate, maxRespondents, preventDuplicate });
-                        showNotification("Pengaturan tautan survei berhasil disimpan!", "success");
+                      onClick={async () => {
+                        await updateSurveyLinkConfig({ customDomain, startDate, expiryDate, maxRespondents, preventDuplicate }, true);
                       }}
-                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-600/10 cursor-pointer"
+                      disabled={isLoadingLink}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-400 text-white py-2 rounded-lg text-xs font-bold transition-all shadow-md shadow-emerald-600/10 cursor-pointer flex items-center justify-center gap-2"
                     >
-                      Simpan Pengaturan
+                      {isLoadingLink ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                      {isLoadingLink ? 'Menyimpan...' : 'Simpan Pengaturan'}
                     </button>
                   </div>
                   
@@ -2767,39 +2797,42 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       )}
 
       {/* Toast Notification */}
-      <AnimatePresence>
-        {notification && (
-          <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.9 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.9 }}
-            className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[10001] max-w-md w-[calc(100%-2rem)] p-4 rounded-xl shadow-2xl border flex items-start gap-3 backdrop-blur-md ${
-              notification.type === 'success'
-                ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200'
-                : notification.type === 'error'
-                ? 'bg-rose-950/90 border-rose-500/30 text-rose-200'
-                : 'bg-slate-900/90 border-slate-700/50 text-slate-200'
-            }`}
-          >
-            {notification.type === 'success' ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-            ) : notification.type === 'error' ? (
-              <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
-            ) : (
-              <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
-            )}
-            <div className="flex-1 text-sm leading-snug">
-              {notification.message}
-            </div>
-            <button
-              onClick={() => setNotification(null)}
-              className="text-slate-400 hover:text-slate-200 shrink-0 transition-colors"
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ opacity: 0, y: 50, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 20, scale: 0.9 }}
+              className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-[10001] max-w-md w-[calc(100%-2rem)] p-4 rounded-xl shadow-2xl border flex items-start gap-3 backdrop-blur-md ${
+                notification.type === 'success'
+                  ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-200'
+                  : notification.type === 'error'
+                  ? 'bg-rose-950/90 border-rose-500/30 text-rose-200'
+                  : 'bg-slate-900/90 border-slate-700/50 text-slate-200'
+              }`}
             >
-              <X className="w-4 h-4" />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {notification.type === 'success' ? (
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+              ) : notification.type === 'error' ? (
+                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+              ) : (
+                <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+              )}
+              <div className="flex-1 text-sm leading-snug">
+                {notification.message}
+              </div>
+              <button
+                onClick={() => setNotification(null)}
+                className="text-slate-400 hover:text-slate-200 shrink-0 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   );
 }
