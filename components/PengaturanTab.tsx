@@ -1956,7 +1956,7 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
       {activeSettingsSection === 'pengesahan' && (
         <form onSubmit={handleSavePengesahan} className="space-y-6 animate-fadeIn">
           {/* Header Banner */}
-          <div className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
+          <div className="bg-[#14B8A6] rounded-2xl p-6 text-white shadow-lg relative overflow-hidden">
             <div className="relative z-10 space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-600/50 border border-teal-400/30 text-xs font-semibold backdrop-blur-md">
                 <FileCheck className="w-3.5 h-3.5 text-teal-200" /> Form Lembar Pengesahan Laporan Resmi

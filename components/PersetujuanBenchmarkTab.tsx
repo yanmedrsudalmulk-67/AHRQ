@@ -341,7 +341,7 @@ export default function PersetujuanBenchmarkTab({
       </AnimatePresence>
 
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white p-6 md:p-8 rounded-2xl shadow-xl relative overflow-hidden border border-teal-500/30">
+      <div className="bg-[#14B8A6] text-white p-6 md:p-8 rounded-2xl shadow-xl relative overflow-hidden border border-teal-500/30">
         <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
           <div className="space-y-2">
@@ -767,7 +767,7 @@ export default function PersetujuanBenchmarkTab({
               className="bg-white rounded-2xl shadow-2xl max-w-xl w-full overflow-hidden border border-slate-200 font-sans"
             >
               {/* Modal Header */}
-              <div className="p-5 bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white flex items-center justify-between">
+              <div className="p-5 bg-[#14B8A6] text-white flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-blue-500/20 text-emerald-400 rounded-xl border border-blue-400/30">
                     <ShieldCheck className="w-6 h-6" />

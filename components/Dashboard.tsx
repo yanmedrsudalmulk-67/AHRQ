@@ -439,7 +439,7 @@ export default function Dashboard({
         </header>
 
         {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-teal-950/45 bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-gradient-to-b md:from-[#14B8A6] md:via-[#0F766E] md:to-[#0A3335] md:pt-5 md:pb-5`}>
+        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-teal-950/45 bg-[#14B8A6] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-[#14B8A6] md:pt-5 md:pb-5`}>
           
           {/* Tombol Collapse / Hide Sidebar - Terletak Sejajar Dengan Tulisan AHRQ SOPS v2.0 */}
           <button
@@ -472,7 +472,7 @@ export default function Dashboard({
               </div>
               {!isSidebarCollapsed && (
                 <div className="w-full overflow-hidden text-center transition-all duration-200">
-                  <span className="font-sans font-black text-[20px] text-[#f7fcfc] tracking-tight block leading-snug">
+                  <span className="font-sans font-black text-[20px] text-[#1e6f73] tracking-tight block leading-snug">
                     Medclin
                   </span>
                   <span className="font-sans font-extrabold text-[18px] text-[#f5fbfc] tracking-tight block leading-snug">

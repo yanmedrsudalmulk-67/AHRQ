@@ -1094,7 +1094,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       <div className="sticky top-0 z-30 p-4 md:p-6 pb-2">
         <header 
           id="survey-sticky-header" 
-          className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white border border-teal-500/30 shadow-xl shadow-teal-900/20 rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
+          className="bg-[#14B8A6] text-white border border-teal-500/30 shadow-xl shadow-teal-900/20 rounded-[24px] p-5 md:p-6 flex flex-col gap-5 relative overflow-hidden"
         >
           {/* Subtle gradient background effect */}
           <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
