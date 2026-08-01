@@ -1,4 +1,5 @@
 import { getSupabaseClient } from './supabase';
+export { getSupabaseClient };
 import bcrypt from 'bcryptjs';
 
 export interface SurveyData {
@@ -1665,12 +1666,7 @@ export interface BenchmarkAuditLog {
 const LOCAL_BENCHMARK_REQUESTS_KEY = 'ahrq_benchmark_requests_v1';
 const LOCAL_BENCHMARK_AUDIT_LOGS_KEY = 'ahrq_benchmark_audit_logs_v1';
 
-export async function getBenchmarkAuditLogs(hospitalId?: string): Promise<BenchmarkAuditLog[]> {
-  // PRIVACY MANDATE: Admin Utama ('admin') or unauthenticated calls MUST NOT access inter-hospital benchmark logs!
-  if (!hospitalId || hospitalId === 'admin') {
-    return [];
-  }
-
+export async function getRawBenchmarkAuditLogsInternal(): Promise<BenchmarkAuditLog[]> {
   const supabase = getSupabaseClient();
   let logs: BenchmarkAuditLog[] = [];
 
@@ -1709,6 +1705,17 @@ export async function getBenchmarkAuditLogs(hospitalId?: string): Promise<Benchm
     }
   }
 
+  return logs;
+}
+
+export async function getBenchmarkAuditLogs(hospitalId?: string): Promise<BenchmarkAuditLog[]> {
+  // PRIVACY MANDATE: Admin Utama ('admin') or unauthenticated calls MUST NOT access inter-hospital benchmark logs!
+  if (!hospitalId || hospitalId === 'admin') {
+    return [];
+  }
+
+  const logs = await getRawBenchmarkAuditLogsInternal();
+
   // Strict hospital privacy filter: only logs involving this hospital
   return logs.filter(l => 
     l.requester_id === hospitalId || 
@@ -1733,7 +1740,7 @@ export async function addBenchmarkAuditLog(logData: Omit<BenchmarkAuditLog, 'id'
         .insert([newLog]);
 
       if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
-        const currentLogs = await getBenchmarkAuditLogs(logData.requester_id);
+        const currentLogs = await getRawBenchmarkAuditLogsInternal();
         const updated = [newLog, ...currentLogs];
         await supabase.from('ahrq_surveys').upsert({
           id: 'MASTER_BENCHMARK_AUDIT_LOGS',
@@ -1751,8 +1758,8 @@ export async function addBenchmarkAuditLog(logData: Omit<BenchmarkAuditLog, 'id'
 
   if (typeof window !== 'undefined') {
     try {
-      const currentLogs = await getBenchmarkAuditLogs(logData.requester_id);
-      const updated = [newLog, ...currentLogs];
+      const currentLogs = await getRawBenchmarkAuditLogsInternal();
+      const updated = [newLog, ...currentLogs.filter(l => l.id !== newLog.id)];
       localStorage.setItem(LOCAL_BENCHMARK_AUDIT_LOGS_KEY, JSON.stringify(updated));
     } catch (err) {
       console.warn("Error saving benchmark_audit_log to localStorage:", err);
@@ -1762,12 +1769,7 @@ export async function addBenchmarkAuditLog(logData: Omit<BenchmarkAuditLog, 'id'
   return newLog;
 }
 
-export async function getBenchmarkRequests(hospitalId?: string): Promise<BenchmarkRequest[]> {
-  // PRIVACY MANDATE: Admin Utama ('admin') or unauthenticated calls MUST NOT access inter-hospital benchmark requests!
-  if (!hospitalId || hospitalId === 'admin') {
-    return [];
-  }
-
+export async function getRawBenchmarkRequestsInternal(): Promise<BenchmarkRequest[]> {
   const supabase = getSupabaseClient();
   let items: BenchmarkRequest[] = [];
 
@@ -1781,7 +1783,6 @@ export async function getBenchmarkRequests(hospitalId?: string): Promise<Benchma
       if (!error && data) {
         items = data as BenchmarkRequest[];
       } else if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
-        // Table doesn't exist in Supabase yet, try fallback from ahrq_surveys config row
         const { data: configRow } = await supabase
           .from('ahrq_surveys')
           .select('dimensi_scores')
@@ -1796,7 +1797,6 @@ export async function getBenchmarkRequests(hospitalId?: string): Promise<Benchma
     }
   }
 
-  // Fallback to localStorage if items empty or offline
   if (items.length === 0 && typeof window !== 'undefined') {
     try {
       const stored = localStorage.getItem(LOCAL_BENCHMARK_REQUESTS_KEY);
@@ -1807,6 +1807,17 @@ export async function getBenchmarkRequests(hospitalId?: string): Promise<Benchma
       console.warn("Failed reading benchmark_requests from localStorage:", err);
     }
   }
+
+  return items;
+}
+
+export async function getBenchmarkRequests(hospitalId?: string): Promise<BenchmarkRequest[]> {
+  // PRIVACY MANDATE: Admin Utama ('admin') or unauthenticated calls MUST NOT access inter-hospital benchmark requests!
+  if (!hospitalId || hospitalId === 'admin') {
+    return [];
+  }
+
+  const items = await getRawBenchmarkRequestsInternal();
 
   // Strict hospital privacy filter: only requests involving this hospital
   return items.filter(r => 
@@ -1840,7 +1851,7 @@ export async function createBenchmarkRequest(
 
       if (error && (error.code === '42P01' || error.message?.includes('does not exist'))) {
         // Fallback store into ahrq_surveys config row
-        const allCurrent = await getBenchmarkRequests();
+        const allCurrent = await getRawBenchmarkRequestsInternal();
         const updated = [newReq, ...allCurrent.filter(r => r.id !== newReq.id)];
         await supabase.from('ahrq_surveys').upsert({
           id: 'MASTER_BENCHMARK_REQUESTS',
@@ -1859,7 +1870,7 @@ export async function createBenchmarkRequest(
   // Always update localStorage fallback
   if (typeof window !== 'undefined') {
     try {
-      const current = await getBenchmarkRequests();
+      const current = await getRawBenchmarkRequestsInternal();
       const updated = [newReq, ...current.filter(r => r.id !== newReq.id)];
       localStorage.setItem(LOCAL_BENCHMARK_REQUESTS_KEY, JSON.stringify(updated));
     } catch (err) {
@@ -1900,7 +1911,7 @@ export async function updateBenchmarkRequestStatus(
   const now = new Date().toISOString();
   let updatedReq: BenchmarkRequest | null = null;
 
-  const currentRequests = await getBenchmarkRequests();
+  const currentRequests = await getRawBenchmarkRequestsInternal();
   const targetIndex = currentRequests.findIndex(r => r.id === requestId);
   if (targetIndex !== -1) {
     updatedReq = {

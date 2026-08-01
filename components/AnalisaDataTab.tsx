@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, Fragment, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import CountUp from './CountUp';
-import { HospitalAccount, BenchmarkRequest, createBenchmarkRequest, getSurveys, isSurveyResponse } from '../lib/db';
+import { HospitalAccount, BenchmarkRequest, createBenchmarkRequest, getSurveys, isSurveyResponse, getSupabaseClient } from '../lib/db';
 import { 
   Building, 
   Building2,
@@ -46,7 +46,8 @@ import {
   Lightbulb,
   Settings,
   Rocket,
-  Target
+  Target,
+  Lock
 } from 'lucide-react';
 import { 
   BarChart as RechartsBarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer, LabelList 
@@ -317,23 +318,58 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   // Active benchmark hospital display name
   const activeBenchmarkLabel = useMemo(() => {
-    if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
+    if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital) {
       return selectedTargetHospital.namaRs;
     }
     return "RS Uji Coba";
-  }, [selectedBenchmarkHospitalId, selectedTargetHospital, currentRequestForSelectedHospital]);
+  }, [selectedBenchmarkHospitalId, selectedTargetHospital]);
 
-  // Fetch surveys of approved target benchmark hospital
+  // Fetch surveys of approved target benchmark hospital in realtime
   useEffect(() => {
     if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
+      let isMounted = true;
+      const targetId = selectedTargetHospital.id || selectedTargetHospital.username;
+
+      const fetchTargetSurveys = () => {
+        getSurveys(targetId)
+          .then(res => {
+            if (!isMounted) return;
+            const valid = (res || []).filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
+            setTargetHospitalSurveys(valid);
+          })
+          .catch(err => {
+            if (!isMounted) return;
+            console.warn("Failed to fetch target hospital surveys:", err);
+            setTargetHospitalSurveys([]);
+          });
+      };
+
       setIsLoadingTargetSurveys(true);
-      getSurveys(selectedTargetHospital.id || selectedTargetHospital.username)
-        .then(res => setTargetHospitalSurveys((res || []).filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})))))
-        .catch(err => {
-          console.warn("Failed to fetch target hospital surveys:", err);
-          setTargetHospitalSurveys([]);
-        })
-        .finally(() => setIsLoadingTargetSurveys(false));
+      fetchTargetSurveys();
+      setIsLoadingTargetSurveys(false);
+
+      // Realtime polling every 5s for live updates
+      const interval = setInterval(fetchTargetSurveys, 5000);
+
+      // Supabase realtime channel subscription if connected
+      const supabase = getSupabaseClient();
+      let channel: any = null;
+      if (supabase) {
+        channel = supabase
+          .channel(`public:ahrq_surveys:${targetId}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'ahrq_surveys' }, () => {
+            fetchTargetSurveys();
+          })
+          .subscribe();
+      }
+
+      return () => {
+        isMounted = false;
+        clearInterval(interval);
+        if (channel && supabase) {
+          supabase.removeChannel(channel);
+        }
+      };
     } else {
       setTargetHospitalSurveys([]);
     }
@@ -3154,6 +3190,126 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </p>
               </div>
             </div>
+
+            {/* Status Alert Banner when a target hospital is selected but not approved */}
+            {selectedBenchmarkHospitalId !== 'default' && !isSelectedTargetApproved && (
+              <div className="mb-6">
+                {currentRequestForSelectedHospital?.status === 'pending' ? (
+                  <div className="p-6 bg-amber-50 border-2 border-amber-200/90 rounded-2xl text-amber-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-amber-100 border border-amber-300 text-amber-700 rounded-xl shrink-0">
+                        <Clock className="w-6 h-6 animate-spin" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Status Akses Benchmark: Menunggu Persetujuan</span>
+                        <h3 className="font-extrabold text-base text-amber-900 mt-0.5">Permintaan Akses Benchmark Sedang Menunggu Persetujuan</h3>
+                        <p className="text-xs text-amber-800 leading-relaxed mt-1">
+                          Permintaan izin benchmark data dari <strong>{selectedTargetHospital?.namaRs}</strong> sedang menunggu persetujuan dari pihak rumah sakit tujuan.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        onClick={() => setSelectedBenchmarkHospitalId('default')}
+                        className="px-4 py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Gunakan Benchmark Bawaan
+                      </button>
+                    </div>
+                  </div>
+                ) : currentRequestForSelectedHospital?.status === 'rejected' ? (
+                  <div className="p-6 bg-rose-50 border-2 border-rose-200/90 rounded-2xl text-rose-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-rose-100 border border-rose-300 text-rose-700 rounded-xl shrink-0">
+                        <XCircle className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Status Akses Benchmark: Ditolak</span>
+                        <h3 className="font-extrabold text-base text-rose-900 mt-0.5">Permintaan Akses Benchmark Ditolak</h3>
+                        <p className="text-xs text-rose-800 leading-relaxed mt-1">
+                          Permintaan perbandingan data telah ditolak oleh <strong>{selectedTargetHospital?.namaRs}</strong>.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        disabled={isSendingBenchmarkReq}
+                        onClick={handleSendBenchmarkRequest}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isSendingBenchmarkReq ? 'Mengirim...' : 'Kirim Ulang Permintaan'}
+                      </button>
+                      <button
+                        onClick={() => setSelectedBenchmarkHospitalId('default')}
+                        className="px-4 py-2 bg-white border border-rose-300 hover:bg-rose-100 text-rose-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Gunakan Benchmark Bawaan
+                      </button>
+                    </div>
+                  </div>
+                ) : currentRequestForSelectedHospital?.status === 'revoked' ? (
+                  <div className="p-6 bg-rose-50 border-2 border-rose-200/90 rounded-2xl text-rose-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-rose-100 border border-rose-300 text-rose-700 rounded-xl shrink-0">
+                        <ShieldAlert className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Status Akses Benchmark: Akses Dicabut</span>
+                        <h3 className="font-extrabold text-base text-rose-900 mt-0.5">Akses Benchmark Telah Dicabut</h3>
+                        <p className="text-xs text-rose-800 leading-relaxed mt-1">
+                          Akses Benchmark telah dicabut oleh Rumah Sakit tujuan (<strong>{selectedTargetHospital?.namaRs}</strong>).
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        disabled={isSendingBenchmarkReq}
+                        onClick={handleSendBenchmarkRequest}
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isSendingBenchmarkReq ? 'Mengirim...' : 'Minta Izin Akses Ulang'}
+                      </button>
+                      <button
+                        onClick={() => setSelectedBenchmarkHospitalId('default')}
+                        className="px-4 py-2 bg-white border border-rose-300 hover:bg-rose-100 text-rose-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Gunakan Benchmark Bawaan
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-6 bg-blue-50 border-2 border-blue-200/90 rounded-2xl text-blue-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 bg-blue-100 border border-blue-300 text-blue-700 rounded-xl shrink-0">
+                        <Lock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block">Persetujuan Akses Diperlukan</span>
+                        <h3 className="font-extrabold text-base text-blue-900 mt-0.5">Izin Akses Data Benchmark {selectedTargetHospital?.namaRs}</h3>
+                        <p className="text-xs text-blue-800 leading-relaxed mt-1">
+                          Akses perbandingan data membutuhkan persetujuan dari <strong>{selectedTargetHospital?.namaRs}</strong>. Silakan kirim permintaan akses.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        disabled={isSendingBenchmarkReq}
+                        onClick={handleSendBenchmarkRequest}
+                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
+                      >
+                        {isSendingBenchmarkReq ? 'Mengirim...' : 'Kirim Permintaan Benchmark'}
+                      </button>
+                      <button
+                        onClick={() => setSelectedBenchmarkHospitalId('default')}
+                        className="px-4 py-2 bg-white border border-blue-300 hover:bg-blue-100 text-blue-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
+                      >
+                        Gunakan Benchmark Bawaan
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {activeView === 'benchmark' ? (
               !benchmarkSubView ? (
