@@ -2061,9 +2061,10 @@ export const LOCAL_PENGESAHAN_KEY_PREFIX = 'ahrq_pengesahan_v1_';
 export async function getPengesahanConfig(hospitalIdOrUsername?: string, currentNamaRs?: string): Promise<PengesahanConfig> {
   const identifier = (hospitalIdOrUsername || 'default').toLowerCase().trim();
   let foundConfig: PengesahanConfig | null = null;
+  let isSpecific = false;
 
   const supabase = getSupabaseClient();
-  if (supabase && identifier) {
+  if (supabase && identifier && identifier !== 'default' && identifier !== 'global') {
     try {
       // 1. Try hospital_accounts table by ID or username
       const { data: accData } = await supabase
@@ -2075,6 +2076,7 @@ export async function getPengesahanConfig(hospitalIdOrUsername?: string, current
         foundConfig = typeof accData[0].pengesahan_config === 'string'
           ? JSON.parse(accData[0].pengesahan_config)
           : accData[0].pengesahan_config;
+        isSpecific = true;
       }
 
       // 2. Try ahrq_surveys table fallback (id = PENGESAHAN_<identifier>)
@@ -2087,6 +2089,7 @@ export async function getPengesahanConfig(hospitalIdOrUsername?: string, current
 
         if (surveyRow && surveyRow.dimensi_scores && (surveyRow.dimensi_scores as any).pengesahan) {
           foundConfig = (surveyRow.dimensi_scores as any).pengesahan;
+          isSpecific = true;
         }
       }
     } catch (e) {
@@ -2097,10 +2100,15 @@ export async function getPengesahanConfig(hospitalIdOrUsername?: string, current
   // 3. Try LocalStorage fallback
   if (!foundConfig && typeof window !== 'undefined') {
     try {
-      const stored = localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}${identifier}`) ||
-                     localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}global`);
+      const stored = localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}${identifier}`);
       if (stored) {
         foundConfig = JSON.parse(stored);
+        isSpecific = true;
+      } else {
+        const globalStored = localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}global`);
+        if (globalStored) {
+          foundConfig = JSON.parse(globalStored);
+        }
       }
     } catch (e) {
       console.warn("Failed reading pengesahan config from localStorage:", e);
@@ -2108,7 +2116,7 @@ export async function getPengesahanConfig(hospitalIdOrUsername?: string, current
   }
 
   const defaultDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-  const rsName = foundConfig?.namaRs || currentNamaRs || 'Rumah Sakit';
+  const rsName = (isSpecific && foundConfig?.namaRs) ? foundConfig.namaRs : (currentNamaRs || foundConfig?.namaRs || 'Rumah Sakit');
 
   return {
     namaRs: rsName,

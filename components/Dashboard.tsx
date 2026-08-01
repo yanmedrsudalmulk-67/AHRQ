@@ -455,8 +455,18 @@ export default function Dashboard({
               )}
             </div>
             <div>
-              <span className="font-sans font-extrabold text-sm text-[#2E7D82] tracking-tight block leading-tight">Medclin</span>
-              <span className="font-sans font-bold text-xs text-[#48B8BE] tracking-tight block leading-tight">Pro Academy</span>
+              <span 
+                className="font-sans font-extrabold text-sm text-[#2E7D82] tracking-tight block leading-tight"
+                style={{ textShadow: '1px 1px 1px rgba(15, 23, 42, 0.15), 2px 2px 1px rgba(15, 23, 42, 0.1)' }}
+              >
+                Medclin
+              </span>
+              <span 
+                className="font-sans font-bold text-xs text-[#48B8BE] tracking-tight block leading-tight"
+                style={{ textShadow: '1px 1px 1px rgba(15, 23, 42, 0.15), 2px 2px 1px rgba(15, 23, 42, 0.1)' }}
+              >
+                Pro Academy
+              </span>
             </div>
           </div>
           <button
@@ -502,10 +512,16 @@ export default function Dashboard({
               </div>
               {!isSidebarCollapsed && (
                 <div className="w-full overflow-hidden text-center transition-all duration-200">
-                  <span className="font-sans font-black text-[20px] text-[#1e6f73] tracking-tight block leading-snug">
+                  <span 
+                    className="font-sans font-black text-[20px] text-[#1e6f73] tracking-tight block leading-snug"
+                    style={{ textShadow: '1px 1px 1px rgba(15, 23, 42, 0.25), 2px 2px 1px rgba(15, 23, 42, 0.15)' }}
+                  >
                     Medclin
                   </span>
-                  <span className="font-sans font-extrabold text-[18px] text-[#f5fbfc] tracking-tight block leading-snug">
+                  <span 
+                    className="font-sans font-extrabold text-[18px] text-[#f5fbfc] tracking-tight block leading-snug"
+                    style={{ textShadow: '1px 1px 1px rgba(15, 23, 42, 0.25), 2px 2px 1px rgba(15, 23, 42, 0.15)' }}
+                  >
                     Pro Academy
                   </span>
                 </div>

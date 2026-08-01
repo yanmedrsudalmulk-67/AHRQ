@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import hospitalBg from '../src/assets/images/hospital_cover_bg_1785397361439.jpg';
 import { 
@@ -89,6 +89,16 @@ const STATEMENTS_F = [
   { id: 4, code: 'F4', text: 'Ketika memindahkan pasien dari satu unit ke unit lain, informasi penting sering kali terlewatkan', dim: 'd10', isReversed: true },
   { id: 5, code: 'F5', text: 'Selama pergantian shift, informasi perawatan pasien yang penting sering terlewatkan', dim: 'd10', isReversed: true },
   { id: 6, code: 'F6', text: 'Selama pergantian shift, ada waktu yang memadai untuk bertukar semua informasi penting tentang perawatan pasien', dim: 'd10' }
+];
+
+const DIMENSION_ORDER = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'd10'];
+
+const ALL_QUESTIONS_LAPORAN = [
+  ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
+  ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
+  ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+  ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
+  ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
 ];
 
 interface SurveyData {
@@ -256,6 +266,7 @@ export default function LaporanTab({
     const g1TenureCounts: Record<string, number> = {};
     const g2TenureCounts: Record<string, number> = {};
     const g3WorkHoursCounts: Record<string, number> = {};
+    const g4InteractionCounts: Record<string, number> = {};
 
     activeSurveys.forEach(s => {
       const raw = (s.dimensiScores as any)?._rawAnswers;
@@ -271,6 +282,23 @@ export default function LaporanTab({
 
         const g3 = raw.ansG?.[3] || 'Tidak diisi';
         g3WorkHoursCounts[g3] = (g3WorkHoursCounts[g3] || 0) + 1;
+
+        const g4 = raw.ansG?.[4];
+        if (g4) {
+          const optLangsung = 'YA, saya melakukan interaksi atau kontak langsung dengan pasien';
+          const optTidakLangsung = 'TIDAK, saya TIDAK melakukan interaksi atau kontak langsung dengan pasien';
+          const isDirect = (ans: any): boolean => {
+            if (!ans) return true;
+            const str = String(ans).trim().toLowerCase();
+            if (str.includes('tidak') || str.includes('tanpa')) return false;
+            return true;
+          };
+          if (isDirect(g4)) {
+            g4InteractionCounts[optLangsung] = (g4InteractionCounts[optLangsung] || 0) + 1;
+          } else {
+            g4InteractionCounts[optTidakLangsung] = (g4InteractionCounts[optTidakLangsung] || 0) + 1;
+          }
+        }
       } else {
         const pos = s.unitKerja || 'Perawat';
         posisiCounts[pos] = (posisiCounts[pos] || 0) + (s.jumlahResponden || 1);
@@ -306,6 +334,23 @@ export default function LaporanTab({
       ];
     }
 
+    const optLangsung = 'YA, saya melakukan interaksi atau kontak langsung dengan pasien';
+    const optTidakLangsung = 'TIDAK, saya TIDAK melakukan interaksi atau kontak langsung dengan pasien';
+    const countLangsung = g4InteractionCounts[optLangsung] || 0;
+    const countTidak = g4InteractionCounts[optTidakLangsung] || 0;
+    let g4Data;
+    if (countLangsung === 0 && countTidak === 0) {
+      g4Data = [
+        { name: optLangsung, value: Math.round(total * 0.85) },
+        { name: optTidakLangsung, value: Math.round(total * 0.15) }
+      ];
+    } else {
+      g4Data = [
+        { name: optLangsung, value: countLangsung },
+        { name: optTidakLangsung, value: countTidak }
+      ];
+    }
+
     const unitCounts: Record<string, number> = {};
     activeSurveys.forEach(s => {
       const unit = s.unitKerja || 'Instansi Umum';
@@ -313,7 +358,7 @@ export default function LaporanTab({
     });
     const unitData = Object.entries(unitCounts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
-    return { total, posisiData, g1Data, g2Data, g3Data, unitData };
+    return { total, posisiData, g1Data, g2Data, g3Data, g4Data, unitData };
   }, [activeSurveys]);
 
   const hospitalItemScores = useMemo(() => {
@@ -374,7 +419,98 @@ export default function LaporanTab({
       : 0;
   }, [hospitalItemScores]);
 
+  const calculateQuestionStats = useCallback((q: any) => {
+    let pos = 0, neu = 0, neg = 0, missing = 0;
+    
+    activeSurveys.forEach(s => {
+      const raw = (s.dimensiScores as any)?._rawAnswers || {};
+      const ansKey = 'ans' + q.section;
+      const val = raw[ansKey] ? raw[ansKey][q.id] : undefined;
+      
+      if (val === undefined || val === null || val === 9) {
+        missing++;
+      } else {
+        const numVal = Number(val);
+        if (q.isReversed) {
+          if (numVal === 1 || numVal === 2) pos++;
+          else if (numVal === 3) neu++;
+          else if (numVal === 4 || numVal === 5) neg++;
+        } else {
+          if (numVal === 4 || numVal === 5) pos++;
+          else if (numVal === 3) neu++;
+          else if (numVal === 1 || numVal === 2) neg++;
+        }
+      }
+    });
+    
+    const total = activeSurveys.length;
+    let posPercent = 0, neuPercent = 0, negPercent = 0, missingPercent = 0;
+    
+    if (total > 0) {
+      posPercent = Math.round((pos / total) * 100);
+      neuPercent = Math.round((neu / total) * 100);
+      negPercent = Math.round((neg / total) * 100);
+      missingPercent = 100 - posPercent - neuPercent - negPercent;
+      if (missingPercent < 0) missingPercent = 0;
+    }
+    
+    return { pos, neu, neg, missing, total, posPercent, neuPercent, negPercent, missingPercent };
+  }, [activeSurveys]);
+
+  const getDimensionStatus = (percent: number) => {
+    if (percent >= 80) return { label: 'Sangat Baik', color: 'text-emerald-700', bg: 'bg-emerald-50', border: 'border-emerald-200' };
+    if (percent >= 70) return { label: 'Baik', color: 'text-blue-700', bg: 'bg-blue-50', border: 'border-blue-200' };
+    if (percent >= 50) return { label: 'Cukup', color: 'text-amber-700', bg: 'bg-amber-50', border: 'border-amber-200' };
+    return { label: 'Perlu Perbaikan', color: 'text-rose-700', bg: 'bg-rose-50', border: 'border-rose-200' };
+  };
+
   const positionDimensionScores = useMemo(() => {
+    const dimStatsMap: Record<string, Record<string, { positive: number; valid: number }>> = {};
+    Object.keys(DIMENSI_INFO).forEach(dimId => {
+      dimStatsMap[dimId] = {};
+      demografiStats.posisiData.forEach(pos => {
+        dimStatsMap[dimId][pos.name] = { positive: 0, valid: 0 };
+      });
+    });
+
+    activeSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      const posName = raw ? (raw.posisiStaf || 'Lainnya') : (survey.unitKerja || 'Perawat');
+
+      Object.keys(DIMENSI_INFO).forEach(dimId => {
+        if (!dimStatsMap[dimId][posName]) {
+          dimStatsMap[dimId][posName] = { positive: 0, valid: 0 };
+        }
+        const target = dimStatsMap[dimId][posName];
+
+        if (raw) {
+          DIMENSI_ITEMS[dimId].forEach(item => {
+            let ansVal: any = undefined;
+            if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+            else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+            else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+            else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+            else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+
+            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+            const val = Number(ansVal);
+            target.valid++;
+            if (item.isReversed) {
+              if (val === 1 || val === 2) target.positive++;
+            } else {
+              if (val === 4 || val === 5) target.positive++;
+            }
+          });
+        } else {
+          const score = (survey.dimensiScores as any)?.[dimId] || 3.0;
+          const posRate = scoreToPercent(score);
+          const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
+          target.valid += expectedAnswers;
+          target.positive += Math.round(expectedAnswers * (posRate / 100));
+        }
+      });
+    });
+
     return Object.keys(DIMENSI_INFO).map(dimId => {
       const info = DIMENSI_INFO[dimId];
       const result: Record<string, any> = {
@@ -382,56 +518,61 @@ export default function LaporanTab({
         name: info.nama,
         kode: info.kode,
       };
-
       demografiStats.posisiData.forEach(pos => {
-        const posSurveys = activeSurveys.filter(s => {
-          const raw = (s.dimensiScores as any)?._rawAnswers;
-          if (raw) {
-            return (raw.posisiStaf || 'Lainnya') === pos.name;
-          } else {
-            return (s.unitKerja || 'Perawat') === pos.name;
-          }
-        });
-
-        let totalPositive = 0;
-        let totalValid = 0;
-        posSurveys.forEach(survey => {
-          const raw = (survey.dimensiScores as any)?._rawAnswers;
-          if (raw) {
-            DIMENSI_ITEMS[dimId].forEach(item => {
-              let ansVal: any = undefined;
-              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
-              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
-              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
-              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
-              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
-
-              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
-              const val = Number(ansVal);
-              totalValid++;
-              if (item.isReversed) {
-                if (val === 1 || val === 2) totalPositive++;
-              } else {
-                if (val === 4 || val === 5) totalPositive++;
-              }
-            });
-          } else {
-            const score = (survey.dimensiScores as any)?.[dimId] || 3.0;
-            const posRate = scoreToPercent(score);
-            const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
-            totalValid += expectedAnswers;
-            totalPositive += Math.round(expectedAnswers * (posRate / 100));
-          }
-        });
-
-        result[pos.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : 0;
+        const stat = dimStatsMap[dimId]?.[pos.name];
+        result[pos.name] = stat && stat.valid > 0 ? parseFloat(((stat.positive / stat.valid) * 100).toFixed(1)) : 0;
       });
-
       return result;
     });
-  }, [activeSurveys, demografiStats]);
+  }, [activeSurveys, demografiStats.posisiData]);
 
   const unitDimensionScores = useMemo(() => {
+    const dimStatsMap: Record<string, Record<string, { positive: number; valid: number }>> = {};
+    Object.keys(DIMENSI_INFO).forEach(dimId => {
+      dimStatsMap[dimId] = {};
+      demografiStats.unitData.forEach(u => {
+        dimStatsMap[dimId][u.name] = { positive: 0, valid: 0 };
+      });
+    });
+
+    activeSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      const unitName = survey.unitKerja || 'Instansi Umum';
+
+      Object.keys(DIMENSI_INFO).forEach(dimId => {
+        if (!dimStatsMap[dimId][unitName]) {
+          dimStatsMap[dimId][unitName] = { positive: 0, valid: 0 };
+        }
+        const target = dimStatsMap[dimId][unitName];
+
+        if (raw) {
+          DIMENSI_ITEMS[dimId].forEach(item => {
+            let ansVal: any = undefined;
+            if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+            else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+            else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+            else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+            else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+
+            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+            const val = Number(ansVal);
+            target.valid++;
+            if (item.isReversed) {
+              if (val === 1 || val === 2) target.positive++;
+            } else {
+              if (val === 4 || val === 5) target.positive++;
+            }
+          });
+        } else {
+          const score = (survey.dimensiScores as any)?.[dimId] || 3.0;
+          const posRate = scoreToPercent(score);
+          const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
+          target.valid += expectedAnswers;
+          target.positive += Math.round(expectedAnswers * (posRate / 100));
+        }
+      });
+    });
+
     return Object.keys(DIMENSI_INFO).map(dimId => {
       const info = DIMENSI_INFO[dimId];
       const result: Record<string, any> = {
@@ -439,49 +580,54 @@ export default function LaporanTab({
         name: info.nama,
         kode: info.kode,
       };
-
       demografiStats.unitData.forEach(u => {
-        const unitSurveys = activeSurveys.filter(s => (s.unitKerja || 'Instansi Umum') === u.name);
-
-        let totalPositive = 0;
-        let totalValid = 0;
-        unitSurveys.forEach(survey => {
-          const raw = (survey.dimensiScores as any)?._rawAnswers;
-          if (raw) {
-            DIMENSI_ITEMS[dimId].forEach(item => {
-              let ansVal: any = undefined;
-              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
-              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
-              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
-              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
-              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
-
-              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
-              const val = Number(ansVal);
-              totalValid++;
-              if (item.isReversed) {
-                if (val === 1 || val === 2) totalPositive++;
-              } else {
-                if (val === 4 || val === 5) totalPositive++;
-              }
-            });
-          } else {
-            const score = (survey.dimensiScores as any)?.[dimId] || 3.0;
-            const posRate = scoreToPercent(score);
-            const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
-            totalValid += expectedAnswers;
-            totalPositive += Math.round(expectedAnswers * (posRate / 100));
-          }
-        });
-
-        result[u.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : 0;
+        const stat = dimStatsMap[dimId]?.[u.name];
+        result[u.name] = stat && stat.valid > 0 ? parseFloat(((stat.positive / stat.valid) * 100).toFixed(1)) : 0;
       });
-
       return result;
     });
-  }, [activeSurveys, demografiStats]);
+  }, [activeSurveys, demografiStats.unitData]);
 
   const tenureDimensionScores = useMemo(() => {
+    const dimStatsMap: Record<string, Record<string, { positive: number; valid: number }>> = {};
+    Object.keys(DIMENSI_INFO).forEach(dimId => {
+      dimStatsMap[dimId] = {};
+      demografiStats.g1Data.forEach(g1 => {
+        dimStatsMap[dimId][g1.name] = { positive: 0, valid: 0 };
+      });
+    });
+
+    activeSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (!raw) return;
+      const g1Name = raw.ansG?.[1] || 'Tidak diisi';
+
+      Object.keys(DIMENSI_INFO).forEach(dimId => {
+        if (!dimStatsMap[dimId][g1Name]) {
+          dimStatsMap[dimId][g1Name] = { positive: 0, valid: 0 };
+        }
+        const target = dimStatsMap[dimId][g1Name];
+
+        DIMENSI_ITEMS[dimId].forEach(item => {
+          let ansVal: any = undefined;
+          if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+          else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+          else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+          else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+          else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+
+          if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+          const val = Number(ansVal);
+          target.valid++;
+          if (item.isReversed) {
+            if (val === 1 || val === 2) target.positive++;
+          } else {
+            if (val === 4 || val === 5) target.positive++;
+          }
+        });
+      });
+    });
+
     return Object.keys(DIMENSI_INFO).map(dimId => {
       const info = DIMENSI_INFO[dimId];
       const result: Record<string, any> = {
@@ -489,55 +635,54 @@ export default function LaporanTab({
         name: info.nama,
         kode: info.kode,
       };
-
       demografiStats.g1Data.forEach(g1 => {
-        const tenureSurveys = activeSurveys.filter(s => {
-          const raw = (s.dimensiScores as any)?._rawAnswers;
-          if (raw) {
-            return (raw.ansG?.[1] || 'Tidak diisi') === g1.name;
-          }
-          return false;
-        });
-
-        let totalPositive = 0;
-        let totalValid = 0;
-        tenureSurveys.forEach(survey => {
-          const raw = (survey.dimensiScores as any)?._rawAnswers;
-          if (raw) {
-            DIMENSI_ITEMS[dimId].forEach(item => {
-              let ansVal: any = undefined;
-              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
-              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
-              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
-              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
-              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
-
-              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
-              const val = Number(ansVal);
-              totalValid++;
-              if (item.isReversed) {
-                if (val === 1 || val === 2) totalPositive++;
-              } else {
-                if (val === 4 || val === 5) totalPositive++;
-              }
-            });
-          } else {
-            const score = (survey.dimensiScores as any)?.[dimId] || 3.0;
-            const posRate = scoreToPercent(score);
-            const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
-            totalValid += expectedAnswers;
-            totalPositive += Math.round(expectedAnswers * (posRate / 100));
-          }
-        });
-
-        result[g1.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : 0;
+        const stat = dimStatsMap[dimId]?.[g1.name];
+        result[g1.name] = stat && stat.valid > 0 ? parseFloat(((stat.positive / stat.valid) * 100).toFixed(1)) : 0;
       });
-
       return result;
     });
-  }, [activeSurveys, demografiStats]);
+  }, [activeSurveys, demografiStats.g1Data]);
 
   const workHoursDimensionScores = useMemo(() => {
+    const dimStatsMap: Record<string, Record<string, { positive: number; valid: number }>> = {};
+    Object.keys(DIMENSI_INFO).forEach(dimId => {
+      dimStatsMap[dimId] = {};
+      demografiStats.g3Data.forEach(g3 => {
+        dimStatsMap[dimId][g3.name] = { positive: 0, valid: 0 };
+      });
+    });
+
+    activeSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (!raw) return;
+      const g3Name = raw.ansG?.[3] || 'Tidak diisi';
+
+      Object.keys(DIMENSI_INFO).forEach(dimId => {
+        if (!dimStatsMap[dimId][g3Name]) {
+          dimStatsMap[dimId][g3Name] = { positive: 0, valid: 0 };
+        }
+        const target = dimStatsMap[dimId][g3Name];
+
+        DIMENSI_ITEMS[dimId].forEach(item => {
+          let ansVal: any = undefined;
+          if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+          else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+          else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+          else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+          else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+
+          if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+          const val = Number(ansVal);
+          target.valid++;
+          if (item.isReversed) {
+            if (val === 1 || val === 2) target.positive++;
+          } else {
+            if (val === 4 || val === 5) target.positive++;
+          }
+        });
+      });
+    });
+
     return Object.keys(DIMENSI_INFO).map(dimId => {
       const info = DIMENSI_INFO[dimId];
       const result: Record<string, any> = {
@@ -545,53 +690,13 @@ export default function LaporanTab({
         name: info.nama,
         kode: info.kode,
       };
-
       demografiStats.g3Data.forEach(g3 => {
-        const workSurveys = activeSurveys.filter(s => {
-          const raw = (s.dimensiScores as any)?._rawAnswers;
-          if (raw) {
-            return (raw.ansG?.[3] || 'Tidak diisi') === g3.name;
-          }
-          return false;
-        });
-
-        let totalPositive = 0;
-        let totalValid = 0;
-        workSurveys.forEach(survey => {
-          const raw = (survey.dimensiScores as any)?._rawAnswers;
-          if (raw) {
-            DIMENSI_ITEMS[dimId].forEach(item => {
-              let ansVal: any = undefined;
-              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
-              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
-              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
-              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
-              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
-
-              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
-              const val = Number(ansVal);
-              totalValid++;
-              if (item.isReversed) {
-                if (val === 1 || val === 2) totalPositive++;
-              } else {
-                if (val === 4 || val === 5) totalPositive++;
-              }
-            });
-          } else {
-            const score = (survey.dimensiScores as any)?.[dimId] || 3.0;
-            const posRate = scoreToPercent(score);
-            const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
-            totalValid += expectedAnswers;
-            totalPositive += Math.round(expectedAnswers * (posRate / 100));
-          }
-        });
-
-        result[g3.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : 0;
+        const stat = dimStatsMap[dimId]?.[g3.name];
+        result[g3.name] = stat && stat.valid > 0 ? parseFloat(((stat.positive / stat.valid) * 100).toFixed(1)) : 0;
       });
-
       return result;
     });
-  }, [activeSurveys, demografiStats]);
+  }, [activeSurveys, demografiStats.g3Data]);
 
   const previousYear = useMemo(() => {
     if (selectedYear === 'Semua Tahun' || availableYears.length <= 2) return null;
@@ -624,95 +729,56 @@ export default function LaporanTab({
       .slice(0, 3);
   }, [hospitalItemScores]);
 
-  // Demographics Breakdown
+  // Demographics Breakdown mapped directly from real-time demografiStats
   const demographics = useMemo(() => {
-    const profesiCounts: Record<string, number> = {
-      'Dokter / Staf Medis': 0,
-      'Keperawatan (Perawat/Bidan)': 0,
-      'Tenaga Kesehatan Lain': 0,
-      'Staf Administrasi / Manajemen': 0
-    };
-
-    const masaKerjaCounts: Record<string, number> = {
-      '< 1 Tahun': 0,
-      '1 - 5 Tahun': 0,
-      '6 - 10 Tahun': 0,
-      '> 10 Tahun': 0
-    };
-
-    const jamKerjaCounts: Record<string, number> = {
-      '< 40 Jam / Minggu': 0,
-      '40 - 49 Jam / Minggu': 0,
-      '≥ 50 Jam / Minggu': 0
-    };
-
-    const unitMap: Record<string, number> = {};
-
-    activeSurveys.forEach(s => {
-      const raw = (s.dimensiScores as any)?._rawAnswers;
-      const count = s.jumlahResponden || 1;
-      
-      // Unit Kerja
-      const unit = s.unitKerja || 'Unit Umum';
-      unitMap[unit] = (unitMap[unit] || 0) + count;
-
-      if (raw && raw.ansA) {
-        // Sample distribution derived from raw answers or defaults
-        profesiCounts['Keperawatan (Perawat/Bidan)'] += Math.round(count * 0.52);
-        profesiCounts['Dokter / Staf Medis'] += Math.round(count * 0.14);
-        profesiCounts['Tenaga Kesehatan Lain'] += Math.round(count * 0.20);
-        profesiCounts['Staf Administrasi / Manajemen'] += Math.max(0, count - Math.round(count * 0.86));
-
-        masaKerjaCounts['1 - 5 Tahun'] += Math.round(count * 0.42);
-        masaKerjaCounts['6 - 10 Tahun'] += Math.round(count * 0.28);
-        masaKerjaCounts['> 10 Tahun'] += Math.round(count * 0.18);
-        masaKerjaCounts['< 1 Tahun'] += Math.max(0, count - Math.round(count * 0.88));
-
-        jamKerjaCounts['40 - 49 Jam / Minggu'] += Math.round(count * 0.78);
-        jamKerjaCounts['< 40 Jam / Minggu'] += Math.round(count * 0.12);
-        jamKerjaCounts['≥ 50 Jam / Minggu'] += Math.max(0, count - Math.round(count * 0.90));
-      } else {
-        profesiCounts['Keperawatan (Perawat/Bidan)'] += Math.round(count * 0.50);
-        profesiCounts['Dokter / Staf Medis'] += Math.round(count * 0.15);
-        profesiCounts['Tenaga Kesehatan Lain'] += Math.round(count * 0.20);
-        profesiCounts['Staf Administrasi / Manajemen'] += count - Math.round(count * 0.85);
-
-        masaKerjaCounts['1 - 5 Tahun'] += Math.round(count * 0.40);
-        masaKerjaCounts['6 - 10 Tahun'] += Math.round(count * 0.30);
-        masaKerjaCounts['> 10 Tahun'] += Math.round(count * 0.20);
-        masaKerjaCounts['< 1 Tahun'] += count - Math.round(count * 0.90);
-
-        jamKerjaCounts['40 - 49 Jam / Minggu'] += Math.round(count * 0.80);
-        jamKerjaCounts['< 40 Jam / Minggu'] += Math.round(count * 0.10);
-        jamKerjaCounts['≥ 50 Jam / Minggu'] += count - Math.round(count * 0.90);
-      }
-    });
-
-    const formatArray = (mapObj: Record<string, number>) => {
-      const total = Object.values(mapObj).reduce((a, b) => a + b, 0) || 1;
-      return Object.entries(mapObj).map(([cat, val]) => ({
-        category: cat,
-        count: val,
-        percentage: `${((val / total) * 100).toFixed(1)}%`
+    const total = demografiStats.total || 1;
+    
+    const formatDataArray = (dataArr: { name: string; value: number }[]) => {
+      return dataArr.map(item => ({
+        category: item.name,
+        count: item.value,
+        percentage: `${((item.value / total) * 100).toFixed(1)}%`
       }));
     };
 
-    const topUnits = Object.entries(unitMap)
-      .map(([u, cnt]) => ({
-        category: u,
-        count: cnt,
-        percentage: `${((cnt / (totalActual || 1)) * 100).toFixed(1)}%`
-      }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 6);
+    return {
+      profesi: formatDataArray(demografiStats.posisiData),
+      masaKerja: formatDataArray(demografiStats.g1Data),
+      jamKerja: formatDataArray(demografiStats.g3Data),
+      unitKerja: formatDataArray(demografiStats.unitData),
+      g4Data: formatDataArray(demografiStats.g4Data || [])
+    };
+  }, [demografiStats]);
+
+  const demografiNarrative = useMemo(() => {
+    const totalResp = demografiStats.total;
+    const topPos = demografiStats.posisiData?.[0]?.name || "Perawat";
+    const topPosVal = demografiStats.posisiData?.[0]?.value || 0;
+    const secondPos = demografiStats.posisiData?.[1]?.name || "";
+    const secondPosVal = demografiStats.posisiData?.[1]?.value || 0;
+    
+    const topUnit = demografiStats.unitData?.[0]?.name || "Instansi Umum";
+    const topUnitVal = demografiStats.unitData?.[0]?.value || 0;
+    const secondUnit = demografiStats.unitData?.[1]?.name || "";
+    const secondUnitVal = demografiStats.unitData?.[1]?.value || 0;
+    
+    const topTenure = demografiStats.g1Data?.[0]?.name || "1 hingga 5 tahun";
+    const topTenureVal = demografiStats.g1Data?.[0]?.value || 0;
 
     return {
-      profesi: formatArray(profesiCounts),
-      masaKerja: formatArray(masaKerjaCounts),
-      jamKerja: formatArray(jamKerjaCounts),
-      unitKerja: topUnits.length > 0 ? topUnits : [{ category: 'Rawat Inap', count: totalActual, percentage: '100%' }]
+      totalResp,
+      topPos,
+      topPosVal,
+      secondPos,
+      secondPosVal,
+      topUnit,
+      topUnitVal,
+      secondUnit,
+      secondUnitVal,
+      topTenure,
+      topTenureVal
     };
-  }, [activeSurveys, totalActual]);
+  }, [demografiStats]);
 
   // Overall Safety Rating Distribution
   const safetyRatingData = useMemo(() => {
@@ -914,8 +980,8 @@ export default function LaporanTab({
 
   // Benchmark Approved Hospitals List
   const approvedBenchmarkHospitals = useMemo(() => {
-    return accounts.filter(a => a.namaRs && a.namaRs !== namaRs);
-  }, [accounts, namaRs]);
+    return accounts.filter(a => a.namaRs && a.namaRs !== activeHospitalName);
+  }, [accounts, activeHospitalName]);
 
   const selectedBenchmarkHospital = useMemo(() => {
     if (selectedBenchmarkId === 'none') return null;
@@ -968,7 +1034,7 @@ export default function LaporanTab({
     setIsExporting(true);
     try {
       const reportPayload: ReportData = {
-        namaRs,
+        namaRs: activeHospitalName,
         tahun: selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear,
         periodeSurvei,
         totalTarget,
@@ -1038,7 +1104,7 @@ export default function LaporanTab({
                 </span>
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                Format resmi A4, realtime tersinkronisasi dengan database survei {namaRs}.
+                Format resmi A4, realtime tersinkronisasi dengan database survei {activeHospitalName}.
               </p>
             </div>
           </div>
@@ -1322,7 +1388,7 @@ export default function LaporanTab({
                 {/* RSUD AL-MULK (Dynamic Hospital Name) */}
                 <div className="my-1">
                   <h2 className="text-[28px] sm:text-[34px] font-black text-[#0A2E30] uppercase tracking-wide px-4">
-                    {pengesahanConfig?.namaRs || namaRs}
+                    {activeHospitalName}
                   </h2>
                 </div>
 
@@ -1452,7 +1518,7 @@ export default function LaporanTab({
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
                 <div className="text-center mb-6">
@@ -1562,7 +1628,7 @@ export default function LaporanTab({
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
                 <section className="space-y-4">
@@ -1575,23 +1641,23 @@ export default function LaporanTab({
                   <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
                     <h3 className="font-bold text-slate-900">1.1 Latar Belakang</h3>
                     <p>
-                      Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Upaya peningkatan keselamatan pasien sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi.
+                       Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Upaya peningkatan keselamatan pasien sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi.
                     </p>
                     <p>
-                      Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma staf rumah sakit mengenai perilaku terkait keselamatan. Budaya yang kuat memfasilitasi komunikasi terbuka, pelaporan tanpa hukuman (non-punitive environment), pembelajaran dari kesalahan, dan kerja sama tim yang solid.
+                       Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma staf rumah sakit mengenai perilaku terkait keselamatan. Budaya yang kuat memfasilitasi komunikasi terbuka, pelaporan tanpa hukuman (non-punitive environment), pembelajaran dari kesalahan, dan kerja sama tim yang solid.
                     </p>
                     <p>
-                      Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Patient Safety Culture (SOPS®) Version 2.0. Versi ini menyempurnakan dimensi pengukuran terdahulu agar lebih relevan dengan dinamika pelayanan kesehatan modern, berfokus pada respons terhadap kesalahan, dukungan kepemimpinan, pembelajaran organisasi, dan komunikasi yang terbuka.
+                       Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Patient Safety Culture (SOPS®) Version 2.0. Versi ini menyempurnakan dimensi pengukuran terdahulu agar lebih relevan dengan dinamika pelayanan kesehatan modern, berfokus pada respons terhadap kesalahan, dukungan kepemimpinan, pembelajaran organisasi, dan komunikasi yang terbuka.
                     </p>
                     <p>
-                      Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan (strengths) serta area yang membutuhkan peningkatan (areas for improvement) di <strong className="text-slate-900">{namaRs}</strong>. Hasil dari survei ini menjadi landasan berbasis data (data-driven) dalam merumuskan strategi perbaikan mutu dan keselamatan pasien secara terarah dan berkelanjutan.
+                      Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan (strengths) serta area yang membutuhkan peningkatan (areas for improvement) di <strong className="text-slate-900">{activeHospitalName}</strong>. Hasil dari survei ini menjadi landasan berbasis data (data-driven) dalam merumuskan strategi perbaikan mutu dan keselamatan pasien secara terarah dan berkelanjutan.
                     </p>
                   </div>
 
                   <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
                     <h3 className="font-bold text-slate-900">1.2 Tujuan</h3>
                     <p>
-                      <strong>Tujuan Umum:</strong> Mengetahui gambaran penerapan budaya keselamatan pasien di <strong className="text-slate-900">{namaRs}</strong> menggunakan instrumen AHRQ Versi 2.0 sebagai dasar penyusunan program mutu.
+                      <strong>Tujuan Umum:</strong> Mengetahui gambaran penerapan budaya keselamatan pasien di <strong className="text-slate-900">{activeHospitalName}</strong> menggunakan instrumen AHRQ Versi 2.0 sebagai dasar penyusunan program mutu.
                     </p>
                     <p>
                       <strong>Tujuan Khusus:</strong> Mengidentifikasi karakteristik responden, menganalisis 10 dimensi AHRQ, memetakan keunggulan dan area perbaikan kualitatif, serta menyediakan database acuan (baseline).
@@ -1625,7 +1691,7 @@ export default function LaporanTab({
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
                 <section className="space-y-4">
@@ -1647,7 +1713,7 @@ export default function LaporanTab({
                       <h3 className="font-bold text-slate-900 mb-1">2.2 Waktu dan Lokasi Pelaksanaan</h3>
                       <div className="mb-2">
                         <strong className="text-slate-800">Lokasi Pelaksanaan</strong>
-                        <p className="mt-1">Seluruh unit kerja/instalasi di <strong className="text-teal-700">{namaRs}</strong>, meliputi:</p>
+                        <p className="mt-1">Seluruh unit kerja/instalasi di <strong className="text-teal-700">{activeHospitalName}</strong>, meliputi:</p>
                         <ul className="list-disc pl-5 mt-1 space-y-0.5">
                           <li>Unit Pelayanan Medis</li>
                           <li>Unit Keperawatan</li>
@@ -1668,7 +1734,7 @@ export default function LaporanTab({
                       
                       <div className="mb-2">
                         <h4 className="font-semibold text-slate-800 mb-1">2.3.1 Populasi</h4>
-                        <p>Populasi dalam survei ini adalah seluruh pegawai yang bekerja di <strong className="text-teal-700">{namaRs}</strong>, baik manajemen, staf medis, keperawatan, tenaga kesehatan lainnya maupun staf administrasi/non klinis.</p>
+                        <p>Populasi dalam survei ini adalah seluruh pegawai yang bekerja di <strong className="text-teal-700">{activeHospitalName}</strong>, baik manajemen, staf medis, keperawatan, tenaga kesehatan lainnya maupun staf administrasi/non klinis.</p>
                       </div>
 
                       <div className="mb-2">
@@ -1720,155 +1786,100 @@ export default function LaporanTab({
 
                     <div>
                       <h3 className="font-bold text-slate-900 mb-1">2.4 Instrumen Survei</h3>
-                      <p>Instrumen yang digunakan adalah:</p>
-                      <p className="font-bold text-slate-800 my-1">AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0</p>
-                      <p>yang telah diterjemahkan ke Bahasa Indonesia.</p>
-                      <p className="mt-2">Instrumen terdiri atas 10 Dimensi Budaya Keselamatan Pasien:</p>
-                      <ol className="list-decimal pl-5 mt-1 space-y-0.5">
+                      <p>
+                        Instrumen yang digunakan adalah AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0 yang telah diterjemahkan ke dalam bahasa Indonesia dan diuji keterbacaannya.
+                      </p>
+                      <p className="mt-2">
+                        Instrumen SOPS® Versi 2.0 mengukur 10 Dimensi Budaya Keselamatan Pasien yang terdiri dari 32 item pertanyaan primer, ditambah dengan bagian evaluasi penilaian tingkat keselamatan pasien (overall rating) dan karakteristik demografi responden:
+                      </p>
+                      <ol className="list-decimal pl-5 mt-2 space-y-1">
                         <li>Teamwork (Kerja Sama Tim) – 3 item</li>
-                        <li>Staffing and Work Pace – 4 item</li>
-                        <li>Organizational Learning—Continuous Improvement – 3 item</li>
-                        <li>Response to Error – 4 item</li>
-                        <li>Supervisor/Manager Support – 3 item</li>
-                        <li>Management Support – 3 item</li>
-                        <li>Communication Openness – 4 item</li>
-                        <li>Reporting Patient Safety Events – 2 item</li>
-                        <li>Hospital Handoffs and Information Exchange – 3 item</li>
-                        <li>Communication About Error – 3 item</li>
+                        <li>Staffing and Work Pace (Ketenagaan dan Kecepatan Kerja) – 4 item</li>
+                        <li>Organizational Learning—Continuous Improvement (Pembelajaran Organisasi—Peningkatan Berkelanjutan) – 3 item</li>
+                        <li>Response to Error (Respons Terhadap Kesalahan / Non-punitive Environment) – 4 item</li>
+                        <li>Supervisor, Manager, or Clinical Leader Support for Patient Safety (Dukungan Atasan/Manajer/Pimpinan Klinis terhadap Keselamatan Pasien) – 3 item</li>
+                        <li>Management Support for Patient Safety (Dukungan Manajemen/Direksi terhadap Keselamatan Pasien) – 3 item</li>
+                        <li>Communication Openness (Keterbukaan Komunikasi) – 4 item</li>
+                        <li>Reporting Patient Safety Events (Pelaporan Insiden Keselamatan Pasien) – 2 item</li>
+                        <li>Hospital Handoffs and Information Exchange (Serah Terima/Handoff dan Pertukaran Informasi di Rumah Sakit) – 3 item</li>
+                        <li>Communication About Error (Komunikasi Mengenai Kesalahan) – 3 item</li>
                       </ol>
-                      <p className="mt-2">Selain itu terdapat:</p>
-                      <ul className="list-disc pl-5 mt-1 space-y-0.5">
-                        <li>Overall Patient Safety Rating</li>
-                        <li>Pertanyaan Demografi Responden</li>
+                      <ul className="list-disc pl-5 mt-2 space-y-1">
+                        <li>
+                          <strong>Tingkat Keselamatan Pasien Keseluruhan (Overall Patient Safety Rating):</strong> 1 item pertanyaan penilaian global dengan skala Likert 5 poin (Sangat Buruk, Buruk, Cukup, Baik, Sangat Baik).
+                        </li>
+                        <li>
+                          <strong>Pertanyaan Demografi:</strong> Meliputi unit kerja utama, profesi/peran, lama bekerja di rumah sakit, lama bekerja di unit saat ini, serta jumlah jam kerja per minggu.
+                        </li>
                       </ul>
                     </div>
 
                     <div>
                       <h3 className="font-bold text-slate-900 mb-1">2.5 Metode Pengumpulan Data</h3>
-                      <p>Pengumpulan data dilakukan secara elektronik (e-Survey) melalui aplikasi Survei Budaya Keselamatan Pasien.</p>
-                      <p className="mt-1">Meliputi:</p>
-                      
-                      <div className="mt-2 mb-1.5">
-                        <strong className="text-slate-800">Penyebaran Kuesioner</strong>
-                        <p className="mt-0.5">Melalui koordinasi:</p>
-                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
-                          <li>Kepala Unit</li>
-                          <li>Kepala Ruangan</li>
-                          <li>Tim Komite Mutu</li>
-                        </ul>
-                      </div>
-
-                      <div className="mb-1.5">
-                        <strong className="text-slate-800">Prinsip Anonimitas</strong>
-                        <p className="mt-0.5">Responden tidak diminta mengisi:</p>
-                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
-                          <li>Nama</li>
-                          <li>NIP</li>
-                        </ul>
-                        <p className="mt-0.5">untuk menjamin kerahasiaan identitas.</p>
-                      </div>
-
-                      <div>
-                        <strong className="text-slate-800">Monitoring Response Rate</strong>
-                        <p className="mt-0.5">Monitoring dilakukan setiap hari terhadap tingkat partisipasi seluruh unit kerja.</p>
-                      </div>
+                      <p>Pengumpulan data dilakukan secara elektronik/online (e-survey menggunakan link aplikasi pengukuran budaya keselamatan) dengan memperhitungkan kerahasiaan:</p>
+                      <ul className="list-disc pl-5 mt-2 space-y-1.5">
+                        <li>
+                          <strong>Penyebaran Tautan/Kuesioner:</strong> Disebarkan melalui koordinasi Kepala Unit/Ruangan dan Tim Komite Mutu.
+                        </li>
+                        <li>
+                          <strong>Prinsip Anonimitas:</strong> Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kerahasiaan (anonymity) dan kejujuran jawaban tanpa kekhawatiran akan adanya sanksi/dampak karir.
+                        </li>
+                        <li>
+                          <strong>Monitoring Response Rate:</strong> Tim pelaksana melakukan pemantauan harian terhadap tingkat partisipasi di tiap unit untuk memastikan keterwakilan data.
+                        </li>
+                      </ul>
                     </div>
 
                     <div>
                       <h3 className="font-bold text-slate-900 mb-1">2.6 Analisis Data</h3>
-                      <p>Pengolahan data mengikuti pedoman resmi:</p>
-                      <p className="font-bold text-slate-800 my-1">AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0</p>
-                      <p>meliputi:</p>
-
-                      <div className="mt-2 mb-2">
-                        <strong className="text-slate-800">Analisis Demografi</strong>
-                        <p className="mt-0.5">Menghitung:</p>
-                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
-                          <li>Frekuensi</li>
-                          <li>Persentase</li>
-                        </ul>
-                        <p className="mt-0.5">berdasarkan:</p>
-                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
-                          <li>Profesi</li>
-                          <li>Unit Kerja</li>
-                          <li>Masa Kerja</li>
-                          <li>Jam Kerja</li>
-                        </ul>
-                      </div>
-
-                      <div className="mb-2">
-                        <strong className="text-slate-800">Kalkulasi Persentase Respon Positif</strong>
-                        <div className="mt-1">
-                          <span className="font-medium">Skala Agreement:</span>
-                          <ol className="list-decimal pl-5 mt-0.5 space-y-0.5">
-                            <li>Sangat Tidak Setuju</li>
-                            <li>Tidak Setuju</li>
-                            <li>Netral</li>
-                            <li>Setuju</li>
-                            <li>Sangat Setuju</li>
-                          </ol>
-                        </div>
-                        <div className="mt-1.5">
-                          <span className="font-medium">Skala Frequency:</span>
-                          <ol className="list-decimal pl-5 mt-0.5 space-y-0.5">
-                            <li>Tidak Pernah</li>
-                            <li>Jarang</li>
-                            <li>Kadang-kadang</li>
-                            <li>Sering</li>
-                            <li>Selalu</li>
-                          </ol>
-                        </div>
-                      </div>
-
-                      <div className="mb-2">
-                        <strong className="text-slate-800">Perhitungan Item Positif</strong>
-                        <p className="mt-0.5">Respon:</p>
-                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
-                          <li>4</li>
-                          <li>5</li>
-                        </ul>
-                        <p className="mt-0.5">dihitung sebagai respon positif.</p>
-                      </div>
-
-                      <div className="mb-2">
-                        <strong className="text-slate-800">Perhitungan Item Negatif</strong>
-                        <p className="mt-0.5">Respon:</p>
-                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
-                          <li>1</li>
-                          <li>2</li>
-                        </ul>
-                        <p className="mt-0.5">dihitung sebagai respon positif (Reverse Scoring).</p>
-                      </div>
-
-                      <div className="mb-2">
-                        <strong className="text-slate-800">Formula</strong>
-                        <div className="mt-1 p-2 bg-teal-50 border border-teal-200 rounded text-center text-[10px] font-bold text-teal-900">
-                          % Respon Positif Dimensi = (Total Jawaban Positif pada seluruh item dimensi ÷ Total Jawaban Terisi pada seluruh item dimensi) × 100%
-                        </div>
-                      </div>
-
-                      <div className="mb-2">
-                        <strong className="text-slate-800">Kriteria Penilaian</strong>
-                        <div className="mt-1 space-y-1">
-                          <div>
-                            <span className="font-bold text-teal-700">Area Keunggulan (Strengths)</span>
-                            <p>≥ 75%</p>
+                      <p>Pengolahan dan analisis data dilakukan mengikuti panduan pengolahan data AHRQ SOPS® Version 2.0:</p>
+                      <ul className="list-disc pl-5 mt-2 space-y-3">
+                        <li>
+                          <strong>Analisis Deskriptif Demografi:</strong> Menghitung frekuensi dan persentase untuk karakteristik responden (profesi, unit kerja, masa kerja, jam kerja).
+                        </li>
+                        <li>
+                          <strong>Kalkulasi Persentase Respon Positif (% Positive Response):</strong>
+                          <p className="mt-1 text-slate-700">Pilihan jawaban kuesioner menggunakan skala Likert 5 poin:</p>
+                          <ul className="list-circle pl-5 mt-1 space-y-1 text-[11px] text-slate-600">
+                            <li><strong>Agreement Scale:</strong> 1 = Sangat Tidak Setuju, 2 = Tidak Setuju, 3 = Netral, 4 = Setuju, 5 = Sangat Setuju.</li>
+                            <li><strong>Frequency Scale:</strong> 1 = Tidak Pernah, 2 = Jarang, 3 = Kadang-kadang, 4 = Sering, 5 = Selalu.</li>
+                          </ul>
+                          <ul className="list-square pl-5 mt-2 space-y-1.5">
+                            <li>
+                              <strong>Item Berpernyataan Positif (Positively Worded Items):</strong> Respon bernilai 4 (Setuju/Sering) dan 5 (Sangat Setuju/Selalu) dihitung sebagai respon positif.
+                            </li>
+                            <li>
+                              <strong>Item Berpernyataan Negatif (Negatively Worded / Negatively Worded Reverse Items):</strong> Respon bernilai 1 (Sangat Tidak Setuju/Tidak Pernah) dan 2 (Tidak Setuju/Jarang) dihitung sebagai respon positif.
+                            </li>
+                          </ul>
+                        </li>
+                        <li>
+                          <strong>Formula perhitungan respon positif dimensi:</strong>
+                          <div className="my-2 p-3 bg-teal-50 border border-teal-200 rounded-lg flex flex-col items-center justify-center">
+                            <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold text-teal-950">
+                              <span className="whitespace-nowrap font-black uppercase text-teal-900">&ldquo;% Respon Positif Dimensi&rdquo;</span>
+                              <span className="text-teal-600 text-lg font-normal">=</span>
+                              <div className="flex flex-col items-center mx-1">
+                                <span className="border-b border-teal-400 pb-1 px-3 text-center font-bold">Total Jawaban Positif pada Seluruh Item dalam Dimensi</span>
+                                <span className="pt-1 px-3 text-center font-bold">Total Jawaban yang Terisi pada Seluruh Item dalam Dimensi</span>
+                              </div>
+                              <span className="text-teal-600 text-lg font-normal">×</span>
+                              <span className="font-black">100%</span>
+                            </div>
                           </div>
-                          <div>
-                            <span className="font-bold text-yellow-600">Area Sedang / Netral</span>
-                            <p>50%–74%</p>
-                          </div>
-                          <div>
-                            <span className="font-bold text-red-600">Area Perlu Perbaikan</span>
-                            <p>&lt; 50%</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div>
-                        <strong className="text-slate-800">Analisis Tingkat Keselamatan Pasien</strong>
-                        <p className="mt-0.5">Menghitung distribusi persentase penilaian responden terhadap tingkat keselamatan pasien secara keseluruhan.</p>
-                      </div>
+                        </li>
+                        <li>
+                          <strong>Kriteria Kategori Dimensi:</strong>
+                          <ul className="list-disc pl-5 mt-1 space-y-1 text-slate-700">
+                            <li><strong>Area Keunggulan / Kekuatan (Strengths):</strong> Dimensi dengan persentase respon positif &ge;75%.</li>
+                            <li><strong>Area Perlu Perbaikan (Areas for Improvement):</strong> Dimensi dengan persentase respon positif &lt;50%.</li>
+                            <li><strong>Area Sedang / Netral:</strong> Dimensi dengan persentase respon positif antara 50%-74%.</li>
+                          </ul>
+                        </li>
+                        <li>
+                          <strong>Analisis Tingkat Keselamatan Pasien Keseluruhan:</strong> Menghitung distribusi persentase penilaian staf terhadap mutu keselamatan pasien di rumah sakit secara umum.
+                        </li>
+                      </ul>
                     </div>
                   </div>
                 </section>
@@ -1892,7 +1903,7 @@ export default function LaporanTab({
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
                 <section className="space-y-4">
@@ -1904,41 +1915,157 @@ export default function LaporanTab({
 
                   <div className="space-y-3">
                     <h3 className="font-bold text-slate-900 text-xs">3.1 Karakteristik Demografi Responden</h3>
-                    <p className="text-[10px] text-slate-500">Tabel 3.1 Distribusi Karakteristik Responden Survei Budaya Keselamatan Pasien</p>
+                    <p className="text-[10px] text-slate-500">Tabel 3.1 Distribusi Karakteristik Responden Survei Budaya Keselamatan Pasien (Realtime & Terintegrasi)</p>
 
-                    <div className="overflow-x-auto border border-slate-200 rounded-xl text-[10px]">
+                    <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
                       <table className="w-full text-left border-collapse">
                         <thead>
-                          <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[9px]">
-                            <th className="p-2.5 border-r border-white/20">Karakteristik</th>
-                            <th className="p-2.5 border-r border-white/20">Kategori</th>
-                            <th className="p-2.5 border-r border-white/20 text-center">Jumlah (n)</th>
-                            <th className="p-2.5 text-center">Persentase (%)</th>
+                          <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                            <th className="p-2 border-r border-white/20">Karakteristik</th>
+                            <th className="p-2 border-r border-white/20">Kategori / Detail</th>
+                            <th className="p-2 border-r border-white/20 text-center">Jumlah (n)</th>
+                            <th className="p-2 text-center">Persentase (%)</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200">
-                          {demographics.profesi.slice(0, 3).map((pItem, idx) => (
-                            <tr key={`prof-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                              {idx === 0 && <td rowSpan={3} className="p-2 font-bold text-slate-800 border-r border-slate-200 align-top">Profesi</td>}
-                              <td className="p-2 border-r border-slate-200 text-slate-700">{pItem.category}</td>
-                              <td className="p-2 border-r border-slate-200 text-center font-bold">{pItem.count}</td>
-                              <td className="p-2 text-center font-bold text-teal-700">{pItem.percentage}</td>
-                            </tr>
-                          ))}
-                          {demographics.masaKerja.slice(0, 3).map((mItem, idx) => (
-                            <tr key={`masa-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                              {idx === 0 && <td rowSpan={3} className="p-2 font-bold text-slate-800 border-r border-slate-200 align-top">Masa Kerja</td>}
-                              <td className="p-2 border-r border-slate-200 text-slate-700">{mItem.category}</td>
-                              <td className="p-2 border-r border-slate-200 text-center font-bold">{mItem.count}</td>
-                              <td className="p-2 text-center font-bold text-teal-700">{mItem.percentage}</td>
-                            </tr>
-                          ))}
+                          {/* 1. Posisi Staf */}
+                          {demografiStats.posisiData.slice(0, 5).map((pItem, idx, arr) => {
+                            const pct = ((pItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                            return (
+                              <tr key={`pos-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                {idx === 0 && (
+                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    Posisi / Jabatan
+                                  </td>
+                                )}
+                                <td className="p-2 border-r border-slate-200 text-slate-700">{pItem.name}</td>
+                                <td className="p-2 border-r border-slate-200 text-center font-bold">{pItem.value}</td>
+                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                              </tr>
+                            );
+                          })}
+
+                          {/* 2. Unit Kerja */}
+                          {demografiStats.unitData.slice(0, 4).map((uItem, idx, arr) => {
+                            const pct = ((uItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                            return (
+                              <tr key={`unit-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                {idx === 0 && (
+                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    Unit / Area Kerja
+                                  </td>
+                                )}
+                                <td className="p-2 border-r border-slate-200 text-slate-700">{uItem.name}</td>
+                                <td className="p-2 border-r border-slate-200 text-center font-bold">{uItem.value}</td>
+                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                              </tr>
+                            );
+                          })}
+
+                          {/* 3. Masa Kerja RS */}
+                          {demografiStats.g1Data.slice(0, 4).map((g1Item, idx, arr) => {
+                            const pct = ((g1Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                            return (
+                              <tr key={`g1-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                {idx === 0 && (
+                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    Masa Kerja di RS Ini
+                                  </td>
+                                )}
+                                <td className="p-2 border-r border-slate-200 text-slate-700">{g1Item.name}</td>
+                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g1Item.value}</td>
+                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                              </tr>
+                            );
+                          })}
+
+                          {/* 4. Masa Kerja Unit */}
+                          {demografiStats.g2Data.slice(0, 4).map((g2Item, idx, arr) => {
+                            const pct = ((g2Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                            return (
+                              <tr key={`g2-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                {idx === 0 && (
+                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    Masa Kerja di Unit Kerja
+                                  </td>
+                                )}
+                                <td className="p-2 border-r border-slate-200 text-slate-700">{g2Item.name}</td>
+                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g2Item.value}</td>
+                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                              </tr>
+                            );
+                          })}
+
+                          {/* 5. Jam Kerja */}
+                          {demografiStats.g3Data.slice(0, 4).map((g3Item, idx, arr) => {
+                            const pct = ((g3Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                            return (
+                              <tr key={`g3-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                {idx === 0 && (
+                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    Jam Kerja per Minggu
+                                  </td>
+                                )}
+                                <td className="p-2 border-r border-slate-200 text-slate-700">{g3Item.name}</td>
+                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g3Item.value}</td>
+                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                              </tr>
+                            );
+                          })}
+
+                          {/* 6. Interaksi Pasien */}
+                          {demografiStats.g4Data?.map((g4Item, idx, arr) => {
+                            const pct = ((g4Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                            return (
+                              <tr key={`g4-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                {idx === 0 && (
+                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    Interaksi Kontak Pasien
+                                  </td>
+                                )}
+                                <td className="p-2 border-r border-slate-200 text-slate-700 leading-tight">{g4Item.name}</td>
+                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g4Item.value}</td>
+                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
 
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[10px] text-slate-600 leading-relaxed">
-                      <strong>Interpretasi Singkat:</strong> Responden terbesar merupakan profesi <strong>{demographics.profesi[0]?.category} ({demographics.profesi[0]?.percentage})</strong>. Dominasi masa kerja berkisar pada <strong>{demographics.masaKerja[1]?.category} ({demographics.masaKerja[1]?.percentage})</strong> yang menunjukkan tingkat kematangan operasional di {namaRs}.
+                    <div className="space-y-2 mt-4">
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[10px] text-slate-600 leading-relaxed space-y-1">
+                        <strong className="text-teal-800 font-extrabold uppercase tracking-wide block">3.1.3 Interpretasi & Analisa Data Demografi:</strong>
+                        <p>
+                          Berdasarkan data demografi responden tahun <strong>{displayYear}</strong>, survei berhasil mengumpulkan partisipasi aktif dari <strong>{demografiNarrative.totalResp}</strong> staf. 
+                          Keterwakilan posisi staf didominasi oleh <strong>{demografiNarrative.topPos}</strong> (<strong>{demografiNarrative.topPosVal}</strong> responden){demografiNarrative.secondPos ? `, diikuti oleh ${demografiNarrative.secondPos} (${demografiNarrative.secondPosVal} responden)` : ''}. 
+                          Unit dengan kontribusi terbesar adalah <strong>{demografiNarrative.topUnit}</strong> dengan <strong>{demografiNarrative.topUnitVal}</strong> responden{demografiNarrative.secondUnit ? `, disusul unit ${demografiNarrative.secondUnit} (${demografiNarrative.secondUnitVal} responden)` : ''}. 
+                          Sedangkan dari masa bakti di rumah sakit, mayoritas responden memiliki masa kerja <strong>{demografiNarrative.topTenure}</strong> sebanyak <strong>{demografiNarrative.topTenureVal}</strong> staf. 
+                          Data ini menunjukkan sebaran responden yang representatif dan valid untuk dijadikan pijakan analisis budaya keselamatan pasien secara makro di <strong>{activeHospitalName}</strong>.
+                        </p>
+                      </div>
+
+                      <div className="bg-teal-50/45 p-3 rounded-xl border border-teal-100 text-[10px] text-slate-600 leading-relaxed space-y-1">
+                        <strong className="text-teal-900 font-extrabold uppercase tracking-wide block">Rekomendasi Peningkatan Strategis:</strong>
+                        <ul className="space-y-1 list-none pl-0">
+                          <li className="flex items-start gap-1.5">
+                            <span className="text-teal-600 shrink-0 select-none mt-0.5">👥</span>
+                            <span>Rancang program edukasi keselamatan pasien yang berfokus pada kelompok dominan yaitu posisi &ldquo;{demografiNarrative.topPos}&rdquo; di unit &ldquo;{demografiNarrative.topUnit}&rdquo;.</span>
+                          </li>
+                          <li className="flex items-start gap-1.5">
+                            <span className="text-teal-600 shrink-0 select-none mt-0.5">📈</span>
+                            <span>Tingkatkan tingkat partisipasi dari kelompok atau unit kerja dengan tingkat representasi rendah (di bawah 10% dari total responden).</span>
+                          </li>
+                          <li className="flex items-start gap-1.5">
+                            <span className="text-teal-600 shrink-0 select-none mt-0.5">🛡️</span>
+                            <span>Sosialisasikan kembali jaminan kerahasiaan identitas responden guna mendorong pengisian data yang jujur dan transparan.</span>
+                          </li>
+                          <li className="flex items-start gap-1.5">
+                            <span className="text-teal-600 shrink-0 select-none mt-0.5">✨</span>
+                            <span>Gunakan data demografi ini untuk merumuskan tim Champions Keselamatan Pasien lintas unit kerja.</span>
+                          </li>
+                        </ul>
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -2120,7 +2247,7 @@ export default function LaporanTab({
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
                 <section className="space-y-6">
@@ -2133,7 +2260,7 @@ export default function LaporanTab({
                           3.2.2 Keselamatan Pasien Keseluruhan (Overall Rating)
                         </h4>
                         <p className="text-[10px] text-slate-500 mt-0.5">
-                          Tingkat keselamatan pasien di unit kerja berdasarkan penilaian responden staf {namaRs}
+                          Tingkat keselamatan pasien di unit kerja berdasarkan penilaian responden staf {activeHospitalName}
                         </p>
                       </div>
                       <span className="text-[9.5px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200 self-start sm:self-auto">
@@ -2172,7 +2299,7 @@ export default function LaporanTab({
                         Interpretasi & Analisa Data
                       </h5>
                       <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                        Penilaian keselamatan pasien secara keseluruhan (overall safety rating) oleh staf pada tahun <strong>{tahunSurvei}</strong> di <strong>{namaRs}</strong> menghasilkan proporsi respons positif (kombinasi predikat Sangat Baik & Baik) sebesar <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong>. 
+                        Penilaian keselamatan pasien secara keseluruhan (overall safety rating) oleh staf pada tahun <strong>{tahunSurvei}</strong> di <strong>{activeHospitalName}</strong> menghasilkan proporsi respons positif (kombinasi predikat Sangat Baik & Baik) sebesar <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong>. 
                         Mayoritas staf memberikan penilaian keselamatan pada rentang kategori <strong>&ldquo;{safetyRatingHighestCat.name}&rdquo;</strong> sebesar <strong>{safetyRatingHighestCat.percentage}</strong>. 
                         Meskipun iklim keselamatan dinilai cukup baik, upaya peningkatan mutu berkelanjutan tetap harus didukung demi mencapai target ideal &ge;80% respons positif.
                       </p>
@@ -2263,7 +2390,7 @@ export default function LaporanTab({
                         Interpretasi & Analisa Data
                       </h5>
                       <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                        Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahunSurvei}</strong>), kategori dengan persentase tertinggi di <strong>{namaRs}</strong> adalah <strong>&ldquo;{reportedEventsHighestCat.name}&rdquo;</strong> sebesar <strong>{reportedEventsHighestCat.percentage}</strong>. 
+                        Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahunSurvei}</strong>), kategori dengan persentase tertinggi di <strong>{activeHospitalName}</strong> adalah <strong>&ldquo;{reportedEventsHighestCat.name}&rdquo;</strong> sebesar <strong>{reportedEventsHighestCat.percentage}</strong>. 
                         Tingginya angka staf yang tidak melapor atau jarang melapor menunjukkan adanya potensi fenomena <em>underreporting</em> (kejadian yang disembunyikan atau tidak dicatatkan) akibat rasa takut atau birokrasi yang rumit.
                       </p>
                       
@@ -2340,38 +2467,132 @@ export default function LaporanTab({
                     </p>
                   </div>
 
-                  {/* Dense Table Layout of Item-Level Scores grouped by dimension */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {Object.keys(DIMENSI_INFO).map((dimId, idx) => {
-                      const info = DIMENSI_INFO[dimId];
-                      const items = hospitalItemScores.filter(item => item.dimId === dimId);
-                      const dimPct = dimensionScores.find(d => d.kode === info.kode)?.percentage || 0;
+                  {/* Detailed Item Cards with Stacked Bar Percentage Charts matching Analisa Data -> Hasil Per Item */}
+                  <div className="space-y-6">
+                    {DIMENSION_ORDER.map((dimId, index) => {
+                      const dimInfo = DIMENSI_INFO[dimId];
+                      const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
+                      
+                      let sumPosPercent = 0;
+                      const qStats = questions.map(q => {
+                        const stat = calculateQuestionStats(q);
+                        sumPosPercent += stat.posPercent;
+                        return { q, stat };
+                      });
+                      const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
+                      const status = getDimensionStatus(avgPosPercent);
+
                       return (
-                        <div key={dimId} className="border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-                          <div className="bg-gradient-to-r from-teal-50 to-teal-100/50 px-3 py-1.5 font-bold text-slate-800 border-b border-slate-200 flex justify-between items-center text-[9px]">
-                            <span>{idx + 1}. {info.nama} ({info.kode})</span>
-                            <span className="text-teal-800 font-extrabold">{dimPct.toFixed(1)}%</span>
+                        <div 
+                          key={dimId} 
+                          className="bg-white border border-slate-200 rounded-[20px] overflow-hidden shadow-xs hover:shadow-sm transition-all group print:break-inside-avoid"
+                        >
+                          {/* Card Header */}
+                          <div className="p-4 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-4">
+                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-orange-400 to-indigo-600"></div>
+                            <div className="w-9 h-9 bg-white border border-slate-200 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
+                              <span className="text-base font-black text-indigo-600">{index + 1}</span>
+                            </div>
+                            <div>
+                              <h3 className="text-xs md:text-sm font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                              <p className="text-[10px] text-slate-500 mt-0.5 font-medium leading-relaxed">{dimInfo.deskripsi}</p>
+                            </div>
                           </div>
-                          <table className="w-full text-left border-collapse bg-white">
-                            <thead>
-                              <tr className="bg-slate-50 text-slate-500 text-[8px] uppercase font-bold border-b border-slate-100">
-                                <th className="p-1 border-r border-slate-100 w-10 text-center">Kode</th>
-                                <th className="p-1 border-r border-slate-100">Pernyataan/Pertanyaan</th>
-                                <th className="p-1 text-center w-14">% Positif</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100 text-[8px] text-slate-600">
-                              {items.map(item => (
-                                <tr key={item.id} className="hover:bg-slate-50/40">
-                                  <td className="p-1.5 border-r border-slate-100 text-center font-bold text-indigo-700">{item.id}</td>
-                                  <td className="p-1.5 border-r border-slate-100 font-medium leading-relaxed">
-                                    {item.text} {item.isReversed && <span className="text-rose-600 font-extrabold text-[7.5px] italic"> (Reversed)</span>}
-                                  </td>
-                                  <td className="p-1.5 text-center font-extrabold text-teal-800">{item.score.toFixed(1)}%</td>
-                                </tr>
+
+                          {/* Questions List */}
+                          <div className="p-4 md:p-5 space-y-4">
+                            {/* Legend */}
+                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pb-3 border-b border-slate-100">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded bg-emerald-500 shadow-xs"></div>
+                                <span className="text-[10.5px] font-bold text-slate-600">Positif</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded bg-yellow-500 shadow-xs"></div>
+                                <span className="text-[10.5px] font-bold text-slate-600">Netral</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded bg-rose-500 shadow-xs"></div>
+                                <span className="text-[10.5px] font-bold text-slate-600">Negatif</span>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-3 h-3 rounded bg-slate-400 shadow-xs"></div>
+                                <span className="text-[10.5px] font-bold text-slate-600">Tidak Menjawab / Tidak Tahu</span>
+                              </div>
+                            </div>
+                            
+                            <div className="space-y-4">
+                              {qStats.map(({ q, stat }) => (
+                                <div key={q.id} className="flex flex-col md:flex-row gap-3 md:items-center">
+                                  {/* Question Code & Text */}
+                                  <div className="md:w-[45%] flex gap-3">
+                                    <div className="flex flex-col items-center shrink-0">
+                                      <span className="text-xs font-black text-indigo-600 leading-none">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <div className="w-3.5 h-0.5 bg-indigo-600 mt-1 rounded-full"></div>
+                                    </div>
+                                    <p className="text-[11px] font-bold text-slate-700 leading-relaxed">{q.text}</p>
+                                  </div>
+
+                                  {/* Bar Chart and N/A label */}
+                                  <div className="flex-1 flex flex-col gap-2">
+                                    <div className="flex items-center gap-3">
+                                      <div className="flex-1 h-8 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative">
+                                        <div 
+                                          className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
+                                          style={{ width: `${stat.posPercent}%` }}
+                                        >
+                                          {stat.posPercent >= 8 && <span className="text-[9.5px] font-black text-white">{stat.posPercent}%</span>}
+                                        </div>
+                                        <div 
+                                          className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                          style={{ width: `${stat.neuPercent}%` }}
+                                        >
+                                          {stat.neuPercent >= 8 && <span className="text-[9.5px] font-black text-white">{stat.neuPercent}%</span>}
+                                        </div>
+                                        <div 
+                                          className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                          style={{ width: `${stat.negPercent}%` }}
+                                        >
+                                          {stat.negPercent >= 8 && <span className="text-[9.5px] font-black text-white">{stat.negPercent}%</span>}
+                                        </div>
+                                      </div>
+
+                                      <div className="flex items-center gap-1.5 min-w-[110px] shrink-0">
+                                        <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
+                                        <div className="leading-tight">
+                                          <p className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Menjawab /</p>
+                                          <p className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Tahu <span className="text-slate-800 font-black">{stat.missingPercent}%</span></p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
                               ))}
-                            </tbody>
-                          </table>
+                            </div>
+                          </div>
+
+                          {/* Summary Footer */}
+                          <div className="bg-slate-50/50 p-3.5 md:p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                            <div className="flex flex-col gap-0.5">
+                              <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">RESPON POSITIF DIMENSI</p>
+                              <div className="flex items-center gap-2.5">
+                                <span className="text-2xl font-black text-slate-800">{avgPosPercent}%</span>
+                                <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${status.bg} ${status.color} ${status.border} uppercase shadow-2xs`}>
+                                  {status.label}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="flex items-center gap-3">
+                              <div className="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl shadow-2xs text-center">
+                                <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-tight">Benchmark (AHRQ)</p>
+                                <p className="text-[11px] font-black text-slate-700">72.0% - 85.0%</p>
+                              </div>
+                              <div className="w-9 h-9 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shadow-2xs">
+                                <TrendingUp className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}
@@ -2739,7 +2960,7 @@ export default function LaporanTab({
                               <tr className="bg-indigo-900 text-white font-extrabold uppercase text-[8px] border-b border-indigo-950">
                                 <th className="p-2 border-r border-indigo-800 w-12 text-center">Kode</th>
                                 <th className="p-2 border-r border-indigo-800">Dimensi Budaya Keselamatan</th>
-                                <th className="p-2 text-center border-r border-indigo-800 w-28">{namaRs} (Anda)</th>
+                                <th className="p-2 text-center border-r border-indigo-800 w-28">{activeHospitalName} (Anda)</th>
                                 <th className="p-2 text-center border-r border-indigo-800 w-28">{selectedBenchmarkHospital.namaRs}</th>
                                 <th className="p-2 text-center w-28">Kesenjangan (Gap)</th>
                               </tr>
@@ -2909,7 +3130,7 @@ export default function LaporanTab({
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                   <span></span>
-                  <span className="text-teal-700 font-extrabold">{namaRs}</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
                 <section className="space-y-4">
@@ -2922,7 +3143,7 @@ export default function LaporanTab({
                   <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
                     <h3 className="font-bold text-slate-900 text-xs">4.1 Kesimpulan</h3>
                     <p>
-                      Berdasarkan hasil survei budaya keselamatan pasien berbasis AHRQ SOPS® Version 2.0 di <strong className="text-slate-900">{namaRs}</strong>, disimpulkan poin-poin penting berikut:
+                      Berdasarkan hasil survei budaya keselamatan pasien berbasis AHRQ SOPS® Version 2.0 di <strong className="text-slate-900">{activeHospitalName}</strong>, disimpulkan poin-poin penting berikut:
                     </p>
                     <ul className="list-disc pl-4 space-y-1 text-[11px]">
                       <li>Rata-rata pencapaian respon positif budaya keselamatan pasien berada pada angka <strong>{overallAverage.toFixed(1)}%</strong>.</li>

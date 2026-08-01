@@ -398,97 +398,123 @@ export async function exportReportToDocx(data: ReportData) {
           bullet(`• Persentase Response Rate: ${data.responseRate}`),
 
           heading2("2.4 Instrumen Survei"),
-          p("Instrumen yang digunakan adalah:"),
-          p("AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0", { bold: true }),
-          p("yang telah diterjemahkan ke Bahasa Indonesia."),
-          p("Instrumen terdiri atas 10 Dimensi Budaya Keselamatan Pasien:"),
+          p("Instrumen yang digunakan adalah AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0 yang telah diterjemahkan ke dalam bahasa Indonesia dan diuji keterbacaannya."),
+          p("Instrumen SOPS® Versi 2.0 mengukur 10 Dimensi Budaya Keselamatan Pasien yang terdiri dari 32 item pertanyaan primer, ditambah dengan bagian evaluasi penilaian tingkat keselamatan pasien (overall rating) dan karakteristik demografi responden:"),
           bullet("1. Teamwork (Kerja Sama Tim) – 3 item"),
-          bullet("2. Staffing and Work Pace – 4 item"),
-          bullet("3. Organizational Learning—Continuous Improvement – 3 item"),
-          bullet("4. Response to Error – 4 item"),
-          bullet("5. Supervisor/Manager Support – 3 item"),
-          bullet("6. Management Support – 3 item"),
-          bullet("7. Communication Openness – 4 item"),
-          bullet("8. Reporting Patient Safety Events – 2 item"),
-          bullet("9. Hospital Handoffs and Information Exchange – 3 item"),
-          bullet("10. Communication About Error – 3 item"),
-          p("Selain itu terdapat:"),
-          bullet("• Overall Patient Safety Rating"),
-          bullet("• Pertanyaan Demografi Responden"),
+          bullet("2. Staffing and Work Pace (Ketenagaan dan Kecepatan Kerja) – 4 item"),
+          bullet("3. Organizational Learning—Continuous Improvement (Pembelajaran Organisasi—Peningkatan Berkelanjutan) – 3 item"),
+          bullet("4. Response to Error (Respons Terhadap Kesalahan / Non-punitive Environment) – 4 item"),
+          bullet("5. Supervisor, Manager, or Clinical Leader Support for Patient Safety (Dukungan Atasan/Manajer/Pimpinan Klinis terhadap Keselamatan Pasien) – 3 item"),
+          bullet("6. Management Support for Patient Safety (Dukungan Manajemen/Direksi terhadap Keselamatan Pasien) – 3 item"),
+          bullet("7. Communication Openness (Keterbukaan Komunikasi) – 4 item"),
+          bullet("8. Reporting Patient Safety Events (Pelaporan Insiden Keselamatan Pasien) – 2 item"),
+          bullet("9. Hospital Handoffs and Information Exchange (Serah Terima/Handoff dan Pertukaran Informasi di Rumah Sakit) – 3 item"),
+          bullet("10. Communication About Error (Komunikasi Mengenai Kesalahan) – 3 item"),
+          bullet("• Tingkat Keselamatan Pasien Keseluruhan (Overall Patient Safety Rating): 1 item pertanyaan penilaian global dengan skala Likert 5 poin (Sangat Buruk, Buruk, Cukup, Baik, Sangat Baik)."),
+          bullet("• Pertanyaan Demografi: Meliputi unit kerja utama, profesi/peran, lama bekerja di rumah sakit, lama bekerja di unit saat ini, serta jumlah jam kerja per minggu."),
 
           heading2("2.5 Metode Pengumpulan Data"),
-          p("Pengumpulan data dilakukan secara elektronik (e-Survey) melalui aplikasi Survei Budaya Keselamatan Pasien."),
-          p("Meliputi:"),
+          p("Pengumpulan data dilakukan secara elektronik/online (e-survey menggunakan link aplikasi pengukuran budaya keselamatan) dengan memperhitungkan kerahasiaan:"),
           
-          heading3("Penyebaran Kuesioner"),
-          p("Melalui koordinasi:"),
-          bullet("• Kepala Unit"),
-          bullet("• Kepala Ruangan"),
-          bullet("• Tim Komite Mutu"),
+          bullet("Penyebaran Tautan/Kuesioner: Disebarkan melalui koordinasi Kepala Unit/Ruangan dan Tim Komite Mutu."),
 
-          heading3("Prinsip Anonimitas"),
-          p("Responden tidak diminta mengisi:"),
-          bullet("• Nama"),
-          bullet("• NIP"),
-          p("untuk menjamin kerahasiaan identitas."),
+          bullet("Prinsip Anonimitas: Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kerahasiaan (anonymity) dan kejujuran jawaban tanpa kekhawatiran akan adanya sanksi/dampak karir."),
 
-          heading3("Monitoring Response Rate"),
-          p("Monitoring dilakukan setiap hari terhadap tingkat partisipasi seluruh unit kerja."),
+          bullet("Monitoring Response Rate: Tim pelaksana melakukan pemantauan harian terhadap tingkat partisipasi di tiap unit untuk memastikan keterwakilan data."),
 
           heading2("2.6 Analisis Data"),
-          p("Pengolahan data mengikuti pedoman resmi:"),
-          p("AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0", { bold: true }),
-          p("meliputi:"),
+          p("Pengolahan dan analisis data dilakukan mengikuti panduan pengolahan data AHRQ SOPS® Version 2.0:"),
 
-          heading3("Analisis Demografi"),
-          p("Menghitung:"),
-          bullet("• Frekuensi"),
-          bullet("• Persentase"),
-          p("berdasarkan:"),
-          bullet("• Profesi"),
-          bullet("• Unit Kerja"),
-          bullet("• Masa Kerja"),
-          bullet("• Jam Kerja"),
+          bullet("Analisis Deskriptif Demografi: Menghitung frekuensi dan persentase untuk karakteristik responden (profesi, unit kerja, masa kerja, jam kerja)."),
 
-          heading3("Kalkulasi Persentase Respon Positif"),
-          p("Skala Agreement:", { bold: true }),
-          bullet("1. Sangat Tidak Setuju"),
-          bullet("2. Tidak Setuju"),
-          bullet("3. Netral"),
-          bullet("4. Setuju"),
-          bullet("5. Sangat Setuju"),
-          p("Skala Frequency:", { bold: true }),
-          bullet("1. Tidak Pernah"),
-          bullet("2. Jarang"),
-          bullet("3. Kadang-kadang"),
-          bullet("4. Sering"),
-          bullet("5. Selalu"),
+          bullet("Kalkulasi Persentase Respon Positif (% Positive Response):"),
+          bullet("Pilihan jawaban kuesioner menggunakan skala Likert 5 poin:", 1),
+          bullet("Agreement Scale: 1 = Sangat Tidak Setuju, 2 = Tidak Setuju, 3 = Netral, 4 = Setuju, 5 = Sangat Setuju.", 2),
+          bullet("Frequency Scale: 1 = Tidak Pernah, 2 = Jarang, 3 = Kadang-kadang, 4 = Sering, 5 = Selalu.", 2),
+          bullet("Item Berpernyataan Positif (Positively Worded Items): Respon bernilai 4 (Setuju/Sering) dan 5 (Sangat Setuju/Selalu) dihitung sebagai respon positif.", 1),
+          bullet("Item Berpernyataan Negatif (Negatively Worded / Negatively Worded Reverse Items): Respon bernilai 1 (Sangat Tidak Setuju/Tidak Pernah) dan 2 (Tidak Setuju/Jarang) dihitung sebagai respon positif.", 1),
 
-          heading3("Perhitungan Item Positif"),
-          p("Respon:"),
-          bullet("• 4"),
-          bullet("• 5"),
-          p("dihitung sebagai respon positif."),
+          bullet("Formula perhitungan respon positif dimensi:"),
 
-          heading3("Perhitungan Item Negatif"),
-          p("Respon:"),
-          bullet("• 1"),
-          bullet("• 2"),
-          p("dihitung sebagai respon positif (Reverse Scoring)."),
 
-          heading3("Formula"),
-          p("% Respon Positif Dimensi = (Total Jawaban Positif pada seluruh item dimensi ÷ Total Jawaban Terisi pada seluruh item dimensi) × 100%", { bold: true }),
 
-          heading3("Kriteria Penilaian"),
-          p("Area Keunggulan (Strengths)", { bold: true }),
-          p("≥ 75%"),
-          p("Area Sedang / Netral", { bold: true }),
-          p("50%–74%"),
-          p("Area Perlu Perbaikan", { bold: true }),
-          p("< 50%"),
+          new Table({
+            width: { size: 95, type: WidthType.PERCENTAGE },
+            alignment: AlignmentType.CENTER,
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    shading: { fill: "F0FDF4", type: ShadingType.CLEAR },
+                    borders: {
+                      top: { style: BorderStyle.SINGLE, size: 8, color: "0D9488" },
+                      bottom: { style: BorderStyle.SINGLE, size: 8, color: "0D9488" },
+                      left: { style: BorderStyle.SINGLE, size: 8, color: "0D9488" },
+                      right: { style: BorderStyle.SINGLE, size: 8, color: "0D9488" },
+                    },
+                    margins: { top: 120, bottom: 120, left: 180, right: 180 },
+                    children: [
+                      new Paragraph({
+                        alignment: AlignmentType.CENTER,
+                        spacing: { before: 80, after: 80 },
+                        children: [
+                          new TextRun({
+                            text: '"% Respon Positif Dimensi"',
+                            bold: true,
+                            font: "Calibri",
+                            size: 20,
+                            color: "0F172A"
+                          }),
+                          new TextRun({
+                            text: " = ",
+                            font: "Calibri",
+                            size: 20,
+                            color: "0D9488"
+                          }),
+                          new TextRun({
+                            text: "Total Jawaban Positif pada Seluruh Item dalam Dimensi",
+                            bold: true,
+                            font: "Calibri",
+                            size: 18,
+                            color: "1E293B"
+                          }),
+                          new TextRun({
+                            text: "  /  ",
+                            bold: true,
+                            font: "Calibri",
+                            size: 20,
+                            color: "0D9488"
+                          }),
+                          new TextRun({
+                            text: "Total Jawaban yang Terisi pada Seluruh Item dalam Dimensi",
+                            bold: true,
+                            font: "Calibri",
+                            size: 18,
+                            color: "1E293B"
+                          }),
+                          new TextRun({
+                            text: "  × 100%",
+                            bold: true,
+                            font: "Calibri",
+                            size: 20,
+                            color: "0F172A"
+                          })
+                        ]
+                      })
+                    ]
+                  })
+                ]
+              })
+            ]
+          }),
+          p("", { spaceAfter: 60 }),
 
-          heading3("Analisis Tingkat Keselamatan Pasien"),
-          p("Menghitung distribusi persentase penilaian responden terhadap tingkat keselamatan pasien secara keseluruhan."),
+          bullet("Kriteria Kategori Dimensi:"),
+          bullet("Area Keunggulan / Kekuatan (Strengths): Dimensi dengan persentase respon positif ≥75%.", 1),
+          bullet("Area Perlu Perbaikan (Areas for Improvement): Dimensi dengan persentase respon positif <50%.", 1),
+          bullet("Area Sedang / Netral: Dimensi dengan persentase respon positif antara 50%-74%.", 1),
+
+          bullet("Analisis Tingkat Keselamatan Pasien Keseluruhan: Menghitung distribusi persentase penilaian staf terhadap mutu keselamatan pasien di rumah sakit secara umum."),
 
           pageBreak(),
 
