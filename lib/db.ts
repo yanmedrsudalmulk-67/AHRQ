@@ -223,7 +223,6 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
         let uuid = hospitalId;
         let username = hospitalId;
         let hospitalNameResolved = hospitalId;
-        let authorizedNames: string[] = [];
 
         try {
           const { data: accounts, error: accErr } = await supabase
@@ -242,19 +241,6 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
             username = accounts[0].username;
             hospitalNameResolved = accounts[0].nama_rs || hospitalId;
           }
-          
-          // Get authorized benchmarking hospitals
-          try {
-            const requests = await getBenchmarkRequests(uuid);
-            const approved = requests.filter(r => r.status === 'approved');
-            approved.forEach(r => {
-              if (r.requester_name && r.requester_name !== hospitalNameResolved) authorizedNames.push(r.requester_name);
-              if (r.target_name && r.target_name !== hospitalNameResolved) authorizedNames.push(r.target_name);
-            });
-            // Also include their ids if needed, but nama_rs is usually used in benchmarking
-          } catch (bmErr) {
-            console.warn("Failed to fetch benchmark requests for data integration", bmErr);
-          }
         } catch (err: any) {
           if (err?.message?.includes('Failed to fetch') || err?.details?.includes('Failed to fetch')) {
             console.warn("Koneksi Supabase tidak dapat dijangkau (Failed to fetch).");
@@ -264,17 +250,10 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
         }
 
         try {
-          let orQuery = `hospital_id.eq."${uuid}",hospital_id.eq."${username}",user_id.eq."${uuid}",user_id.eq."${username}",created_by.eq."${uuid}",created_by.eq."${username}",dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",nama_rs.eq."${hospitalNameResolved}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}"`;
-          
-          if (authorizedNames.length > 0) {
-             const authOr = authorizedNames.map(name => `nama_rs.eq."${name}",dimensi_scores->>hospital_name.eq."${name}"`).join(',');
-             orQuery = `${orQuery},${authOr}`;
-          }
-
           const { data, error } = await supabase
             .from('ahrq_surveys')
             .select('*')
-            .or(orQuery)
+            .or(`hospital_id.eq."${uuid}",hospital_id.eq."${username}",user_id.eq."${uuid}",user_id.eq."${username}",created_by.eq."${uuid}",created_by.eq."${username}",dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",nama_rs.eq."${hospitalNameResolved}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}"`)
             .order('created_at', { ascending: false });
 
           if (!error && data) {
@@ -304,17 +283,10 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
           }
           // Fallback query using only JSONB dimensi_scores keys (always safe, won't cause 42703 / PGRST204)
           try {
-            let orQueryFb = `dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",unit_kerja.eq."${uuid}",unit_kerja.eq."${username}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}",nama_rs.eq."${hospitalNameResolved}"`;
-            
-            if (authorizedNames.length > 0) {
-               const authOrFb = authorizedNames.map(name => `nama_rs.eq."${name}",dimensi_scores->>hospital_name.eq."${name}"`).join(',');
-               orQueryFb = `${orQueryFb},${authOrFb}`;
-            }
-
             const { data, error } = await supabase
               .from('ahrq_surveys')
               .select('*')
-              .or(orQueryFb)
+              .or(`dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",unit_kerja.eq."${uuid}",unit_kerja.eq."${username}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}",nama_rs.eq."${hospitalNameResolved}"`)
               .order('created_at', { ascending: false });
 
             if (!error && data) {
@@ -615,6 +587,17 @@ export async function getAccountAuditLogs(): Promise<AccountAuditLog[]> {
     }
   }
 
+  if (logs.length === 0 && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_ACCOUNT_AUDIT_LOGS_KEY);
+      if (stored) {
+        logs = JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn("Failed reading account_audit_logs from localStorage:", err);
+    }
+  }
+
   return logs;
 }
 
@@ -646,6 +629,16 @@ export async function addAccountAuditLog(logData: Omit<AccountAuditLog, 'id' | '
       }
     } catch (e) {
       console.warn("Error inserting account_audit_log to Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      const currentLogs = await getAccountAuditLogs();
+      const updated = [newLog, ...currentLogs];
+      localStorage.setItem(LOCAL_ACCOUNT_AUDIT_LOGS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Error saving account_audit_log to localStorage:", err);
     }
   }
 
@@ -1701,6 +1694,17 @@ export async function getRawBenchmarkAuditLogsInternal(): Promise<BenchmarkAudit
     }
   }
 
+  if (logs.length === 0 && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_BENCHMARK_AUDIT_LOGS_KEY);
+      if (stored) {
+        logs = JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn("Failed reading benchmark_audit_logs from localStorage:", err);
+    }
+  }
+
   return logs;
 }
 
@@ -1752,6 +1756,16 @@ export async function addBenchmarkAuditLog(logData: Omit<BenchmarkAuditLog, 'id'
     }
   }
 
+  if (typeof window !== 'undefined') {
+    try {
+      const currentLogs = await getRawBenchmarkAuditLogsInternal();
+      const updated = [newLog, ...currentLogs.filter(l => l.id !== newLog.id)];
+      localStorage.setItem(LOCAL_BENCHMARK_AUDIT_LOGS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Error saving benchmark_audit_log to localStorage:", err);
+    }
+  }
+
   return newLog;
 }
 
@@ -1783,6 +1797,17 @@ export async function getRawBenchmarkRequestsInternal(): Promise<BenchmarkReques
     }
   }
 
+  if (items.length === 0 && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(LOCAL_BENCHMARK_REQUESTS_KEY);
+      if (stored) {
+        items = JSON.parse(stored);
+      }
+    } catch (err) {
+      console.warn("Failed reading benchmark_requests from localStorage:", err);
+    }
+  }
+
   return items;
 }
 
@@ -1795,43 +1820,12 @@ export async function getBenchmarkRequests(hospitalId?: string): Promise<Benchma
   const items = await getRawBenchmarkRequestsInternal();
 
   // Strict hospital privacy filter: only requests involving this hospital
-  // Match by ID, identifier (username), or name to ensure no request is missed
   return items.filter(r => 
     r.requester_id === hospitalId || 
     r.target_id === hospitalId ||
     r.requester_name.toLowerCase() === hospitalId.toLowerCase() ||
     r.target_name.toLowerCase() === hospitalId.toLowerCase()
   );
-}
-
-/**
- * SECURE BENCHMARK DATA FETCHING
- * Ensures that only approved hospitals can read the data of their benchmark targets.
- * Validates requester_id, target_id, and status = 'approved'.
- */
-export async function getSecureBenchmarkSurveys(requesterId: string, targetId: string): Promise<SurveyData[]> {
-  if (!requesterId || !targetId || requesterId === 'admin') {
-    return [];
-  }
-
-  const supabase = getSupabaseClient();
-  if (!supabase) return [];
-
-  // 1. Verify approval status in realtime
-  const requests = await getRawBenchmarkRequestsInternal();
-  const isApproved = requests.some(r => 
-    (r.requester_id === requesterId || r.requester_name.toLowerCase() === requesterId.toLowerCase()) &&
-    (r.target_id === targetId || r.target_name.toLowerCase() === targetId.toLowerCase()) &&
-    r.status === 'approved'
-  );
-
-  if (!isApproved) {
-    console.warn(`SECURITY ALERT: Unauthorized benchmark data access attempt from ${requesterId} to ${targetId}`);
-    return [];
-  }
-
-  // 2. Fetch the data directly from target hospital's surveys
-  return await getSurveys(targetId);
 }
 
 export async function createBenchmarkRequest(
@@ -1870,6 +1864,17 @@ export async function createBenchmarkRequest(
       }
     } catch (e) {
       console.warn("Error inserting benchmark_request to Supabase:", e);
+    }
+  }
+
+  // Always update localStorage fallback
+  if (typeof window !== 'undefined') {
+    try {
+      const current = await getRawBenchmarkRequestsInternal();
+      const updated = [newReq, ...current.filter(r => r.id !== newReq.id)];
+      localStorage.setItem(LOCAL_BENCHMARK_REQUESTS_KEY, JSON.stringify(updated));
+    } catch (err) {
+      console.warn("Error saving benchmark_request to localStorage:", err);
     }
   }
 
@@ -1949,6 +1954,14 @@ export async function updateBenchmarkRequestStatus(
     }
   }
 
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_BENCHMARK_REQUESTS_KEY, JSON.stringify(currentRequests));
+    } catch (err) {
+      console.warn("Failed saving updated benchmark_requests to localStorage:", err);
+    }
+  }
+
   if (updatedReq) {
     const actionMap: Record<string, 'approved' | 'rejected' | 'revoked'> = {
       approved: 'approved',
@@ -2010,6 +2023,14 @@ export async function deleteBenchmarkRequest(requestId: string): Promise<void> {
       }
     } catch (e) {
       console.warn("Failed deleting benchmark_request in Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LOCAL_BENCHMARK_REQUESTS_KEY, JSON.stringify(filtered));
+    } catch (err) {
+      console.warn("Failed saving deleted benchmark_requests to localStorage:", err);
     }
   }
 
@@ -2087,6 +2108,24 @@ export async function getPengesahanConfig(hospitalIdOrUsername?: string, current
     }
   }
 
+  // 3. Try LocalStorage fallback
+  if (!foundConfig && typeof window !== 'undefined') {
+    try {
+      const stored = localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}${identifier}`);
+      if (stored) {
+        foundConfig = JSON.parse(stored);
+        isSpecific = true;
+      } else {
+        const globalStored = localStorage.getItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}global`);
+        if (globalStored) {
+          foundConfig = JSON.parse(globalStored);
+        }
+      }
+    } catch (e) {
+      console.warn("Failed reading pengesahan config from localStorage:", e);
+    }
+  }
+
   const defaultDate = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
   const rsName = (isSpecific && foundConfig?.namaRs) ? foundConfig.namaRs : (currentNamaRs || foundConfig?.namaRs || 'Rumah Sakit');
 
@@ -2134,6 +2173,15 @@ export async function savePengesahanConfig(hospitalIdOrUsername: string, config:
       });
     } catch (e) {
       console.warn("Error saving pengesahan config to Supabase:", e);
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}${identifier}`, JSON.stringify(config));
+      localStorage.setItem(`${LOCAL_PENGESAHAN_KEY_PREFIX}global`, JSON.stringify(config));
+    } catch (e) {
+      console.warn("Error saving pengesahan config to localStorage:", e);
     }
   }
 }

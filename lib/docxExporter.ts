@@ -60,6 +60,13 @@ export interface ReportData {
   benchmarkComparison?: { kode: string; nama: string; rsPct: number; benchPct: number; diff: number }[];
   hasYearComparison: boolean;
   yearComparison?: { year: string; average: number }[];
+  chartImages?: {
+    chart10Dimensi?: string;
+    overallRating?: string;
+    reportedEvents?: string;
+    benchmark?: string;
+    yearComparison?: string;
+  };
   pengesahan: {
     kota: string;
     tanggal: string;
@@ -70,75 +77,21 @@ export interface ReportData {
     direkturJabatan: string;
     direkturNip?: string;
   };
-  pageImages?: string[];
+}
+
+// Convert base64 data URL to Uint8Array for docx ImageRun
+function base64ToUint8Array(base64: string): Uint8Array {
+  const cleanBase64 = base64.replace(/^data:image\/(png|jpeg|jpg);base64,/, '');
+  const binaryString = atob(cleanBase64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
 }
 
 export async function exportReportToDocx(data: ReportData) {
-  if (data.pageImages && data.pageImages.length > 0) {
-    const base64ToUint8Array = (base64: string) => {
-      const binaryString = window.atob(base64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      return bytes;
-    };
-
-    const docChildren: Paragraph[] = [];
-
-    for (let i = 0; i < data.pageImages.length; i++) {
-      const dataUrl = data.pageImages[i];
-      const base64Data = dataUrl.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
-      const uint8 = base64ToUint8Array(base64Data);
-
-      docChildren.push(
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          children: [
-            new ImageRun({
-              data: uint8,
-              transformation: {
-                width: 794,
-                height: 1123,
-              },
-            } as any),
-          ],
-        })
-      );
-
-      if (i < data.pageImages.length - 1) {
-        docChildren.push(new Paragraph({ children: [new PageBreak()] }));
-      }
-    }
-
-    const doc = new Document({
-      sections: [
-        {
-          properties: {
-            page: {
-              size: {
-                width: 11906,
-                height: 16838,
-              },
-              margin: {
-                top: 0,
-                bottom: 0,
-                left: 0,
-                right: 0,
-              },
-            },
-          },
-          children: docChildren,
-        },
-      ],
-    });
-
-    const blob = await Packer.toBlob(doc);
-    saveAs(blob, `Laporan_Survei_Budaya_Keselamatan_Pasien_${data.namaRs.replace(/\s+/g, '_')}_${data.tahun}.docx`);
-    return;
-  }
-
   // Primary Palette: Dark Slate / Navy (#1E293B, #0F172A) & Teal Header (#0D9488)
   const headerBgColor = "0D9488";
   const headerTextColor = "FFFFFF";
@@ -172,8 +125,107 @@ export async function exportReportToDocx(data: ReportData) {
     });
   };
 
+  const createProgressBarCell = (percentage: number) => {
+    const val = Math.min(100, Math.max(0, percentage));
+    const filledBlocks = Math.round(val / 10);
+    const emptyBlocks = 10 - filledBlocks;
+    const barStr = "█".repeat(filledBlocks) + "░".repeat(emptyBlocks);
+
+    let color = "0D9488"; // default teal
+    let bg = "F0FDF4";
+    if (val >= 85) { color = "2563EB"; bg = "EFF6FF"; } // blue
+    else if (val >= 70) { color = "16A34A"; bg = "F0FDF4"; } // green
+    else if (val >= 50) { color = "D97706"; bg = "FFFBEB"; } // yellow
+    else { color = "DC2626"; bg = "FEF2F2"; } // red
+
+    return new TableCell({
+      shading: { fill: bg, type: ShadingType.CLEAR },
+      children: [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 80, after: 80 },
+          children: [
+            new TextRun({
+              text: `${barStr} `,
+              bold: true,
+              font: "Consolas",
+              size: 20,
+              color: color,
+            }),
+            new TextRun({
+              text: `${val.toFixed(1)}%`,
+              bold: true,
+              font: "Calibri",
+              size: 20,
+              color: "0F172A",
+            }),
+          ],
+        }),
+      ],
+      borders: {
+        top: { style: BorderStyle.SINGLE, size: 1, color: borderGray },
+        bottom: { style: BorderStyle.SINGLE, size: 1, color: borderGray },
+        left: { style: BorderStyle.SINGLE, size: 1, color: borderGray },
+        right: { style: BorderStyle.SINGLE, size: 1, color: borderGray },
+      },
+    });
+  };
+
   const createHeaderCell = (text: string, align: any = AlignmentType.CENTER) => {
     return createCell(text, true, align, headerBgColor, headerTextColor);
+  };
+
+  const createCalloutCard = (title: string, contentStr: string, options?: { bgHex?: string; borderHex?: string; icon?: string }) => {
+    const bg = options?.bgHex || "F0FDFA";
+    const border = options?.borderHex || "0D9488";
+
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      alignment: AlignmentType.CENTER,
+      rows: [
+        new TableRow({
+          cantSplit: true,
+          children: [
+            new TableCell({
+              shading: { fill: bg, type: ShadingType.CLEAR },
+              borders: {
+                top: { style: BorderStyle.SINGLE, size: 2, color: border },
+                bottom: { style: BorderStyle.SINGLE, size: 2, color: border },
+                left: { style: BorderStyle.SINGLE, size: 12, color: border }, // thick left border
+                right: { style: BorderStyle.SINGLE, size: 2, color: border },
+              },
+              margins: { top: 120, bottom: 120, left: 180, right: 180 },
+              children: [
+                new Paragraph({
+                  spacing: { before: 60, after: 60 },
+                  keepNext: true,
+                  children: [
+                    new TextRun({
+                      text: (options?.icon ? options.icon + " " : "✦ ") + title.toUpperCase(),
+                      bold: true,
+                      font: "Calibri",
+                      size: 22,
+                      color: "0F172A",
+                    }),
+                  ],
+                }),
+                new Paragraph({
+                  spacing: { before: 40, after: 60, line: 260 },
+                  children: [
+                    new TextRun({
+                      text: contentStr,
+                      font: "Calibri",
+                      size: 20,
+                      color: "1E293B",
+                    }),
+                  ],
+                }),
+              ],
+            }),
+          ],
+        }),
+      ],
+    });
   };
 
   const pageBreak = () => new Paragraph({ children: [new PageBreak()] });
@@ -221,6 +273,7 @@ export async function exportReportToDocx(data: ReportData) {
       heading: HeadingLevel.HEADING_1,
       alignment: AlignmentType.CENTER,
       spacing: { before: 360, after: 180 },
+      keepNext: true,
       children,
     });
   };
@@ -230,6 +283,7 @@ export async function exportReportToDocx(data: ReportData) {
       heading: HeadingLevel.HEADING_2,
       alignment: AlignmentType.LEFT,
       spacing: { before: 240, after: 120 },
+      keepNext: true,
       children: [
         new TextRun({
           text,
@@ -247,6 +301,7 @@ export async function exportReportToDocx(data: ReportData) {
       heading: HeadingLevel.HEADING_3,
       alignment: AlignmentType.LEFT,
       spacing: { before: 180, after: 90 },
+      keepNext: true,
       children: [
         new TextRun({
           text,
@@ -651,54 +706,228 @@ export async function exportReportToDocx(data: ReportData) {
           heading3("3.2.1 Respon positif berdasarkan 10 dimensi budaya keselamatan pasien"),
           p("Ringkasan hasil pencapaian persentase respon positif (% Positive Response) untuk setiap dimensi disajikan pada Tabel berikut:"),
           
-          // Table 3.2 10 Dimensi
+          // Table 3.2 10 Dimensi with Visual Progress Bars
           new Table({
             width: { size: 100, type: WidthType.PERCENTAGE },
             rows: [
               new TableRow({
+                tableHeader: true,
+                cantSplit: true,
                 children: [
                   createHeaderCell("No.", AlignmentType.CENTER),
                   createHeaderCell("Kode", AlignmentType.CENTER),
                   createHeaderCell("Komponen / Dimensi Budaya Keselamatan Pasien", AlignmentType.LEFT),
-                  createHeaderCell("% Respon Positif", AlignmentType.CENTER),
+                  createHeaderCell("Diagram Progress & % Respon", AlignmentType.CENTER),
                   createHeaderCell("Kategori Penilaian", AlignmentType.CENTER),
                 ],
               }),
               ...data.dimensionScores.map((d, idx) => 
                 new TableRow({
+                  cantSplit: true,
                   children: [
                     createCell(`${idx + 1}.`, false, AlignmentType.CENTER),
                     createCell(d.kode, true, AlignmentType.CENTER),
                     createCell(d.nama),
-                    createCell(`${d.percentage.toFixed(1)}%`, true, AlignmentType.CENTER),
+                    createProgressBarCell(d.percentage),
                     createCell(
                       d.percentage >= 75 ? "Area Kekuatan (≥75%)" : d.percentage < 50 ? "Area Perbaikan (<50%)" : "Moderat (50-74%)",
                       true,
                       AlignmentType.CENTER,
-                      d.percentage >= 75 ? "DCFCE7" : d.percentage < 50 ? "FEE2E2" : "FEF3C7"
+                      d.percentage >= 75 ? "DCFCE7" : d.percentage < 50 ? "FEE2E2" : "FEF3C7",
+                      d.percentage >= 75 ? "15803D" : d.percentage < 50 ? "B91C1C" : "B45309"
                     ),
                   ],
                 })
               ),
               new TableRow({
+                cantSplit: true,
                 children: [
                   createCell("Rata-Rata Seluruh 10 Dimensi", true, AlignmentType.RIGHT, "CCFBF1"),
-                  createCell("", false, AlignmentType.LEFT, "CCFBF1"),
-                  createCell("", false, AlignmentType.LEFT, "CCFBF1"),
-                  createCell(`${data.overallAverage.toFixed(1)}%`, true, AlignmentType.CENTER, "CCFBF1", "0D9488"),
-                  createCell("Skor Terintegrasi Realtime", true, AlignmentType.CENTER, "CCFBF1", "0F766E"),
+                  createCell("-", false, AlignmentType.CENTER, "CCFBF1"),
+                  createCell("Skor Terintegrasi Realtime", true, AlignmentType.LEFT, "CCFBF1"),
+                  createProgressBarCell(data.overallAverage),
+                  createCell("Sangat Baik", true, AlignmentType.CENTER, "CCFBF1", "0F766E"),
                 ]
               })
             ],
           }),
 
-          p(`INTERPRETASI & ANALISIS DATA: Hasil analisis 10 dimensi budaya keselamatan pasien menghasilkan nilai rata-rata keseluruhan respons positif sebesar ${data.overallAverage.toFixed(1)}%. Kekuatan utama (aspek unggul) ${data.namaRs} terletak pada dimensi "${data.dimensionScores.slice().sort((a,b)=>b.percentage-a.percentage)[0]?.nama || '-'}" dengan skor positif tertinggi mencapai ${data.dimensionScores.slice().sort((a,b)=>b.percentage-a.percentage)[0]?.percentage.toFixed(1) || 0}%. Sebaliknya, dimensi yang mendesak untuk segera diintervensi adalah "${data.dimensionScores.slice().sort((a,b)=>a.percentage-b.percentage)[0]?.nama || '-'}" dengan respons positif terendah sebesar ${data.dimensionScores.slice().sort((a,b)=>a.percentage-b.percentage)[0]?.percentage.toFixed(1) || 0}%.`, { italic: true, bold: false, size: 20, color: "0F766E", spaceBefore: 120, spaceAfter: 180 }),
+          p("", { spaceAfter: 60 }),
+
+          ...(data.chartImages?.chart10Dimensi ? [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 120, after: 120 },
+              children: [
+                new ImageRun({
+                  data: base64ToUint8Array(data.chartImages.chart10Dimensi),
+                  transformation: { width: 550, height: 260 },
+                  type: "png"
+                })
+              ]
+            }),
+            p("", { spaceAfter: 60 })
+          ] : []),
+
+          createCalloutCard(
+            "Interpretasi & Analisis Data Dimensi",
+            `Hasil analisis 10 dimensi budaya keselamatan pasien menghasilkan nilai rata-rata keseluruhan respons positif sebesar ${data.overallAverage.toFixed(1)}%. Kekuatan utama (aspek unggul) ${data.namaRs} terletak pada dimensi "${data.dimensionScores.slice().sort((a,b)=>b.percentage-a.percentage)[0]?.nama || '-'}" dengan skor positif tertinggi mencapai ${data.dimensionScores.slice().sort((a,b)=>b.percentage-a.percentage)[0]?.percentage.toFixed(1) || 0}%. Sebaliknya, dimensi yang mendesak untuk segera diintervensi adalah "${data.dimensionScores.slice().sort((a,b)=>a.percentage-b.percentage)[0]?.nama || '-'}" dengan respons positif terendah sebesar ${data.dimensionScores.slice().sort((a,b)=>a.percentage-b.percentage)[0]?.percentage.toFixed(1) || 0}%.`,
+            { bgHex: "EFF6FF", borderHex: "2563EB", icon: "📊" }
+          ),
+
+          p("", { spaceAfter: 120 }),
 
           heading3("3.2.2 Rating Keselamatan Pasien Keseluruhan (Overall Patient Safety Rating)"),
-          p(`Sebanyak ${data.safetyRatingPositivePct.toFixed(1)}% responden menilai tingkat keselamatan pasien di ${data.namaRs} berada pada kategori 'Baik' hingga 'Sangat Baik'.`),
+          p(`Sebanyak ${data.safetyRatingPositivePct.toFixed(1)}% responden menilai tingkat keselamatan pasien di ${data.namaRs} berada pada kategori 'Baik' hingga 'Sangat Baik'. Distribusi penilaian dapat dilihat pada tabel berikut:`),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                tableHeader: true,
+                cantSplit: true,
+                children: [
+                  createHeaderCell("No.", AlignmentType.CENTER),
+                  createHeaderCell("Kategori Rating Keselamatan", AlignmentType.LEFT),
+                  createHeaderCell("Jumlah (n)", AlignmentType.CENTER),
+                  createHeaderCell("Persentase (%)", AlignmentType.CENTER),
+                  createHeaderCell("Diagram Progress", AlignmentType.CENTER),
+                ],
+              }),
+              ...data.safetyRating.map((item, idx) => {
+                const numPct = parseFloat(item.percentage.replace('%', '')) || 0;
+                return new TableRow({
+                  cantSplit: true,
+                  children: [
+                    createCell(`${idx + 1}.`, false, AlignmentType.CENTER),
+                    createCell(item.name, true),
+                    createCell(item.count.toString(), false, AlignmentType.CENTER),
+                    createCell(item.percentage, true, AlignmentType.CENTER),
+                    createProgressBarCell(numPct),
+                  ],
+                });
+              })
+            ],
+          }),
+
+          ...(data.chartImages?.overallRating ? [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 120, after: 120 },
+              children: [
+                new ImageRun({
+                  data: base64ToUint8Array(data.chartImages.overallRating),
+                  transformation: { width: 550, height: 260 },
+                  type: "png"
+                })
+              ]
+            })
+          ] : []),
+
+          p("", { spaceAfter: 120 }),
 
           heading3("3.2.3 Jumlah Insiden Keselamatan Pasien Yang Dilaporkan"),
-          p(`Sebanyak ${data.reportedEventsAnyPct.toFixed(1)}% responden melaporkan setidaknya 1 insiden keselamatan pasien dalam 12 bulan terakhir.`),
+          p(`Sebanyak ${data.reportedEventsAnyPct.toFixed(1)}% responden melaporkan setidaknya 1 insiden keselamatan pasien dalam 12 bulan terakhir. Distribusi pelaporan insiden disajikan pada tabel berikut:`),
+
+          new Table({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new TableRow({
+                tableHeader: true,
+                cantSplit: true,
+                children: [
+                  createHeaderCell("No.", AlignmentType.CENTER),
+                  createHeaderCell("Frekuensi Insiden Dilaporkan (12 Bulan)", AlignmentType.LEFT),
+                  createHeaderCell("Jumlah (n)", AlignmentType.CENTER),
+                  createHeaderCell("Persentase (%)", AlignmentType.CENTER),
+                  createHeaderCell("Diagram Progress", AlignmentType.CENTER),
+                ],
+              }),
+              ...data.reportedEvents.map((item, idx) => {
+                const numPct = parseFloat(item.percentage.replace('%', '')) || 0;
+                return new TableRow({
+                  cantSplit: true,
+                  children: [
+                    createCell(`${idx + 1}.`, false, AlignmentType.CENTER),
+                    createCell(item.name, true),
+                    createCell(item.count.toString(), false, AlignmentType.CENTER),
+                    createCell(item.percentage, true, AlignmentType.CENTER),
+                    createProgressBarCell(numPct),
+                  ],
+                });
+              })
+            ],
+          }),
+
+          ...(data.chartImages?.reportedEvents ? [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 120, after: 120 },
+              children: [
+                new ImageRun({
+                  data: base64ToUint8Array(data.chartImages.reportedEvents),
+                  transformation: { width: 550, height: 260 },
+                  type: "png"
+                })
+              ]
+            })
+          ] : []),
+
+          p("", { spaceAfter: 120 }),
+
+          ...(data.hasBenchmark && data.benchmarkComparison && data.benchmarkComparison.length > 0 ? [
+            heading3(`3.2.4 Analisis Komparasi Benchmark dengan ${data.benchmarkName || 'Rumah Sakit Pembanding'}`),
+            p(`Hasil pembandingan skor % Respon Positif antara ${data.namaRs} dengan ${data.benchmarkName || 'RS Pembanding'} disajikan pada tabel berikut:`),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              rows: [
+                new TableRow({
+                  tableHeader: true,
+                  cantSplit: true,
+                  children: [
+                    createHeaderCell("Kode", AlignmentType.CENTER),
+                    createHeaderCell("Dimensi Budaya Keselamatan", AlignmentType.LEFT),
+                    createHeaderCell(`${data.namaRs} (%)`, AlignmentType.CENTER),
+                    createHeaderCell(`Benchmark (%)`, AlignmentType.CENTER),
+                    createHeaderCell("Selisih (Diff)", AlignmentType.CENTER),
+                  ],
+                }),
+                ...data.benchmarkComparison.map((b) => {
+                  const isBetter = b.diff >= 0;
+                  return new TableRow({
+                    cantSplit: true,
+                    children: [
+                      createCell(b.kode, true, AlignmentType.CENTER),
+                      createCell(b.nama),
+                      createCell(`${b.rsPct.toFixed(1)}%`, true, AlignmentType.CENTER, "F0FDFA", "0D9488"),
+                      createCell(`${b.benchPct.toFixed(1)}%`, false, AlignmentType.CENTER),
+                      createCell(
+                        `${isBetter ? '+' : ''}${b.diff.toFixed(1)}%`,
+                        true,
+                        AlignmentType.CENTER,
+                        isBetter ? "DCFCE7" : "FEE2E2",
+                        isBetter ? "15803D" : "B91C1C"
+                      ),
+                    ],
+                  });
+                })
+              ],
+            }),
+            ...(data.chartImages?.benchmark ? [
+              new Paragraph({
+                alignment: AlignmentType.CENTER,
+                spacing: { before: 120, after: 120 },
+                children: [
+                  new ImageRun({
+                    data: base64ToUint8Array(data.chartImages.benchmark),
+                    transformation: { width: 550, height: 260 },
+                    type: "png"
+                  })
+                ]
+              })
+            ] : []),
+            p("", { spaceAfter: 120 })
+          ] : []),
 
           heading2("3.3 Pembahasan"),
           
