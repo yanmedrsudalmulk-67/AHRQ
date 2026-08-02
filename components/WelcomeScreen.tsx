@@ -72,8 +72,24 @@ export default function WelcomeScreen({ onEnter, activeLogo }: WelcomeScreenProp
             )}
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="font-extrabold text-lg leading-tight text-[#2E7D82] block font-sans tracking-tight">Medclin</span>
-            <span className="font-bold text-sm leading-tight text-[#48B8BE] block font-sans tracking-tight">Pro Academy</span>
+            <span 
+              className="font-extrabold text-lg leading-tight text-[#2E7D82] block font-sans tracking-tight"
+              style={{
+                WebkitTextStroke: '1px white',
+                paintOrder: 'stroke fill'
+              }}
+            >
+              Medclin
+            </span>
+            <span 
+              className="font-bold text-sm leading-tight text-[#48B8BE] block font-sans tracking-tight"
+              style={{
+                WebkitTextStroke: '1px white',
+                paintOrder: 'stroke fill'
+              }}
+            >
+              Pro Academy
+            </span>
           </div>
         </div>
 

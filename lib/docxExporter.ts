@@ -15,7 +15,8 @@ import {
   Footer,
   PageNumber,
   NumberFormat,
-  Packer
+  Packer,
+  ImageRun
 } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -69,9 +70,75 @@ export interface ReportData {
     direkturJabatan: string;
     direkturNip?: string;
   };
+  pageImages?: string[];
 }
 
 export async function exportReportToDocx(data: ReportData) {
+  if (data.pageImages && data.pageImages.length > 0) {
+    const base64ToUint8Array = (base64: string) => {
+      const binaryString = window.atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes;
+    };
+
+    const docChildren: Paragraph[] = [];
+
+    for (let i = 0; i < data.pageImages.length; i++) {
+      const dataUrl = data.pageImages[i];
+      const base64Data = dataUrl.replace(/^data:image\/(png|jpeg|jpg);base64,/, "");
+      const uint8 = base64ToUint8Array(base64Data);
+
+      docChildren.push(
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          children: [
+            new ImageRun({
+              data: uint8,
+              transformation: {
+                width: 794,
+                height: 1123,
+              },
+            } as any),
+          ],
+        })
+      );
+
+      if (i < data.pageImages.length - 1) {
+        docChildren.push(new Paragraph({ children: [new PageBreak()] }));
+      }
+    }
+
+    const doc = new Document({
+      sections: [
+        {
+          properties: {
+            page: {
+              size: {
+                width: 11906,
+                height: 16838,
+              },
+              margin: {
+                top: 0,
+                bottom: 0,
+                left: 0,
+                right: 0,
+              },
+            },
+          },
+          children: docChildren,
+        },
+      ],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Laporan_Survei_Budaya_Keselamatan_Pasien_${data.namaRs.replace(/\s+/g, '_')}_${data.tahun}.docx`);
+    return;
+  }
+
   // Primary Palette: Dark Slate / Navy (#1E293B, #0F172A) & Teal Header (#0D9488)
   const headerBgColor = "0D9488";
   const headerTextColor = "FFFFFF";
@@ -295,23 +362,28 @@ export async function exportReportToDocx(data: ReportData) {
 
           // DAFTAR ISI
           heading1("DAFTAR ISI"),
-          p("HALAMAN COVER ........................................................................................................... i", { bold: true, spaceAfter: 80 }),
-          p("DAFTAR ISI .................................................................................................................. ii", { bold: true, spaceAfter: 80 }),
-          p("BAB I PENDAHULUAN ..................................................................................................... 1", { bold: true, spaceAfter: 80 }),
-          p("    1.1 Latar Belakang .................................................................................................... 1", { spaceAfter: 60 }),
-          p("    1.2 Tujuan .................................................................................................................. 1", { spaceAfter: 60 }),
+          p("HALAMAN COVER ........................................................................................................... i", { bold: true, spaceAfter: 60 }),
+          p("DAFTAR ISI .................................................................................................................. ii", { bold: true, spaceAfter: 60 }),
+          p("BAB I PENDAHULUAN ..................................................................................................... 1", { bold: true, spaceAfter: 60 }),
+          p("    1.1 Latar Belakang .................................................................................................... 1", { spaceAfter: 40 }),
+          p("    1.2 Tujuan .................................................................................................................. 1", { spaceAfter: 40 }),
           p("    1.3 Manfaat ................................................................................................................. 1", { spaceAfter: 60 }),
-          p("BAB II METODOLOGI SURVEI ............................................................................................ 2", { bold: true, spaceAfter: 80 }),
-          p("    2.1 Desain Penelitian / Survei ........................................................................................ 2", { spaceAfter: 60 }),
-          p("    2.2 Waktu dan Lokasi .................................................................................................... 2", { spaceAfter: 60 }),
-          p("    2.3 Populasi dan Sampel ................................................................................................ 2", { spaceAfter: 60 }),
-          p("BAB III HASIL DAN PEMBAHASAN ..................................................................................... 3", { bold: true, spaceAfter: 80 }),
-          p("    3.1 Karakteristik Demografi & Tingkat Respon ............................................................. 3", { spaceAfter: 60 }),
-          p("    3.2 Hasil Pengukuran 10 Dimensi AHRQ ..................................................................... 4", { spaceAfter: 60 }),
-          p("    3.3 Pembahasan Analisis Kualitatif ............................................................................... 6", { spaceAfter: 60 }),
-          p("BAB IV KESIMPULAN, REKOMENDASI & LEMBAR PENGESAHAN ..................................... 7", { bold: true, spaceAfter: 80 }),
-          p("    4.1 Kesimpulan ............................................................................................................ 7", { spaceAfter: 60 }),
-          p("    4.2 Rekomendasi Strategic Action Plan & Pengesahan .................................................... 7", { spaceAfter: 60 }),
+          p("BAB II METODOLOGI SURVEI ............................................................................................ 2", { bold: true, spaceAfter: 60 }),
+          p("    2.1 Desain Penelitian / Survei ........................................................................................ 2", { spaceAfter: 40 }),
+          p("    2.2 Waktu dan Lokasi .................................................................................................... 2", { spaceAfter: 40 }),
+          p("    2.3 Populasi dan Sampel ................................................................................................ 2", { spaceAfter: 40 }),
+          p("BAB III HASIL DAN PEMBAHASAN ..................................................................................... 3", { bold: true, spaceAfter: 60 }),
+          p("    3.1 Karakteristik Demografi & Tingkat Respon ............................................................. 3", { spaceAfter: 40 }),
+          p("    3.2 Hasil Pengukuran 10 Dimensi AHRQ ..................................................................... 4", { spaceAfter: 40 }),
+          p("    3.2.2 Rating Keselamatan Pasien Keseluruhan ............................................................. 6", { spaceAfter: 40 }),
+          p("    3.2.3 Frekuensi Insiden Dilaporkan ............................................................................. 7", { spaceAfter: 40 }),
+          p("    3.2.4 Rata-Rata Respon Positif Per Item Dimensi .......................................................... 8", { spaceAfter: 40 }),
+          p("    3.2.5 Analisis Demografis & Komparatif ..................................................................... 12", { spaceAfter: 40 }),
+          p("    3.2.6 Analisis Trend Historis & Benchmark RS ............................................................. 15", { spaceAfter: 40 }),
+          p("    3.3 Pembahasan Analisis Kualitatif ............................................................................... 16", { spaceAfter: 60 }),
+          p("BAB IV KESIMPULAN DAN REKOMENDASI ............................................................................. 17", { bold: true, spaceAfter: 60 }),
+          p("    4.1 Kesimpulan ............................................................................................................ 17", { spaceAfter: 40 }),
+          p("    4.2 Rekomendasi Strategic Action Plan ............................................................................. 17", { spaceAfter: 60 }),
 
           pageBreak(),
 
@@ -628,22 +700,34 @@ export async function exportReportToDocx(data: ReportData) {
           heading3("3.2.3 Jumlah Insiden Keselamatan Pasien Yang Dilaporkan"),
           p(`Sebanyak ${data.reportedEventsAnyPct.toFixed(1)}% responden melaporkan setidaknya 1 insiden keselamatan pasien dalam 12 bulan terakhir.`),
 
-          heading2("3.3 Analisis Naratif Otomatis Pengukuran Dimensi"),
+          heading2("3.3 Pembahasan"),
           
-          heading3(`3.3.1 Kekuatan Organisasi (Capaian Respon Positif ≥ 75%)`),
+          heading3("3.3.1 Area Keunggulan (Strengths ≥75%)"),
           ...(data.strengths.length > 0 
-            ? data.strengths.map(s => bullet(`• ${s.kode} - ${s.nama} (${s.percentage.toFixed(1)}%): ${s.interpretasi}`))
-            : [p(`Saat ini belum ada dimensi yang mencapai batas area kekuatan (≥ 75%). Diperlukan strategi penguatan terpadu di seluruh unit kerja ${data.namaRs}.`, { italic: true })]),
+            ? [
+                p(`Berdasarkan hasil analisis, terdapat ${data.strengths.length} dimensi yang menjadi kekuatan utama budaya keselamatan di ${data.namaRs}:`),
+                ...data.strengths.flatMap((s, idx) => [
+                  p(`${idx + 1}. ${s.nama} — [${s.percentage.toFixed(1)}%]`, { bold: true }),
+                  p(`Analisis: ${s.interpretasi}`, { spaceAfter: 120 }),
+                ])
+              ]
+            : [p(`Berdasarkan hasil analisis, saat ini belum ada dimensi yang mencapai target area kekuatan (≥ 75%) di ${data.namaRs}. Diperlukan strategi penguatan terpadu di seluruh unit kerja.`, { italic: true })]),
 
-          heading3(`3.3.2 Area yang Masih Perlu Ditingkatkan (Capaian 50% - 74%)`),
-          ...(data.moderates.length > 0
-            ? data.moderates.map(m => bullet(`• ${m.kode} - ${m.nama} (${m.percentage.toFixed(1)}%): ${m.interpretasi}`))
-            : [p("Tidak ada dimensi yang berada dalam kategori moderat (50% - 74%).", { italic: true })]),
-
-          heading3(`3.3.3 Prioritas Utama Perbaikan (Capaian < 50%)`),
+          heading3("3.3.2 Area yang Memerlukan Perbaikan (Areas for Improvement <50%)"),
           ...(data.improvements.length > 0
-            ? data.improvements.map(i => bullet(`• ${i.kode} - ${i.nama} (${i.percentage.toFixed(1)}%): ${i.interpretasi}`))
-            : [p(`Tidak ada dimensi yang berada di bawah 50%. Ini menunjukkan budaya keselamatan di ${data.namaRs} berjalan stabil tanpa hambatan kritis.`, { italic: true })]),
+            ? [
+                p(`Terdapat ${data.improvements.length} dimensi kritis yang memerlukan intervensi dan prioritas penanganan segera dari pimpinan/manajemen:`),
+                ...data.improvements.flatMap((i, idx) => [
+                  p(`${idx + 1}. ${i.nama} — [${i.percentage.toFixed(1)}%]`, { bold: true }),
+                  p(`Analisis: ${i.interpretasi}`, { spaceAfter: 120 }),
+                ])
+              ]
+            : [p(`Tidak ada dimensi yang berada pada kategori perbaikan kritis (<50%). Kondisi ini menunjukkan budaya keselamatan di ${data.namaRs} berjalan relatif baik tanpa hambatan kritis.`, { italic: true })]),
+
+          heading3("3.3.3 Area Sedang / Moderat (50%-74%)"),
+          ...(data.moderates.length > 0
+            ? [p(`Dimensi seperti ${data.moderates.map(m => `${m.nama} ([${m.percentage.toFixed(1)}%])`).join(' dan ')} berada pada kategori moderat. Walaupun prosedurnya telah tersedia (seperti SBAR/TBLK saat handoff), konsistensi pelaksanaannya di lapangan masih bervariasi antar unit kerja, yang dipengaruhi oleh tingkat kesibukan dan keterbukaan komunikasi antar staf.`)]
+            : [p("Tidak ada dimensi yang berada dalam kategori moderat (50%-74%).", { italic: true })]),
 
           pageBreak(),
 

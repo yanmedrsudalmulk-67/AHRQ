@@ -34,7 +34,7 @@ import PengaturanTab from './PengaturanTab';
 import PersetujuanTab from './PersetujuanTab';
 import PersetujuanBenchmarkTab from './PersetujuanBenchmarkTab';
 import DashboardTable from './DashboardTable';
-import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey, getBenchmarkRequests, isSurveyResponse } from '../lib/db';
+import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey, getBenchmarkRequests, isSurveyResponse, getSupabaseClient } from '../lib/db';
 import { computeDimensionScores } from '../lib/scoring';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
@@ -127,6 +127,48 @@ export default function Dashboard({
     { refreshInterval: 3000 }
   );
 
+  useEffect(() => {
+    if (role === 'admin' || identifier === 'admin') return;
+    
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    console.log('Setting up benchmark sync channel for:', hospitalId || identifier);
+    const channel = supabase
+      .channel(`benchmark_req_sync:${hospitalId || identifier}`)
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'benchmark_requests',
+          filter: `target_id=eq.${hospitalId || identifier}`
+        },
+        () => {
+          console.log('Benchmark request change detected! Mutating...');
+          mutateBenchmarkRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'benchmark_requests',
+          filter: `requester_id=eq.${hospitalId || identifier}`
+        },
+        () => {
+          console.log('My benchmark request change detected! Mutating...');
+          mutateBenchmarkRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [hospitalId, identifier, role, mutateBenchmarkRequests]);
+
   // Benchmark notification badge: ONLY target hospital receives notification!
   const pendingBenchmarkCount = useMemo(() => {
     if (role === 'admin' || identifier === 'admin') return 0;
@@ -162,7 +204,20 @@ export default function Dashboard({
   }, [role, accounts, hospitalId, identifier, onLogout]);
 
   // Filter surveys: Admin sees all, RS sees only their own (and excludes config/pengesahan rows)
-  const validSurveys = surveys.filter(s => isSurveyResponse(s) && s.namaRs !== '_LINK_CONFIG_' && s.namaRs !== '_MASTER_CONFIG_' && s.id !== 'MASTER_BENCHMARK');
+  const validSurveys = surveys.filter(s => {
+    if (!isSurveyResponse(s)) return false;
+    if (s.namaRs === '_LINK_CONFIG_' || s.namaRs === '_MASTER_CONFIG_' || s.id === 'MASTER_BENCHMARK') return false;
+    
+    // Admin sees all filtered by dropdown (handled later)
+    if (role === 'admin') return true;
+
+    // Non-admin sees ONLY their own surveys in the raw data views
+    const surveyUser = (s.dimensiScores as any)?.username || s.unitKerja;
+    const surveyHospitalId = (s.dimensiScores as any)?.hospital_id;
+    return surveyUser?.toLowerCase() === identifier.toLowerCase() || 
+           surveyHospitalId === hospitalId || 
+           s.namaRs.toLowerCase() === (namaRs || '').toLowerCase();
+  });
 
   const activeHospitalNameForLaporan = useMemo(() => {
     if (role === 'admin') {
@@ -513,8 +568,8 @@ export default function Dashboard({
               {!isSidebarCollapsed && (
                 <div className="w-full overflow-hidden text-center transition-all duration-200">
                   <span 
-                    className="font-sans font-black text-[20px] text-[#1e6f73] tracking-tight block leading-snug"
-                    style={{ textShadow: '1px 1px 1px rgba(15, 23, 42, 0.25), 2px 2px 1px rgba(15, 23, 42, 0.15)' }}
+                    className="font-sans font-black text-[20px] text-white tracking-tight block leading-snug"
+                    style={{ color: '#ffffff', textShadow: '1px 1px 1px rgba(15, 23, 42, 0.25), 2px 2px 1px rgba(15, 23, 42, 0.15)' }}
                   >
                     Medclin
                   </span>

@@ -27,7 +27,12 @@ import {
   Briefcase,
   Globe,
   BarChart2,
-  HeartPulse
+  HeartPulse,
+  Plus,
+  Minus,
+  LayoutDashboard,
+  HelpCircle,
+  AlertCircle
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -43,6 +48,8 @@ import {
 import { computeDimensionScores, DIMENSI_INFO, DIMENSI_ITEMS, scoreToPercent } from '../lib/scoring';
 import { exportReportToDocx, ReportData } from '../lib/docxExporter';
 import { getPengesahanConfig, PengesahanConfig, isSurveyResponse } from '../lib/db';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 const STATEMENTS_A = [
   { id: 1, code: 'A1', text: 'Di unit ini, kami bekerja sama sebagai tim yang efektif', dim: 'd1' },
@@ -93,6 +100,64 @@ const STATEMENTS_F = [
 
 const DIMENSION_ORDER = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'd10'];
 
+const hexToRgbaStr = (hex: string, alpha: number) => {
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+const parseOklchToRgb = (oklchStr: string): string => {
+  const match = oklchStr.match(/oklch\(\s*([0-9\.]+)\s+([0-9\.]+)\s+([0-9\.]+)(?:\s*\/\s*([0-9\.\%]+))?\s*\)/);
+  if (!match) return 'rgb(15, 118, 110)';
+
+  const L = parseFloat(match[1]);
+  const C = parseFloat(match[2]);
+  const H = parseFloat(match[3]);
+  const A = match[4] ? (match[4].includes('%') ? parseFloat(match[4])/100 : parseFloat(match[4])) : 1;
+
+  if (C < 0.04) {
+    let hex = '#1e293b';
+    if (L > 0.95) hex = '#f8fafc';
+    else if (L > 0.90) hex = '#f1f5f9';
+    else if (L > 0.80) hex = '#e2e8f0';
+    else if (L > 0.70) hex = '#cbd5e1';
+    else if (L > 0.60) hex = '#94a3b8';
+    else if (L > 0.45) hex = '#64748b';
+    else if (L > 0.35) hex = '#475569';
+    else if (L > 0.20) hex = '#334155';
+    
+    if (A < 1) return hexToRgbaStr(hex, A);
+    return hex;
+  }
+
+  let hex = '#0d9488';
+  
+  if (H >= 340 || H < 45) {
+    hex = L > 0.75 ? '#ffe4e6' : L > 0.5 ? '#f43f5e' : '#be123c';
+  } else if (H >= 45 && H < 110) {
+    hex = L > 0.85 ? '#fef3c7' : L > 0.6 ? '#f59e0b' : '#b45309';
+  } else if (H >= 110 && H < 165) {
+    hex = L > 0.85 ? '#dcfce7' : L > 0.5 ? '#10b981' : '#047857';
+  } else if (H >= 165 && H < 210) {
+    hex = L > 0.85 ? '#ccfbf1' : L > 0.5 ? '#0d9488' : '#0f766e';
+  } else if (H >= 210 && H < 275) {
+    hex = L > 0.85 ? '#dbeafe' : L > 0.5 ? '#3b82f6' : '#1d4ed8';
+  } else if (H >= 275 && H < 340) {
+    hex = L > 0.85 ? '#f3e8ff' : L > 0.5 ? '#8b5cf6' : '#6d28d9';
+  }
+
+  if (A < 1) return hexToRgbaStr(hex, A);
+  return hex;
+};
+
+const getBarColorHex = (val: number) => {
+  if (val >= 85) return '#3b82f6';
+  if (val >= 70) return '#10b981';
+  if (val >= 50) return '#f59e0b';
+  return '#ef4444';
+};
+
 const ALL_QUESTIONS_LAPORAN = [
   ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
   ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
@@ -134,12 +199,18 @@ export default function LaporanTab({
   const printRef = useRef<HTMLDivElement>(null);
   
   // State Filters
-  const [selectedYear, setSelectedYear] = useState<string>('Semua Tahun');
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const tahunSurvei = selectedYear === 'Semua Tahun' ? 'Semua Tahun' : selectedYear;
+  const [selectedComparisonYear, setSelectedComparisonYear] = useState<string>('none');
   const [selectedBenchmarkId, setSelectedBenchmarkId] = useState<string>('none');
   const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number }>({ current: 0, total: 19 });
   const [showDownloadDropdown, setShowDownloadDropdown] = useState<boolean>(false);
   const [pengesahanConfig, setPengesahanConfig] = useState<PengesahanConfig | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [targetHospitalSurveys, setTargetHospitalSurveys] = useState<SurveyData[]>([]);
+  const [isLoadingTarget, setIsLoadingTarget] = useState(false);
 
   React.useEffect(() => {
     const fetchPengesahan = async () => {
@@ -149,20 +220,73 @@ export default function LaporanTab({
     fetchPengesahan();
   }, [identifier, hospitalId, namaRs]);
 
+  // SECURE REALTIME BENCHMARK FETCHING
+  React.useEffect(() => {
+    if (selectedBenchmarkId === 'none') {
+      setTargetHospitalSurveys([]);
+      return;
+    }
+
+    let isMounted = true;
+    const requesterId = hospitalId || identifier;
+    const targetId = selectedBenchmarkId;
+
+    const fetchTargetData = async () => {
+      try {
+        setIsLoadingTarget(true);
+        // Using the same secure fetch logic as AnalisaDataTab
+        const { getSecureBenchmarkSurveys } = await import('../lib/db');
+        const data = await getSecureBenchmarkSurveys(requesterId, targetId);
+        if (isMounted) {
+          setTargetHospitalSurveys(data.filter(s => s && isSurveyResponse(s)));
+        }
+      } catch (err) {
+        console.error("Failed to fetch secure benchmark data in LaporanTab:", err);
+      } finally {
+        if (isMounted) setIsLoadingTarget(false);
+      }
+    };
+
+    fetchTargetData();
+    const interval = setInterval(fetchTargetData, 5000); // Poll for realtime updates
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [selectedBenchmarkId, hospitalId, identifier]);
+
   // Filter valid surveys for current hospital (or selected if admin)
   const validSurveys = useMemo(() => {
-    return surveys.filter(s => 
-      s && 
-      isSurveyResponse(s) &&
-      s.id !== 'MASTER_BENCHMARK' && 
-      !s.id.startsWith('LINK_CONFIG_') && 
-      !s.id.startsWith('_MASTER_')
-    );
-  }, [surveys]);
+    return surveys.filter(s => {
+      if (!s || !isSurveyResponse(s)) return false;
+      if (s.id === 'MASTER_BENCHMARK' || s.id.startsWith('LINK_CONFIG_') || s.id.startsWith('_MASTER_')) return false;
+
+      if (role === 'admin') return true;
+
+      // Filter to only include the active hospital's data
+      const surveyUser = (s.dimensiScores as any)?.username || s.unitKerja;
+      const surveyHospitalId = (s.dimensiScores as any)?.hospital_id;
+      
+      const matchesRS = surveyUser?.toLowerCase() === identifier.toLowerCase() || 
+                        surveyHospitalId === hospitalId || 
+                        s.namaRs.toLowerCase() === (namaRs || '').toLowerCase();
+                        
+      return matchesRS;
+    });
+  }, [surveys, role, identifier, hospitalId, namaRs]);
 
   // Extract available years
   const availableYears = useMemo(() => {
+    const currentYear = new Date().getFullYear();
     const yearsSet = new Set<string>();
+    
+    // 3 years back and 3 years forward from current year
+    for (let i = -3; i <= 3; i++) {
+      yearsSet.add((currentYear + i).toString());
+    }
+
+    // Also include years from data if any
     validSurveys.forEach(s => {
       if (s.tanggalInput) {
         const match = s.tanggalInput.match(/\b(20\d{2}|19\d{2})\b/);
@@ -699,16 +823,9 @@ export default function LaporanTab({
   }, [activeSurveys, demografiStats.g3Data]);
 
   const previousYear = useMemo(() => {
-    if (selectedYear === 'Semua Tahun' || availableYears.length <= 2) return null;
-    const yearNum = parseInt(selectedYear, 10);
-    if (isNaN(yearNum)) return null;
-    const priorYearStr = (yearNum - 1).toString();
-    if (availableYears.includes(priorYearStr)) return priorYearStr;
-    const smallerYears = availableYears
-      .filter(y => y !== 'Semua Tahun' && parseInt(y, 10) < yearNum)
-      .sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
-    return smallerYears[0] || null;
-  }, [selectedYear, availableYears]);
+    if (selectedComparisonYear !== 'none') return selectedComparisonYear;
+    return null;
+  }, [selectedComparisonYear]);
 
   const priorYearScores = useMemo(() => {
     if (!previousYear) return null;
@@ -1023,13 +1140,25 @@ export default function LaporanTab({
     return accounts.find(a => a.id === selectedBenchmarkId || a.username === selectedBenchmarkId) || null;
   }, [accounts, selectedBenchmarkId]);
 
-  const benchmarkData = useMemo(() => {
+  // Request status for selected hospital
+  const currentRequestForSelectedHospital = useMemo(() => {
     if (!selectedBenchmarkHospital) return null;
-    const targetSurveys = surveys.filter(s => 
-      s.namaRs === selectedBenchmarkHospital.namaRs || 
-      (s.dimensiScores as any)?.hospital_id === selectedBenchmarkHospital.id
+    return requests.find(r => 
+      (r.requester_id === hospitalId || r.requester_name.toLowerCase() === namaRs.toLowerCase()) &&
+      (r.target_id === selectedBenchmarkHospital.id || r.target_name.toLowerCase() === selectedBenchmarkHospital.namaRs.toLowerCase())
     );
-    const targetScores = computeDimensionScores(targetSurveys);
+  }, [requests, selectedBenchmarkHospital, hospitalId, namaRs]);
+
+  const benchmarkData = useMemo(() => {
+    if (!selectedBenchmarkHospital || targetHospitalSurveys.length === 0) return null;
+    
+    // Filter target surveys by selected year if applicable
+    const filteredTarget = targetHospitalSurveys.filter(s => {
+      if (selectedYear === 'Semua Tahun') return true;
+      return s.tanggalInput && s.tanggalInput.includes(selectedYear);
+    });
+
+    const targetScores = computeDimensionScores(filteredTarget);
 
     return dimensionScores.map(d => {
       const bench = targetScores.find(ts => ts.kode === d.kode);
@@ -1042,7 +1171,7 @@ export default function LaporanTab({
         diff: d.percentage - benchPct
       };
     });
-  }, [selectedBenchmarkHospital, surveys, dimensionScores]);
+  }, [selectedBenchmarkHospital, targetHospitalSurveys, dimensionScores, selectedYear]);
 
   // Year Comparison Data
   const yearComparisonData = useMemo(() => {
@@ -1059,15 +1188,360 @@ export default function LaporanTab({
     return yearScores.sort((a, b) => a.year.localeCompare(b.year));
   }, [availableYears, validSurveys]);
 
-  // Print PDF function
+  // Print PDF via browser print dialog
   const handlePrintPDF = () => {
     window.print();
   };
 
+  // Direct PDF export via client-side rendering (html2canvas + jsPDF)
+  const handleExportPDF = async () => {
+    if (!printRef.current) return;
+    setIsExportingPdf(true);
+
+    const prevZoom = zoomLevel;
+    setZoomLevel(100);
+
+    // Wait for DOM layout scale to normalize
+    await new Promise(r => setTimeout(r, 400));
+
+    let restoreStylesheets: (() => void) | null = null;
+    let restoreGetComputedStyle: (() => void) | null = null;
+
+    try {
+      // 1. Temporarily patch window.getComputedStyle to intercept and replace modern color functions with rgb colors
+      const originalGetComputedStyle = window.getComputedStyle;
+      const modernColorRegex = /(oklch|oklab|lab|lch)\([^\)]+\)/g;
+      const hasModernColor = (s: string) => s.includes('oklch') || s.includes('oklab') || s.includes('lab(') || s.includes('lch(');
+
+      window.getComputedStyle = function (element, pseudoElt) {
+        const style = originalGetComputedStyle(element, pseudoElt);
+        return new Proxy(style, {
+          get(target, prop) {
+            const val = Reflect.get(target, prop);
+            if (typeof val === 'string' && hasModernColor(val)) {
+              return val.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+            }
+            if (typeof val === 'function') {
+              return function (...args: any[]) {
+                const res = val.apply(target, args);
+                if (typeof res === 'string' && hasModernColor(res)) {
+                  return res.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                }
+                return res;
+              };
+            }
+            return val;
+          }
+        });
+      };
+      restoreGetComputedStyle = () => {
+        window.getComputedStyle = originalGetComputedStyle;
+      };
+
+      // 2. Temporarily clone and replace modern color functions with safe color in active document stylesheets
+      const originalSheetsState: { sheet: CSSStyleSheet; disabled: boolean }[] = [];
+      const tempStyleElements: HTMLStyleElement[] = [];
+
+      try {
+        const sheets = Array.from(document.styleSheets);
+        sheets.forEach((sheet) => {
+          originalSheetsState.push({ sheet, disabled: sheet.disabled });
+          try {
+            let hasModern = false;
+            const rules = sheet.cssRules || sheet.rules;
+            if (rules) {
+              for (let j = 0; j < rules.length; j++) {
+                if (rules[j].cssText && hasModernColor(rules[j].cssText)) {
+                  hasModern = true;
+                  break;
+                }
+              }
+            }
+
+            if (hasModern && rules) {
+              sheet.disabled = true;
+              let newCssText = '';
+              for (let j = 0; j < rules.length; j++) {
+                let ruleText = rules[j].cssText;
+                if (ruleText && hasModernColor(ruleText)) {
+                  ruleText = ruleText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                }
+                newCssText += (ruleText || '') + '\n';
+              }
+
+              const tempStyle = document.createElement('style');
+              tempStyle.setAttribute('data-temp-pdf-style', 'true');
+              tempStyle.textContent = newCssText;
+              document.head.appendChild(tempStyle);
+              tempStyleElements.push(tempStyle);
+            }
+          } catch (e) {
+            if (sheet.ownerNode && sheet.ownerNode instanceof HTMLStyleElement) {
+              const content = sheet.ownerNode.textContent;
+              if (content && hasModernColor(content)) {
+                sheet.disabled = true;
+                const cleanContent = content.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                const tempStyle = document.createElement('style');
+                tempStyle.setAttribute('data-temp-pdf-style', 'true');
+                tempStyle.textContent = cleanContent;
+                document.head.appendChild(tempStyle);
+                tempStyleElements.push(tempStyle);
+              }
+            }
+          }
+        });
+      } catch (errStylesheets) {
+        console.error('Error rewriting stylesheets for PDF:', errStylesheets);
+      }
+
+      restoreStylesheets = () => {
+        originalSheetsState.forEach(({ sheet, disabled }) => {
+          sheet.disabled = disabled;
+        });
+        tempStyleElements.forEach((el) => {
+          el.parentNode?.removeChild(el);
+        });
+      };
+
+      const pages = printRef.current.querySelectorAll('.word-page');
+      const totalPages = pages.length || 19;
+      setExportProgress({ current: 1, total: totalPages });
+
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true
+      });
+
+      for (let i = 0; i < pages.length; i++) {
+        setExportProgress({ current: i + 1, total: pages.length });
+        const pageEl = pages[i] as HTMLElement;
+
+        const canvas = await html2canvas(pageEl, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          onclone: (clonedDoc) => {
+            // 1. Sanitize <style> tags text content
+            const styleElements = clonedDoc.querySelectorAll('style');
+            styleElements.forEach((styleEl) => {
+              if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
+                styleEl.textContent = styleEl.textContent.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+              }
+            });
+
+            // 2. Also look at clonedDoc.styleSheets and filter out rules containing modern colors if we can edit them
+            try {
+              for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
+                const sheet = clonedDoc.styleSheets[i];
+                try {
+                  const rules = sheet.cssRules || sheet.rules;
+                  if (!rules) continue;
+                  for (let j = rules.length - 1; j >= 0; j--) {
+                    const rule = rules[j];
+                    if (rule.cssText && hasModernColor(rule.cssText)) {
+                      sheet.deleteRule(j);
+                    }
+                  }
+                } catch (e) {
+                  // Cross-origin stylesheet or other error, ignore
+                }
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+        if (i > 0) {
+          pdf.addPage('a4', 'portrait');
+        }
+
+        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+      }
+
+      const safeName = activeHospitalName.replace(/[^a-zA-Z0-9]/g, '_');
+      const displayYr = selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear;
+      pdf.save(`Laporan_Resmi_Budaya_Keselamatan_Pasien_${safeName}_${displayYr}.pdf`);
+    } catch (err) {
+      console.error('Failed to export PDF:', err);
+      // Fallback to native print if JS canvas export encounters an issue
+      window.print();
+    } finally {
+      if (restoreGetComputedStyle) restoreGetComputedStyle();
+      if (restoreStylesheets) restoreStylesheets();
+      setZoomLevel(prevZoom);
+      setIsExportingPdf(false);
+    }
+  };
+
   // Export Word docx
   const handleExportDocx = async () => {
+    if (!printRef.current) return;
     setIsExporting(true);
+
+    const prevZoom = zoomLevel;
+    setZoomLevel(100);
+
+    // Wait for DOM layout scale to normalize
+    await new Promise(r => setTimeout(r, 400));
+
+    let restoreStylesheets: (() => void) | null = null;
+    let restoreGetComputedStyle: (() => void) | null = null;
+
     try {
+      // 1. Temporarily patch window.getComputedStyle to intercept and replace modern color functions
+      const originalGetComputedStyle = window.getComputedStyle;
+      const modernColorRegex = /(oklch|oklab|lab|lch)\([^\)]+\)/g;
+      const hasModernColor = (s: string) => s.includes('oklch') || s.includes('oklab') || s.includes('lab(') || s.includes('lch(');
+
+      window.getComputedStyle = function (element, pseudoElt) {
+        const style = originalGetComputedStyle(element, pseudoElt);
+        return new Proxy(style, {
+          get(target, prop) {
+            const val = Reflect.get(target, prop);
+            if (typeof val === 'string' && hasModernColor(val)) {
+              return val.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+            }
+            if (typeof val === 'function') {
+              return function (...args: any[]) {
+                const res = val.apply(target, args);
+                if (typeof res === 'string' && hasModernColor(res)) {
+                  return res.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                }
+                return res;
+              };
+            }
+            return val;
+          }
+        });
+      };
+      restoreGetComputedStyle = () => {
+        window.getComputedStyle = originalGetComputedStyle;
+      };
+
+      // 2. Temporarily clone and replace modern color functions with safe color in active document stylesheets
+      const originalSheetsState: { sheet: CSSStyleSheet; disabled: boolean }[] = [];
+      const tempStyleElements: HTMLStyleElement[] = [];
+
+      try {
+        const sheets = Array.from(document.styleSheets);
+        sheets.forEach((sheet) => {
+          originalSheetsState.push({ sheet, disabled: sheet.disabled });
+          try {
+            let hasModern = false;
+            const rules = sheet.cssRules || sheet.rules;
+            if (rules) {
+              for (let j = 0; j < rules.length; j++) {
+                if (rules[j].cssText && hasModernColor(rules[j].cssText)) {
+                  hasModern = true;
+                  break;
+                }
+              }
+            }
+
+            if (hasModern && rules) {
+              sheet.disabled = true;
+              let newCssText = '';
+              for (let j = 0; j < rules.length; j++) {
+                let ruleText = rules[j].cssText;
+                if (ruleText && hasModernColor(ruleText)) {
+                  ruleText = ruleText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                }
+                newCssText += (ruleText || '') + '\n';
+              }
+
+              const tempStyle = document.createElement('style');
+              tempStyle.setAttribute('data-temp-pdf-style', 'true');
+              tempStyle.textContent = newCssText;
+              document.head.appendChild(tempStyle);
+              tempStyleElements.push(tempStyle);
+            }
+          } catch (e) {
+            if (sheet.ownerNode && sheet.ownerNode instanceof HTMLStyleElement) {
+              const content = sheet.ownerNode.textContent;
+              if (content && hasModernColor(content)) {
+                sheet.disabled = true;
+                const cleanContent = content.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                const tempStyle = document.createElement('style');
+                tempStyle.setAttribute('data-temp-pdf-style', 'true');
+                tempStyle.textContent = cleanContent;
+                document.head.appendChild(tempStyle);
+                tempStyleElements.push(tempStyle);
+              }
+            }
+          }
+        });
+      } catch (errStylesheets) {
+        console.error('Error rewriting stylesheets for Word:', errStylesheets);
+      }
+
+      restoreStylesheets = () => {
+        originalSheetsState.forEach(({ sheet, disabled }) => {
+          sheet.disabled = disabled;
+        });
+        tempStyleElements.forEach((el) => {
+          el.parentNode?.removeChild(el);
+        });
+      };
+
+      const pages = printRef.current.querySelectorAll('.word-page');
+      const totalPages = pages.length;
+      setExportProgress({ current: 1, total: totalPages });
+
+      const pageImages: string[] = [];
+
+      for (let i = 0; i < pages.length; i++) {
+        setExportProgress({ current: i + 1, total: pages.length });
+        const pageEl = pages[i] as HTMLElement;
+
+        const canvas = await html2canvas(pageEl, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          logging: false,
+          backgroundColor: '#ffffff',
+          onclone: (clonedDoc) => {
+            // 1. Sanitize <style> tags text content
+            const styleElements = clonedDoc.querySelectorAll('style');
+            styleElements.forEach((styleEl) => {
+              if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
+                styleEl.textContent = styleEl.textContent.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+              }
+            });
+
+            // 2. Filter cloned styles
+            try {
+              for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
+                const sheet = clonedDoc.styleSheets[i];
+                try {
+                  const rules = sheet.cssRules || sheet.rules;
+                  if (!rules) continue;
+                  for (let j = rules.length - 1; j >= 0; j--) {
+                    const rule = rules[j];
+                    if (rule.cssText && hasModernColor(rule.cssText)) {
+                      sheet.deleteRule(j);
+                    }
+                  }
+                } catch (e) {
+                  // Ignore
+                }
+              }
+            } catch (e) {
+              // Ignore
+            }
+          }
+        });
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        pageImages.push(imgData);
+      }
+
       const reportPayload: ReportData = {
         namaRs: activeHospitalName,
         tahun: selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear,
@@ -1107,7 +1581,8 @@ export default function LaporanTab({
           direkturNama: (pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya') + (pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama?.includes(pengesahanConfig.direkturGelar) ? ', ' + pengesahanConfig.direkturGelar : ''),
           direkturJabatan: pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit',
           direkturNip: pengesahanConfig?.direkturNip || '19780512 200501 1 002'
-        }
+        },
+        pageImages
       };
 
       await exportReportToDocx(reportPayload);
@@ -1115,6 +1590,9 @@ export default function LaporanTab({
       console.error('Error generating docx:', err);
       alert('Gagal mengunduh dokumen Word. Silakan coba lagi.');
     } finally {
+      if (restoreGetComputedStyle) restoreGetComputedStyle();
+      if (restoreStylesheets) restoreStylesheets();
+      setZoomLevel(prevZoom);
       setIsExporting(false);
       setShowDownloadDropdown(false);
     }
@@ -1122,116 +1600,206 @@ export default function LaporanTab({
 
   return (
     <div className="space-y-8 pb-16 font-sans">
-      
-      {/* CONTROL BAR (NON-PRINTABLE) */}
-      <div className="print:hidden bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-4">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center font-black border border-teal-100 shadow-sm">
-              <FileCheck2 className="w-5 h-5" />
+      {/* PDF & Word Export Progress Modal Overlay */}
+      {(isExportingPdf || isExporting) && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 border border-slate-100 animate-in fade-in zoom-in duration-200">
+            <div className="w-14 h-14 bg-teal-50 border border-teal-200 rounded-2xl flex items-center justify-center mx-auto text-teal-700 shadow-sm">
+              <RefreshCw className="w-7 h-7 animate-spin" />
             </div>
             <div>
-              <h2 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
-                Laporan Survei Budaya Keselamatan Pasien
-                <span className="text-[10px] uppercase tracking-wider bg-teal-100 text-teal-800 font-bold px-2 py-0.5 rounded-full border border-teal-200">
-                  AHRQ SOPS v2.0
-                </span>
-              </h2>
-              <p className="text-xs text-slate-500 font-medium">
-                Format resmi A4, realtime tersinkronisasi dengan database survei {activeHospitalName}.
+              <h3 className="text-base font-extrabold text-slate-900">
+                {isExportingPdf ? 'Mengunduh Dokumen PDF' : 'Mengunduh Dokumen Word'}
+              </h3>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Memproses Halaman {exportProgress.current} dari {exportProgress.total}...
               </p>
             </div>
+            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/60">
+              <div 
+                className="bg-gradient-to-r from-teal-500 to-teal-700 h-full transition-all duration-300 rounded-full"
+                style={{ width: `${(exportProgress.current / Math.max(1, exportProgress.total)) * 100}%` }}
+              ></div>
+            </div>
+            <p className="text-[10.5px] font-semibold text-slate-400">
+              Menyusun data lengkap 10 Dimensi & Demografi RS
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* CONTROL BAR (NON-PRINTABLE) */}
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, ease: 'easeOut' }}
+        className="print:hidden -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 bg-gradient-to-r from-[#0F766E] to-[#0D9488] rounded-b-2xl md:rounded-b-[24px] min-h-[90px] py-4 md:py-0 px-6 md:px-8 shadow-md shadow-teal-900/10 flex items-center relative z-40"
+      >
+        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+          
+          {/* Left Side: Title & Zoom */}
+          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 flex-grow">
+            <motion.h1 
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, delay: 0.05 }}
+              className="text-[20px] md:text-[24px] lg:text-[28px] font-extrabold tracking-tight text-white select-none leading-tight font-sans"
+            >
+              LAPORAN SURVEI BUDAYA KESELAMATAN PASIEN
+            </motion.h1>
+            
+            {/* Zoom Scale Controls - Futuristic Pill */}
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25, delay: 0.15 }}
+              className="flex items-center gap-1 bg-white/10 hover:bg-white/15 border border-white/15 px-2.5 py-1 rounded-full text-xs font-semibold text-white/95 backdrop-blur-md shadow-2xs transition-all duration-200 self-start"
+            >
+              <button 
+                onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))}
+                className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all cursor-pointer text-white"
+                title="Zoom Out"
+              >
+                <Minus className="w-3 h-3 stroke-[2.5]" />
+              </button>
+              <button 
+                onClick={() => setZoomLevel(100)}
+                className="px-2.5 py-0.5 text-[11px] font-bold text-white hover:bg-white/15 rounded-md transition-all cursor-pointer"
+                title="Reset Zoom (100%)"
+              >
+                {zoomLevel}%
+              </button>
+              <button 
+                onClick={() => setZoomLevel(prev => Math.min(150, prev + 10))}
+                className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all cursor-pointer text-white"
+                title="Zoom In"
+              >
+                <Plus className="w-3 h-3 stroke-[2.5]" />
+              </button>
+            </motion.div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-            {/* Filter Year */}
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700">
-              <Calendar className="w-4 h-4 text-teal-600" />
-              <span>Tahun:</span>
+          {/* Right Side: Filters & Compact Export Icons */}
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto lg:justify-end">
+            
+             {/* Filter Year */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, delay: 0.1 }}
+              className="flex items-center gap-2 bg-white/10 border border-white/15 hover:bg-white/15 rounded-full px-3 py-1.5 h-[34px] text-xs font-bold text-white transition-all shadow-2xs"
+            >
+              <Calendar className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-white/80 font-medium">Tahun:</span>
               <select 
                 value={selectedYear} 
                 onChange={e => setSelectedYear(e.target.value)}
-                className="bg-transparent font-bold text-slate-800 outline-none cursor-pointer"
+                className="bg-transparent font-extrabold text-white outline-none cursor-pointer focus:ring-0 [&>option]:text-slate-800 [&>option]:bg-white pr-1"
               >
                 {availableYears.map(y => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
-            </div>
+            </motion.div>
 
-            {/* Filter Benchmark */}
-            {approvedBenchmarkHospitals.length > 0 && (
-              <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700">
-                <Globe className="w-4 h-4 text-indigo-600" />
-                <span>Benchmark:</span>
-                <select 
-                  value={selectedBenchmarkId} 
-                  onChange={e => setSelectedBenchmarkId(e.target.value)}
-                  className="bg-transparent font-bold text-slate-800 outline-none cursor-pointer max-w-[140px] truncate"
-                >
-                  <option value="none">Tanpa Benchmark</option>
-                  {approvedBenchmarkHospitals.map(h => (
-                    <option key={h.id} value={h.id}>{h.namaRs}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Download Dropdown Button */}
-            <div className="relative">
-              <button
-                onClick={() => setShowDownloadDropdown(!showDownloadDropdown)}
-                className="flex items-center gap-2 bg-gradient-to-r from-[#43B8BD] to-[#2FA7A7] hover:from-[#369C9F] hover:to-[#1E6F73] text-white font-extrabold px-5 py-2.5 rounded-xl text-xs shadow-md shadow-teal-500/20 hover:shadow-lg hover:shadow-teal-500/30 transition-all transform-gpu duration-300 cursor-pointer active:scale-95"
+            {/* Filter Comparison Year */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, delay: 0.12 }}
+              className="flex items-center gap-2 bg-white/10 border border-white/15 hover:bg-white/15 rounded-full px-3 py-1.5 h-[34px] text-xs font-bold text-white transition-all shadow-2xs"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-white/80" />
+              <span className="text-white/80 font-medium">Bandingkan:</span>
+              <select 
+                value={selectedComparisonYear} 
+                onChange={e => setSelectedComparisonYear(e.target.value)}
+                className="bg-transparent font-extrabold text-white outline-none cursor-pointer focus:ring-0 [&>option]:text-slate-800 [&>option]:bg-white pr-1"
               >
-                <Download className="w-4 h-4" />
-                <span>Download Laporan</span>
-                <ChevronDown className="w-3.5 h-3.5 opacity-80" />
+                <option value="none">Tanpa Banding</option>
+                {availableYears.filter(y => y !== 'Semua Tahun' && y !== selectedYear).map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </motion.div>
+
+            {/* Filter Benchmark Hospital */}
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25, delay: 0.14 }}
+              className={`flex items-center gap-2 border hover:bg-white/15 rounded-full px-3 py-1.5 h-[34px] text-xs font-bold text-white transition-all shadow-2xs ${selectedBenchmarkId !== 'none' ? 'bg-teal-500/20 border-teal-400/50' : 'bg-white/10 border-white/15'}`}
+            >
+              <Globe className={`w-3.5 h-3.5 ${selectedBenchmarkId !== 'none' ? 'text-teal-300' : 'text-white/80'}`} />
+              <span className="text-white/80 font-medium">Benchmark:</span>
+              <select 
+                value={selectedBenchmarkId} 
+                onChange={e => setSelectedBenchmarkId(e.target.value)}
+                className="bg-transparent font-extrabold text-white outline-none cursor-pointer focus:ring-0 [&>option]:text-slate-800 [&>option]:bg-white pr-1 max-w-[120px]"
+              >
+                <option value="none">Pilih RS</option>
+                {accounts.filter(a => a.role === 'rs' && a.id !== (hospitalId || identifier)).map(rs => (
+                  <option key={rs.id} value={rs.id}>{rs.namaRs}</option>
+                ))}
+              </select>
+            </motion.div>
+
+            {/* Premium Circular Export Buttons */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.25, delay: 0.2 }}
+              className="flex items-center gap-2"
+            >
+              {/* Word Button */}
+              <button
+                onClick={handleExportDocx}
+                disabled={isExporting || isExportingPdf}
+                className="w-[34px] h-[34px] rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-blue-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 cursor-pointer shadow-sm relative group active:scale-95 transition-all duration-200 disabled:opacity-50"
+              >
+                <FileText className="w-4.5 h-4.5" />
+                
+                {/* Custom Tooltip */}
+                <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-50 font-bold tracking-wide">
+                  Export Word
+                </span>
               </button>
 
-              <AnimatePresence>
-                {showDownloadDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-56 bg-white border border-slate-200 rounded-2xl shadow-xl z-50 overflow-hidden p-2 space-y-1"
-                  >
-                    <button
-                      onClick={handleExportDocx}
-                      disabled={isExporting}
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-800 transition-colors cursor-pointer text-left"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-black">
-                        W
-                      </div>
-                      <div>
-                        <div className="font-extrabold">Microsoft Word (.docx)</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Dapat diedit penuh</div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={handlePrintPDF}
-                      className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-teal-50 hover:text-teal-800 transition-colors cursor-pointer text-left"
-                    >
-                      <div className="w-7 h-7 rounded-lg bg-red-100 text-red-700 flex items-center justify-center font-black">
-                        P
-                      </div>
-                      <div>
-                        <div className="font-extrabold">Cetak PDF (.pdf)</div>
-                        <div className="text-[10px] text-slate-400 font-normal">Format A4 Resmi</div>
-                      </div>
-                    </button>
-                  </motion.div>
+              {/* PDF Button */}
+              <button
+                onClick={handleExportPDF}
+                disabled={isExportingPdf || isExporting}
+                className="w-[34px] h-[34px] rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-rose-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 cursor-pointer shadow-sm relative group active:scale-95 transition-all duration-200 disabled:opacity-50"
+              >
+                {isExportingPdf ? (
+                  <RefreshCw className="w-4 h-4 animate-spin text-rose-500" />
+                ) : (
+                  <FileText className="w-4.5 h-4.5 text-rose-600" />
                 )}
-              </AnimatePresence>
-            </div>
+
+                {/* Custom Tooltip */}
+                <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-50 font-bold tracking-wide">
+                  Export PDF
+                </span>
+              </button>
+            </motion.div>
 
           </div>
         </div>
+      </motion.div>
             <style dangerouslySetInnerHTML={{ __html: `
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 0;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           body * {
             visibility: hidden;
           }
@@ -1239,18 +1807,20 @@ export default function LaporanTab({
             visibility: visible;
           }
           #print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 210mm;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 210mm !important;
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
+            transform: none !important;
           }
           .print-page {
             width: 210mm !important;
             min-height: 297mm !important;
             height: 297mm !important;
+            max-height: 297mm !important;
             page-break-after: always !important;
             page-break-inside: avoid !important;
             margin: 0 !important;
@@ -1265,6 +1835,10 @@ export default function LaporanTab({
             display: flex !important;
             flex-direction: column !important;
             justify-content: space-between !important;
+            overflow: hidden !important;
+          }
+          .print-page.cover-page {
+            padding: 0 !important;
           }
           .recharts-responsive-container {
             width: 100% !important;
@@ -1273,24 +1847,30 @@ export default function LaporanTab({
         }
         .preview-container {
           background-color: #f1f5f9;
-          border: 1px solid #cbd5e1;
-          box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+          border: 1px solid #e2e8f0;
+          box-shadow: inset 0 2px 10px rgba(0,0,0,0.04);
+          border-radius: 1rem;
         }
         .word-page {
           width: 210mm;
+          height: 297mm;
           min-height: 297mm;
+          max-height: 297mm;
           background-color: white;
           box-sizing: border-box;
           padding-top: 2.5cm;
           padding-bottom: 2.5cm;
           padding-left: 2.5cm;
           padding-right: 2.5cm;
-          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
-          border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
+          border: 1px solid #cbd5e1;
           border-radius: 4px;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+          overflow: hidden;
+          position: relative;
+          flex-shrink: 0;
         }
         .word-page.cover-page {
           padding: 0 !important;
@@ -1300,37 +1880,77 @@ export default function LaporanTab({
           flex-direction: column !important;
           justify-content: space-between !important;
         }
-        @media print {
-          .print-page.cover-page {
-            padding: 0 !important;
-          }
-        }
-        @media (max-width: 220mm) {
-          .word-page {
-            width: 100%;
-            min-height: auto;
-            padding: 24px !important;
-          }
-          .word-page.cover-page {
-            padding: 0 !important;
-            min-height: 297mm;
-          }
-        }
       ` }} />
 
+      {/* Benchmark Access Status Alert */}
+      {selectedBenchmarkId !== 'none' && selectedBenchmarkHospital && (
+        <AnimatePresence mode="wait">
+          {!currentRequestForSelectedHospital ? (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-4 p-3 bg-blue-50 border border-blue-100 rounded-xl flex items-center gap-3 shadow-sm mx-4"
+            >
+              <HelpCircle className="w-5 h-5 text-blue-500 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-blue-800 font-semibold">Izin Akses Diperlukan</p>
+                <p className="text-xs text-blue-600 font-medium">Anda belum meminta izin benchmark ke {selectedBenchmarkHospital.namaRs}. Silakan ajukan permintaan di tab <strong>Analisa Data</strong>.</p>
+              </div>
+            </motion.div>
+          ) : currentRequestForSelectedHospital.status === 'pending' ? (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-4 p-3 bg-amber-50 border border-amber-100 rounded-xl flex items-center gap-3 shadow-sm mx-4"
+            >
+              <Clock className="w-5 h-5 text-amber-500 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-amber-800 font-semibold">Menunggu Persetujuan</p>
+                <p className="text-xs text-amber-600 font-medium">Permintaan benchmark Anda ke {selectedBenchmarkHospital.namaRs} sedang menunggu persetujuan.</p>
+              </div>
+            </motion.div>
+          ) : currentRequestForSelectedHospital.status === 'rejected' ? (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-4 p-3 bg-rose-50 border border-rose-100 rounded-xl flex items-center gap-3 shadow-sm mx-4"
+            >
+              <AlertTriangle className="w-5 h-5 text-rose-500 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-rose-800 font-semibold">Akses Benchmark Ditolak</p>
+                <p className="text-xs text-rose-600 font-medium">Rumah Sakit tujuan telah menolak permintaan benchmark data Anda.</p>
+              </div>
+            </motion.div>
+          ) : currentRequestForSelectedHospital.status === 'revoked' ? (
+            <motion.div 
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="mb-4 p-3 bg-slate-100 border border-slate-200 rounded-xl flex items-center gap-3 shadow-sm mx-4"
+            >
+              <AlertCircle className="w-5 h-5 text-slate-500 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm text-slate-800 font-semibold">Akses Benchmark Dicabut</p>
+                <p className="text-xs text-slate-600 font-medium text-balance">Akses Benchmark telah dicabut oleh Rumah Sakit tujuan.</p>
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      )}
+
       {/* DOCUMENT PAPER DISPLAY CONTAINER (A4 SEPARATED SHEETS) */}
-      <div className="print:hidden w-full preview-container rounded-2xl p-4 sm:p-8 flex flex-col items-center gap-8 overflow-x-auto">
+      <div className="w-full preview-container rounded-2xl p-4 sm:p-8 flex flex-col items-center gap-8 overflow-x-auto">
         <div 
           ref={printRef}
           id="print-area"
-          className="flex flex-col items-center gap-8 print:gap-0 font-sans leading-relaxed w-full max-w-[210mm]"
+          style={{
+            transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined,
+            transformOrigin: 'top center'
+          }}
+          className="flex flex-col items-center gap-8 print:gap-0 font-sans leading-relaxed w-full max-w-[210mm] transition-transform duration-200"
         >
 
           {/* LEMBAR 1: COVER PAGE */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 1: Halaman Cover
-            </div>
             <div className="word-page cover-page print-page bg-white relative overflow-hidden flex flex-col justify-between select-none">
               
               {/* TOP VECTOR ARTWORK & HALFTONE DOT MATRIX */}
@@ -1543,16 +2163,15 @@ export default function LaporanTab({
             </div>
           </div>
 
-          {/* LEMBAR 2: DAFTAR ISI */}
+
+
+          {/* LEMBAR 3: DAFTAR ISI */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 2: Daftar Isi
-            </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span></span>
+                  <span>DAFTAR ISI</span>
                   <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
@@ -1561,85 +2180,113 @@ export default function LaporanTab({
                   <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
                 </div>
 
-                <div className="space-y-3 text-xs text-slate-700">
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-bold">HALAMAN COVER</span>
-                    <span className="font-bold">i</span>
+                <div className="space-y-2.5 text-xs text-slate-700">
+                  <div className="flex items-baseline justify-between border-b border-dotted border-slate-300 pb-1">
+                    <span className="font-bold text-slate-900 font-sans uppercase">Halaman Cover</span>
+                    <span className="font-bold text-slate-900 font-mono">i</span>
                   </div>
-                  <div className="flex items-baseline justify-between">
-                    <span className="font-bold">DAFTAR ISI</span>
-                    <span className="font-bold">ii</span>
+                  <div className="flex items-baseline justify-between border-b border-dotted border-slate-300 pb-1">
+                    <span className="font-bold text-slate-900 font-sans uppercase">Daftar Isi</span>
+                    <span className="font-bold text-slate-900 font-mono font-medium">ii</span>
                   </div>
                   
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-between font-bold">
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-baseline justify-between font-bold text-slate-900">
                       <span>BAB I PENDAHULUAN</span>
-                      <span>1</span>
+                      <span className="font-mono">1</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>1.1 Latar Belakang</span>
-                      <span>1</span>
+                      <span className="font-mono">1</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>1.2 Tujuan</span>
-                      <span>1</span>
+                      <span>1.2 Tujuan Survei</span>
+                      <span className="font-mono">1</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>1.3 Manfaat</span>
-                      <span>2</span>
+                      <span>1.3 Manfaat Survei</span>
+                      <span className="font-mono">1</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-between font-bold">
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-baseline justify-between font-bold text-slate-900">
                       <span>BAB II METODOLOGI SURVEI</span>
-                      <span>3</span>
+                      <span className="font-mono">2</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>2.1 Desain Penelitian / Survei</span>
-                      <span>3</span>
+                      <span className="font-mono">2</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>2.2 Waktu dan Lokasi</span>
-                      <span>3</span>
+                      <span>2.2 Waktu dan Lokasi Survei</span>
+                      <span className="font-mono">2</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>2.3 Populasi dan Sampel</span>
-                      <span>3</span>
+                      <span>2.3 Populasi, Sampel dan Pengumpulan Data</span>
+                      <span className="font-mono">2</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-between font-bold">
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-baseline justify-between font-bold text-slate-900">
                       <span>BAB III HASIL DAN PEMBAHASAN</span>
-                      <span>4</span>
+                      <span className="font-mono">4</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>3.1 Karakteristik Demografi & Tingkat Respon</span>
-                      <span>4</span>
+                      <span>3.1 Gambaran Umum & Karakteristik Responden</span>
+                      <span className="font-mono">4</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>3.2 Hasil Pengukuran 10 Dimensi AHRQ</span>
-                      <span>5</span>
+                      <span>3.2 Hasil Pengukuran 10 Dimensi Budaya Keselamatan (Tabel)</span>
+                      <span className="font-mono">7</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>3.3 Pembahasan Analisis Kualitatif</span>
-                      <span>6</span>
+                      <span>3.3 Penilaian Keselamatan Pasien Keseluruhan (Overall Rating)</span>
+                      <span className="font-mono">9</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.4 Frekuensi Pelaporan Insiden Keselamatan Pasien</span>
+                      <span className="font-mono">10</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.5 Rata-Rata Respon Positif Per Item Dimensi (d1 - d10)</span>
+                      <span className="font-mono">11</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.6 Analisis Komparatif Respon Positif Segmental</span>
+                      <span className="font-mono">15</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.7 Analisis Tren Historis (Tahun Sebelumnya)</span>
+                      <span className="font-mono">18</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.8 Analisis Benchmarking (Mitra Rumah Sakit)</span>
+                      <span className="font-mono">19</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.9 Pembahasan Hasil Analisis Kualitatif</span>
+                      <span className="font-mono">20</span>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
-                    <div className="flex items-baseline justify-between font-bold">
-                      <span>BAB IV KESIMPULAN, REKOMENDASI & PENGESAHAN</span>
-                      <span>7</span>
+                  <div className="space-y-1 pt-1">
+                    <div className="flex items-baseline justify-between font-bold text-slate-900">
+                      <span>BAB IV KESIMPULAN DAN REKOMENDASI</span>
+                      <span className="font-mono">21</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>4.1 Kesimpulan</span>
-                      <span>7</span>
+                      <span>4.1 Kesimpulan Laporan</span>
+                      <span className="font-mono">21</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>4.2 Rekomendasi Strategic Action Plan & Pengesahan</span>
-                      <span>7</span>
+                      <span>4.2 Rekomendasi Strategic Action Plan</span>
+                      <span className="font-mono">22</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px] font-bold">
+                      <span>LEMBAR PENGESAHAN LAPORAN SURVEI</span>
+                      <span className="font-mono">23</span>
                     </div>
                   </div>
                 </div>
@@ -1655,9 +2302,6 @@ export default function LaporanTab({
 
           {/* LEMBAR 3: BAB I PENDAHULUAN */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 4: BAB I — Pendahuluan
-            </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
@@ -1711,16 +2355,13 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 1 dari 7</span>
+                <span>Halaman 1 dari 17</span>
               </div>
             </div>
           </div>
 
           {/* LEMBAR 5: BAB II METODOLOGI SURVEI */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5: BAB II — Metodologi Survei
-            </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
@@ -1848,74 +2489,6 @@ export default function LaporanTab({
                         </li>
                       </ul>
                     </div>
-
-                    <div>
-                      <h3 className="font-bold text-slate-900 mb-1">2.5 Metode Pengumpulan Data</h3>
-                      <p>Pengumpulan data dilakukan secara elektronik/online (e-survey menggunakan link aplikasi pengukuran budaya keselamatan) dengan memperhitungkan kerahasiaan:</p>
-                      <ul className="list-disc pl-5 mt-2 space-y-1.5">
-                        <li>
-                          <strong>Penyebaran Tautan/Kuesioner:</strong> Disebarkan melalui koordinasi Kepala Unit/Ruangan dan Tim Komite Mutu.
-                        </li>
-                        <li>
-                          <strong>Prinsip Anonimitas:</strong> Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kerahasiaan (anonymity) dan kejujuran jawaban tanpa kekhawatiran akan adanya sanksi/dampak karir.
-                        </li>
-                        <li>
-                          <strong>Monitoring Response Rate:</strong> Tim pelaksana melakukan pemantauan harian terhadap tingkat partisipasi di tiap unit untuk memastikan keterwakilan data.
-                        </li>
-                      </ul>
-                    </div>
-
-                    <div>
-                      <h3 className="font-bold text-slate-900 mb-1">2.6 Analisis Data</h3>
-                      <p>Pengolahan dan analisis data dilakukan mengikuti panduan pengolahan data AHRQ SOPS® Version 2.0:</p>
-                      <ul className="list-disc pl-5 mt-2 space-y-3">
-                        <li>
-                          <strong>Analisis Deskriptif Demografi:</strong> Menghitung frekuensi dan persentase untuk karakteristik responden (profesi, unit kerja, masa kerja, jam kerja).
-                        </li>
-                        <li>
-                          <strong>Kalkulasi Persentase Respon Positif (% Positive Response):</strong>
-                          <p className="mt-1 text-slate-700">Pilihan jawaban kuesioner menggunakan skala Likert 5 poin:</p>
-                          <ul className="list-circle pl-5 mt-1 space-y-1 text-[11px] text-slate-600">
-                            <li><strong>Agreement Scale:</strong> 1 = Sangat Tidak Setuju, 2 = Tidak Setuju, 3 = Netral, 4 = Setuju, 5 = Sangat Setuju.</li>
-                            <li><strong>Frequency Scale:</strong> 1 = Tidak Pernah, 2 = Jarang, 3 = Kadang-kadang, 4 = Sering, 5 = Selalu.</li>
-                          </ul>
-                          <ul className="list-square pl-5 mt-2 space-y-1.5">
-                            <li>
-                              <strong>Item Berpernyataan Positif (Positively Worded Items):</strong> Respon bernilai 4 (Setuju/Sering) dan 5 (Sangat Setuju/Selalu) dihitung sebagai respon positif.
-                            </li>
-                            <li>
-                              <strong>Item Berpernyataan Negatif (Negatively Worded / Negatively Worded Reverse Items):</strong> Respon bernilai 1 (Sangat Tidak Setuju/Tidak Pernah) dan 2 (Tidak Setuju/Jarang) dihitung sebagai respon positif.
-                            </li>
-                          </ul>
-                        </li>
-                        <li>
-                          <strong>Formula perhitungan respon positif dimensi:</strong>
-                          <div className="my-2 p-3 bg-teal-50 border border-teal-200 rounded-lg flex flex-col items-center justify-center">
-                            <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold text-teal-950">
-                              <span className="whitespace-nowrap font-black uppercase text-teal-900">&ldquo;% Respon Positif Dimensi&rdquo;</span>
-                              <span className="text-teal-600 text-lg font-normal">=</span>
-                              <div className="flex flex-col items-center mx-1">
-                                <span className="border-b border-teal-400 pb-1 px-3 text-center font-bold">Total Jawaban Positif pada Seluruh Item dalam Dimensi</span>
-                                <span className="pt-1 px-3 text-center font-bold">Total Jawaban yang Terisi pada Seluruh Item dalam Dimensi</span>
-                              </div>
-                              <span className="text-teal-600 text-lg font-normal">×</span>
-                              <span className="font-black">100%</span>
-                            </div>
-                          </div>
-                        </li>
-                        <li>
-                          <strong>Kriteria Kategori Dimensi:</strong>
-                          <ul className="list-disc pl-5 mt-1 space-y-1 text-slate-700">
-                            <li><strong>Area Keunggulan / Kekuatan (Strengths):</strong> Dimensi dengan persentase respon positif &ge;75%.</li>
-                            <li><strong>Area Perlu Perbaikan (Areas for Improvement):</strong> Dimensi dengan persentase respon positif &lt;50%.</li>
-                            <li><strong>Area Sedang / Netral:</strong> Dimensi dengan persentase respon positif antara 50%-74%.</li>
-                          </ul>
-                        </li>
-                        <li>
-                          <strong>Analisis Tingkat Keselamatan Pasien Keseluruhan:</strong> Menghitung distribusi persentase penilaian staf terhadap mutu keselamatan pasien di rumah sakit secara umum.
-                        </li>
-                      </ul>
-                    </div>
                   </div>
                 </section>
               </div>
@@ -1923,213 +2496,340 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 2 dari 7</span>
+                <span>Halaman 2 dari 17</span>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 6: BAB III — Karakteristik & Demografi
-            </div>
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span></span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
-
-                <section className="space-y-4">
-                  <div className="text-center mb-6 space-y-1">
-                    <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB III</h2>
-                    <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">HASIL DAN PEMBAHASAN</h2>
-                    <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Metodologi Survei (Lanjutan)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <div className="space-y-3">
-                    <h3 className="font-bold text-slate-900 text-xs">3.1 Gambaran Umum Respon Rate dan Karakteristik Responden</h3>
-
-                    <div className="space-y-1.5 text-[10px] text-slate-700 leading-relaxed">
-                      <h4 className="font-bold text-slate-900 text-[11px]">3.1.1 Tingkat Partisipasi (Response Rate)</h4>
-                      <p className="text-slate-700 text-[10px] leading-relaxed text-justify">
-                        Survei dilaksanakan pada periode <span className="font-semibold text-slate-900">{periodeSurvei}</span>. Dari total <span className="font-semibold text-slate-900">{totalTarget.toLocaleString('id-ID')}</span> kuesioner yang disebarkan ke seluruh unit kerja di <span className="font-semibold text-slate-900">{activeHospitalName}</span>, diperoleh kuesioner kembali dan memenuhi syarat untuk dianalisis sebanyak <span className="font-semibold text-slate-900">{totalActual.toLocaleString('id-ID')}</span> kuesioner. Dengan demikian, tingkat partisipasi (response rate) survei ini adalah sebesar <span className="font-bold text-teal-700">{responseRateStr}</span>. Tingkat partisipasi ini telah memenuhi ambang batas minimal yang direkomendasikan AHRQ (≥60%) sehingga representatif untuk menggambarkan budaya keselamatan pasien secara organisasi.
-                      </p>
-                    </div>
-
-                    <div className="pt-1 space-y-1">
-                      <h4 className="font-bold text-slate-900 text-[11px]">3.1.2 Demografi Responden</h4>
-                      <p className="text-[10px] text-slate-600 font-medium">Karakteristik responden dikelompokkan berdasarkan profesi/posisi staf, unit kerja, masa kerja di rumah sakit, dan jumlah jam kerja per minggu</p>
-                    </div>
-
-                    <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
-                            <th className="p-2 border-r border-white/20">Karakteristik</th>
-                            <th className="p-2 border-r border-white/20">Kategori / Detail</th>
-                            <th className="p-2 border-r border-white/20 text-center">Jumlah (n)</th>
-                            <th className="p-2 text-center">Persentase (%)</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-200">
-                          {/* 1. Posisi Staf */}
-                          {demografiStats.posisiData.map((pItem, idx, arr) => {
-                            const pct = ((pItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
-                            return (
-                              <tr key={`pos-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                {idx === 0 && (
-                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
-                                    Posisi / Jabatan
-                                  </td>
-                                )}
-                                <td className="p-2 border-r border-slate-200 text-slate-700">{pItem.name}</td>
-                                <td className="p-2 border-r border-slate-200 text-center font-bold">{pItem.value}</td>
-                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
-                              </tr>
-                            );
-                          })}
-
-                          {/* 2. Unit Kerja */}
-                          {demografiStats.unitData.map((uItem, idx, arr) => {
-                            const pct = ((uItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
-                            return (
-                              <tr key={`unit-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                {idx === 0 && (
-                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
-                                    Unit / Area Kerja
-                                  </td>
-                                )}
-                                <td className="p-2 border-r border-slate-200 text-slate-700">{uItem.name}</td>
-                                <td className="p-2 border-r border-slate-200 text-center font-bold">{uItem.value}</td>
-                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
-                              </tr>
-                            );
-                          })}
-
-                          {/* 3. Masa Kerja RS */}
-                          {demografiStats.g1Data.map((g1Item, idx, arr) => {
-                            const pct = ((g1Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
-                            return (
-                              <tr key={`g1-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                {idx === 0 && (
-                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
-                                    Masa Kerja di RS Ini
-                                  </td>
-                                )}
-                                <td className="p-2 border-r border-slate-200 text-slate-700">{g1Item.name}</td>
-                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g1Item.value}</td>
-                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
-                              </tr>
-                            );
-                          })}
-
-                          {/* 4. Masa Kerja Unit */}
-                          {demografiStats.g2Data.map((g2Item, idx, arr) => {
-                            const pct = ((g2Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
-                            return (
-                              <tr key={`g2-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                {idx === 0 && (
-                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
-                                    Masa Kerja di Unit Kerja
-                                  </td>
-                                )}
-                                <td className="p-2 border-r border-slate-200 text-slate-700">{g2Item.name}</td>
-                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g2Item.value}</td>
-                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
-                              </tr>
-                            );
-                          })}
-
-                          {/* 5. Jam Kerja */}
-                          {demografiStats.g3Data.map((g3Item, idx, arr) => {
-                            const pct = ((g3Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
-                            return (
-                              <tr key={`g3-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                {idx === 0 && (
-                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
-                                    Jam Kerja per Minggu
-                                  </td>
-                                )}
-                                <td className="p-2 border-r border-slate-200 text-slate-700">{g3Item.name}</td>
-                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g3Item.value}</td>
-                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
-                              </tr>
-                            );
-                          })}
-
-                          {/* 6. Interaksi Pasien */}
-                          {demografiStats.g4Data?.map((g4Item, idx, arr) => {
-                            const pct = ((g4Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
-                            return (
-                              <tr key={`g4-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                {idx === 0 && (
-                                  <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
-                                    Interaksi Kontak Pasien
-                                  </td>
-                                )}
-                                <td className="p-2 border-r border-slate-200 text-slate-700 leading-tight">{g4Item.name}</td>
-                                <td className="p-2 border-r border-slate-200 text-center font-bold">{g4Item.value}</td>
-                                <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="space-y-2 mt-4">
-                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[10px] text-slate-600 leading-relaxed space-y-1">
-                        <strong className="text-teal-800 font-extrabold uppercase tracking-wide block">3.1.3 Interpretasi & Analisa Data Demografi:</strong>
-                        <p>
-                          Berdasarkan data demografi responden tahun <strong>{displayYear}</strong>, survei berhasil mengumpulkan partisipasi aktif dari <strong>{demografiNarrative.totalResp}</strong> staf. 
-                          Keterwakilan posisi staf didominasi oleh <strong>{demografiNarrative.topPos}</strong> (<strong>{demografiNarrative.topPosVal}</strong> responden){demografiNarrative.secondPos ? `, diikuti oleh ${demografiNarrative.secondPos} (${demografiNarrative.secondPosVal} responden)` : ''}. 
-                          Unit dengan kontribusi terbesar adalah <strong>{demografiNarrative.topUnit}</strong> dengan <strong>{demografiNarrative.topUnitVal}</strong> responden{demografiNarrative.secondUnit ? `, disusul unit ${demografiNarrative.secondUnit} (${demografiNarrative.secondUnitVal} responden)` : ''}. 
-                          Sedangkan dari masa bakti di rumah sakit, mayoritas responden memiliki masa kerja <strong>{demografiNarrative.topTenure}</strong> sebanyak <strong>{demografiNarrative.topTenureVal}</strong> staf. 
-                          Data ini menunjukkan sebaran responden yang representatif dan valid untuk dijadikan pijakan analisis budaya keselamatan pasien secara makro di <strong>{activeHospitalName}</strong>.
-                        </p>
+                  <section className="space-y-4">
+                    <div className="space-y-4 text-xs text-slate-700 leading-relaxed text-justify">
+                      <div>
+                        <h3 className="font-bold text-slate-900 mb-1">2.5 Metode Pengumpulan Data</h3>
+                        <p>Pengumpulan data dilakukan secara elektronik/online (e-survey menggunakan link aplikasi pengukuran budaya keselamatan) dengan memperhitungkan kerahasiaan:</p>
+                        <ul className="list-disc pl-5 mt-2 space-y-1.5">
+                          <li>
+                            <strong>Penyebaran Tautan/Kuesioner:</strong> Disebarkan melalui koordinasi Kepala Unit/Ruangan dan Tim Komite Mutu.
+                          </li>
+                          <li>
+                            <strong>Prinsip Anonimitas:</strong> Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kerahasiaan (anonymity) dan kejujuran jawaban tanpa kekhawatiran akan adanya sanksi/dampak karir.
+                          </li>
+                          <li>
+                            <strong>Monitoring Response Rate:</strong> Tim pelaksana melakukan pemantauan harian terhadap tingkat partisipasi di tiap unit untuk memastikan keterwakilan data.
+                          </li>
+                        </ul>
                       </div>
 
-                      <div className="bg-teal-50/45 p-3 rounded-xl border border-teal-100 text-[10px] text-slate-600 leading-relaxed space-y-1">
-                        <strong className="text-teal-900 font-extrabold uppercase tracking-wide block">Rekomendasi Peningkatan Strategis:</strong>
-                        <ul className="space-y-1 list-none pl-0">
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-teal-600 shrink-0 select-none mt-0.5">👥</span>
-                            <span>Rancang program edukasi keselamatan pasien yang berfokus pada kelompok dominan yaitu posisi &ldquo;{demografiNarrative.topPos}&rdquo; di unit &ldquo;{demografiNarrative.topUnit}&rdquo;.</span>
+                      <div>
+                        <h3 className="font-bold text-slate-900 mb-1">2.6 Analisis Data</h3>
+                        <p>Pengolahan dan analisis data dilakukan mengikuti panduan pengolahan data AHRQ SOPS® Version 2.0:</p>
+                        <ul className="list-disc pl-5 mt-2 space-y-3">
+                          <li>
+                            <strong>Analisis Deskriptif Demografi:</strong> Menghitung frekuensi dan persentase untuk karakteristik responden (profesi, unit kerja, masa kerja, jam kerja).
                           </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-teal-600 shrink-0 select-none mt-0.5">📈</span>
-                            <span>Tingkatkan tingkat partisipasi dari kelompok atau unit kerja dengan tingkat representasi rendah (di bawah 10% dari total responden).</span>
+                          <li>
+                            <strong>Kalkulasi Persentase Respon Positif (% Positive Response):</strong>
+                            <p className="mt-1 text-slate-700">Pilihan jawaban kuesioner menggunakan skala Likert 5 poin:</p>
+                            <ul className="list-circle pl-5 mt-1 space-y-1 text-[11px] text-slate-600">
+                              <li><strong>Agreement Scale:</strong> 1 = Sangat Tidak Setuju, 2 = Tidak Setuju, 3 = Netral, 4 = Setuju, 5 = Sangat Setuju.</li>
+                              <li><strong>Frequency Scale:</strong> 1 = Tidak Pernah, 2 = Jarang, 3 = Kadang-kadang, 4 = Sering, 5 = Selalu.</li>
+                            </ul>
+                            <ul className="list-square pl-5 mt-2 space-y-1.5">
+                              <li>
+                                <strong>Item Berpernyataan Positif (Positively Worded Items):</strong> Respon bernilai 4 (Setuju/Sering) dan 5 (Sangat Setuju/Selalu) dihitung sebagai respon positif.
+                              </li>
+                              <li>
+                                <strong>Item Berpernyataan Negatif (Negatively Worded / Negatively Worded Reverse Items):</strong> Respon bernilai 1 (Sangat Tidak Setuju/Tidak Pernah) dan 2 (Tidak Setuju/Jarang) dihitung sebagai respon positif.
+                              </li>
+                            </ul>
                           </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-teal-600 shrink-0 select-none mt-0.5">🛡️</span>
-                            <span>Sosialisasikan kembali jaminan kerahasiaan identitas responden guna mendorong pengisian data yang jujur dan transparan.</span>
+                          <li>
+                            <strong>Formula perhitungan respon positif dimensi:</strong>
+                            <div className="my-2 p-3 bg-teal-50 border border-teal-200 rounded-lg flex flex-col items-center justify-center">
+                              <div className="flex items-center gap-3 text-[10px] md:text-xs font-bold text-teal-950">
+                                <span className="whitespace-nowrap font-black uppercase text-teal-900">&ldquo;% Respon Positif Dimensi&rdquo;</span>
+                                <span className="text-teal-600 text-lg font-normal">=</span>
+                                <div className="flex flex-col items-center mx-1">
+                                  <span className="border-b border-teal-400 pb-1 px-3 text-center font-bold">Total Jawaban Positif pada Seluruh Item dalam Dimensi</span>
+                                  <span className="pt-1 px-3 text-center font-bold">Total Jawaban yang Terisi pada Seluruh Item dalam Dimensi</span>
+                                </div>
+                                <span className="text-teal-600 text-lg font-normal">×</span>
+                                <span className="font-black">100%</span>
+                              </div>
+                            </div>
                           </li>
-                          <li className="flex items-start gap-1.5">
-                            <span className="text-teal-600 shrink-0 select-none mt-0.5">✨</span>
-                            <span>Gunakan data demografi ini untuk merumuskan tim Champions Keselamatan Pasien lintas unit kerja.</span>
+                          <li>
+                            <strong>Kriteria Kategori Dimensi:</strong>
+                            <ul className="list-disc pl-5 mt-1 space-y-1 text-slate-700">
+                              <li><strong>Area Keunggulan / Kekuatan (Strengths):</strong> Dimensi dengan persentase respon positif &ge;75%.</li>
+                              <li><strong>Area Perlu Perbaikan (Areas for Improvement):</strong> Dimensi dengan persentase respon positif &lt;50%.</li>
+                              <li><strong>Area Sedang / Netral:</strong> Dimensi dengan persentase respon positif antara 50%-74%.</li>
+                            </ul>
+                          </li>
+                          <li>
+                            <strong>Analisis Tingkat Keselamatan Pasien Keseluruhan:</strong> Menghitung distribusi persentase penilaian staf terhadap mutu keselamatan pasien di rumah sakit secara umum.
                           </li>
                         </ul>
                       </div>
                     </div>
-                  </div>
-                </section>
-              </div>
+                  </section>
+                </div>
 
-              {/* Running Footer */}
+                {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 3 dari 7</span>
+                <span>Halaman 3 dari 17</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+          {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi (Bagian 1) */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Karakteristik Responden (Bagian 1)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    <div className="text-center mb-6 space-y-1">
+                      <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB III</h2>
+                      <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">HASIL DAN PEMBAHASAN</h2>
+                      <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h3 className="font-bold text-slate-900 text-xs">3.1 Gambaran Umum Respon Rate dan Karakteristik Responden</h3>
+
+                      <div className="space-y-1.5 text-[10px] text-slate-700 leading-relaxed">
+                        <h4 className="font-bold text-slate-900 text-[11px]">3.1.1 Tingkat Partisipasi (Response Rate)</h4>
+                        <p className="text-slate-700 text-[10px] leading-relaxed text-justify">
+                          Survei dilaksanakan pada periode <span className="font-semibold text-slate-900">{periodeSurvei}</span>. Dari total <span className="font-semibold text-slate-900">{totalTarget.toLocaleString('id-ID')}</span> kuesioner yang disebarkan ke seluruh unit kerja di <span className="font-semibold text-slate-900">{activeHospitalName}</span>, diperoleh kuesioner kembali dan memenuhi syarat untuk dianalisis sebanyak <span className="font-semibold text-slate-900">{totalActual.toLocaleString('id-ID')}</span> kuesioner. Dengan demikian, tingkat partisipasi (response rate) survei ini adalah sebesar <span className="font-bold text-teal-700">{responseRateStr}</span>. Tingkat partisipasi ini telah memenuhi ambang batas minimal yang direkomendasikan AHRQ (≥60%) sehingga representatif untuk menggambarkan budaya keselamatan pasien secara organisasi.
+                        </p>
+                      </div>
+
+                      <div className="pt-1 space-y-1">
+                        <h4 className="font-bold text-slate-900 text-[11px]">3.1.2 Demografi Responden</h4>
+                        <p className="text-[10px] text-slate-600 font-medium">Karakteristik responden dikelompokkan berdasarkan profesi/posisi staf, unit kerja, masa kerja di rumah sakit, dan jumlah jam kerja per minggu</p>
+                      </div>
+
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                              <th className="p-2 border-r border-white/20">Karakteristik</th>
+                              <th className="p-2 border-r border-white/20">Kategori / Detail</th>
+                              <th className="p-2 border-r border-white/20 text-center">Jumlah (n)</th>
+                              <th className="p-2 text-center">Persentase (%)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {/* 1. Posisi Staf */}
+                            {demografiStats.posisiData.map((pItem, idx, arr) => {
+                              const pct = ((pItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                              return (
+                                <tr key={`pos-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                  {idx === 0 && (
+                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                      Posisi / Jabatan
+                                    </td>
+                                  )}
+                                  <td className="p-2 border-r border-slate-200 text-slate-700">{pItem.name}</td>
+                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{pItem.value}</td>
+                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                </tr>
+                              );
+                            })}
+
+                            {/* 2. Masa Kerja RS */}
+                            {demografiStats.g1Data.map((g1Item, idx, arr) => {
+                              const pct = ((g1Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                              return (
+                                <tr key={`g1-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                  {idx === 0 && (
+                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                      Masa Kerja di RS Ini
+                                    </td>
+                                  )}
+                                  <td className="p-2 border-r border-slate-200 text-slate-700">{g1Item.name}</td>
+                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g1Item.value}</td>
+                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                </tr>
+                              );
+                            })}
+
+                            {/* 3. Masa Kerja Unit */}
+                            {demografiStats.g2Data.map((g2Item, idx, arr) => {
+                              const pct = ((g2Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                              return (
+                                <tr key={`g2-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                  {idx === 0 && (
+                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                      Masa Kerja di Unit Kerja
+                                    </td>
+                                  )}
+                                  <td className="p-2 border-r border-slate-200 text-slate-700">{g2Item.name}</td>
+                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g2Item.value}</td>
+                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                </tr>
+                              );
+                            })}
+
+                            {/* 4. Jam Kerja */}
+                            {demografiStats.g3Data.map((g3Item, idx, arr) => {
+                              const pct = ((g3Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                              return (
+                                <tr key={`g3-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                  {idx === 0 && (
+                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                      Jam Kerja per Minggu
+                                    </td>
+                                  )}
+                                  <td className="p-2 border-r border-slate-200 text-slate-700">{g3Item.name}</td>
+                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g3Item.value}</td>
+                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                </tr>
+                              );
+                            })}
+
+                            {/* 5. Interaksi Pasien */}
+                            {demografiStats.g4Data?.map((g4Item, idx, arr) => {
+                              const pct = ((g4Item.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                              return (
+                                <tr key={`g4-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                  {idx === 0 && (
+                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                      Interaksi Kontak Pasien
+                                    </td>
+                                  )}
+                                  <td className="p-2 border-r border-slate-200 text-slate-700 leading-tight">{g4Item.name}</td>
+                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g4Item.value}</td>
+                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 4 dari 17</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 6b: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi (Bagian 2) */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Karakteristik Responden (Bagian 2)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    <div className="space-y-3">
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                        <table className="w-full text-left border-collapse">
+                          <thead>
+                            <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                              <th className="p-2 border-r border-white/20">Karakteristik</th>
+                              <th className="p-2 border-r border-white/20">Kategori / Detail</th>
+                              <th className="p-2 border-r border-white/20 text-center">Jumlah (n)</th>
+                              <th className="p-2 text-center">Persentase (%)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {/* Unit Kerja */}
+                            {demografiStats.unitData.map((uItem, idx, arr) => {
+                              const pct = ((uItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                              return (
+                                <tr key={`unit-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                  {idx === 0 && (
+                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                      Unit / Area Kerja
+                                    </td>
+                                  )}
+                                  <td className="p-2 border-r border-slate-200 text-slate-700">{uItem.name}</td>
+                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{uItem.value}</td>
+                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      <div className="space-y-2 mt-4">
+                        <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[10px] text-slate-600 leading-relaxed space-y-1">
+                          <strong className="text-teal-800 font-extrabold uppercase tracking-wide block">3.1.3 Interpretasi & Analisa Data Demografi:</strong>
+                          <p>
+                            Berdasarkan data demografi responden tahun <strong>{displayYear}</strong>, survei berhasil mengumpulkan partisipasi aktif dari <strong>{demografiNarrative.totalResp}</strong> staf. 
+                            Keterwakilan posisi staf didominasi oleh <strong>{demografiNarrative.topPos}</strong> (<strong>{demografiNarrative.topPosVal}</strong> responden){demografiNarrative.secondPos ? `, diikuti oleh ${demografiNarrative.secondPos} (${demografiNarrative.secondPosVal} responden)` : ''}. 
+                            Unit dengan kontribusi terbesar adalah <strong>{demografiNarrative.topUnit}</strong> dengan <strong>{demografiNarrative.topUnitVal}</strong> responden{demografiNarrative.secondUnit ? `, disusul unit ${demografiNarrative.secondUnit} (${demografiNarrative.secondUnitVal} responden)` : ''}. 
+                            Sedangkan dari masa bakti di rumah sakit, mayoritas responden memiliki masa kerja <strong>{demografiNarrative.topTenure}</strong> sebanyak <strong>{demografiNarrative.topTenureVal}</strong> staf. 
+                            Data ini menunjukkan sebaran responden yang representatif dan valid untuk dijadikan pijakan analisis budaya keselamatan pasien secara makro di <strong>{activeHospitalName}</strong>.
+                          </p>
+                        </div>
+
+                        <div className="bg-teal-50/45 p-3 rounded-xl border border-teal-100 text-[10px] text-slate-600 leading-relaxed space-y-1">
+                          <strong className="text-teal-900 font-extrabold uppercase tracking-wide block">Rekomendasi Peningkatan Strategis:</strong>
+                          <ul className="space-y-1 list-none pl-0">
+                            <li className="flex items-start gap-1.5">
+                              <span className="text-teal-600 shrink-0 select-none mt-0.5">👥</span>
+                              <span>Rancang program edukasi keselamatan pasien yang berfokus pada kelompok dominan yaitu posisi &ldquo;{demografiNarrative.topPos}&rdquo; di unit &ldquo;{demografiNarrative.topUnit}&rdquo;.</span>
+                            </li>
+                            <li className="flex items-start gap-1.5">
+                              <span className="text-teal-600 shrink-0 select-none mt-0.5">📈</span>
+                              <span>Tingkatkan tingkat partisipasi dari kelompok atau unit kerja dengan tingkat representasi rendah (di bawah 10% dari total responden).</span>
+                            </li>
+                            <li className="flex items-start gap-1.5">
+                              <span className="text-teal-600 shrink-0 select-none mt-0.5">🛡️</span>
+                              <span>Sosialisasikan kembali jaminan kerahasiaan identitas responden guna mendorong pengisian data yang jujur dan transparan.</span>
+                            </li>
+                            <li className="flex items-start gap-1.5">
+                              <span className="text-teal-600 shrink-0 select-none mt-0.5">✨</span>
+                              <span>Gunakan data demografi ini untuk merumuskan tim Champions Keselamatan Pasien lintas unit kerja.</span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 5 dari 17</span>
+                </div>
               </div>
             </div>
           </div>
 
           {/* LEMBAR 4: BAB III HASIL & PEMBAHASAN - Hasil Pengukuran 10 Dimensi */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 4: BAB III — Pengukuran 10 Dimensi ({activeHospitalName})
-            </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
@@ -2302,434 +3002,710 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 4 dari 7</span>
+                <span>Halaman 6 dari 17</span>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 5: BAB III HASIL & PEMBAHASAN - Overall, Insiden & Benchmark */}
+          {/* LEMBAR 5: BAB III HASIL & PEMBAHASAN - 3.2.2 Overall Rating */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5: BAB III — Overall Rating & Insiden
-            </div>
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span></span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>3.2.2 Rating Keselamatan Pasien Keseluruhan</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    {/* 3.2.2 Keselamatan Pasien Keseluruhan (Overall Rating) */}
+                    <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                            <HeartPulse className="w-4 h-4 text-rose-600" />
+                            3.2.2 Keselamatan Pasien Keseluruhan (Overall Rating)
+                          </h4>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            Tingkat keselamatan pasien di unit kerja berdasarkan penilaian responden staf {activeHospitalName}
+                          </p>
+                        </div>
+                        <span className="text-[9.5px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200 self-start sm:self-auto">
+                          Respon Positif: {safetyRatingData.positivePct.toFixed(1)}%
+                        </span>
+                      </div>
+
+                      {/* Grafik Penilaian Insiden Keselamatan Pasien */}
+                      <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                        <h5 className="text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                          <BarChart2 className="w-3.5 h-3.5 text-rose-500" />
+                          Grafik Penilaian Insiden Keselamatan Pasien (Overall Rating)
+                        </h5>
+                        <div className="h-[150px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={safetyRatingData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 9, fontWeight: 600 }} tickLine={false} />
+                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 8.5 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px' }} />
+                              <Bar dataKey="percentage" name="Persentase" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={35} isAnimationActive={false}>
+                                {safetyRatingData.distribution.map((entry, index) => {
+                                  const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#b91c1c'];
+                                  return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                                })}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* Interpretasi & Analisa Data Card */}
+                      <div className="bg-blue-50/40 border border-blue-100 p-3 rounded-xl space-y-1">
+                        <h5 className="text-[11px] font-bold text-blue-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                          Interpretasi & Analisa Data
+                        </h5>
+                        <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
+                          Penilaian keselamatan pasien secara keseluruhan (overall safety rating) oleh staf pada tahun <strong>{tahunSurvei}</strong> di <strong>{activeHospitalName}</strong> menghasilkan proporsi respons positif (kombinasi predikat Sangat Baik & Baik) sebesar <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong>. 
+                          Mayoritas staf memberikan penilaian keselamatan pada rentang kategori <strong>&ldquo;{safetyRatingHighestCat.name}&rdquo;</strong> sebesar <strong>{safetyRatingHighestCat.percentage}</strong>. 
+                          Meskipun iklim keselamatan dinilai cukup baik, upaya peningkatan mutu berkelanjutan tetap harus didukung demi mencapai target ideal &ge;80% respons positif.
+                        </p>
+                        
+                        {/* Category Breakout Badges */}
+                        <div className="grid grid-cols-5 gap-1.5 pt-1">
+                          {safetyRatingData.distribution.map(g => (
+                            <div key={g.name} className="p-1.5 rounded-lg bg-white border border-blue-100 text-center shadow-2xs">
+                              <div className="text-slate-500 font-bold text-[8px] truncate">{g.name}</div>
+                              <div className="text-[10px] font-extrabold text-teal-800 mt-0.5">{g.percentage}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Rekomendasi Peningkatan */}
+                      <div className="bg-emerald-50/40 border border-emerald-100 p-3 rounded-xl space-y-1">
+                        <h5 className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Rekomendasi Peningkatan
+                        </h5>
+                        <div className="grid grid-cols-2 gap-2 text-[9px]">
+                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-emerald-100/80">
+                            <span className="text-sm shrink-0">🔎</span>
+                            <span className="text-slate-700 font-medium">Lakukan monitoring berkala di unit-unit klinis kritis (IGD, ICU, Kamar Operasi) yang rentan memiliki gap keselamatan pasien.</span>
+                          </div>
+                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-emerald-100/80">
+                            <span className="text-sm shrink-0">👣</span>
+                            <span className="text-slate-700 font-medium">Jadwalkan &apos;Safety Walkrounds&apos; (Ronde Keselamatan) yang melibatkan jajaran direksi untuk berdialog langsung dengan staf.</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
                 </div>
 
-                <section className="space-y-6">
-                  {/* 3.2.2 Keselamatan Pasien Keseluruhan (Overall Rating) */}
-                  <div className="bg-white border border-slate-200 p-4 md:p-5 rounded-2xl shadow-xs space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                          <HeartPulse className="w-4 h-4 text-rose-600" />
-                          3.2.2 Keselamatan Pasien Keseluruhan (Overall Rating)
-                        </h4>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          Tingkat keselamatan pasien di unit kerja berdasarkan penilaian responden staf {activeHospitalName}
-                        </p>
-                      </div>
-                      <span className="text-[9.5px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200 self-start sm:self-auto">
-                        Respon Positif: {safetyRatingData.positivePct.toFixed(1)}%
-                      </span>
-                    </div>
-
-                    {/* Grafik Penilaian Insiden Keselamatan Pasien */}
-                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                      <h5 className="text-[11px] font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                        <BarChart2 className="w-3.5 h-3.5 text-rose-500" />
-                        Grafik Penilaian Insiden Keselamatan Pasien (Overall Rating)
-                      </h5>
-                      <div className="h-[200px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={safetyRatingData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 15, right: 15, left: -15, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                            <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 9.5, fontWeight: 600 }} tickLine={false} />
-                            <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                            <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                            <Bar dataKey="percentage" name="Persentase" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                              {safetyRatingData.distribution.map((entry, index) => {
-                                const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#b91c1c'];
-                                return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                              })}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Interpretasi & Analisa Data Card */}
-                    <div className="bg-blue-50/40 border border-blue-100 p-3.5 rounded-xl space-y-2">
-                      <h5 className="text-[11px] font-bold text-blue-900 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                        Interpretasi & Analisa Data
-                      </h5>
-                      <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                        Penilaian keselamatan pasien secara keseluruhan (overall safety rating) oleh staf pada tahun <strong>{tahunSurvei}</strong> di <strong>{activeHospitalName}</strong> menghasilkan proporsi respons positif (kombinasi predikat Sangat Baik & Baik) sebesar <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong>. 
-                        Mayoritas staf memberikan penilaian keselamatan pada rentang kategori <strong>&ldquo;{safetyRatingHighestCat.name}&rdquo;</strong> sebesar <strong>{safetyRatingHighestCat.percentage}</strong>. 
-                        Meskipun iklim keselamatan dinilai cukup baik, upaya peningkatan mutu berkelanjutan tetap harus didukung demi mencapai target ideal &ge;80% respons positif.
-                      </p>
-                      
-                      {/* Category Breakout Badges */}
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
-                        {safetyRatingData.distribution.map(g => (
-                          <div key={g.name} className="p-1.5 rounded-lg bg-white border border-blue-100 text-center shadow-2xs">
-                            <div className="text-slate-500 font-bold text-[8.5px] truncate">{g.name}</div>
-                            <div className="text-[11px] font-extrabold text-teal-800 mt-0.5">{g.percentage}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Rekomendasi Peningkatan */}
-                    <div className="bg-emerald-50/40 border border-emerald-100 p-3.5 rounded-xl space-y-2">
-                      <h5 className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        Rekomendasi Peningkatan
-                      </h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9.5px]">
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80">
-                          <span className="text-sm shrink-0">🔎</span>
-                          <span className="text-slate-700 font-medium">Lakukan monitoring berkala di unit-unit klinis kritis (IGD, ICU, Kamar Operasi) yang rentan memiliki gap keselamatan pasien.</span>
-                        </div>
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80">
-                          <span className="text-sm shrink-0">👣</span>
-                          <span className="text-slate-700 font-medium">Jadwalkan &apos;Safety Walkrounds&apos; (Ronde Keselamatan) yang melibatkan jajaran direksi untuk berdialog langsung dengan staf.</span>
-                        </div>
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80">
-                          <span className="text-sm shrink-0">📊</span>
-                          <span className="text-slate-700 font-medium">Gunakan hasil penilaian ini sebagai KPI mutu unit kerja dalam rapat evaluasi tahunan.</span>
-                        </div>
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80">
-                          <span className="text-sm shrink-0">🏆</span>
-                          <span className="text-slate-700 font-medium">Berikan penghargaan bagi unit yang konsisten memelihara iklim budaya keselamatan dengan predikat &apos;Sangat Baik&apos;.</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3.2.3 Frekuensi Pelaporan Insiden */}
-                  <div className="bg-white border border-slate-200 p-4 md:p-5 rounded-2xl shadow-xs space-y-4">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                      <div>
-                        <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                          <Activity className="w-4 h-4 text-purple-600" />
-                          3.2.3 Frekuensi Pelaporan Insiden
-                        </h4>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          Jumlah insiden keselamatan pasien yang dilaporkan oleh staf dalam 12 bulan terakhir
-                        </p>
-                      </div>
-                      <span className="text-[9.5px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200 self-start sm:self-auto">
-                        Melaporkan Insiden: {reportedEventsData.reportedAnyPct.toFixed(1)}%
-                      </span>
-                    </div>
-
-                    {/* Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan */}
-                    <div className="bg-slate-50/50 p-3 rounded-xl border border-slate-100">
-                      <h5 className="text-[11px] font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                        <BarChart2 className="w-3.5 h-3.5 text-purple-500" />
-                        Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan
-                      </h5>
-                      <div className="h-[200px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={reportedEventsData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 15, right: 15, left: -15, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                            <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 9.5, fontWeight: 600 }} tickLine={false} />
-                            <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                            <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '11px', borderRadius: '8px' }} />
-                            <Bar dataKey="percentage" name="Persentase" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={40}>
-                              {reportedEventsData.distribution.map((entry, index) => {
-                                const colors = ['#64748b', '#8b5cf6', '#6366f1', '#0d9488', '#d97706'];
-                                return <Cell key={`cell-rep-${index}`} fill={colors[index % colors.length]} />;
-                              })}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-
-                    {/* Interpretasi & Analisa Data Card */}
-                    <div className="bg-purple-50/40 border border-purple-100 p-3.5 rounded-xl space-y-2">
-                      <h5 className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                        Interpretasi & Analisa Data
-                      </h5>
-                      <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                        Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahunSurvei}</strong>), kategori dengan persentase tertinggi di <strong>{activeHospitalName}</strong> adalah <strong>&ldquo;{reportedEventsHighestCat.name}&rdquo;</strong> sebesar <strong>{reportedEventsHighestCat.percentage}</strong>. 
-                        Tingginya angka staf yang tidak melapor atau jarang melapor menunjukkan adanya potensi fenomena <em>underreporting</em> (kejadian yang disembunyikan atau tidak dicatatkan) akibat rasa takut atau birokrasi yang rumit.
-                      </p>
-                      
-                      {/* Category Breakout Badges */}
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5 pt-1">
-                        {reportedEventsData.distribution.map(e => (
-                          <div key={e.name} className="p-1.5 rounded-lg bg-white border border-purple-100 text-center shadow-2xs">
-                            <div className="text-slate-500 font-bold text-[8.5px] truncate">{e.name}</div>
-                            <div className="text-[11px] font-extrabold text-purple-800 mt-0.5">{e.percentage}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Rekomendasi Peningkatan */}
-                    <div className="bg-amber-50/40 border border-amber-100 p-3.5 rounded-xl space-y-2">
-                      <h5 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                        Rekomendasi Peningkatan
-                      </h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9.5px]">
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                          <span className="text-sm shrink-0">🛡️</span>
-                          <span className="text-slate-700 font-medium">Terapkan prinsip Just Culture secara konsisten untuk menjamin tidak adanya sanksi sepihak (non-punitive) bagi pelapor insiden.</span>
-                        </div>
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                          <span className="text-sm shrink-0">📱</span>
-                          <span className="text-slate-700 font-medium">Sederhanakan proses pengisian formulir laporan insiden menjadi digital yang dapat diselesaikan dalam waktu kurang dari 3 menit.</span>
-                        </div>
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                          <span className="text-sm shrink-0">🏆</span>
-                          <span className="text-slate-700 font-medium">Berikan penghargaan bulanan berupa &apos;Safety Reporter Award&apos; bagi unit yang paling aktif melaporkan insiden keselamatan.</span>
-                        </div>
-                        <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                          <span className="text-sm shrink-0">📢</span>
-                          <span className="text-slate-700 font-medium">Lakukan sosialisasi berkala mengenai alur dan kriteria Kejadian Nyaris Cedera (KNC) yang wajib dilaporkan.</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                </section>
-              </div>
-
-              {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 5 dari 7</span>
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 7 dari 17</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 5A: 3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi */}
+          {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - 3.2.3 Frekuensi Pelaporan Insiden */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5A: Hasil Per Item Dimensi ({activeHospitalName})
-            </div>
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Rata-Rata Respon Positif Per Item Dimensi</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
-
-                <section className="space-y-4">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                      <BarChart2 className="w-4 h-4 text-indigo-600" />
-                      3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi Budaya Keselamatan Pasien
-                    </h4>
-                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
-                      Berikut merupakan rincian persentase respon positif staf rumah sakit <strong>{activeHospitalName}</strong> untuk setiap item pernyataan dalam kuesioner AHRQ SOPS® Version 2.0 pada tahun <strong>{tahunSurvei}</strong>. Data dikelompokkan secara terstruktur berdasarkan dimensi budaya keselamatan pasien masing-masing:
-                    </p>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>3.2.3 Frekuensi Pelaporan Insiden</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  {/* Detailed Item Cards with Stacked Bar Percentage Charts matching Analisa Data -> Hasil Per Item */}
-                  <div className="space-y-6">
-                    {DIMENSION_ORDER.map((dimId, index) => {
-                      const dimInfo = DIMENSI_INFO[dimId];
-                      const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
-                      
-                      let sumPosPercent = 0;
-                      const qStats = questions.map(q => {
-                        const stat = calculateQuestionStats(q);
-                        sumPosPercent += stat.posPercent;
-                        return { q, stat };
-                      });
-                      const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
-                      const status = getDimensionStatus(avgPosPercent);
+                  <section className="space-y-4">
+                    {/* 3.2.3 Frekuensi Pelaporan Insiden */}
+                    <div className="bg-white border border-slate-200 p-4 rounded-2xl shadow-xs space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                        <div>
+                          <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-purple-600" />
+                            3.2.3 Frekuensi Pelaporan Insiden
+                          </h4>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            Jumlah insiden keselamatan pasien yang dilaporkan oleh staf dalam 12 bulan terakhir
+                          </p>
+                        </div>
+                        <span className="text-[9.5px] font-bold text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-200 self-start sm:self-auto">
+                          Melaporkan Insiden: {reportedEventsData.reportedAnyPct.toFixed(1)}%
+                        </span>
+                      </div>
 
-                      return (
-                        <div 
-                          key={dimId} 
-                          className="bg-white border border-slate-200 rounded-[20px] overflow-hidden shadow-xs hover:shadow-sm transition-all group print:break-inside-avoid"
-                        >
-                          {/* Card Header */}
-                          <div className="p-4 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-4">
-                            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-orange-400 to-indigo-600"></div>
-                            <div className="w-9 h-9 bg-white border border-slate-200 rounded-xl flex items-center justify-center shrink-0 shadow-xs">
-                              <span className="text-base font-black text-indigo-600">{index + 1}</span>
+                      {/* Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan */}
+                      <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100">
+                        <h5 className="text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                          <BarChart2 className="w-3.5 h-3.5 text-purple-500" />
+                          Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan
+                        </h5>
+                        <div className="h-[150px] w-full">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={reportedEventsData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 9, fontWeight: 600 }} tickLine={false} />
+                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 8.5 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px' }} />
+                              <Bar dataKey="percentage" name="Persentase" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={35} isAnimationActive={false}>
+                                {reportedEventsData.distribution.map((entry, index) => {
+                                  const colors = ['#64748b', '#8b5cf6', '#6366f1', '#0d9488', '#d97706'];
+                                  return <Cell key={`cell-rep-${index}`} fill={colors[index % colors.length]} />;
+                                })}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* Interpretasi & Analisa Data Card */}
+                      <div className="bg-purple-50/40 border border-purple-100 p-3 rounded-xl space-y-1">
+                        <h5 className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                          Interpretasi & Analisa Data
+                        </h5>
+                        <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
+                          Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahunSurvei}</strong>), kategori dengan persentase tertinggi di <strong>{activeHospitalName}</strong> adalah <strong>&ldquo;{reportedEventsHighestCat.name}&rdquo;</strong> sebesar <strong>{reportedEventsHighestCat.percentage}</strong>. 
+                          Tingginya angka staf yang tidak melapor atau jarang melapor menunjukkan adanya potensi fenomena <em>underreporting</em> (kejadian yang disembunyikan atau tidak dicatatkan) akibat rasa takut atau birokrasi yang rumit.
+                        </p>
+                        
+                        {/* Category Breakout Badges */}
+                        <div className="grid grid-cols-5 gap-1.5 pt-1">
+                          {reportedEventsData.distribution.map(e => (
+                            <div key={e.name} className="p-1.5 rounded-lg bg-white border border-purple-100 text-center shadow-2xs">
+                              <div className="text-slate-500 font-bold text-[8px] truncate">{e.name}</div>
+                              <div className="text-[10px] font-extrabold text-purple-800 mt-0.5">{e.percentage}</div>
                             </div>
-                            <div>
-                              <h3 className="text-xs md:text-sm font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
-                              <p className="text-[10px] text-slate-500 mt-0.5 font-medium leading-relaxed">{dimInfo.deskripsi}</p>
-                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Rekomendasi Peningkatan */}
+                      <div className="bg-amber-50/40 border border-amber-100 p-3 rounded-xl space-y-1">
+                        <h5 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                          Rekomendasi Peningkatan
+                        </h5>
+                        <div className="grid grid-cols-2 gap-2 text-[9px]">
+                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-amber-100/80">
+                            <span className="text-sm shrink-0">🛡️</span>
+                            <span className="text-slate-700 font-medium">Terapkan prinsip Just Culture secara konsisten untuk menjamin tidak adanya sanksi sepihak (non-punitive) bagi pelapor insiden.</span>
                           </div>
-
-                          {/* Questions List */}
-                          <div className="p-4 md:p-5 space-y-4">
-                            {/* Legend */}
-                            <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pb-3 border-b border-slate-100">
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded bg-emerald-500 shadow-xs"></div>
-                                <span className="text-[10.5px] font-bold text-slate-600">Positif</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded bg-yellow-500 shadow-xs"></div>
-                                <span className="text-[10.5px] font-bold text-slate-600">Netral</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded bg-rose-500 shadow-xs"></div>
-                                <span className="text-[10.5px] font-bold text-slate-600">Negatif</span>
-                              </div>
-                              <div className="flex items-center gap-1.5">
-                                <div className="w-3 h-3 rounded bg-slate-400 shadow-xs"></div>
-                                <span className="text-[10.5px] font-bold text-slate-600">Tidak Menjawab / Tidak Tahu</span>
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-4">
-                              {qStats.map(({ q, stat }) => (
-                                <div key={q.id} className="flex flex-col md:flex-row gap-3 md:items-center">
-                                  {/* Question Code & Text */}
-                                  <div className="md:w-[45%] flex gap-3">
-                                    <div className="flex flex-col items-center shrink-0">
-                                      <span className="text-xs font-black text-indigo-600 leading-none">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
-                                      <div className="w-3.5 h-0.5 bg-indigo-600 mt-1 rounded-full"></div>
-                                    </div>
-                                    <p className="text-[11px] font-bold text-slate-700 leading-relaxed">{q.text}</p>
-                                  </div>
-
-                                  {/* Bar Chart and N/A label */}
-                                  <div className="flex-1 flex flex-col gap-2">
-                                    <div className="flex items-center gap-3">
-                                      <div className="flex-1 h-8 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative">
-                                        <div 
-                                          className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
-                                          style={{ width: `${stat.posPercent}%` }}
-                                        >
-                                          {stat.posPercent >= 8 && <span className="text-[9.5px] font-black text-white">{stat.posPercent}%</span>}
-                                        </div>
-                                        <div 
-                                          className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
-                                          style={{ width: `${stat.neuPercent}%` }}
-                                        >
-                                          {stat.neuPercent >= 8 && <span className="text-[9.5px] font-black text-white">{stat.neuPercent}%</span>}
-                                        </div>
-                                        <div 
-                                          className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
-                                          style={{ width: `${stat.negPercent}%` }}
-                                        >
-                                          {stat.negPercent >= 8 && <span className="text-[9.5px] font-black text-white">{stat.negPercent}%</span>}
-                                        </div>
-                                      </div>
-
-                                      <div className="flex items-center gap-1.5 min-w-[110px] shrink-0">
-                                        <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
-                                        <div className="leading-tight">
-                                          <p className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Menjawab /</p>
-                                          <p className="text-[9px] text-slate-400 font-bold leading-tight">Tidak Tahu <span className="text-slate-800 font-black">{stat.missingPercent}%</span></p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-amber-100/80">
+                            <span className="text-sm shrink-0">📱</span>
+                            <span className="text-slate-700 font-medium">Sederhanakan proses pengisian formulir laporan insiden menjadi digital yang dapat diselesaikan dalam waktu kurang dari 3 menit.</span>
                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
 
-                          {/* Summary Footer */}
-                          <div className="bg-slate-50/50 p-3.5 md:p-4 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
-                            <div className="flex flex-col gap-0.5">
-                              <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest">RESPON POSITIF DIMENSI</p>
-                              <div className="flex items-center gap-2.5">
-                                <span className="text-2xl font-black text-slate-800">{avgPosPercent}%</span>
-                                <div className={`px-2.5 py-0.5 rounded-full text-[10px] font-black border ${status.bg} ${status.color} ${status.border} uppercase shadow-2xs`}>
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 8 dari 17</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 9: 3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi (Bagian 1) */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 1)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                        <BarChart2 className="w-4 h-4 text-indigo-600" />
+                        3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi Budaya Keselamatan Pasien (d1 - d3)
+                      </h4>
+                      <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
+                        Berikut merupakan rincian persentase respon positif staf rumah sakit <strong>{activeHospitalName}</strong> untuk setiap item pernyataan dalam kuesioner AHRQ SOPS® Version 2.0 pada tahun <strong>{tahunSurvei}</strong>. Data dikelompokkan secara terstruktur berdasarkan dimensi budaya keselamatan pasien masing-masing:
+                      </p>
+                    </div>
+
+                    {/* Detailed Item Cards */}
+                    <div className="space-y-4">
+                      {DIMENSION_ORDER.slice(0, 3).map((dimId, sliceIndex) => {
+                        const index = sliceIndex;
+                        const dimInfo = DIMENSI_INFO[dimId];
+                        const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
+                        
+                        let sumPosPercent = 0;
+                        const qStats = questions.map(q => {
+                          const stat = calculateQuestionStats(q);
+                          sumPosPercent += stat.posPercent;
+                          return { q, stat };
+                        });
+                        const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
+                        const status = getDimensionStatus(avgPosPercent);
+
+                        return (
+                          <div 
+                            key={dimId} 
+                            className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
+                          >
+                            {/* Card Header */}
+                            <div className="p-3 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
+                              <div className="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-xs font-black text-indigo-600">{index + 1}</span>
+                              </div>
+                              <div>
+                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              </div>
+                            </div>
+
+                            {/* Questions List */}
+                            <div className="p-3 space-y-3">
+                              <div className="space-y-3">
+                                {qStats.map(({ q, stat }) => (
+                                  <div key={q.id} className="flex flex-col gap-1">
+                                    {/* Question Code & Text */}
+                                    <div className="flex gap-2">
+                                      <span className="text-[10px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[10px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    </div>
+
+                                    {/* Bar Chart */}
+                                    <div className="h-5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                      <div 
+                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        style={{ width: `${stat.posPercent}%` }}
+                                      >
+                                        {stat.posPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.posPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.neuPercent}%` }}
+                                      >
+                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.neuPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.negPercent}%` }}
+                                      >
+                                        {stat.negPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.negPercent}%</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Summary Footer */}
+                            <div className="bg-slate-50/50 p-2.5 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
+                                <span className="text-sm font-black text-slate-800">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
                                   {status.label}
                                 </div>
                               </div>
+                              <span className="text-[9px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
                             </div>
-                            
-                            <div className="flex items-center gap-3">
-                              <div className="px-3.5 py-1.5 bg-white border border-slate-200 rounded-xl shadow-2xs text-center">
-                                <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-tight">Benchmark (AHRQ)</p>
-                                <p className="text-[11px] font-black text-slate-700">72.0% - 85.0%</p>
-                              </div>
-                              <div className="w-9 h-9 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-center text-emerald-600 shadow-2xs">
-                                <TrendingUp className="w-4 h-4" />
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Interpretasi & Analisa Data Card */}
-                  {itemLevelStrengths.length > 0 && itemLevelWeaknesses.length > 0 && (
-                    <div className="bg-indigo-50/40 border border-indigo-100 p-3.5 rounded-xl space-y-2">
-                      <h5 className="text-[11px] font-bold text-indigo-900 flex items-center gap-1.5">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                        Interpretasi & Analisa Data Hasil Per Item
-                      </h5>
-                      <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                        Analisis mikro pada tingkat butir pernyataan (item) di <strong>{activeHospitalName}</strong> mengidentifikasi kekuatan utama terletak pada item <strong>{itemLevelStrengths[0].id}</strong> (&ldquo;{itemLevelStrengths[0].text}&rdquo;) dengan pencapaian respon positif sebesar <strong>{itemLevelStrengths[0].score.toFixed(1)}%</strong>, disusul oleh item <strong>{itemLevelStrengths[1].id}</strong> sebesar <strong>{itemLevelStrengths[1].score.toFixed(1)}%</strong>. 
-                        Sebaliknya, kerentanan tertinggi diidentifikasi pada item <strong>{itemLevelWeaknesses[0].id}</strong> (&ldquo;{itemLevelWeaknesses[0].text}&rdquo;) yang hanya mengumpulkan respon positif sebesar <strong>{itemLevelWeaknesses[0].score.toFixed(1)}%</strong>, disusul item <strong>{itemLevelWeaknesses[1].id}</strong> sebesar <strong>{itemLevelWeaknesses[1].score.toFixed(1)}%</strong>.
-                        Kesenjangan yang cukup besar antara item terbaik dan terendah menuntut perbaikan spesifik pada aspek operasional unit kerja.
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Rekomendasi Peningkatan */}
-                  <div className="bg-emerald-50/40 border border-emerald-100 p-3.5 rounded-xl space-y-2">
-                    <h5 className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      Rekomendasi Strategis Berbasis Hasil Per Item
-                    </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9.5px]">
-                      {itemLevelWeaknesses.slice(0, 3).map((item, idx) => {
-                        const icons = ['💡', '🛠️', '📈'];
-                        return (
-                          <div key={item.id} className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80">
-                            <span className="text-sm shrink-0">{icons[idx]}</span>
-                            <span className="text-slate-700 font-medium leading-relaxed">
-                              Untuk mengatasi nilai rendah pada item <strong>{item.id}</strong> (&ldquo;{item.text}&rdquo;: {item.score.toFixed(1)}%): Rancang panduan teknis operasional terpadu dan selenggarakan workshop penyamaan persepsi untuk seluruh staf.
-                            </span>
                           </div>
                         );
                       })}
-                      <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80">
-                        <span className="text-sm shrink-0">👣</span>
-                        <span className="text-slate-700 font-medium leading-relaxed">
-                          Lakukan audit berkelanjutan setiap 3 bulan sekali khusus untuk butir-butir pernyataan kritis yang bernilai positif di bawah target nasional &lt;50%.
-                        </span>
-                      </div>
                     </div>
-                  </div>
-                </section>
-              </div>
+                  </section>
+                </div>
 
-              {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 5A dari 7</span>
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 9 dari 17</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 5B: 3.2.5 Perbandingan berdasarkan Profesi, Unit Kerja, Masa Kerja & Jam Kerja */}
+          {/* LEMBAR 9: 3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi (Bagian 2) */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5B: Analisis Demografis & Komparatif ({activeHospitalName})
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 2)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    {/* Detailed Item Cards */}
+                    <div className="space-y-4">
+                      {DIMENSION_ORDER.slice(3, 6).map((dimId, sliceIndex) => {
+                        const index = sliceIndex + 3;
+                        const dimInfo = DIMENSI_INFO[dimId];
+                        const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
+                        
+                        let sumPosPercent = 0;
+                        const qStats = questions.map(q => {
+                          const stat = calculateQuestionStats(q);
+                          sumPosPercent += stat.posPercent;
+                          return { q, stat };
+                        });
+                        const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
+                        const status = getDimensionStatus(avgPosPercent);
+
+                        return (
+                          <div 
+                            key={dimId} 
+                            className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
+                          >
+                            {/* Card Header */}
+                            <div className="p-3 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
+                              <div className="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-xs font-black text-indigo-600">{index + 1}</span>
+                              </div>
+                              <div>
+                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              </div>
+                            </div>
+
+                            {/* Questions List */}
+                            <div className="p-3 space-y-3">
+                              <div className="space-y-3">
+                                {qStats.map(({ q, stat }) => (
+                                  <div key={q.id} className="flex flex-col gap-1">
+                                    {/* Question Code & Text */}
+                                    <div className="flex gap-2">
+                                      <span className="text-[10px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[10px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    </div>
+
+                                    {/* Bar Chart */}
+                                    <div className="h-5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                      <div 
+                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        style={{ width: `${stat.posPercent}%` }}
+                                      >
+                                        {stat.posPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.posPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.neuPercent}%` }}
+                                      >
+                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.neuPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.negPercent}%` }}
+                                      >
+                                        {stat.negPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.negPercent}%</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Summary Footer */}
+                            <div className="bg-slate-50/50 p-2.5 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
+                                <span className="text-sm font-black text-slate-800">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                                  {status.label}
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </div>
+
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 10 dari 17</span>
+                </div>
+              </div>
             </div>
+          </div>
+
+          {/* LEMBAR 9: 3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi (Bagian 3) */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 3)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    {/* Detailed Item Cards */}
+                    <div className="space-y-4">
+                      {DIMENSION_ORDER.slice(6, 8).map((dimId, sliceIndex) => {
+                        const index = sliceIndex + 6;
+                        const dimInfo = DIMENSI_INFO[dimId];
+                        const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
+                        
+                        let sumPosPercent = 0;
+                        const qStats = questions.map(q => {
+                          const stat = calculateQuestionStats(q);
+                          sumPosPercent += stat.posPercent;
+                          return { q, stat };
+                        });
+                        const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
+                        const status = getDimensionStatus(avgPosPercent);
+
+                        return (
+                          <div 
+                            key={dimId} 
+                            className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
+                          >
+                            {/* Card Header */}
+                            <div className="p-3 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
+                              <div className="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-xs font-black text-indigo-600">{index + 1}</span>
+                              </div>
+                              <div>
+                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              </div>
+                            </div>
+
+                            {/* Questions List */}
+                            <div className="p-3 space-y-3">
+                              <div className="space-y-3">
+                                {qStats.map(({ q, stat }) => (
+                                  <div key={q.id} className="flex flex-col gap-1">
+                                    {/* Question Code & Text */}
+                                    <div className="flex gap-2">
+                                      <span className="text-[10px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[10px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    </div>
+
+                                    {/* Bar Chart */}
+                                    <div className="h-5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                      <div 
+                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        style={{ width: `${stat.posPercent}%` }}
+                                      >
+                                        {stat.posPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.posPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.neuPercent}%` }}
+                                      >
+                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.neuPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.negPercent}%` }}
+                                      >
+                                        {stat.negPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.negPercent}%</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Summary Footer */}
+                            <div className="bg-slate-50/50 p-2.5 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
+                                <span className="text-sm font-black text-slate-800">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                                  {status.label}
+                                </div>
+                              </div>
+                              <span className="text-[9px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </section>
+                </div>
+
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 11 dari 17</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 9: 3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi (Bagian 4) */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 4)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-3">
+                    {/* Detailed Item Cards */}
+                    <div className="space-y-3">
+                      {DIMENSION_ORDER.slice(8, 10).map((dimId, sliceIndex) => {
+                        const index = sliceIndex + 8;
+                        const dimInfo = DIMENSI_INFO[dimId];
+                        const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
+                        
+                        let sumPosPercent = 0;
+                        const qStats = questions.map(q => {
+                          const stat = calculateQuestionStats(q);
+                          sumPosPercent += stat.posPercent;
+                          return { q, stat };
+                        });
+                        const avgPosPercent = questions.length > 0 ? Math.round(sumPosPercent / questions.length) : 0;
+                        const status = getDimensionStatus(avgPosPercent);
+
+                        return (
+                          <div 
+                            key={dimId} 
+                            className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
+                          >
+                            {/* Card Header */}
+                            <div className="p-2.5 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                              <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
+                              <div className="w-6 h-6 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-[10px] font-black text-indigo-600">{index + 1}</span>
+                              </div>
+                              <div>
+                                <h3 className="text-[10px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                                <p className="text-[8px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              </div>
+                            </div>
+
+                            {/* Questions List */}
+                            <div className="p-2.5 space-y-2">
+                              <div className="space-y-2">
+                                {qStats.map(({ q, stat }) => (
+                                  <div key={q.id} className="flex flex-col gap-1">
+                                    {/* Question Code & Text */}
+                                    <div className="flex gap-2">
+                                      <span className="text-[9.5px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[9.5px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    </div>
+
+                                    {/* Bar Chart */}
+                                    <div className="h-4.5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                      <div 
+                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        style={{ width: `${stat.posPercent}%` }}
+                                      >
+                                        {stat.posPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.posPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.neuPercent}%` }}
+                                      >
+                                        {stat.neuPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.neuPercent}%</span>}
+                                      </div>
+                                      <div 
+                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        style={{ width: `${stat.negPercent}%` }}
+                                      >
+                                        {stat.negPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.negPercent}%</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+
+                            {/* Summary Footer */}
+                            <div className="bg-slate-50/50 p-2 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[8px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
+                                <span className="text-xs font-black text-slate-800">{avgPosPercent}%</span>
+                                <div className={`px-1.5 py-0.5 rounded-full text-[7.5px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                                  {status.label}
+                                </div>
+                              </div>
+                              <span className="text-[8.5px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Interpretasi & Analisa Data Card */}
+                    {itemLevelStrengths.length > 0 && itemLevelWeaknesses.length > 0 && (
+                      <div className="bg-indigo-50/40 border border-indigo-100 p-2.5 rounded-xl space-y-1">
+                        <h5 className="text-[10px] font-bold text-indigo-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                          Interpretasi & Analisa Data Hasil Per Item
+                        </h5>
+                        <p className="text-[9px] text-slate-700 leading-relaxed text-justify">
+                          Analisis mikro pada tingkat butir pernyataan (item) di <strong>{activeHospitalName}</strong> mengidentifikasi kekuatan utama terletak pada item <strong>{itemLevelStrengths[0].id}</strong> (&ldquo;{itemLevelStrengths[0].text}&rdquo;) dengan pencapaian respon positif sebesar <strong>{itemLevelStrengths[0].score.toFixed(1)}%</strong>, disusul oleh item <strong>{itemLevelStrengths[1].id}</strong> sebesar <strong>{itemLevelStrengths[1].score.toFixed(1)}%</strong>. 
+                          Sebaliknya, kerentanan tertinggi diidentifikasi pada item <strong>{itemLevelWeaknesses[0].id}</strong> (&ldquo;{itemLevelWeaknesses[0].text}&rdquo;) yang hanya mengumpulkan respon positif sebesar <strong>{itemLevelWeaknesses[0].score.toFixed(1)}%</strong>, disusul item <strong>{itemLevelWeaknesses[1].id}</strong> sebesar <strong>{itemLevelWeaknesses[1].score.toFixed(1)}%</strong>.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Rekomendasi Peningkatan */}
+                    <div className="bg-emerald-50/40 border border-emerald-100 p-2.5 rounded-xl space-y-1">
+                      <h5 className="text-[10px] font-bold text-emerald-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Rekomendasi Strategis Berbasis Hasil Per Item
+                      </h5>
+                      <div className="grid grid-cols-2 gap-2 text-[8.5px]">
+                        {itemLevelWeaknesses.slice(0, 2).map((item, idx) => {
+                          const icons = ['💡', '🛠️'];
+                          return (
+                            <div key={item.id} className="flex items-start gap-1 bg-white p-1.5 rounded-lg border border-emerald-100/80">
+                              <span className="text-xs shrink-0">{icons[idx]}</span>
+                              <span className="text-slate-700 font-medium leading-normal">
+                                Untuk item <strong>{item.id}</strong> ({item.score.toFixed(1)}%): Rancang panduan teknis operasional terpadu dan selenggarakan workshop penyamaan persepsi.
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 12 dari 17</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 10: 3.2.5 Perbandingan berdasarkan Profesi */}
+          <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Demografis & Komparatif Budaya Keselamatan</span>
+                  <span>Analisis Demografis & Komparatif (Profesi)</span>
                   <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
@@ -2740,7 +3716,7 @@ export default function LaporanTab({
                       3.2.5 Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Karakteristik Demografis
                     </h4>
                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
-                      Budaya keselamatan pasien bersifat heterogen dan dapat dirasakan berbeda antar profesi, unit pelayanan, maupun lama masa bakti staf. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan posisi staf (profesi), unit kerja, serta masa jabatan dan jam kerja per minggu di <strong>{activeHospitalName}</strong>:
+                      Budaya keselamatan pasien bersifat heterogen dan dapat dirasakan berbeda antar profesi, unit pelayanan, maupun lama masa bakti staf. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan posisi staf (profesi) di <strong>{activeHospitalName}</strong>:
                     </p>
                   </div>
 
@@ -2786,9 +3762,40 @@ export default function LaporanTab({
                       </table>
                     </div>
                   </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 15 dari 23</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 10-B: 3.2.5-B Perbandingan berdasarkan Unit Kerja */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Analisis Demografis & Komparatif (Unit Kerja)</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                      <LayoutDashboard className="w-4 h-4 text-teal-600" />
+                      3.2.5-B Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Unit Kerja (Top 4)
+                    </h4>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
+                      Analisis tingkat unit pelayanan membantu pimpinan rumah sakit memetakan disparitas iklim keselamatan secara spesifik. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan 4 Unit Kerja terbesar di <strong>{activeHospitalName}</strong>:
+                    </p>
+                  </div>
 
                   {/* B. Berdasarkan Unit Kerja */}
-                  <div className="space-y-1.5 pt-1">
+                  <div className="space-y-1.5">
                     <h5 className="text-[10px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
                       <span className="w-1.5 h-3 bg-teal-600 rounded-sm"></span>
                       B. Perbandingan Dimensi Berdasarkan Unit Kerja (Top 4 Unit Terbesar)
@@ -2829,13 +3836,34 @@ export default function LaporanTab({
                       </table>
                     </div>
                   </div>
+                </section>
+              </div>
 
-                  {/* C. Berdasarkan Masa Kerja & Jam Kerja */}
-                  <div className="space-y-1.5 pt-1">
-                    <h5 className="text-[10px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                      <span className="w-1.5 h-3 bg-amber-600 rounded-sm"></span>
-                      C. Perbandingan Dimensi Berdasarkan Masa Kerja (Lama Kerja) & Jam Kerja per Minggu
-                    </h5>
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 16 dari 23</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Analisis Demografis & Komparatif (Lanjutan)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    {/* C. Berdasarkan Masa Kerja & Jam Kerja */}
+                    <div className="space-y-1.5 pt-1">
+                      <h5 className="text-[10px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                        <span className="w-1.5 h-3 bg-amber-600 rounded-sm"></span>
+                        C. Perbandingan Dimensi Berdasarkan Masa Kerja (Lama Kerja) & Jam Kerja per Minggu
+                      </h5>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full text-left border-collapse text-[8px]">
                         <thead>
@@ -2936,21 +3964,18 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 5B dari 7</span>
+                <span>Halaman 17 dari 23</span>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 5C: Perbandingan dengan Tahun Sebelumnya & Rumah Sakit Lain (Benchmark) */}
+          {/* LEMBAR 11: Perbandingan dengan Tahun Sebelumnya */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 5C: Analisis Trend Historis & Benchmark RS ({activeHospitalName})
-            </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Trend Historis & Perbandingan Benchmark</span>
+                  <span>Analisis Trend Historis</span>
                   <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
@@ -3009,13 +4034,34 @@ export default function LaporanTab({
                       </div>
                     )}
                   </div>
+                </section>
+              </div>
 
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 18 dari 23</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 11-B: Perbandingan dengan Rumah Sakit Lain (Benchmark) */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Analisis Perbandingan Benchmark</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                </div>
+
+                <section className="space-y-4">
                   {/* Part 2: Benchmarking (Perbandingan dengan Rumah Sakit Lain) */}
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-3">
                     <div>
                       <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
                         <Globe className="w-4 h-4 text-indigo-600" />
-                        3.2.6 Perbandingan Respon Positif Dimensi Budaya Keselamatan dengan Rumah Sakit Lain (Benchmark)
+                        3.2.7 Perbandingan Respon Positif Dimensi Budaya Keselamatan dengan Rumah Sakit Lain (Benchmark)
                       </h4>
                       <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
                         Pengukuran eksternal (benchmarking) membantu mengidentifikasi posisi tawar, gap pencapaian mutu, dan standar pelayanan rumah sakit dibanding fasilitas kesehatan mitra lainnya:
@@ -3081,102 +4127,104 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 5C dari 7</span>
+                <span>Halaman 19 dari 23</span>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Pembahasan Analisis Kualitatif */}
+          {/* LEMBAR 12: BAB III HASIL & PEMBAHASAN - Pembahasan */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 6: BAB III — Analisis Naratif Otomatis ({activeHospitalName})
-            </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Naratif Budaya Keselamatan Pasien</span>
+                  <span>Pembahasan Budaya Keselamatan Pasien</span>
                   <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
-                <section className="space-y-3.5">
-                  <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">3.3 Analisis Naratif Otomatis Hasil Pengukuran Dimensi</h3>
+                <section className="space-y-4">
+                  <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">3.3 Pembahasan</h3>
 
-                  <p className="text-[10px] text-slate-600 leading-relaxed">
-                    Berikut adalah analisis naratif dinamis berdasarkan pengelompokan tingkat capaian budaya keselamatan pasien di <strong className="text-slate-800">{activeHospitalName}</strong> yang diperbarui secara otomatis dari database Supabase:
-                  </p>
-
-                  <div className="space-y-3 text-[10.5px] text-slate-700 leading-relaxed">
-                    {/* Kekuatan Organisasi (≥ 75%) */}
-                    <div className="space-y-1">
-                      <h4 className="font-bold text-emerald-800 flex items-center gap-1 text-[10.5px]">
+                  <div className="space-y-4 text-[10.5px] text-slate-700 leading-relaxed">
+                    {/* 3.3.1 Area Keunggulan (Strengths ≥75%) */}
+                    <div className="space-y-2">
+                      <h4 className="font-bold text-emerald-800 flex items-center gap-1 text-[11px]">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                        3.3.1 Kekuatan Organisasi (Capaian Respon Positif ≥ 75%)
+                        3.3.1 Area Keunggulan (Strengths ≥75%)
                       </h4>
                       {strengths.length > 0 ? (
-                        <div className="space-y-1.5 bg-emerald-50/60 p-2.5 rounded-xl border border-emerald-200/80 text-[9.5px]">
-                          {strengths.map(s => (
-                            <div key={s.kode} className="flex flex-col gap-0.5 border-b border-emerald-100/80 last:border-none pb-1 last:pb-0">
-                              <span className="font-bold text-emerald-950">
-                                • {s.kode} - {s.nama} ({s.percentage.toFixed(1)}%):
-                              </span>
-                              <span className="text-slate-700 pl-2.5">{s.interpretasi}</span>
-                            </div>
-                          ))}
+                        <div className="space-y-2.5 bg-emerald-50/60 p-3 rounded-xl border border-emerald-200/80 text-[10px]">
+                          <p className="font-medium text-slate-800">
+                            Berdasarkan hasil analisis, terdapat {strengths.length} dimensi yang menjadi kekuatan utama budaya keselamatan di <strong className="text-slate-900">{activeHospitalName}</strong>:
+                          </p>
+                          <div className="space-y-2 pl-1">
+                            {strengths.map((s, idx) => (
+                              <div key={s.kode} className="space-y-0.5">
+                                <p className="font-bold text-slate-900 text-[10.5px]">
+                                  {idx + 1}. {s.nama} — [{s.percentage.toFixed(1)}%]
+                                </p>
+                                <p className="text-slate-700 text-[10px] pl-3 leading-relaxed">
+                                  <span className="font-bold text-slate-900">Analisis:</span> {s.interpretasi}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : (
-                        <p className="italic text-[9.5px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                          Saat ini belum ada dimensi yang mencapai target area kekuatan (≥ 75%). Diperlukan strategi penguatan terpadu di seluruh unit kerja {activeHospitalName}.
+                        <p className="italic text-[9.5px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                          Berdasarkan hasil analisis, saat ini belum ada dimensi yang mencapai target area kekuatan (≥ 75%) di {activeHospitalName}. Diperlukan strategi penguatan terpadu di seluruh unit kerja.
                         </p>
                       )}
                     </div>
 
-                    {/* Area Moderat (50% - 74%) */}
-                    <div className="space-y-1 pt-1">
-                      <h4 className="font-bold text-amber-800 flex items-center gap-1 text-[10.5px]">
-                        <Activity className="w-3.5 h-3.5 text-amber-600" />
-                        3.3.2 Area yang Masih Perlu Ditingkatkan (Capaian 50% - 74%)
-                      </h4>
-                      {moderates.length > 0 ? (
-                        <div className="space-y-1.5 bg-amber-50/60 p-2.5 rounded-xl border border-amber-200/80 text-[9.5px]">
-                          {moderates.map(m => (
-                            <div key={m.kode} className="flex flex-col gap-0.5 border-b border-amber-100/80 last:border-none pb-1 last:pb-0">
-                              <span className="font-bold text-amber-950">
-                                • {m.kode} - {m.nama} ({m.percentage.toFixed(1)}%):
-                              </span>
-                              <span className="text-slate-700 pl-2.5">{m.interpretasi}</span>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="italic text-[9.5px] text-slate-500 bg-slate-50 p-2 rounded-xl border border-slate-200">
-                          Tidak ada dimensi yang berada dalam kategori moderat (50% - 74%).
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Perbaikan Kritis (< 50%) */}
-                    <div className="space-y-1 pt-1">
-                      <h4 className="font-bold text-red-800 flex items-center gap-1 text-[10.5px]">
+                    {/* 3.3.2 Area yang Memerlukan Perbaikan (Areas for Improvement <50%) */}
+                    <div className="space-y-2 pt-1">
+                      <h4 className="font-bold text-red-800 flex items-center gap-1 text-[11px]">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-                        3.3.3 Prioritas Utama Perbaikan (Capaian &lt; 50%)
+                        3.3.2 Area yang Memerlukan Perbaikan (Areas for Improvement &lt;50%)
                       </h4>
                       {improvements.length > 0 ? (
-                        <div className="space-y-1.5 bg-red-50/60 p-2.5 rounded-xl border border-red-200/80 text-[9.5px]">
-                          {improvements.map(imp => (
-                            <div key={imp.kode} className="flex flex-col gap-0.5 border-b border-red-100/80 last:border-none pb-1 last:pb-0">
-                              <span className="font-bold text-red-950">
-                                • {imp.kode} - {imp.nama} ({imp.percentage.toFixed(1)}%):
-                              </span>
-                              <span className="text-slate-700 pl-2.5">{imp.interpretasi}</span>
-                            </div>
-                          ))}
+                        <div className="space-y-2.5 bg-red-50/60 p-3 rounded-xl border border-red-200/80 text-[10px]">
+                          <p className="font-medium text-slate-800">
+                            Terdapat {improvements.length} dimensi kritis yang memerlukan intervensi dan prioritas penanganan segera dari pimpinan/manajemen:
+                          </p>
+                          <div className="space-y-2 pl-1">
+                            {improvements.map((imp, idx) => (
+                              <div key={imp.kode} className="space-y-0.5">
+                                <p className="font-bold text-slate-900 text-[10.5px]">
+                                  {idx + 1}. {imp.nama} — [{imp.percentage.toFixed(1)}%]
+                                </p>
+                                <p className="text-slate-700 text-[10px] pl-3 leading-relaxed">
+                                  <span className="font-bold text-slate-900">Analisis:</span> {imp.interpretasi}
+                                </p>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : (
-                        <div className="bg-emerald-50/50 p-2 rounded-xl border border-emerald-100 text-[9.5px] text-emerald-800 font-medium">
-                          Tidak ada dimensi yang berada pada kategori perbaikan kritis (&lt; 50%). Ini menunjukkan budaya keselamatan di {activeHospitalName} berjalan stabil tanpa hambatan kritis.
+                        <div className="bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100 text-[10px] text-emerald-800 font-medium">
+                          Tidak ada dimensi yang berada pada kategori perbaikan kritis (&lt;50%). Kondisi ini menunjukkan budaya keselamatan di {activeHospitalName} berjalan relatif baik tanpa hambatan kritis.
                         </div>
                       )}
+                    </div>
+
+                    {/* 3.3.3 Area Sedang / Moderat (50%-74%) */}
+                    <div className="space-y-2 pt-1">
+                      <h4 className="font-bold text-amber-800 flex items-center gap-1 text-[11px]">
+                        <Activity className="w-3.5 h-3.5 text-amber-600" />
+                        3.3.3 Area Sedang / Moderat (50%-74%)
+                      </h4>
+                      <div className="bg-amber-50/60 p-3 rounded-xl border border-amber-200/80 text-[10px]">
+                        {moderates.length > 0 ? (
+                          <p className="text-slate-700 leading-relaxed text-justify">
+                            Dimensi seperti {moderates.map(m => `${m.nama} ([${m.percentage.toFixed(1)}%])`).join(' dan ')} berada pada kategori moderat. Walaupun prosedurnya telah tersedia (seperti SBAR/TBLK saat handoff), konsistensi pelaksanaannya di lapangan masih bervariasi antar unit kerja, yang dipengaruhi oleh tingkat kesibukan dan keterbukaan komunikasi antar staf.
+                          </p>
+                        ) : (
+                          <p className="italic text-slate-500">
+                            Tidak ada dimensi yang berada dalam kategori moderat (50%-74%).
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -3185,16 +4233,13 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 6 dari 7</span>
+                <span>Halaman 20 dari 23</span>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 7: BAB IV KESIMPULAN DAN REKOMENDASI */}
+          {/* LEMBAR 13: BAB IV KESIMPULAN DAN REKOMENDASI */}
           <div className="w-full flex flex-col items-center">
-            <div className="print:hidden text-xs font-bold text-teal-800 bg-teal-50/90 border border-teal-200/80 px-3.5 py-1.5 rounded-xl flex items-center gap-2 shadow-xs mb-3 self-center sm:self-start">
-              <Layers className="w-3.5 h-3.5 text-teal-600" /> Lembar 7: BAB IV — Kesimpulan & Rekomendasi
-            </div>
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
@@ -3263,57 +4308,108 @@ export default function LaporanTab({
                         </div>
                       </div>
                     </div>
+                  </div>
+                </section>
+              </div>
 
-                    <div className="space-y-2 pt-2">
-                      <h3 className="font-bold text-slate-900 text-xs">4.2 Rekomendasi</h3>
-                      <p className="text-[11px] leading-relaxed text-slate-700">
-                        Untuk menindaklanjuti temuan survei ini dan memperkuat budaya keselamatan pasien secara berkelanjutan, dirumuskan rekomendasi tindakan yang dapat diprioritaskan berdasarkan skala dampaknya:
-                      </p>
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 21 dari 23</span>
+              </div>
+            </div>
+          </div>
 
-                      <div className="space-y-3 pt-1 text-[11px]">
-                        <div className="space-y-1">
-                          <strong className="text-slate-900 font-bold flex items-center gap-1.5 text-[11px]">
-                            <Clock className="w-3.5 h-3.5 text-teal-600" /> Prioritas Jangka Pendek (1 - 3 Bulan):
-                          </strong>
-                          <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                            {recommendations.jangkaPendek.map((r, i) => (
-                              <li key={`jp-${i}`}>{r}</li>
-                            ))}
-                          </ul>
-                        </div>
+          {/* LEMBAR 13-B: Rekomendasi Strategic Action Plan */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Rekomendasi Strategic Action Plan</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                </div>
 
-                        <div className="space-y-1">
-                          <strong className="text-slate-900 font-bold flex items-center gap-1.5 text-[11px]">
-                            <Target className="w-3.5 h-3.5 text-indigo-600" /> Prioritas Jangka Menengah (3 - 6 Bulan):
-                          </strong>
-                          <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                            {recommendations.jangkaMenengah.map((r, i) => (
-                              <li key={`jm-${i}`}>{r}</li>
-                            ))}
-                          </ul>
-                        </div>
+                <section className="space-y-4">
+                  <div className="space-y-2">
+                    <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">4.2 Rekomendasi</h3>
+                    <p className="text-[11px] leading-relaxed text-slate-700 text-justify">
+                      Untuk menindaklanjuti temuan survei ini dan memperkuat budaya keselamatan pasien secara berkelanjutan, dirumuskan rekomendasi tindakan yang dapat diprioritaskan berdasarkan skala dampaknya:
+                    </p>
 
-                        <div className="space-y-1">
-                          <strong className="text-slate-900 font-bold flex items-center gap-1.5 text-[11px]">
-                            <Award className="w-3.5 h-3.5 text-slate-600" /> Prioritas Jangka Panjang (6 - 12 Bulan):
-                          </strong>
-                          <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                            {recommendations.jangkaPanjang.map((r, i) => (
-                              <li key={`jpan-${i}`}>{r}</li>
-                            ))}
-                          </ul>
-                        </div>
+                    <div className="space-y-4 pt-2 text-[11.5px]">
+                      <div className="space-y-1.5 bg-teal-50/50 p-3 rounded-xl border border-teal-100">
+                        <strong className="text-teal-900 font-bold flex items-center gap-1.5">
+                          <Clock className="w-4 h-4 text-teal-600" /> Prioritas Jangka Pendek (1 - 3 Bulan):
+                        </strong>
+                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                          {recommendations.jangkaPendek.map((r, i) => (
+                            <li key={`jp-${i}`} className="leading-relaxed">{r}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="space-y-1.5 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
+                        <strong className="text-indigo-900 font-bold flex items-center gap-1.5">
+                          <Target className="w-4 h-4 text-indigo-600" /> Prioritas Jangka Menengah (3 - 6 Bulan):
+                        </strong>
+                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                          {recommendations.jangkaMenengah.map((r, i) => (
+                            <li key={`jm-${i}`} className="leading-relaxed">{r}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                        <strong className="text-slate-900 font-bold flex items-center gap-1.5">
+                          <Award className="w-4 h-4 text-slate-600" /> Prioritas Jangka Panjang (6 - 12 Bulan):
+                        </strong>
+                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
+                          {recommendations.jangkaPanjang.map((r, i) => (
+                            <li key={`jpan-${i}`} className="leading-relaxed">{r}</li>
+                          ))}
+                        </ul>
                       </div>
                     </div>
                   </div>
-                  
-                  {/* PENGESAHAN */}
-                  <div className="pt-8">
-                    <p className="text-right text-xs text-slate-600 leading-relaxed font-semibold mb-4">
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 22 dari 23</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 13-C: Lembar Pengesahan */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Lembar Pengesahan Laporan</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                </div>
+
+                <section className="space-y-6 pt-4">
+                  <div className="text-center mb-8 space-y-1">
+                    <h2 className="text-xs font-black text-slate-500 tracking-widest uppercase">LEMBAR PENGESAHAN</h2>
+                    <h2 className="text-sm font-black text-teal-850 uppercase tracking-wide">LAPORAN HASIL SURVEI BUDAYA KESELAMATAN PASIEN</h2>
+                    <div className="h-0.5 w-16 bg-teal-600 mx-auto mt-2"></div>
+                  </div>
+
+                  <p className="text-[11.5px] leading-relaxed text-slate-700 text-justify px-4">
+                    Laporan Hasil Survei Budaya Keselamatan Pasien (AHRQ Patient Safety Culture Survey v2.0) di <strong>{activeHospitalName}</strong> untuk periode survei tahun <strong>{tahunSurvei}</strong> telah disusun secara objektif, divalidasi oleh Komite Mutu, dan disetujui untuk diarsipkan serta digunakan sebagai instrumen acuan perencanaan program peningkatan mutu pelayanan dan keselamatan pasien (PMKP).
+                  </p>
+
+                  <div className="pt-12 px-4">
+                    <p className="text-right text-[11px] text-slate-600 leading-relaxed font-semibold mb-8">
                       {pengesahanConfig?.kota || 'Sukabumi'}, {pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </p>
-                    <div className="grid grid-cols-2 gap-6 pt-4 text-center text-[10px]">
-                      <div className="space-y-12">
+                    <div className="grid grid-cols-2 gap-8 pt-4 text-center text-[10.5px]">
+                      <div className="space-y-16">
                         <div>
                           <p className="font-bold text-slate-800">Mengetahui,</p>
                           <p className="font-bold text-slate-900">{pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit'}</p>
@@ -3326,7 +4422,7 @@ export default function LaporanTab({
                         </div>
                       </div>
 
-                      <div className="space-y-12">
+                      <div className="space-y-16">
                         <div>
                           <p className="font-bold text-slate-800">Disiapkan oleh,</p>
                           <p className="font-bold text-slate-900">{pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien'}</p>
@@ -3346,15 +4442,13 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 7 dari 7</span>
+                <span>Halaman 23 dari 23</span>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
-
-    </div>
+  </div>
   );
 }

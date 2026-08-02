@@ -329,35 +329,39 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     if (selectedBenchmarkHospitalId !== 'default' && selectedTargetHospital && currentRequestForSelectedHospital?.status === 'approved') {
       let isMounted = true;
       const targetId = selectedTargetHospital.id || selectedTargetHospital.username;
+      const requesterId = hospitalId || identifier;
 
       const fetchTargetSurveys = () => {
-        getSurveys(targetId)
-          .then(res => {
-            if (!isMounted) return;
-            const valid = (res || []).filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
-            setTargetHospitalSurveys(valid);
-          })
-          .catch(err => {
-            if (!isMounted) return;
-            console.warn("Failed to fetch target hospital surveys:", err);
-            setTargetHospitalSurveys([]);
-          });
+        // SECURE FETCH: Validates approval before returning data
+        import('../lib/db').then(db => {
+          db.getSecureBenchmarkSurveys(requesterId, targetId)
+            .then(res => {
+              if (!isMounted) return;
+              const valid = (res || []).filter(s => s && s.id && s.id !== 'MASTER_BENCHMARK' && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
+              setTargetHospitalSurveys(valid);
+            })
+            .catch(err => {
+              if (!isMounted) return;
+              console.warn("Failed to fetch target hospital surveys securely:", err);
+              setTargetHospitalSurveys([]);
+            });
+        });
       };
 
       setIsLoadingTargetSurveys(true);
       fetchTargetSurveys();
       setIsLoadingTargetSurveys(false);
 
-      // Realtime polling every 5s for live updates
+      // Realtime polling every 5s for live updates (High frequency for benchmark sync)
       const interval = setInterval(fetchTargetSurveys, 5000);
 
-      // Supabase realtime channel subscription if connected
+      // Supabase realtime channel subscription for target hospital's surveys
       const supabase = getSupabaseClient();
       let channel: any = null;
       if (supabase) {
         channel = supabase
-          .channel(`public:ahrq_surveys:${targetId}`)
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'ahrq_surveys' }, () => {
+          .channel(`public:benchmark_sync:${targetId}`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'ahrq_surveys', filter: `nama_rs=eq.${targetId}` }, () => {
             fetchTargetSurveys();
           })
           .subscribe();
@@ -373,7 +377,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     } else {
       setTargetHospitalSurveys([]);
     }
-  }, [selectedBenchmarkHospitalId, selectedTargetHospital, currentRequestForSelectedHospital?.status]);
+  }, [selectedBenchmarkHospitalId, selectedTargetHospital, currentRequestForSelectedHospital?.status, hospitalId, identifier]);
 
   const handleSendBenchmarkRequest = async () => {
     if (!selectedTargetHospital) return;
@@ -667,12 +671,21 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   ], []);
 
   const hospitalSurveys = useMemo(() => {
+    if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
+      return filterTargetSurveysByYear(targetHospitalSurveys);
+    }
     return actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun1);
-  }, [actualSurveys, tahun1]);
+  }, [actualSurveys, targetHospitalSurveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, filterTargetSurveysByYear, tahun1]);
 
   const hospitalSurveys2 = useMemo(() => {
+    if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
+      // For benchmark mode, we might not want to compare years of the target, 
+      // but maybe compare our year 1 with their year 1? 
+      // The current logic stays consistent with the UI.
+      return filterTargetSurveysByYear(targetHospitalSurveys);
+    }
     return actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun2);
-  }, [actualSurveys, tahun2]);
+  }, [actualSurveys, targetHospitalSurveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, filterTargetSurveysByYear, tahun2]);
 
   const activeBenchmarkSurveys = useMemo(() => {
     if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
