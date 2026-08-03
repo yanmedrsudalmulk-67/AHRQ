@@ -962,8 +962,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       unitKerja: finalUnit || 'Instansi Umum',
       jumlahResponden: 1,
       tanggalInput: new Date(tanggalPengisian).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }),
+      komentar: komentar ? komentar.trim() : '',
       dimensiScores: {
         ...finalScores,
+        komentar: komentar ? komentar.trim() : '',
         _rawAnswers: {
           ansA,
           ansB,
@@ -972,6 +974,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           ansE,
           ansF,
           ansG,
+          komentar: komentar ? komentar.trim() : '',
           posisiStaf: finalPosisi,
           unitKerja,
           namaRs: currentRsName,

@@ -1356,13 +1356,18 @@ export default function LaporanTab({
           }
         });
 
+        const isLandscape = pageEl.classList.contains('word-page-landscape');
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
         if (i > 0) {
-          pdf.addPage('a4', 'portrait');
+          pdf.addPage('a4', isLandscape ? 'landscape' : 'portrait');
         }
 
-        pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        if (isLandscape) {
+          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+        } else {
+          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+        }
       }
 
       const safeName = activeHospitalName.replace(/[^a-zA-Z0-9]/g, '_');
@@ -1816,6 +1821,10 @@ export default function LaporanTab({
             background: white !important;
             transform: none !important;
           }
+          @page page-landscape {
+            size: A4 landscape;
+            margin: 0;
+          }
           .print-page {
             width: 210mm !important;
             min-height: 297mm !important;
@@ -1837,8 +1846,23 @@ export default function LaporanTab({
             justify-content: space-between !important;
             overflow: hidden !important;
           }
+          .print-page.word-page-landscape {
+            page: page-landscape;
+            width: 297mm !important;
+            min-height: 210mm !important;
+            height: 210mm !important;
+            max-height: 210mm !important;
+            padding-top: 2cm !important;
+            padding-bottom: 2cm !important;
+            padding-left: 2.5cm !important;
+            padding-right: 2.5cm !important;
+          }
           .print-page.cover-page {
-            padding: 0 !important;
+            padding-top: 2.5cm !important;
+            padding-bottom: 2.5cm !important;
+            padding-left: 2.5cm !important;
+            padding-right: 2.5cm !important;
+            box-sizing: border-box !important;
           }
           .recharts-responsive-container {
             width: 100% !important;
@@ -1873,12 +1897,26 @@ export default function LaporanTab({
           flex-shrink: 0;
         }
         .word-page.cover-page {
-          padding: 0 !important;
+          padding-top: 2.5cm !important;
+          padding-bottom: 2.5cm !important;
+          padding-left: 2.5cm !important;
+          padding-right: 2.5cm !important;
+          box-sizing: border-box !important;
           position: relative !important;
           overflow: hidden !important;
           display: flex !important;
           flex-direction: column !important;
           justify-content: space-between !important;
+        }
+        .word-page.word-page-landscape {
+          width: 297mm !important;
+          height: 210mm !important;
+          min-height: 210mm !important;
+          max-height: 210mm !important;
+          padding-top: 2cm !important;
+          padding-bottom: 2cm !important;
+          padding-left: 2.5cm !important;
+          padding-right: 2.5cm !important;
         }
       ` }} />
 
@@ -1946,7 +1984,7 @@ export default function LaporanTab({
             transform: zoomLevel !== 100 ? `scale(${zoomLevel / 100})` : undefined,
             transformOrigin: 'top center'
           }}
-          className="flex flex-col items-center gap-8 print:gap-0 font-sans leading-relaxed w-full max-w-[210mm] transition-transform duration-200"
+          className="flex flex-col items-center gap-8 print:gap-0 font-sans leading-relaxed w-full max-w-[297mm] transition-transform duration-200"
         >
 
           {/* LEMBAR 1: COVER PAGE */}
@@ -2281,12 +2319,8 @@ export default function LaporanTab({
                       <span className="font-mono">21</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>4.2 Rekomendasi Strategic Action Plan</span>
+                      <span>4.2 Rekomendasi Strategic Action Plan & Pengesahan</span>
                       <span className="font-mono">22</span>
-                    </div>
-                    <div className="pl-4 flex justify-between text-slate-600 text-[11px] font-bold">
-                      <span>LEMBAR PENGESAHAN LAPORAN SURVEI</span>
-                      <span className="font-mono">23</span>
                     </div>
                   </div>
                 </div>
@@ -2355,12 +2389,12 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 1 dari 17</span>
+                <span>Halaman 1 dari 22</span>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 5: BAB II METODOLOGI SURVEI */}
+          {/* LEMBAR 5: BAB II METODOLOGI SURVEI - BAGIAN 1 */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
               <div>
@@ -2435,9 +2469,8 @@ export default function LaporanTab({
                       </div>
 
                       <div>
-                        <h4 className="font-semibold text-slate-800 mb-1">2.3.3 Teknik Sampling dan Jumlah Sampel</h4>
-                        <div className="mb-1.5">
-                          <strong className="text-slate-700">Teknik Sampling</strong>
+                        <h4 className="font-semibold text-slate-800 mb-1">2.3.3 Teknik Sampling</h4>
+                        <div>
                           <p className="mt-0.5">Pengambilan sampel dilakukan menggunakan:</p>
                           <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
                             <li>Total Sampling</li>
@@ -2446,48 +2479,8 @@ export default function LaporanTab({
                           <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
                             <li>Proportionate Stratified Random Sampling</li>
                           </ul>
-                          <p className="mt-0.5 italic text-slate-500">(sesuai pengaturan aplikasi).</p>
-                        </div>
-                        <div>
-                          <strong className="text-slate-700">Ukuran Sampel</strong>
-                          <p className="mt-0.5">Target jumlah responden mengikuti rekomendasi AHRQ.</p>
-                          <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
-                            <li>Jumlah Target Responden: <strong className="text-teal-700">{totalTarget}</strong></li>
-                            <li>Jumlah Responden Mengisi: <strong className="text-teal-700">{totalActual}</strong></li>
-                            <li>Persentase Response Rate: <strong className="text-teal-700">{responseRateStr}</strong></li>
-                          </ul>
                         </div>
                       </div>
-                    </div>
-
-                    <div>
-                      <h3 className="font-bold text-slate-900 mb-1">2.4 Instrumen Survei</h3>
-                      <p>
-                        Instrumen yang digunakan adalah AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0 yang telah diterjemahkan ke dalam bahasa Indonesia dan diuji keterbacaannya.
-                      </p>
-                      <p className="mt-2">
-                        Instrumen SOPS® Versi 2.0 mengukur 10 Dimensi Budaya Keselamatan Pasien yang terdiri dari 32 item pertanyaan primer, ditambah dengan bagian evaluasi penilaian tingkat keselamatan pasien (overall rating) dan karakteristik demografi responden:
-                      </p>
-                      <ol className="list-decimal pl-5 mt-2 space-y-1">
-                        <li>Teamwork (Kerja Sama Tim) – 3 item</li>
-                        <li>Staffing and Work Pace (Ketenagaan dan Kecepatan Kerja) – 4 item</li>
-                        <li>Organizational Learning—Continuous Improvement (Pembelajaran Organisasi—Peningkatan Berkelanjutan) – 3 item</li>
-                        <li>Response to Error (Respons Terhadap Kesalahan / Non-punitive Environment) – 4 item</li>
-                        <li>Supervisor, Manager, or Clinical Leader Support for Patient Safety (Dukungan Atasan/Manajer/Pimpinan Klinis terhadap Keselamatan Pasien) – 3 item</li>
-                        <li>Management Support for Patient Safety (Dukungan Manajemen/Direksi terhadap Keselamatan Pasien) – 3 item</li>
-                        <li>Communication Openness (Keterbukaan Komunikasi) – 4 item</li>
-                        <li>Reporting Patient Safety Events (Pelaporan Insiden Keselamatan Pasien) – 2 item</li>
-                        <li>Hospital Handoffs and Information Exchange (Serah Terima/Handoff dan Pertukaran Informasi di Rumah Sakit) – 3 item</li>
-                        <li>Communication About Error (Komunikasi Mengenai Kesalahan) – 3 item</li>
-                      </ol>
-                      <ul className="list-disc pl-5 mt-2 space-y-1">
-                        <li>
-                          <strong>Tingkat Keselamatan Pasien Keseluruhan (Overall Patient Safety Rating):</strong> 1 item pertanyaan penilaian global dengan skala Likert 5 poin (Sangat Buruk, Buruk, Cukup, Baik, Sangat Baik).
-                        </li>
-                        <li>
-                          <strong>Pertanyaan Demografi:</strong> Meliputi unit kerja utama, profesi/peran, lama bekerja di rumah sakit, lama bekerja di unit saat ini, serta jumlah jam kerja per minggu.
-                        </li>
-                      </ul>
                     </div>
                   </div>
                 </section>
@@ -2496,11 +2489,12 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 2 dari 17</span>
+                <span>Halaman 2 dari 22</span>
               </div>
             </div>
           </div>
 
+          {/* LEMBAR 5-B: BAB II METODOLOGI SURVEI - BAGIAN 2 */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
               <div className="flex-1 flex flex-col justify-between">
@@ -2513,6 +2507,46 @@ export default function LaporanTab({
 
                   <section className="space-y-4">
                     <div className="space-y-4 text-xs text-slate-700 leading-relaxed text-justify">
+                      <div>
+                        <h4 className="font-semibold text-slate-800 mb-1">Ukuran Sampel</h4>
+                        <p className="mt-0.5">Target jumlah responden mengikuti rekomendasi AHRQ:</p>
+                        <ul className="list-disc pl-5 mt-0.5 space-y-0.5">
+                          <li>Jumlah Target Responden: <strong className="text-teal-700">{totalTarget}</strong></li>
+                          <li>Jumlah Responden Mengisi: <strong className="text-teal-700">{totalActual}</strong></li>
+                          <li>Persentase Response Rate: <strong className="text-teal-700">{responseRateStr}</strong></li>
+                        </ul>
+                      </div>
+
+                      <div>
+                        <h3 className="font-bold text-slate-900 mb-1">2.4 Instrumen Survei</h3>
+                        <p>
+                          Instrumen yang digunakan adalah AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0 yang telah diterjemahkan ke dalam bahasa Indonesia dan diuji keterbacaannya.
+                        </p>
+                        <p className="mt-2">
+                          Instrumen SOPS® Versi 2.0 mengukur 10 Dimensi Budaya Keselamatan Pasien yang terdiri dari 32 item pertanyaan primer, ditambah dengan bagian evaluasi penilaian tingkat keselamatan pasien (overall rating) dan karakteristik demografi responden:
+                        </p>
+                        <ol className="list-decimal pl-5 mt-2 space-y-1">
+                          <li>Teamwork (Kerja Sama Tim) – 3 item</li>
+                          <li>Staffing and Work Pace (Ketenagaan dan Kecepatan Kerja) – 4 item</li>
+                          <li>Organizational Learning—Continuous Improvement (Pembelajaran Organisasi—Peningkatan Berkelanjutan) – 3 item</li>
+                          <li>Response to Error (Respons Terhadap Kesalahan / Non-punitive Environment) – 4 item</li>
+                          <li>Supervisor, Manager, or Clinical Leader Support for Patient Safety (Dukungan Atasan/Manajer/Pimpinan Klinis terhadap Keselamatan Pasien) – 3 item</li>
+                          <li>Management Support for Patient Safety (Dukungan Manajemen/Direksi terhadap Keselamatan Pasien) – 3 item</li>
+                          <li>Communication Openness (Keterbukaan Komunikasi) – 4 item</li>
+                          <li>Reporting Patient Safety Events (Pelaporan Insiden Keselamatan Pasien) – 2 item</li>
+                          <li>Hospital Handoffs and Information Exchange (Serah Terima/Handoff dan Pertukaran Informasi di Rumah Sakit) – 3 item</li>
+                          <li>Communication About Error (Komunikasi Mengenai Kesalahan) – 3 item</li>
+                        </ol>
+                        <ul className="list-disc pl-5 mt-2 space-y-1">
+                          <li>
+                            <strong>Tingkat Keselamatan Pasien Keseluruhan (Overall Patient Safety Rating):</strong> 1 item pertanyaan penilaian global dengan skala Likert 5 poin (Sangat Buruk, Buruk, Cukup, Baik, Sangat Baik).
+                          </li>
+                          <li>
+                            <strong>Pertanyaan Demografi:</strong> Meliputi unit kerja utama, profesi/peran, lama bekerja di rumah sakit, lama bekerja di unit saat ini, serta jumlah jam kerja per minggu.
+                          </li>
+                        </ul>
+                      </div>
+
                       <div>
                         <h3 className="font-bold text-slate-900 mb-1">2.5 Metode Pengumpulan Data</h3>
                         <p>Pengumpulan data dilakukan secara elektronik/online (e-survey menggunakan link aplikasi pengukuran budaya keselamatan) dengan memperhitungkan kerahasiaan:</p>
@@ -2528,7 +2562,32 @@ export default function LaporanTab({
                           </li>
                         </ul>
                       </div>
+                    </div>
+                  </section>
+                </div>
 
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 3 dari 22</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 5-C: BAB II METODOLOGI SURVEI - BAGIAN 3 */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Metodologi Survei (Analisis Data)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    <div className="space-y-4 text-xs text-slate-700 leading-relaxed text-justify">
                       <div>
                         <h3 className="font-bold text-slate-900 mb-1">2.6 Analisis Data</h3>
                         <p>Pengolahan dan analisis data dilakukan mengikuti panduan pengolahan data AHRQ SOPS® Version 2.0:</p>
@@ -2585,13 +2644,13 @@ export default function LaporanTab({
                 </div>
 
                 {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 3 dari 17</span>
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 4 dari 22</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
           {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi (Bagian 1) */}
           <div className="w-full flex flex-col items-center">
@@ -2643,13 +2702,13 @@ export default function LaporanTab({
                               return (
                                 <tr key={`pos-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
                                   {idx === 0 && (
-                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    <td rowSpan={arr.length} className="p-1.5 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
                                       Posisi / Jabatan
                                     </td>
                                   )}
-                                  <td className="p-2 border-r border-slate-200 text-slate-700">{pItem.name}</td>
-                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{pItem.value}</td>
-                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-slate-700">{pItem.name}</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-center font-bold">{pItem.value}</td>
+                                  <td className="p-1.5 text-center font-bold text-teal-700">{pct}%</td>
                                 </tr>
                               );
                             })}
@@ -2660,13 +2719,13 @@ export default function LaporanTab({
                               return (
                                 <tr key={`g1-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
                                   {idx === 0 && (
-                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    <td rowSpan={arr.length} className="p-1.5 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
                                       Masa Kerja di RS Ini
                                     </td>
                                   )}
-                                  <td className="p-2 border-r border-slate-200 text-slate-700">{g1Item.name}</td>
-                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g1Item.value}</td>
-                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-slate-700">{g1Item.name}</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-center font-bold">{g1Item.value}</td>
+                                  <td className="p-1.5 text-center font-bold text-teal-700">{pct}%</td>
                                 </tr>
                               );
                             })}
@@ -2677,13 +2736,13 @@ export default function LaporanTab({
                               return (
                                 <tr key={`g2-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
                                   {idx === 0 && (
-                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    <td rowSpan={arr.length} className="p-1.5 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
                                       Masa Kerja di Unit Kerja
                                     </td>
                                   )}
-                                  <td className="p-2 border-r border-slate-200 text-slate-700">{g2Item.name}</td>
-                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g2Item.value}</td>
-                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-slate-700">{g2Item.name}</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-center font-bold">{g2Item.value}</td>
+                                  <td className="p-1.5 text-center font-bold text-teal-700">{pct}%</td>
                                 </tr>
                               );
                             })}
@@ -2694,13 +2753,13 @@ export default function LaporanTab({
                               return (
                                 <tr key={`g3-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
                                   {idx === 0 && (
-                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    <td rowSpan={arr.length} className="p-1.5 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
                                       Jam Kerja per Minggu
                                     </td>
                                   )}
-                                  <td className="p-2 border-r border-slate-200 text-slate-700">{g3Item.name}</td>
-                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g3Item.value}</td>
-                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-slate-700">{g3Item.name}</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-center font-bold">{g3Item.value}</td>
+                                  <td className="p-1.5 text-center font-bold text-teal-700">{pct}%</td>
                                 </tr>
                               );
                             })}
@@ -2711,19 +2770,46 @@ export default function LaporanTab({
                               return (
                                 <tr key={`g4-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
                                   {idx === 0 && (
-                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                    <td rowSpan={arr.length} className="p-1.5 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
                                       Interaksi Kontak Pasien
                                     </td>
                                   )}
-                                  <td className="p-2 border-r border-slate-200 text-slate-700 leading-tight">{g4Item.name}</td>
-                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{g4Item.value}</td>
-                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-slate-700 leading-tight">{g4Item.name}</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-center font-bold">{g4Item.value}</td>
+                                  <td className="p-1.5 text-center font-bold text-teal-700">{pct}%</td>
+                                </tr>
+                              );
+                            })}
+
+                            {/* 6. Unit / Area Kerja (Disatukan ke Halaman 5) */}
+                            {demografiStats.unitData.slice(0, 5).map((uItem, idx, arr) => {
+                              const pct = ((uItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                              return (
+                                <tr key={`unit-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                  {idx === 0 && (
+                                    <td rowSpan={arr.length} className="p-1.5 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                      Unit / Area Kerja {demografiStats.unitData.length > 5 ? '(Top 5)' : ''}
+                                    </td>
+                                  )}
+                                  <td className="p-1.5 border-r border-slate-200 text-slate-700">{uItem.name}</td>
+                                  <td className="p-1.5 border-r border-slate-200 text-center font-bold">{uItem.value}</td>
+                                  <td className="p-1.5 text-center font-bold text-teal-700">{pct}%</td>
                                 </tr>
                               );
                             })}
                           </tbody>
                         </table>
                       </div>
+
+                      {/* Interpretasi singkat jika semua data unit muat di Halaman 5 */}
+                      {demografiStats.unitData.length <= 5 && (
+                        <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200 text-[9.5px] text-slate-600 leading-relaxed mt-2">
+                          <strong className="text-teal-800 font-extrabold uppercase tracking-wide block mb-0.5">3.1.3 Ringkasan Demografi Responden:</strong>
+                          <p>
+                            Survei berhasil mengumpulkan partisipasi aktif dari <strong>{demografiNarrative.totalResp}</strong> responden. Sebaran posisi didominasi oleh <strong>{demografiNarrative.topPos}</strong> ({demografiNarrative.topPosVal} responden), dengan unit kontributor utama <strong>{demografiNarrative.topUnit}</strong> ({demografiNarrative.topUnitVal} responden).
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </section>
                 </div>
@@ -2731,13 +2817,13 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 4 dari 17</span>
+                  <span>Halaman 5 dari 22</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 6b: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi (Bagian 2) */}
+          {/* LEMBAR 6b: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi (Bagian 2 / Lanjutan) */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
               <div className="flex-1 flex flex-col justify-between">
@@ -2750,36 +2836,46 @@ export default function LaporanTab({
 
                   <section className="space-y-4">
                     <div className="space-y-3">
-                      <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
-                        <table className="w-full text-left border-collapse">
-                          <thead>
-                            <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
-                              <th className="p-2 border-r border-white/20">Karakteristik</th>
-                              <th className="p-2 border-r border-white/20">Kategori / Detail</th>
-                              <th className="p-2 border-r border-white/20 text-center">Jumlah (n)</th>
-                              <th className="p-2 text-center">Persentase (%)</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-200">
-                            {/* Unit Kerja */}
-                            {demografiStats.unitData.map((uItem, idx, arr) => {
-                              const pct = ((uItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
-                              return (
-                                <tr key={`unit-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
-                                  {idx === 0 && (
-                                    <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
-                                      Unit / Area Kerja
-                                    </td>
-                                  )}
-                                  <td className="p-2 border-r border-slate-200 text-slate-700">{uItem.name}</td>
-                                  <td className="p-2 border-r border-slate-200 text-center font-bold">{uItem.value}</td>
-                                  <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                      {/* Tampilkan tabel lanjutan jika unitData > 5 */}
+                      {demografiStats.unitData.length > 5 ? (
+                        <div>
+                          <h4 className="font-bold text-slate-900 text-[11px] mb-2">Unit / Area Kerja (Lanjutan)</h4>
+                          <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
+                            <table className="w-full text-left border-collapse">
+                              <thead>
+                                <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                                  <th className="p-2 border-r border-white/20">Karakteristik</th>
+                                  <th className="p-2 border-r border-white/20">Kategori / Detail (Lanjutan)</th>
+                                  <th className="p-2 border-r border-white/20 text-center">Jumlah (n)</th>
+                                  <th className="p-2 text-center">Persentase (%)</th>
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
+                              </thead>
+                              <tbody className="divide-y divide-slate-200">
+                                {demografiStats.unitData.slice(5).map((uItem, idx, arr) => {
+                                  const pct = ((uItem.value / (demografiStats.total || 1)) * 100).toFixed(1);
+                                  return (
+                                    <tr key={`unit-more-${idx}`} className={idx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}>
+                                      {idx === 0 && (
+                                        <td rowSpan={arr.length} className="p-2 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[90px] break-words">
+                                          Unit / Area Kerja (Lanjutan)
+                                        </td>
+                                      )}
+                                      <td className="p-2 border-r border-slate-200 text-slate-700">{uItem.name}</td>
+                                      <td className="p-2 border-r border-slate-200 text-center font-bold">{uItem.value}</td>
+                                      <td className="p-2 text-center font-bold text-teal-700">{pct}%</td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-teal-50/30 border border-teal-100 rounded-xl text-[10px] text-teal-900 font-semibold flex items-center gap-2 mb-2">
+                          <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+                          <span>Tabel Demografi Responden (Termasuk Seluruh Unit Kerja) Telah Disatukan pada Halaman 5.</span>
+                        </div>
+                      )}
 
                       <div className="space-y-2 mt-4">
                         <div className="bg-slate-50 p-3 rounded-xl border border-slate-200 text-[10px] text-slate-600 leading-relaxed space-y-1">
@@ -2822,13 +2918,13 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 5 dari 17</span>
+                  <span>Halaman 6 dari 22</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 4: BAB III HASIL & PEMBAHASAN - Hasil Pengukuran 10 Dimensi */}
+          {/* LEMBAR 4-A: BAB III HASIL & PEMBAHASAN - Hasil Pengukuran 10 Dimensi (Tabel & Bar Chart) */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
               <div>
@@ -2922,18 +3018,45 @@ export default function LaporanTab({
                       <div className="flex items-center gap-1.5"><div className="w-2.5 h-2.5 rounded-xs bg-blue-500"></div> &ge;85% (Sangat Baik)</div>
                     </div>
                   </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman 7 dari 22</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 4-B: BAB III HASIL & PEMBAHASAN - Interpretasi & Rekomendasi 10 Dimensi */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <div className="border-b border-slate-200 pb-1.5">
+                    <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">
+                      3.2.1 (Lanjutan) Interpretasi &amp; Rekomendasi 10 Dimensi Budaya Keselamatan
+                    </h3>
+                  </div>
 
                   {/* Interpretasi & Analisa Data Terintegrasi (Sesuai Menu Analisa Data -> Hasil Pengukuran Dimensi) */}
-                  <div className="space-y-3 pt-1">
-                    <div className="bg-blue-50/60 border border-blue-100 p-3.5 rounded-xl space-y-2.5 text-[10.5px] text-slate-700">
-                      <h4 className="font-extrabold text-blue-900 tracking-wider uppercase flex items-center gap-1.5 text-[11px]">
-                        <Sparkles className="w-4 h-4 text-blue-600 shrink-0" /> INTERPRETASI &amp; ANALISIS DATA
+                  <div className="space-y-4 pt-1">
+                    <div className="bg-blue-50/60 border border-blue-100 p-4 rounded-xl space-y-3 text-[11px] text-slate-700">
+                      <h4 className="font-extrabold text-blue-900 tracking-wider uppercase flex items-center gap-2 text-xs">
+                        <Sparkles className="w-4.5 h-4.5 text-blue-600 shrink-0" /> INTERPRETASI &amp; ANALISIS DATA
                       </h4>
                       <p className="leading-relaxed text-justify">
                         Hasil analisis 10 dimensi budaya keselamatan pasien tahun <strong className="text-slate-900">{displayYear}</strong> menghasilkan nilai rata-rata keseluruhan respons positif sebesar <strong className="text-blue-800 font-extrabold">{overallAverage.toFixed(1)}%</strong>. Kekuatan utama (aspek unggul) <strong className="text-slate-900">{activeHospitalName}</strong> terletak pada dimensi <strong className="text-emerald-800 font-extrabold">&ldquo;{highestDim?.nama || '-'}&rdquo;</strong> dengan skor positif tertinggi mencapai <strong className="text-emerald-700 font-extrabold">{highestDim?.percentage.toFixed(1) || 0}%</strong>. Sebaliknya, dimensi yang mendesak untuk segera diintervensi adalah <strong className="text-red-800 font-extrabold">&ldquo;{lowestDim?.nama || '-'}&rdquo;</strong> dengan respons positif terendah sebesar <strong className="text-red-700 font-extrabold">{lowestDim?.percentage.toFixed(1) || 0}%</strong>.
                       </p>
 
-                      <div className="text-[10px] space-y-1.5 bg-white/80 p-3 rounded-lg border border-blue-100/60">
+                      <div className="text-[10.5px] space-y-2 bg-white/90 p-3.5 rounded-lg border border-blue-100/60">
                         <div>
                           <span className="font-bold text-emerald-700">✓ Area Kekuatan (&ge;75%):</span>{' '}
                           <span className="font-medium text-slate-700">
@@ -2962,31 +3085,31 @@ export default function LaporanTab({
                     </div>
 
                     {/* Rekomendasi Peningkatan (Sesuai Menu Analisa Data -> Hasil Pengukuran Dimensi) */}
-                    <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl space-y-2 text-[10.5px] text-slate-700">
-                      <h4 className="font-extrabold text-slate-800 tracking-wider uppercase flex items-center gap-1.5 text-[11px]">
-                        <Target className="w-4 h-4 text-indigo-600 shrink-0" /> REKOMENDASI PENINGKATAN
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-3 text-[11px] text-slate-700">
+                      <h4 className="font-extrabold text-slate-800 tracking-wider uppercase flex items-center gap-2 text-xs">
+                        <Target className="w-4.5 h-4.5 text-indigo-600 shrink-0" /> REKOMENDASI PENINGKATAN
                       </h4>
-                      <ul className="text-[10px] text-slate-700 space-y-2">
-                        <li className="flex gap-2 items-start">
-                          <span className="shrink-0 text-xs">🏆</span>
+                      <ul className="text-[10.5px] text-slate-700 space-y-2.5">
+                        <li className="flex gap-2.5 items-start">
+                          <span className="shrink-0 text-sm">🏆</span>
                           <span className="font-medium leading-relaxed">
                             Pertahankan strategi keberhasilan pada dimensi <strong className="text-slate-900">&ldquo;{highestDim?.nama || '-'}&rdquo;</strong> agar tetap konsisten sebagai pilar budaya keselamatan rumah sakit.
                           </span>
                         </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="shrink-0 text-xs">🛠️</span>
+                        <li className="flex gap-2.5 items-start">
+                          <span className="shrink-0 text-sm">🛠️</span>
                           <span className="font-medium leading-relaxed">
                             Segera bentuk tim investigasi internal dan susun SOP baru untuk meningkatkan dimensi <strong className="text-slate-900">&ldquo;{lowestDim?.nama || '-'}&rdquo;</strong>.
                           </span>
                         </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="shrink-0 text-xs">📢</span>
+                        <li className="flex gap-2.5 items-start">
+                          <span className="shrink-0 text-sm">📢</span>
                           <span className="font-medium leading-relaxed">
                             Implementasikan program &apos;Rapat Keselamatan Pasien Mandiri&apos; secara berkala di nurse station seluruh unit kerja.
                           </span>
                         </li>
-                        <li className="flex gap-2 items-start">
-                          <span className="shrink-0 text-xs">🎯</span>
+                        <li className="flex gap-2.5 items-start">
+                          <span className="shrink-0 text-sm">🎯</span>
                           <span className="font-medium leading-relaxed">
                             Sesuaikan alokasi pelatihan berkala yang lebih berfokus pada dimensi-dimensi yang berada dalam kategori prioritas intervensi.
                           </span>
@@ -2995,14 +3118,14 @@ export default function LaporanTab({
                     </div>
                   </div>
 
-                  <p className="text-[8.5px] text-slate-400 italic text-right">*Data 10 dimensi, analisa, dan rekomendasi terintegrasi secara otomatis dari menu Analisa Data ({activeHospitalName}).</p>
+                  <p className="text-[9px] text-slate-400 italic text-right mt-2">*Data 10 dimensi, analisa, dan rekomendasi terintegrasi secara otomatis dari menu Analisa Data ({activeHospitalName}).</p>
                 </section>
               </div>
 
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 6 dari 17</span>
+                <span>Halaman 8 dari 22</span>
               </div>
             </div>
           </div>
@@ -3107,7 +3230,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 7 dari 17</span>
+                  <span>Halaman 9 dari 22</span>
                 </div>
               </div>
             </div>
@@ -3212,7 +3335,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 8 dari 17</span>
+                  <span>Halaman 10 dari 22</span>
                 </div>
               </div>
             </div>
@@ -3233,7 +3356,7 @@ export default function LaporanTab({
                     <div>
                       <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
                         <BarChart2 className="w-4 h-4 text-indigo-600" />
-                        3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi Budaya Keselamatan Pasien (d1 - d3)
+                        3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi Budaya Keselamatan Pasien
                       </h4>
                       <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
                         Berikut merupakan rincian persentase respon positif staf rumah sakit <strong>{activeHospitalName}</strong> untuk setiap item pernyataan dalam kuesioner AHRQ SOPS® Version 2.0 pada tahun <strong>{tahunSurvei}</strong>. Data dikelompokkan secara terstruktur berdasarkan dimensi budaya keselamatan pasien masing-masing:
@@ -3242,7 +3365,7 @@ export default function LaporanTab({
 
                     {/* Detailed Item Cards */}
                     <div className="space-y-4">
-                      {DIMENSION_ORDER.slice(0, 3).map((dimId, sliceIndex) => {
+                      {DIMENSION_ORDER.slice(0, 2).map((dimId, sliceIndex) => {
                         const index = sliceIndex;
                         const dimInfo = DIMENSI_INFO[dimId];
                         const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
@@ -3331,7 +3454,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 9 dari 17</span>
+                  <span>Halaman 11 dari 22</span>
                 </div>
               </div>
             </div>
@@ -3351,8 +3474,8 @@ export default function LaporanTab({
                   <section className="space-y-4">
                     {/* Detailed Item Cards */}
                     <div className="space-y-4">
-                      {DIMENSION_ORDER.slice(3, 6).map((dimId, sliceIndex) => {
-                        const index = sliceIndex + 3;
+                      {DIMENSION_ORDER.slice(2, 4).map((dimId, sliceIndex) => {
+                        const index = sliceIndex + 2;
                         const dimInfo = DIMENSI_INFO[dimId];
                         const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
                         
@@ -3440,7 +3563,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 10 dari 17</span>
+                  <span>Halaman 12 dari 22</span>
                 </div>
               </div>
             </div>
@@ -3457,11 +3580,11 @@ export default function LaporanTab({
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-4">
+                  <section className="space-y-2.5">
                     {/* Detailed Item Cards */}
-                    <div className="space-y-4">
-                      {DIMENSION_ORDER.slice(6, 8).map((dimId, sliceIndex) => {
-                        const index = sliceIndex + 6;
+                    <div className="space-y-2.5">
+                      {DIMENSION_ORDER.slice(4, 7).map((dimId, sliceIndex) => {
+                        const index = sliceIndex + 4;
                         const dimInfo = DIMENSI_INFO[dimId];
                         const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
                         
@@ -3480,47 +3603,47 @@ export default function LaporanTab({
                             className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
                           >
                             {/* Card Header */}
-                            <div className="p-3 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                            <div className="p-2.5 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-2.5">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
-                              <div className="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
-                                <span className="text-xs font-black text-indigo-600">{index + 1}</span>
+                              <div className="w-6 h-6 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-[10px] font-black text-indigo-600">{index + 1}</span>
                               </div>
                               <div>
-                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
-                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                                <h3 className="text-[10px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                                <p className="text-[8px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
                               </div>
                             </div>
 
                             {/* Questions List */}
-                            <div className="p-3 space-y-3">
-                              <div className="space-y-3">
+                            <div className="p-2.5 space-y-2">
+                              <div className="space-y-2">
                                 {qStats.map(({ q, stat }) => (
-                                  <div key={q.id} className="flex flex-col gap-1">
+                                  <div key={q.id} className="flex flex-col gap-0.5">
                                     {/* Question Code & Text */}
-                                    <div className="flex gap-2">
-                                      <span className="text-[10px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
-                                      <p className="text-[10px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    <div className="flex gap-1.5">
+                                      <span className="text-[9.5px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[9.5px] font-bold text-slate-700 leading-tight">{q.text}</p>
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                    <div className="h-4 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
                                       <div 
                                         className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
                                         style={{ width: `${stat.posPercent}%` }}
                                       >
-                                        {stat.posPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.posPercent}%</span>}
+                                        {stat.posPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.posPercent}%</span>}
                                       </div>
                                       <div 
                                         className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
                                         style={{ width: `${stat.neuPercent}%` }}
                                       >
-                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.neuPercent}%</span>}
+                                        {stat.neuPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.neuPercent}%</span>}
                                       </div>
                                       <div 
                                         className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
                                         style={{ width: `${stat.negPercent}%` }}
                                       >
-                                        {stat.negPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.negPercent}%</span>}
+                                        {stat.negPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.negPercent}%</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -3529,15 +3652,15 @@ export default function LaporanTab({
                             </div>
 
                             {/* Summary Footer */}
-                            <div className="bg-slate-50/50 p-2.5 border-t border-slate-200 flex justify-between items-center">
+                            <div className="bg-slate-50/50 p-2 border-t border-slate-200 flex justify-between items-center">
                               <div className="flex items-center gap-2">
-                                <span className="text-[8.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
-                                <span className="text-sm font-black text-slate-800">{avgPosPercent}%</span>
-                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                                <span className="text-[8px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
+                                <span className="text-xs font-black text-slate-800">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[7.5px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
                                   {status.label}
                                 </div>
                               </div>
-                              <span className="text-[9px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                              <span className="text-[8.5px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
                             </div>
                           </div>
                         );
@@ -3549,7 +3672,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 11 dari 17</span>
+                  <span>Halaman 13 dari 22</span>
                 </div>
               </div>
             </div>
@@ -3569,8 +3692,8 @@ export default function LaporanTab({
                   <section className="space-y-3">
                     {/* Detailed Item Cards */}
                     <div className="space-y-3">
-                      {DIMENSION_ORDER.slice(8, 10).map((dimId, sliceIndex) => {
-                        const index = sliceIndex + 8;
+                      {DIMENSION_ORDER.slice(7, 10).map((dimId, sliceIndex) => {
+                        const index = sliceIndex + 7;
                         const dimInfo = DIMENSI_INFO[dimId];
                         const questions = ALL_QUESTIONS_LAPORAN.filter(q => q.dim === dimId);
                         
@@ -3693,7 +3816,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 12 dari 17</span>
+                  <span>Halaman 14 dari 22</span>
                 </div>
               </div>
             </div>
@@ -3701,7 +3824,7 @@ export default function LaporanTab({
 
           {/* LEMBAR 10: 3.2.5 Perbandingan berdasarkan Profesi */}
           <div className="w-full flex flex-col items-center">
-            <div className="word-page print-page">
+            <div className="word-page word-page-landscape print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
@@ -3732,7 +3855,7 @@ export default function LaporanTab({
                           <tr className="bg-indigo-900 text-white font-extrabold text-[8px] uppercase border-b border-indigo-950">
                             <th className="p-1.5 border-r border-indigo-800 w-10 text-center">No</th>
                             <th className="p-1.5 border-r border-indigo-800 min-w-[140px]">Dimensi Budaya Keselamatan</th>
-                            {demografiStats.posisiData.slice(0, 4).map(pos => (
+                            {demografiStats.posisiData.slice(0, 6).map(pos => (
                               <th key={pos.name} className="p-1.5 text-center border-r border-indigo-800 min-w-[70px]">
                                 {pos.name} <span className="font-mono font-normal block text-[7px] text-indigo-200">(N={pos.value})</span>
                               </th>
@@ -3747,7 +3870,7 @@ export default function LaporanTab({
                               <tr key={dimId} className="hover:bg-slate-50/40">
                                 <td className="p-1.5 border-r border-slate-100 text-center font-bold text-indigo-700">{idx + 1}</td>
                                 <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
-                                {demografiStats.posisiData.slice(0, 4).map(pos => {
+                                {demografiStats.posisiData.slice(0, 6).map(pos => {
                                   const val = scoreObj ? scoreObj[pos.name] : null;
                                   return (
                                     <td key={pos.name} className="p-1.5 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
@@ -3768,14 +3891,14 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 15 dari 23</span>
+                <span>Halaman 15 dari 22</span>
               </div>
             </div>
           </div>
 
           {/* LEMBAR 10-B: 3.2.5-B Perbandingan berdasarkan Unit Kerja */}
           <div className="w-full flex flex-col items-center">
-            <div className="word-page print-page">
+            <div className="word-page word-page-landscape print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
@@ -3787,10 +3910,10 @@ export default function LaporanTab({
                   <div>
                     <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
                       <LayoutDashboard className="w-4 h-4 text-teal-600" />
-                      3.2.5-B Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Unit Kerja (Top 4)
+                      3.2.5-B Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Unit Kerja (Top 6)
                     </h4>
                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
-                      Analisis tingkat unit pelayanan membantu pimpinan rumah sakit memetakan disparitas iklim keselamatan secara spesifik. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan 4 Unit Kerja terbesar di <strong>{activeHospitalName}</strong>:
+                      Analisis tingkat unit pelayanan membantu pimpinan rumah sakit memetakan disparitas iklim keselamatan secara spesifik. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan 6 Unit Kerja terbesar di <strong>{activeHospitalName}</strong>:
                     </p>
                   </div>
 
@@ -3798,7 +3921,7 @@ export default function LaporanTab({
                   <div className="space-y-1.5">
                     <h5 className="text-[10px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
                       <span className="w-1.5 h-3 bg-teal-600 rounded-sm"></span>
-                      B. Perbandingan Dimensi Berdasarkan Unit Kerja (Top 4 Unit Terbesar)
+                      B. Perbandingan Dimensi Berdasarkan Unit Kerja (Top 6 Unit Terbesar)
                     </h5>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full text-left border-collapse text-[8.5px]">
@@ -3806,7 +3929,7 @@ export default function LaporanTab({
                           <tr className="bg-teal-800 text-white font-extrabold text-[8px] uppercase border-b border-teal-900">
                             <th className="p-1.5 border-r border-teal-700 w-10 text-center">No</th>
                             <th className="p-1.5 border-r border-teal-700 min-w-[140px]">Dimensi Budaya Keselamatan</th>
-                            {demografiStats.unitData.slice(0, 4).map(u => (
+                            {demografiStats.unitData.slice(0, 6).map(u => (
                               <th key={u.name} className="p-1.5 text-center border-r border-teal-700 min-w-[70px]">
                                 {u.name} <span className="font-mono font-normal block text-[7px] text-teal-200">(N={u.value})</span>
                               </th>
@@ -3821,7 +3944,7 @@ export default function LaporanTab({
                               <tr key={dimId} className="hover:bg-slate-50/40">
                                 <td className="p-1.5 border-r border-slate-100 text-center font-bold text-teal-700">{idx + 1}</td>
                                 <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
-                                {demografiStats.unitData.slice(0, 4).map(u => {
+                                {demografiStats.unitData.slice(0, 6).map(u => {
                                   const val = scoreObj ? scoreObj[u.name] : null;
                                   return (
                                     <td key={u.name} className="p-1.5 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
@@ -3842,7 +3965,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 16 dari 23</span>
+                <span>Halaman 16 dari 22</span>
               </div>
             </div>
           </div>
@@ -3964,7 +4087,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 17 dari 23</span>
+                <span>Halaman 17 dari 22</span>
               </div>
             </div>
           </div>
@@ -4040,7 +4163,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 18 dari 23</span>
+                <span>Halaman 18 dari 22</span>
               </div>
             </div>
           </div>
@@ -4127,7 +4250,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 19 dari 23</span>
+                <span>Halaman 19 dari 22</span>
               </div>
             </div>
           </div>
@@ -4233,7 +4356,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 20 dari 23</span>
+                <span>Halaman 20 dari 22</span>
               </div>
             </div>
           </div>
@@ -4315,134 +4438,109 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 21 dari 23</span>
+                <span>Halaman 21 dari 22</span>
               </div>
             </div>
           </div>
 
-          {/* LEMBAR 13-B: Rekomendasi Strategic Action Plan */}
+          {/* LEMBAR 13-B: Rekomendasi Strategic Action Plan & Pengesahan */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Rekomendasi Strategic Action Plan</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
-
-                <section className="space-y-4">
-                  <div className="space-y-2">
-                    <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">4.2 Rekomendasi</h3>
-                    <p className="text-[11px] leading-relaxed text-slate-700 text-justify">
-                      Untuk menindaklanjuti temuan survei ini dan memperkuat budaya keselamatan pasien secara berkelanjutan, dirumuskan rekomendasi tindakan yang dapat diprioritaskan berdasarkan skala dampaknya:
-                    </p>
-
-                    <div className="space-y-4 pt-2 text-[11.5px]">
-                      <div className="space-y-1.5 bg-teal-50/50 p-3 rounded-xl border border-teal-100">
-                        <strong className="text-teal-900 font-bold flex items-center gap-1.5">
-                          <Clock className="w-4 h-4 text-teal-600" /> Prioritas Jangka Pendek (1 - 3 Bulan):
-                        </strong>
-                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                          {recommendations.jangkaPendek.map((r, i) => (
-                            <li key={`jp-${i}`} className="leading-relaxed">{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="space-y-1.5 bg-indigo-50/50 p-3 rounded-xl border border-indigo-100">
-                        <strong className="text-indigo-900 font-bold flex items-center gap-1.5">
-                          <Target className="w-4 h-4 text-indigo-600" /> Prioritas Jangka Menengah (3 - 6 Bulan):
-                        </strong>
-                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                          {recommendations.jangkaMenengah.map((r, i) => (
-                            <li key={`jm-${i}`} className="leading-relaxed">{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                        <strong className="text-slate-900 font-bold flex items-center gap-1.5">
-                          <Award className="w-4 h-4 text-slate-600" /> Prioritas Jangka Panjang (6 - 12 Bulan):
-                        </strong>
-                        <ul className="list-disc pl-5 space-y-1 text-slate-700">
-                          {recommendations.jangkaPanjang.map((r, i) => (
-                            <li key={`jpan-${i}`} className="leading-relaxed">{r}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 22 dari 23</span>
-              </div>
-            </div>
-          </div>
-
-          {/* LEMBAR 13-C: Lembar Pengesahan */}
-          <div className="w-full flex flex-col items-center">
-            <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Lembar Pengesahan Laporan</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
-
-                <section className="space-y-6 pt-4">
-                  <div className="text-center mb-8 space-y-1">
-                    <h2 className="text-xs font-black text-slate-500 tracking-widest uppercase">LEMBAR PENGESAHAN</h2>
-                    <h2 className="text-sm font-black text-teal-850 uppercase tracking-wide">LAPORAN HASIL SURVEI BUDAYA KESELAMATAN PASIEN</h2>
-                    <div className="h-0.5 w-16 bg-teal-600 mx-auto mt-2"></div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-3 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Rekomendasi & Pengesahan Laporan</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <p className="text-[11.5px] leading-relaxed text-slate-700 text-justify px-4">
-                    Laporan Hasil Survei Budaya Keselamatan Pasien (AHRQ Patient Safety Culture Survey v2.0) di <strong>{activeHospitalName}</strong> untuk periode survei tahun <strong>{tahunSurvei}</strong> telah disusun secara objektif, divalidasi oleh Komite Mutu, dan disetujui untuk diarsipkan serta digunakan sebagai instrumen acuan perencanaan program peningkatan mutu pelayanan dan keselamatan pasien (PMKP).
-                  </p>
+                  <section className="space-y-3">
+                    <div className="space-y-1.5">
+                      <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">4.2 Rekomendasi</h3>
+                      <p className="text-[10.5px] leading-relaxed text-slate-700 text-justify">
+                        Untuk menindaklanjuti temuan survei ini dan memperkuat budaya keselamatan pasien secara berkelanjutan, dirumuskan rekomendasi tindakan yang dapat diprioritaskan berdasarkan skala dampaknya:
+                      </p>
 
-                  <div className="pt-12 px-4">
-                    <p className="text-right text-[11px] text-slate-600 leading-relaxed font-semibold mb-8">
-                      {pengesahanConfig?.kota || 'Sukabumi'}, {pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                    <div className="grid grid-cols-2 gap-8 pt-4 text-center text-[10.5px]">
-                      <div className="space-y-16">
-                        <div>
-                          <p className="font-bold text-slate-800">Mengetahui,</p>
-                          <p className="font-bold text-slate-900">{pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit'}</p>
+                      <div className="space-y-2 pt-1 text-[10.5px]">
+                        <div className="space-y-1 bg-teal-50/50 p-2.5 rounded-xl border border-teal-100">
+                          <strong className="text-teal-900 font-bold flex items-center gap-1.5 text-[10.5px]">
+                            <Clock className="w-3.5 h-3.5 text-teal-600" /> Prioritas Jangka Pendek (1 - 3 Bulan):
+                          </strong>
+                          <ul className="list-disc pl-5 space-y-0.5 text-slate-700">
+                            {recommendations.jangkaPendek.map((r, i) => (
+                              <li key={`jp-${i}`} className="leading-relaxed">{r}</li>
+                            ))}
+                          </ul>
                         </div>
-                        <div>
-                          <p className="font-extrabold text-slate-900 underline">
-                            {pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya'}{pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama.includes(pengesahanConfig.direkturGelar) ? ", " + pengesahanConfig.direkturGelar : ''}
-                          </p>
-                          <p className="text-slate-500 font-medium">NIP/ID: {pengesahanConfig?.direkturNip || '19780512 200501 1 002'}</p>
-                        </div>
-                      </div>
 
-                      <div className="space-y-16">
-                        <div>
-                          <p className="font-bold text-slate-800">Disiapkan oleh,</p>
-                          <p className="font-bold text-slate-900">{pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien'}</p>
+                        <div className="space-y-1 bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100">
+                          <strong className="text-indigo-900 font-bold flex items-center gap-1.5 text-[10.5px]">
+                            <Target className="w-3.5 h-3.5 text-indigo-600" /> Prioritas Jangka Menengah (3 - 6 Bulan):
+                          </strong>
+                          <ul className="list-disc pl-5 space-y-0.5 text-slate-700">
+                            {recommendations.jangkaMenengah.map((r, i) => (
+                              <li key={`jm-${i}`} className="leading-relaxed">{r}</li>
+                            ))}
+                          </ul>
                         </div>
-                        <div>
-                          <p className="font-extrabold text-slate-900 underline">
-                            {pengesahanConfig?.pjNama || 'dr. Budi Santoso'}{pengesahanConfig?.pjGelar && !pengesahanConfig.pjNama.includes(pengesahanConfig.pjGelar) ? ", " + pengesahanConfig.pjGelar : ''}
-                          </p>
-                          <p className="text-slate-500 font-medium">NIP/ID: {pengesahanConfig?.pjNip || '19820315 200804 1 005'}</p>
+
+                        <div className="space-y-1 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                          <strong className="text-slate-900 font-bold flex items-center gap-1.5 text-[10.5px]">
+                            <Award className="w-3.5 h-3.5 text-slate-600" /> Prioritas Jangka Panjang (6 - 12 Bulan):
+                          </strong>
+                          <ul className="list-disc pl-5 space-y-0.5 text-slate-700">
+                            {recommendations.jangkaPanjang.map((r, i) => (
+                              <li key={`jpan-${i}`} className="leading-relaxed">{r}</li>
+                            ))}
+                          </ul>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </section>
-              </div>
 
-              {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 23 dari 23</span>
+                    {/* TANDA TANGAN & TANGGAL PENGESAHAN */}
+                    <div className="pt-3 border-t border-slate-200 mt-3">
+                      <div className="grid grid-cols-2 gap-6 text-center text-[10px] mb-2">
+                        <div></div>
+                        <p className="text-center text-[10.5px] text-slate-600 leading-relaxed font-semibold">
+                          {pengesahanConfig?.kota || 'Sukabumi'}, {pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-6 text-center text-[10px]">
+                        <div className="space-y-10">
+                          <div>
+                            <p className="font-bold text-slate-800">Mengetahui,</p>
+                            <p className="font-bold text-slate-900">{pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit'}</p>
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-slate-900 underline">
+                              {pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya'}{pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama.includes(pengesahanConfig.direkturGelar) ? ", " + pengesahanConfig.direkturGelar : ''}
+                            </p>
+                            <p className="text-slate-500 font-medium">NIP/ID: {pengesahanConfig?.direkturNip || '19780512 200501 1 002'}</p>
+                          </div>
+                        </div>
+
+                        <div className="space-y-10">
+                          <div>
+                            <p className="font-bold text-slate-800">Disusun oleh,</p>
+                            <p className="font-bold text-slate-900">{pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien'}</p>
+                          </div>
+                          <div>
+                            <p className="font-extrabold text-slate-900 underline">
+                              {pengesahanConfig?.pjNama || 'dr. Budi Santoso'}{pengesahanConfig?.pjGelar && !pengesahanConfig.pjNama.includes(pengesahanConfig.pjGelar) ? ", " + pengesahanConfig.pjGelar : ''}
+                            </p>
+                            <p className="text-slate-500 font-medium">NIP/ID: {pengesahanConfig?.pjNip || '19820315 200804 1 005'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 22 dari 22</span>
+                </div>
               </div>
             </div>
           </div>

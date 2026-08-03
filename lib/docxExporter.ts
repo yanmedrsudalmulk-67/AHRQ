@@ -516,7 +516,6 @@ export async function exportReportToDocx(data: ReportData) {
           bullet("• Total Sampling"),
           p("atau"),
           bullet("• Proportionate Stratified Random Sampling"),
-          p("(sesuai pengaturan aplikasi)."),
 
           heading3("Ukuran Sampel"),
           p("Target jumlah responden mengikuti rekomendasi AHRQ."),

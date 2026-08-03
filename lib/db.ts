@@ -8,6 +8,7 @@ export interface SurveyData {
   unitKerja: string;
   jumlahResponden: number;
   tanggalInput: string;
+  komentar?: string;
   dimensiScores: { [key: string]: any };
 }
 
@@ -102,16 +103,24 @@ export const isSurveyResponse = (s: any): boolean => {
   return true;
 };
 
-export const mapToSurveyData = (item: any): SurveyData => ({
-  id: item.id,
-  namaRs: item.nama_rs || item.namaRs || '',
-  unitKerja: item.unit_kerja || item.unitKerja || '',
-  jumlahResponden: item.jumlah_responden !== undefined ? item.jumlah_responden : (item.jumlahResponden !== undefined ? item.jumlahResponden : 0),
-  tanggalInput: item.tanggal_input || item.tanggalInput || '',
-  dimensiScores: typeof item.dimensi_scores === 'string' 
+export const mapToSurveyData = (item: any): SurveyData => {
+  const dimensiScores = typeof item.dimensi_scores === 'string' 
     ? JSON.parse(item.dimensi_scores) 
-    : (item.dimensi_scores || item.dimensiScores || {})
-});
+    : (item.dimensi_scores || item.dimensiScores || {});
+  
+  const raw = dimensiScores?._rawAnswers;
+  const commentText = item.komentar || item.bagian_h || item.bagianH || raw?.komentar || dimensiScores?.komentar || '';
+
+  return {
+    id: item.id,
+    namaRs: item.nama_rs || item.namaRs || '',
+    unitKerja: item.unit_kerja || item.unitKerja || '',
+    jumlahResponden: item.jumlah_responden !== undefined ? item.jumlah_responden : (item.jumlahResponden !== undefined ? item.jumlahResponden : 0),
+    tanggalInput: item.tanggal_input || item.tanggalInput || '',
+    komentar: commentText,
+    dimensiScores
+  };
+};
 
 export const mapToHospitalAccount = (item: any): HospitalAccount => {
   let alamat = item.alamat_rs || item.alamatRs || '';

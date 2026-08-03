@@ -1261,22 +1261,30 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   const hospitalComments = useMemo(() => {
     const list: { id: string; text: string; unit: string; position: string; date: string }[] = [];
-    hospitalSurveys.forEach(survey => {
+    const filteredSurveys = tahun1 && tahun1 !== 'Semua Tahun'
+      ? hospitalSurveys.filter(s => {
+          const raw = (s.dimensiScores as any)?._rawAnswers;
+          const yr = raw?.tahun_input || (s.tanggalInput ? new Date(s.tanggalInput).getFullYear() : null);
+          return !yr || String(yr) === String(tahun1);
+        })
+      : hospitalSurveys;
+
+    filteredSurveys.forEach(survey => {
       const raw = (survey.dimensiScores as any)?._rawAnswers;
-      const text = raw?.komentar || (survey as any).komentar || (survey.dimensiScores as any)?.komentar || '';
+      const text = (survey as any).komentar || raw?.komentar || (survey.dimensiScores as any)?.komentar || '';
       if (text && text.trim().length > 0) {
         list.push({
           id: survey.id,
           text: text.trim(),
-          unit: survey.unitKerja || 'Umum',
+          unit: raw?.unitKerja || survey.unitKerja || 'Umum',
           position: raw?.posisiStaf || 'Tenaga Kesehatan',
-          date: survey.tanggalInput || 'Juli 2026'
+          date: survey.tanggalInput || new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })
         });
       }
     });
 
-    return list;
-  }, [hospitalSurveys]);
+    return list.reverse();
+  }, [hospitalSurveys, tahun1]);
 
   const positionDimensionScores = useMemo(() => {
     return Object.keys(DIMENSI_INFO).map(dimId => {
