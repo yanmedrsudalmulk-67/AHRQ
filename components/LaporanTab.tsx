@@ -1861,10 +1861,10 @@ export default function LaporanTab({
             min-height: 210mm !important;
             height: 210mm !important;
             max-height: 210mm !important;
-            padding-top: 2cm !important;
-            padding-bottom: 2cm !important;
-            padding-left: 2.5cm !important;
-            padding-right: 2.5cm !important;
+            padding-top: 1.5cm !important;
+            padding-bottom: 1.5cm !important;
+            padding-left: 1.5cm !important;
+            padding-right: 1.5cm !important;
           }
           .print-page.cover-page {
             padding-top: 0 !important;
@@ -1922,10 +1922,10 @@ export default function LaporanTab({
           height: 210mm !important;
           min-height: 210mm !important;
           max-height: 210mm !important;
-          padding-top: 2cm !important;
-          padding-bottom: 2cm !important;
-          padding-left: 0 !important;
-          padding-right: 0 !important;
+          padding-top: 1.5cm !important;
+          padding-bottom: 1.5cm !important;
+          padding-left: 1.5cm !important;
+          padding-right: 1.5cm !important;
         }
       ` }} />
 
@@ -2592,9 +2592,9 @@ export default function LaporanTab({
                       <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
                         <table className="w-full text-left border-collapse">
                           <thead>
-                            <tr className="bg-gradient-to-r from-[#14B8A6] via-[#0F766E] to-[#0A3335] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
-                              <th className="p-2 border-r border-white/20">Karakteristik</th>
-                              <th className="p-2 border-r border-white/20">Kategori / Detail</th>
+                            <tr className="bg-[#14B8A6] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                              <th className="p-2 border-r border-white/20 text-center">Karakteristik</th>
+                              <th className="p-2 border-r border-white/20 text-center">Kategori / Detail</th>
                               <th className="p-2 border-r border-white/20 text-center">Jumlah (n)</th>
                               <th className="p-2 text-center">Persentase (%)</th>
                             </tr>
@@ -3729,73 +3729,75 @@ export default function LaporanTab({
           {/* LEMBAR 10: 3.2.5 Perbandingan berdasarkan Profesi */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page word-page-landscape print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Demografis & Komparatif (Profesi)</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-1 mb-2 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Analisis Demografis & Komparatif (Profesi)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-2">
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                        <Briefcase className="w-3.5 h-3.5 text-indigo-600" />
+                        3.2.5 Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Karakteristik Demografis
+                      </h4>
+                      <p className="text-[9px] text-slate-500 mt-0.5 leading-relaxed text-justify">
+                        Budaya keselamatan pasien bersifat heterogen dan dapat dirasakan berbeda antar profesi, unit pelayanan, maupun lama masa bakti staf. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan posisi staf (profesi) di <strong>{activeHospitalName}</strong>:
+                      </p>
+                    </div>
+
+                    {/* A. Berdasarkan Profesi (Posisi Staf) */}
+                    <div className="space-y-1">
+                      <h5 className="text-[9.5px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50/85 p-1 rounded-md border border-slate-100">
+                        <span className="w-1.5 h-3 bg-indigo-600 rounded-sm"></span>
+                        A. Perbandingan Dimensi Berdasarkan Posisi Staf (Profesi)
+                      </h5>
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table className="w-full text-left border-collapse text-[7.5px]">
+                          <thead>
+                            <tr className="bg-indigo-900 text-white font-extrabold text-[7.5px] uppercase border-b border-indigo-950">
+                              <th className="p-1 border-r border-indigo-800 w-8 text-center">No</th>
+                              <th className="p-1 border-r border-indigo-800 min-w-[140px]">Dimensi Budaya Keselamatan</th>
+                              {demografiStats.posisiData.slice(0, 6).map(pos => (
+                                <th key={pos.name} className="p-1 text-center border-r border-indigo-800 min-w-[70px]">
+                                  {pos.name} <span className="font-mono font-normal block text-[6.5px] text-indigo-200">(N={pos.value})</span>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
+                            {Object.keys(DIMENSI_INFO).map((dimId, idx) => {
+                              const info = DIMENSI_INFO[dimId];
+                              const scoreObj = positionDimensionScores.find(s => s.id === dimId);
+                              return (
+                                <tr key={dimId} className="hover:bg-slate-50/40">
+                                  <td className="p-1 border-r border-slate-100 text-center font-bold text-indigo-700">{idx + 1}</td>
+                                  <td className="p-1 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
+                                  {demografiStats.posisiData.slice(0, 6).map(pos => {
+                                    const val = scoreObj ? scoreObj[pos.name] : null;
+                                    return (
+                                      <td key={pos.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
+                                        {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
                 </div>
 
-                <section className="space-y-4">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-indigo-600" />
-                      3.2.5 Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Karakteristik Demografis
-                    </h4>
-                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
-                      Budaya keselamatan pasien bersifat heterogen dan dapat dirasakan berbeda antar profesi, unit pelayanan, maupun lama masa bakti staf. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan posisi staf (profesi) di <strong>{activeHospitalName}</strong>:
-                    </p>
-                  </div>
-
-                  {/* A. Berdasarkan Profesi (Posisi Staf) */}
-                  <div className="space-y-1.5">
-                    <h5 className="text-[10px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                      <span className="w-1.5 h-3 bg-indigo-600 rounded-sm"></span>
-                      A. Perbandingan Dimensi Berdasarkan Posisi Staf (Profesi)
-                    </h5>
-                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="w-full text-left border-collapse text-[8.5px]">
-                        <thead>
-                          <tr className="bg-indigo-900 text-white font-extrabold text-[8px] uppercase border-b border-indigo-950">
-                            <th className="p-1.5 border-r border-indigo-800 w-10 text-center">No</th>
-                            <th className="p-1.5 border-r border-indigo-800 min-w-[140px]">Dimensi Budaya Keselamatan</th>
-                            {demografiStats.posisiData.slice(0, 6).map(pos => (
-                              <th key={pos.name} className="p-1.5 text-center border-r border-indigo-800 min-w-[70px]">
-                                {pos.name} <span className="font-mono font-normal block text-[7px] text-indigo-200">(N={pos.value})</span>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
-                          {Object.keys(DIMENSI_INFO).map((dimId, idx) => {
-                            const info = DIMENSI_INFO[dimId];
-                            const scoreObj = positionDimensionScores.find(s => s.id === dimId);
-                            return (
-                              <tr key={dimId} className="hover:bg-slate-50/40">
-                                <td className="p-1.5 border-r border-slate-100 text-center font-bold text-indigo-700">{idx + 1}</td>
-                                <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
-                                {demografiStats.posisiData.slice(0, 6).map(pos => {
-                                  const val = scoreObj ? scoreObj[pos.name] : null;
-                                  return (
-                                    <td key={pos.name} className="p-1.5 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
-                                      {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 15 dari 22</span>
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-1.5 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 15 dari 22</span>
+                </div>
               </div>
             </div>
           </div>
@@ -3803,73 +3805,75 @@ export default function LaporanTab({
           {/* LEMBAR 10-B: 3.2.5-B Perbandingan berdasarkan Unit Kerja */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page word-page-landscape print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Demografis & Komparatif (Unit Kerja)</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-1 mb-2 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Analisis Demografis & Komparatif (Unit Kerja)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-2">
+                    <div>
+                      <h4 className="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                        <LayoutDashboard className="w-3.5 h-3.5 text-teal-600" />
+                        3.2.5-B Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Unit Kerja (Top 6)
+                      </h4>
+                      <p className="text-[9px] text-slate-500 mt-0.5 leading-relaxed text-justify">
+                        Analisis tingkat unit pelayanan membantu pimpinan rumah sakit memetakan disparitas iklim keselamatan secara spesifik. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan 6 Unit Kerja terbesar di <strong>{activeHospitalName}</strong>:
+                      </p>
+                    </div>
+
+                    {/* B. Berdasarkan Unit Kerja */}
+                    <div className="space-y-1">
+                      <h5 className="text-[9.5px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50/85 p-1 rounded-md border border-slate-100">
+                        <span className="w-1.5 h-3 bg-teal-600 rounded-sm"></span>
+                        B. Perbandingan Dimensi Berdasarkan Unit Kerja (Top 6 Unit Terbesar)
+                      </h5>
+                      <div className="overflow-x-auto border border-slate-200 rounded-xl">
+                        <table className="w-full text-left border-collapse text-[7.5px]">
+                          <thead>
+                            <tr className="bg-teal-800 text-white font-extrabold text-[7.5px] uppercase border-b border-teal-900">
+                              <th className="p-1 border-r border-teal-700 w-8 text-center">No</th>
+                              <th className="p-1 border-r border-teal-700 min-w-[140px]">Dimensi Budaya Keselamatan</th>
+                              {demografiStats.unitData.slice(0, 6).map(u => (
+                                <th key={u.name} className="p-1 text-center border-r border-teal-700 min-w-[70px]">
+                                  {u.name} <span className="font-mono font-normal block text-[6.5px] text-teal-200">(N={u.value})</span>
+                                </th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
+                            {Object.keys(DIMENSI_INFO).map((dimId, idx) => {
+                              const info = DIMENSI_INFO[dimId];
+                              const scoreObj = unitDimensionScores.find(s => s.id === dimId);
+                              return (
+                                <tr key={dimId} className="hover:bg-slate-50/40">
+                                  <td className="p-1 border-r border-slate-100 text-center font-bold text-teal-700">{idx + 1}</td>
+                                  <td className="p-1 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
+                                  {demografiStats.unitData.slice(0, 6).map(u => {
+                                    const val = scoreObj ? scoreObj[u.name] : null;
+                                    return (
+                                      <td key={u.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
+                                        {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </section>
                 </div>
 
-                <section className="space-y-4">
-                  <div>
-                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                      <LayoutDashboard className="w-4 h-4 text-teal-600" />
-                      3.2.5-B Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Unit Kerja (Top 6)
-                    </h4>
-                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
-                      Analisis tingkat unit pelayanan membantu pimpinan rumah sakit memetakan disparitas iklim keselamatan secara spesifik. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan 6 Unit Kerja terbesar di <strong>{activeHospitalName}</strong>:
-                    </p>
-                  </div>
-
-                  {/* B. Berdasarkan Unit Kerja */}
-                  <div className="space-y-1.5">
-                    <h5 className="text-[10px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
-                      <span className="w-1.5 h-3 bg-teal-600 rounded-sm"></span>
-                      B. Perbandingan Dimensi Berdasarkan Unit Kerja (Top 6 Unit Terbesar)
-                    </h5>
-                    <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="w-full text-left border-collapse text-[8.5px]">
-                        <thead>
-                          <tr className="bg-teal-800 text-white font-extrabold text-[8px] uppercase border-b border-teal-900">
-                            <th className="p-1.5 border-r border-teal-700 w-10 text-center">No</th>
-                            <th className="p-1.5 border-r border-teal-700 min-w-[140px]">Dimensi Budaya Keselamatan</th>
-                            {demografiStats.unitData.slice(0, 6).map(u => (
-                              <th key={u.name} className="p-1.5 text-center border-r border-teal-700 min-w-[70px]">
-                                {u.name} <span className="font-mono font-normal block text-[7px] text-teal-200">(N={u.value})</span>
-                              </th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
-                          {Object.keys(DIMENSI_INFO).map((dimId, idx) => {
-                            const info = DIMENSI_INFO[dimId];
-                            const scoreObj = unitDimensionScores.find(s => s.id === dimId);
-                            return (
-                              <tr key={dimId} className="hover:bg-slate-50/40">
-                                <td className="p-1.5 border-r border-slate-100 text-center font-bold text-teal-700">{idx + 1}</td>
-                                <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
-                                {demografiStats.unitData.slice(0, 6).map(u => {
-                                  const val = scoreObj ? scoreObj[u.name] : null;
-                                  return (
-                                    <td key={u.name} className="p-1.5 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
-                                      {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
-                                    </td>
-                                  );
-                                })}
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </section>
-              </div>
-
-              {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 16 dari 22</span>
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-1.5 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 16 dari 22</span>
+                </div>
               </div>
             </div>
           </div>
