@@ -1337,9 +1337,28 @@ export default function LaporanTab({
           windowWidth: targetWidthPx,
           windowHeight: targetHeightPx,
           scrollX: 0,
-          scrollY: 0,
-          onclone: (clonedDoc) => {
-            // A. Reset print container styles in clonedDoc
+              onclone: (clonedDoc) => {
+            // A. Inject global overrides into cloned document
+            const pdfOverrideStyle = clonedDoc.createElement('style');
+            pdfOverrideStyle.textContent = `
+              * {
+                transition: none !important;
+                animation: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                box-sizing: border-box !important;
+              }
+              .word-page {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                margin: 0 auto !important;
+                transform: none !important;
+              }
+            `;
+            clonedDoc.head.appendChild(pdfOverrideStyle);
+
+            // B. Reset print container styles in clonedDoc
             const printArea = clonedDoc.querySelector('#print-area') as HTMLElement;
             if (printArea) {
               printArea.style.transform = 'none';
@@ -1349,7 +1368,7 @@ export default function LaporanTab({
               printArea.style.maxWidth = 'none';
             }
 
-            // B. Clean up page borders, margins, and transforms on cloned pages
+            // C. Clean up page borders, margins, and transforms on cloned pages
             const clonedPageEls = clonedDoc.querySelectorAll('.word-page');
             clonedPageEls.forEach((p) => {
               const el = p as HTMLElement;
@@ -1373,11 +1392,39 @@ export default function LaporanTab({
                 el.style.minWidth = '210mm';
                 el.style.minHeight = '297mm';
                 el.style.maxWidth = '210mm';
-                el.style.maxHeight = '210mm';
+                el.style.maxHeight = '297mm';
               }
             });
 
-            // C. Sanitize <style> tags in cloned document without deleting rules
+            // D. Force progress bar segments and labels centering
+            const progressSegments = clonedDoc.querySelectorAll('.bg-emerald-500, .bg-yellow-500, .bg-rose-500');
+            progressSegments.forEach((seg) => {
+              const htmlSeg = seg as HTMLElement;
+              htmlSeg.style.display = 'flex';
+              htmlSeg.style.alignItems = 'center';
+              htmlSeg.style.justifyContent = 'center';
+              htmlSeg.style.lineHeight = '1';
+              htmlSeg.style.height = '100%';
+              htmlSeg.style.overflow = 'hidden';
+              htmlSeg.style.transition = 'none';
+            });
+
+            const progressSpans = clonedDoc.querySelectorAll('.bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span');
+            progressSpans.forEach((sp) => {
+              const htmlSp = sp as HTMLElement;
+              htmlSp.style.display = 'inline-flex';
+              htmlSp.style.alignItems = 'center';
+              htmlSp.style.justifyContent = 'center';
+              htmlSp.style.lineHeight = '1';
+              htmlSp.style.fontSize = '8.5px';
+              htmlSp.style.fontWeight = '800';
+              htmlSp.style.color = '#ffffff';
+              htmlSp.style.margin = '0';
+              htmlSp.style.padding = '0 2px';
+              htmlSp.style.whiteSpace = 'nowrap';
+            });
+
+            // E. Sanitize <style> tags in cloned document without deleting rules
             const styleElements = clonedDoc.querySelectorAll('style');
             styleElements.forEach((styleEl) => {
               if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
@@ -1385,7 +1432,7 @@ export default function LaporanTab({
               }
             });
 
-            // D. Replace inline style modern colors
+            // F. Replace inline style modern colors
             const allNodes = clonedDoc.querySelectorAll('*');
             allNodes.forEach((node) => {
               const htmlNode = node as HTMLElement;
@@ -3251,24 +3298,24 @@ export default function LaporanTab({
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   {/* Running Header */}
-                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="border-b border-slate-200 pb-2 mb-3.5 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                     <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 1)</span>
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-4">
+                  <section className="space-y-3.5">
                     <div>
                       <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                        <BarChart2 className="w-4 h-4 text-indigo-600" />
-                        3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi Budaya Keselamatan Pasien
+                        <BarChart2 className="w-4 h-4 text-indigo-600 shrink-0" />
+                        <span>3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi Budaya Keselamatan Pasien</span>
                       </h4>
-                      <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
+                      <p className="text-[9.5px] text-slate-500 mt-1 leading-relaxed text-justify">
                         Berikut merupakan rincian persentase respon positif staf rumah sakit <strong>{activeHospitalName}</strong> untuk setiap item pernyataan dalam kuesioner AHRQ SOPS® Version 2.0 pada tahun <strong>{tahunSurvei}</strong>. Data dikelompokkan secara terstruktur berdasarkan dimensi budaya keselamatan pasien masing-masing:
                       </p>
                     </div>
 
                     {/* Detailed Item Cards */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {DIMENSION_ORDER.slice(0, 2).map((dimId, sliceIndex) => {
                         const index = sliceIndex;
                         const dimInfo = DIMENSI_INFO[dimId];
@@ -3289,47 +3336,47 @@ export default function LaporanTab({
                             className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
                           >
                             {/* Card Header */}
-                            <div className="p-3 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                            <div className="p-2.5 bg-slate-50/80 border-b border-slate-200 relative flex items-center gap-2.5">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
-                              <div className="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
-                                <span className="text-xs font-black text-indigo-600">{index + 1}</span>
+                              <div className="w-[26px] h-[26px] min-w-[26px] bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-[11px] font-black text-indigo-600 leading-none">{index + 1}</span>
                               </div>
-                              <div>
-                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
-                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight leading-snug">{dimInfo.nama}</h3>
+                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal mt-0.5">{dimInfo.deskripsi}</p>
                               </div>
                             </div>
 
                             {/* Questions List */}
-                            <div className="p-3 space-y-3">
-                              <div className="space-y-3">
+                            <div className="p-2.5 space-y-2">
+                              <div className="space-y-2">
                                 {qStats.map(({ q, stat }) => (
                                   <div key={q.id} className="flex flex-col gap-1">
                                     {/* Question Code & Text */}
-                                    <div className="flex gap-2">
-                                      <span className="text-[10px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
-                                      <p className="text-[10px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    <div className="flex items-start gap-2">
+                                      <span className="w-9 shrink-0 text-[10px] font-black text-indigo-600 leading-snug">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[10px] font-bold text-slate-700 leading-snug flex-1">{q.text}</p>
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                    <div className="h-[18px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
                                       <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
                                         style={{ width: `${stat.posPercent}%` }}
                                       >
-                                        {stat.posPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.posPercent}%</span>}
+                                        {stat.posPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.neuPercent}%` }}
                                       >
-                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.neuPercent}%</span>}
+                                        {stat.neuPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.negPercent}%` }}
                                       >
-                                        {stat.negPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.negPercent}%</span>}
+                                        {stat.negPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -3338,15 +3385,15 @@ export default function LaporanTab({
                             </div>
 
                             {/* Summary Footer */}
-                            <div className="bg-slate-50/50 p-2.5 border-t border-slate-200 flex justify-between items-center">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
-                                <span className="text-sm font-black text-slate-800">{avgPosPercent}%</span>
-                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                            <div className="bg-slate-50/60 px-3 py-2 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[8.5px] text-slate-400 font-extrabold uppercase leading-none shrink-0">RESPON POSITIF:</span>
+                                <span className="text-[13px] font-black text-slate-800 leading-none">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase leading-none flex items-center justify-center shrink-0`}>
                                   {status.label}
                                 </div>
                               </div>
-                              <span className="text-[9px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                              <span className="text-[9px] font-bold text-slate-500 text-right leading-none shrink-0">Benchmark: 72.0% - 85.0%</span>
                             </div>
                           </div>
                         );
@@ -3370,14 +3417,14 @@ export default function LaporanTab({
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   {/* Running Header */}
-                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="border-b border-slate-200 pb-2 mb-3.5 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                     <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 2)</span>
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-4">
+                  <section className="space-y-3">
                     {/* Detailed Item Cards */}
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {DIMENSION_ORDER.slice(2, 4).map((dimId, sliceIndex) => {
                         const index = sliceIndex + 2;
                         const dimInfo = DIMENSI_INFO[dimId];
@@ -3398,47 +3445,47 @@ export default function LaporanTab({
                             className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
                           >
                             {/* Card Header */}
-                            <div className="p-3 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                            <div className="p-2.5 bg-slate-50/80 border-b border-slate-200 relative flex items-center gap-2.5">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
-                              <div className="w-7 h-7 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
-                                <span className="text-xs font-black text-indigo-600">{index + 1}</span>
+                              <div className="w-[26px] h-[26px] min-w-[26px] bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-[11px] font-black text-indigo-600 leading-none">{index + 1}</span>
                               </div>
-                              <div>
-                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
-                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight leading-snug">{dimInfo.nama}</h3>
+                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal mt-0.5">{dimInfo.deskripsi}</p>
                               </div>
                             </div>
 
                             {/* Questions List */}
-                            <div className="p-3 space-y-3">
-                              <div className="space-y-3">
+                            <div className="p-2.5 space-y-2">
+                              <div className="space-y-2">
                                 {qStats.map(({ q, stat }) => (
                                   <div key={q.id} className="flex flex-col gap-1">
                                     {/* Question Code & Text */}
-                                    <div className="flex gap-2">
-                                      <span className="text-[10px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
-                                      <p className="text-[10px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    <div className="flex items-start gap-2">
+                                      <span className="w-9 shrink-0 text-[10px] font-black text-indigo-600 leading-snug">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[10px] font-bold text-slate-700 leading-snug flex-1">{q.text}</p>
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                    <div className="h-[18px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
                                       <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
                                         style={{ width: `${stat.posPercent}%` }}
                                       >
-                                        {stat.posPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.posPercent}%</span>}
+                                        {stat.posPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.neuPercent}%` }}
                                       >
-                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.neuPercent}%</span>}
+                                        {stat.neuPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.negPercent}%` }}
                                       >
-                                        {stat.negPercent >= 8 && <span className="text-[8px] font-black text-white">{stat.negPercent}%</span>}
+                                        {stat.negPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -3447,15 +3494,15 @@ export default function LaporanTab({
                             </div>
 
                             {/* Summary Footer */}
-                            <div className="bg-slate-50/50 p-2.5 border-t border-slate-200 flex justify-between items-center">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
-                                <span className="text-sm font-black text-slate-800">{avgPosPercent}%</span>
-                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                            <div className="bg-slate-50/60 px-3 py-2 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[8.5px] text-slate-400 font-extrabold uppercase leading-none shrink-0">RESPON POSITIF:</span>
+                                <span className="text-[13px] font-black text-slate-800 leading-none">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase leading-none flex items-center justify-center shrink-0`}>
                                   {status.label}
                                 </div>
                               </div>
-                              <span className="text-[9px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                              <span className="text-[9px] font-bold text-slate-500 text-right leading-none shrink-0">Benchmark: 72.0% - 85.0%</span>
                             </div>
                           </div>
                         );
@@ -3479,14 +3526,14 @@ export default function LaporanTab({
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   {/* Running Header */}
-                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="border-b border-slate-200 pb-2 mb-3.5 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                     <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 3)</span>
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-2.5">
+                  <section className="space-y-3">
                     {/* Detailed Item Cards */}
-                    <div className="space-y-2.5">
+                    <div className="space-y-3">
                       {DIMENSION_ORDER.slice(4, 7).map((dimId, sliceIndex) => {
                         const index = sliceIndex + 4;
                         const dimInfo = DIMENSI_INFO[dimId];
@@ -3507,14 +3554,14 @@ export default function LaporanTab({
                             className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
                           >
                             {/* Card Header */}
-                            <div className="p-2.5 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-2.5">
+                            <div className="p-2.5 bg-slate-50/80 border-b border-slate-200 relative flex items-center gap-2.5">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
-                              <div className="w-6 h-6 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
-                                <span className="text-[10px] font-black text-indigo-600">{index + 1}</span>
+                              <div className="w-[26px] h-[26px] min-w-[26px] bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-[11px] font-black text-indigo-600 leading-none">{index + 1}</span>
                               </div>
-                              <div>
-                                <h3 className="text-[10px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
-                                <p className="text-[8px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-[11px] font-bold text-slate-800 tracking-tight leading-snug">{dimInfo.nama}</h3>
+                                <p className="text-[8.5px] text-slate-500 font-medium leading-normal mt-0.5">{dimInfo.deskripsi}</p>
                               </div>
                             </div>
 
@@ -3522,32 +3569,32 @@ export default function LaporanTab({
                             <div className="p-2.5 space-y-2">
                               <div className="space-y-2">
                                 {qStats.map(({ q, stat }) => (
-                                  <div key={q.id} className="flex flex-col gap-0.5">
+                                  <div key={q.id} className="flex flex-col gap-1">
                                     {/* Question Code & Text */}
-                                    <div className="flex gap-1.5">
-                                      <span className="text-[9.5px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
-                                      <p className="text-[9.5px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    <div className="flex items-start gap-2">
+                                      <span className="w-9 shrink-0 text-[10px] font-black text-indigo-600 leading-snug">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[10px] font-bold text-slate-700 leading-snug flex-1">{q.text}</p>
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-4 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                    <div className="h-[18px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
                                       <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
                                         style={{ width: `${stat.posPercent}%` }}
                                       >
-                                        {stat.posPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.posPercent}%</span>}
+                                        {stat.posPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.neuPercent}%` }}
                                       >
-                                        {stat.neuPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.neuPercent}%</span>}
+                                        {stat.neuPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.negPercent}%` }}
                                       >
-                                        {stat.negPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.negPercent}%</span>}
+                                        {stat.negPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -3556,15 +3603,15 @@ export default function LaporanTab({
                             </div>
 
                             {/* Summary Footer */}
-                            <div className="bg-slate-50/50 p-2 border-t border-slate-200 flex justify-between items-center">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
-                                <span className="text-xs font-black text-slate-800">{avgPosPercent}%</span>
-                                <div className={`px-2 py-0.5 rounded-full text-[7.5px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                            <div className="bg-slate-50/60 px-3 py-2 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-[8.5px] text-slate-400 font-extrabold uppercase leading-none shrink-0">RESPON POSITIF:</span>
+                                <span className="text-[13px] font-black text-slate-800 leading-none">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[8px] font-black border ${status.bg} ${status.color} ${status.border} uppercase leading-none flex items-center justify-center shrink-0`}>
                                   {status.label}
                                 </div>
                               </div>
-                              <span className="text-[8.5px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                              <span className="text-[9px] font-bold text-slate-500 text-right leading-none shrink-0">Benchmark: 72.0% - 85.0%</span>
                             </div>
                           </div>
                         );
@@ -3588,14 +3635,14 @@ export default function LaporanTab({
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   {/* Running Header */}
-                  <div className="border-b border-slate-200 pb-2 mb-3 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="border-b border-slate-200 pb-2 mb-3.5 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                     <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 4)</span>
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-2">
+                  <section className="space-y-2.5">
                     {/* Detailed Item Cards */}
-                    <div className="space-y-2">
+                    <div className="space-y-2.5">
                       {DIMENSION_ORDER.slice(7, 10).map((dimId, sliceIndex) => {
                         const index = sliceIndex + 7;
                         const dimInfo = DIMENSI_INFO[dimId];
@@ -3616,14 +3663,14 @@ export default function LaporanTab({
                             className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
                           >
                             {/* Card Header */}
-                            <div className="p-2 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-2">
+                            <div className="p-2 bg-slate-50/80 border-b border-slate-200 relative flex items-center gap-2">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
-                              <div className="w-5.5 h-5.5 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
-                                <span className="text-[9.5px] font-black text-indigo-600">{index + 1}</span>
+                              <div className="w-[24px] h-[24px] min-w-[24px] bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-[10px] font-black text-indigo-600 leading-none">{index + 1}</span>
                               </div>
-                              <div>
-                                <h3 className="text-[9.5px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
-                                <p className="text-[7.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="text-[10.5px] font-bold text-slate-800 tracking-tight leading-snug">{dimInfo.nama}</h3>
+                                <p className="text-[8px] text-slate-500 font-medium leading-normal mt-0.5">{dimInfo.deskripsi}</p>
                               </div>
                             </div>
 
@@ -3631,32 +3678,32 @@ export default function LaporanTab({
                             <div className="p-2 space-y-1.5">
                               <div className="space-y-1.5">
                                 {qStats.map(({ q, stat }) => (
-                                  <div key={q.id} className="flex flex-col gap-0.5">
+                                  <div key={q.id} className="flex flex-col gap-1">
                                     {/* Question Code & Text */}
-                                    <div className="flex gap-1.5">
-                                      <span className="text-[9px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
-                                      <p className="text-[9px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    <div className="flex items-start gap-1.5">
+                                      <span className="w-8 shrink-0 text-[9.5px] font-black text-indigo-600 leading-snug">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[9.5px] font-bold text-slate-700 leading-snug flex-1">{q.text}</p>
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-3.5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                    <div className="h-[16px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
                                       <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
+                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
                                         style={{ width: `${stat.posPercent}%` }}
                                       >
-                                        {stat.posPercent >= 8 && <span className="text-[7px] font-black text-white">{stat.posPercent}%</span>}
+                                        {stat.posPercent >= 8 && <span className="text-[8px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.neuPercent}%` }}
                                       >
-                                        {stat.neuPercent >= 8 && <span className="text-[7px] font-black text-white">{stat.neuPercent}%</span>}
+                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
                                       </div>
                                       <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
+                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
                                         style={{ width: `${stat.negPercent}%` }}
                                       >
-                                        {stat.negPercent >= 8 && <span className="text-[7px] font-black text-white">{stat.negPercent}%</span>}
+                                        {stat.negPercent >= 8 && <span className="text-[8px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -3665,15 +3712,15 @@ export default function LaporanTab({
                             </div>
 
                             {/* Summary Footer */}
-                            <div className="bg-slate-50/50 px-2 py-1 border-t border-slate-200 flex justify-between items-center">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-[7.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
-                                <span className="text-[11px] font-black text-slate-800">{avgPosPercent}%</span>
-                                <div className={`px-1.5 py-0.5 rounded-full text-[7px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                            <div className="bg-slate-50/60 px-2.5 py-1.5 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className="text-[8px] text-slate-400 font-extrabold uppercase leading-none shrink-0">RESPON POSITIF:</span>
+                                <span className="text-[12px] font-black text-slate-800 leading-none">{avgPosPercent}%</span>
+                                <div className={`px-2 py-0.5 rounded-full text-[7.5px] font-black border ${status.bg} ${status.color} ${status.border} uppercase leading-none flex items-center justify-center shrink-0`}>
                                   {status.label}
                                 </div>
                               </div>
-                              <span className="text-[8px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                              <span className="text-[8.5px] font-bold text-slate-500 text-right leading-none shrink-0">Benchmark: 72.0% - 85.0%</span>
                             </div>
                           </div>
                         );
@@ -3682,12 +3729,12 @@ export default function LaporanTab({
 
                     {/* Interpretasi & Analisa Data Card */}
                     {itemLevelStrengths.length > 0 && itemLevelWeaknesses.length > 0 && (
-                      <div className="bg-indigo-50/40 border border-indigo-100 p-2 rounded-xl space-y-0.5">
-                        <h5 className="text-[9.5px] font-bold text-indigo-900 flex items-center gap-1.5">
-                          <Sparkles className="w-3 h-3 text-indigo-600 shrink-0" />
+                      <div className="bg-indigo-50/40 border border-indigo-100 p-2 rounded-xl space-y-1">
+                        <h5 className="text-[10px] font-bold text-indigo-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
                           Interpretasi & Analisa Data Hasil Per Item
                         </h5>
-                        <p className="text-[8.5px] text-slate-700 leading-snug text-justify">
+                        <p className="text-[9px] text-slate-700 leading-snug text-justify">
                           Analisis mikro pada tingkat butir pernyataan (item) di <strong>{activeHospitalName}</strong> mengidentifikasi kekuatan utama terletak pada item <strong>{itemLevelStrengths[0].id}</strong> (&ldquo;{itemLevelStrengths[0].text}&rdquo;) dengan pencapaian respon positif sebesar <strong>{itemLevelStrengths[0].score.toFixed(1)}%</strong>, disusul oleh item <strong>{itemLevelStrengths[1].id}</strong> sebesar <strong>{itemLevelStrengths[1].score.toFixed(1)}%</strong>. 
                           Sebaliknya, kerentanan tertinggi diidentifikasi pada item <strong>{itemLevelWeaknesses[0].id}</strong> (&ldquo;{itemLevelWeaknesses[0].text}&rdquo;) yang hanya mengumpulkan respon positif sebesar <strong>{itemLevelWeaknesses[0].score.toFixed(1)}%</strong>, disusul item <strong>{itemLevelWeaknesses[1].id}</strong> sebesar <strong>{itemLevelWeaknesses[1].score.toFixed(1)}%</strong>.
                         </p>
@@ -3695,16 +3742,16 @@ export default function LaporanTab({
                     )}
 
                     {/* Rekomendasi Peningkatan */}
-                    <div className="bg-emerald-50/40 border border-emerald-100 p-2 rounded-xl space-y-0.5">
-                      <h5 className="text-[9.5px] font-bold text-emerald-900 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                    <div className="bg-emerald-50/40 border border-emerald-100 p-2 rounded-xl space-y-1">
+                      <h5 className="text-[10px] font-bold text-emerald-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                         Rekomendasi Strategis Berbasis Hasil Per Item
                       </h5>
-                      <div className="grid grid-cols-2 gap-1.5 text-[8px]">
+                      <div className="grid grid-cols-2 gap-1.5 text-[8.5px]">
                         {itemLevelWeaknesses.slice(0, 2).map((item, idx) => {
                           const icons = ['💡', '🛠️'];
                           return (
-                            <div key={item.id} className="flex items-start gap-1 bg-white p-1 rounded-lg border border-emerald-100/80">
+                            <div key={item.id} className="flex items-start gap-1 bg-white p-1.5 rounded-lg border border-emerald-100/80">
                               <span className="text-[10px] shrink-0">{icons[idx]}</span>
                               <span className="text-slate-700 font-medium leading-snug">
                                 Untuk item <strong>{item.id}</strong> ({item.score.toFixed(1)}%): Rancang panduan teknis operasional terpadu dan selenggarakan workshop penyamaan persepsi.

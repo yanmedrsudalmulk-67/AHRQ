@@ -44,6 +44,9 @@ import {
   Sparkles,
   MessageSquareOff,
   Lightbulb,
+  MessageSquare,
+  MessageCircle,
+  ThumbsUp,
   Settings,
   Rocket,
   Target,
@@ -54,6 +57,43 @@ import {
 } from 'recharts';
 import { SurveyData, getMasterBenchmark, getBenchmarkInteraksi, BenchmarkInteraksi, getMasterPosisi, PosisiStaff, DEFAULT_STAFF_POSITIONS } from '../lib/db';
 import { computeDimensionScores, DIMENSI_INFO, DIMENSI_ITEMS, scoreToPercent } from '../lib/scoring';
+
+export const isPositiveComment = (text: string): boolean => {
+  if (!text || typeof text !== 'string') return false;
+  const lower = text.toLowerCase().trim();
+
+  const negativePhrases = [
+    'tidak baik', 'kurang baik', 'kurang puas', 'buruk', 'jelek', 'kecewa', 'parah',
+    'lambat', 'cuek', 'marah', 'masih kurang', 'sangat kurang', 'tidak peduli', 'tidak ramah',
+    'tidak aman', 'tidak nyaman', 'kurang kompak', 'kurang solid', 'kurang koordinasi',
+    'kurang komunikasi', 'tidak adil', 'buruk sekali', 'kurang memuaskan', 'sangat mengecewakan',
+    'sangat buruk', 'kurang disiplin', 'tidak disiplin', 'kurang teratur', 'sulit', 'perselisihan'
+  ];
+
+  for (const neg of negativePhrases) {
+    if (lower.includes(neg)) {
+      return false;
+    }
+  }
+
+  const positiveKeywords = [
+    'baik', 'bagus', 'terbaik', 'puas', 'mantap', 'keren', 'apresiasi', 'terima kasih',
+    'terimakasih', 'makasih', 'dukung', 'mendukung', 'kompak', 'solid', 'ramah', 'aman',
+    'nyaman', 'disiplin', 'responsif', 'cepat', 'hebat', 'kooperatif', 'peduli', 'tingkatkan',
+    'pertahankan', 'lanjutkan', 'sesuai', 'efektif', 'harmonis', 'kekeluargaan', 'semangat',
+    'proaktif', 'teratur', 'tertib', 'transparan', 'luar biasa', 'senang', 'memuaskan',
+    'sudah baik', 'sangat baik', 'cukup baik', 'apresiasi tinggi', 'sangat bagus', 'kondusif',
+    'saling bantu', 'saling mendukung', 'penuh tanggung jawab', 'pilar', 'positif'
+  ];
+
+  for (const pos of positiveKeywords) {
+    if (lower.includes(pos)) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 const isDirectInteraction = (ans: any): boolean => {
   if (!ans) return true;
@@ -286,6 +326,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [tenureSubView, setTenureSubView] = useState<string | null>(null);
   const [interactionSubView, setInteractionSubView] = useState<string | null>(null);
   const [mode, setMode] = useState<'Tunggal' | 'Perbandingan'>('Tunggal');
+  const [commentFilter, setCommentFilter] = useState<'semua' | 'positif' | 'konstruktif'>('semua');
 
   // Benchmark Hospital Selection State
   const [selectedBenchmarkHospitalId, setSelectedBenchmarkHospitalId] = useState<string>(() => {
@@ -1287,7 +1328,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
     filteredSurveys.forEach(survey => {
       const raw = (survey.dimensiScores as any)?._rawAnswers;
-      const text = (survey as any).komentar || raw?.komentar || (survey.dimensiScores as any)?.komentar || '';
+      const text = (survey as any).komentar || raw?.komentar || raw?.bagian_h || raw?.bagianH || (survey.dimensiScores as any)?.komentar || '';
       if (text && text.trim().length > 0) {
         list.push({
           id: survey.id,
@@ -1301,6 +1342,35 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
     return list.reverse();
   }, [hospitalSurveys, tahun1]);
+
+  const classifiedComments = useMemo(() => {
+    return hospitalComments.map(c => {
+      const positive = isPositiveComment(c.text);
+      return {
+        ...c,
+        isPositive: positive,
+        category: positive ? 'Positif' : 'Saran/Konstruktif'
+      };
+    });
+  }, [hospitalComments]);
+
+  const positiveCommentsCount = useMemo(() => {
+    return classifiedComments.filter(c => c.isPositive).length;
+  }, [classifiedComments]);
+
+  const constructiveCommentsCount = useMemo(() => {
+    return classifiedComments.filter(c => !c.isPositive).length;
+  }, [classifiedComments]);
+
+  const filteredComments = useMemo(() => {
+    if (commentFilter === 'positif') {
+      return classifiedComments.filter(c => c.isPositive);
+    }
+    if (commentFilter === 'konstruktif') {
+      return classifiedComments.filter(c => !c.isPositive);
+    }
+    return classifiedComments;
+  }, [classifiedComments, commentFilter]);
 
   const positionDimensionScores = useMemo(() => {
     return Object.keys(DIMENSI_INFO).map(dimId => {
@@ -5262,38 +5332,151 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : (
                 <div className="w-full flex flex-col gap-6">
-                  <div className="flex flex-col md:flex-row items-center justify-end bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col md:flex-row items-center justify-between bg-white border border-slate-200 p-4 rounded-[20px] shadow-sm gap-4">
+                    <div>
+                      <h3 className="text-base font-extrabold text-slate-800 flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-indigo-600" />
+                        Komentar &amp; Umpan Balik Responden
+                      </h3>
+                      <p className="text-xs text-slate-500 mt-0.5">Analisis kualitatif komentar bebas responden dengan otomatisasi penyaringan komentar positif.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="text-sm font-semibold text-slate-600">Pilih Tahun:</span>
-                      <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-white border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-blue-500 outline-none w-32 cursor-pointer">
+                      <select value={tahun1} onChange={e => setTahun1(e.target.value)} className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 focus:border-indigo-500 outline-none w-32 cursor-pointer">
                         {allSelectableYears.map(y => <option key={y} value={y}>{y}</option>)}
                       </select>
                     </div>
                   </div>
 
+                  {/* Summary Metric Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                        <MessageSquare className="w-6 h-6 text-indigo-600" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Total Komentar Masuk</span>
+                        <span className="text-xl font-black text-slate-800">{classifiedComments.length}</span>
+                        <span className="text-xs text-slate-500 block">Responden Periode {tahun1}</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-200/80 shadow-2xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                        <ThumbsUp className="w-6 h-6 text-emerald-700" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider block">Komentar Positif (Terfilter)</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl font-black text-emerald-900">{positiveCommentsCount}</span>
+                          <span className="text-xs font-extrabold text-emerald-700">
+                            ({classifiedComments.length > 0 ? ((positiveCommentsCount / classifiedComments.length) * 100).toFixed(1) : 0}%)
+                          </span>
+                        </div>
+                        <span className="text-xs text-emerald-600 block">Apresiasi &amp; Persepsi Baik</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50/50 p-4 rounded-2xl border border-amber-200/80 shadow-2xs flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
+                        <Lightbulb className="w-6 h-6 text-amber-700" />
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider block">Saran &amp; Masukan Konstruktif</span>
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-xl font-black text-amber-900">{constructiveCommentsCount}</span>
+                          <span className="text-xs font-extrabold text-amber-700">
+                            ({classifiedComments.length > 0 ? ((constructiveCommentsCount / classifiedComments.length) * 100).toFixed(1) : 0}%)
+                          </span>
+                        </div>
+                        <span className="text-xs text-amber-600 block">Area Peluang Perbaikan</span>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
-                    <div className="border-b border-slate-100 pb-4">
-                      <h3 className="text-base font-bold text-slate-800">Masukan &amp; Saran Tertulis Responden</h3>
-                      <p className="text-slate-500 text-xs">Umpan balik kualitatif langsung dari lembar kuesioner bagian komentar bebas.</p>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-slate-100 pb-4 gap-3">
+                      <div>
+                        <h3 className="text-base font-bold text-slate-800">Daftar Masukan &amp; Saran Tertulis Responden</h3>
+                        <p className="text-slate-500 text-xs">Rincian tanggapan kualitatif dari responden {namaRs || 'Rumah Sakit'}.</p>
+                      </div>
+
+                      {/* Filter Toggle Buttons */}
+                      <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+                        <button
+                          onClick={() => setCommentFilter('semua')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                            commentFilter === 'semua'
+                              ? 'bg-white text-indigo-700 shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          Semua ({classifiedComments.length})
+                        </button>
+                        <button
+                          onClick={() => setCommentFilter('positif')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            commentFilter === 'positif'
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : 'text-emerald-700 hover:bg-emerald-50'
+                          }`}
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          Positif ({positiveCommentsCount})
+                        </button>
+                        <button
+                          onClick={() => setCommentFilter('konstruktif')}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            commentFilter === 'konstruktif'
+                              ? 'bg-amber-600 text-white shadow-xs'
+                              : 'text-amber-700 hover:bg-amber-50'
+                          }`}
+                        >
+                          Saran &amp; Masukan ({constructiveCommentsCount})
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                      {hospitalComments.length > 0 ? (
-                        hospitalComments.map((comment, index) => (
-                          <div key={comment.id || index} className="p-5 bg-slate-50 rounded-2xl border-l-4 border-slate-500 space-y-3 relative">
-                            <p className="text-sm italic font-medium text-slate-700 leading-relaxed">
+                      {filteredComments.length > 0 ? (
+                        filteredComments.map((comment, index) => (
+                          <div 
+                            key={comment.id || index} 
+                            className={`p-5 rounded-2xl space-y-3 relative transition-all border-l-4 ${
+                              comment.isPositive 
+                                ? 'bg-emerald-50/40 border-emerald-500 border-t border-r border-b border-emerald-100/60' 
+                                : 'bg-slate-50 border-slate-400 border-t border-r border-b border-slate-200/60'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              {comment.isPositive ? (
+                                <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                                  <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                  Komentar Positif (Terfilter)
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1.5 bg-slate-200 text-slate-700 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border border-slate-300">
+                                  <MessageCircle className="w-3 h-3 text-slate-500" />
+                                  Saran &amp; Masukan Konstruktif
+                                </span>
+                              )}
+                              <span className="text-[10px] text-slate-400 font-medium">{comment.date}</span>
+                            </div>
+
+                            <p className="text-sm italic font-medium text-slate-800 leading-relaxed">
                               &ldquo;{comment.text}&rdquo;
                             </p>
-                            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-slate-400 border-t border-slate-200/40 pt-2">
-                              <span className="text-slate-600 px-2 py-0.5 bg-slate-200/50 rounded-md truncate max-w-[200px]">
-                                {comment.position}
-                              </span>
-                              <span className="text-slate-500 font-medium">
-                                {comment.unit}
-                              </span>
-                              <span className="font-medium shrink-0">
-                                {comment.date}
-                              </span>
+
+                            <div className="flex flex-wrap items-center justify-between gap-2 text-[10px] font-bold text-slate-500 border-t border-slate-200/50 pt-2.5">
+                              <div className="flex items-center gap-2">
+                                <span className="text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 truncate max-w-[200px]">
+                                  {comment.position}
+                                </span>
+                                <span className="text-teal-700 bg-teal-50 px-2 py-0.5 rounded-md border border-teal-100">
+                                  {comment.unit}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         ))
@@ -5301,18 +5484,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col items-center gap-3">
                           <MessageSquareOff className="w-10 h-10 text-slate-300" />
                           <div>
-                            <p className="font-bold text-slate-700">Tidak ada komentar</p>
-                            <p className="text-xs mt-1">Belum ada saran atau masukan tertulis dari responden pada periode ini.</p>
+                            <p className="font-bold text-slate-700">Tidak ada komentar pada kategori ini</p>
+                            <p className="text-xs mt-1">Belum ada tanggapan responden untuk kriteria filter yang dipilih.</p>
                           </div>
                         </div>
                       )}
                     </div>
 
                     <DynamicAIAnalysisCards namaRs={namaRs} selectedBenchmarkHospitalId={selectedBenchmarkHospitalId}
-                      type="hospital-reported"
+                      type="hospital-comments"
                       tahun1={tahun1}
                       hospitalSurveys={hospitalSurveys}
-                      reportedEventsComparisonStats={reportedEventsComparisonStats}
+                      hospitalComments={classifiedComments}
                     />
 
                   </div>
@@ -8671,6 +8854,7 @@ interface DynamicAIAnalysisCardsProps {
   demografiStats?: any;
   e1Stats?: any[];
   reportedEventsComparisonStats?: any;
+  hospitalComments?: any[];
   activeBenchmarkLabel?: string;
   selectedBenchmarkHospitalId?: string;
   masterBenchmarkData?: any;
@@ -8704,6 +8888,7 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
   demografiStats = {},
   e1Stats = [],
   reportedEventsComparisonStats = {},
+  hospitalComments = [],
   activeBenchmarkLabel = "RS Pembanding",
   selectedBenchmarkHospitalId = "default",
   masterBenchmarkData = {}
@@ -8956,6 +9141,75 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
         { text: "Sederhanakan proses pengisian formulir laporan insiden menjadi digital yang dapat diselesaikan dalam waktu kurang dari 3 menit.", icon: "📱" },
         { text: "Berikan penghargaan bulanan berupa 'Safety Reporter Award' bagi unit yang paling aktif melaporkan insiden keselamatan.", icon: "🏆" },
         { text: "Lakukan sosialisasi berkala mengenai alur dan kriteria Kejadian Nyaris Cedera (KNC) yang wajib dilaporkan.", icon: "📢" }
+      ];
+      break;
+    }
+
+    case 'hospital-comments': {
+      const commentsList = hospitalComments || [];
+      const totalComments = commentsList.length;
+      const positiveList = commentsList.filter((c: any) => c.isPositive || (c.text && isPositiveComment(c.text)));
+      const positiveCount = positiveList.length;
+      const positivePercentage = totalComments > 0 ? (positiveCount / totalComments) * 100 : 0;
+      const constructiveCount = totalComments - positiveCount;
+
+      const posUnits: Record<string, number> = {};
+      const posPositions: Record<string, number> = {};
+      positiveList.forEach((c: any) => {
+        if (c.unit) posUnits[c.unit] = (posUnits[c.unit] || 0) + 1;
+        if (c.position) posPositions[c.position] = (posPositions[c.position] || 0) + 1;
+      });
+
+      const topPosUnit = Object.entries(posUnits).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unit Pelayanan';
+      const topPosPosition = Object.entries(posPositions).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Tenaga Kesehatan';
+
+      const sampleQuote = positiveList[0]?.text ? positiveList[0].text : '';
+
+      analysisText = (
+        <span className="space-y-3 block text-slate-700">
+          <span>
+            Berdasarkan analisis kualitatif dari total <strong>{totalComments}</strong> komentar responden pada survei budaya keselamatan pasien tahun <strong>{tahun1}</strong> di {namaRs || 'Rumah Sakit Anda'}, secara otomatis terfilter <strong>{positiveCount} komentar positif</strong> (<strong>{positivePercentage.toFixed(1)}%</strong> dari keseluruhan komentar). 
+            Apresiasi positif terbanyak disampaikan oleh staf dari kelompok posisi <strong>{topPosPosition}</strong> di <strong>{topPosUnit}</strong>, yang menyoroti aspek kekuatan seperti tingginya rasa kekeluargaan, kerjasama tim yang kompak, komunikasi yang suportif, serta komitmen pimpinan dalam menjaga keselamatan pasien.
+          </span>
+          {sampleQuote && (
+            <div className="p-3 bg-emerald-50/80 border border-emerald-200/80 rounded-xl text-xs text-emerald-900 italic font-medium">
+              &ldquo;Contoh kutipan positif responden: {sampleQuote}&rdquo;
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-white/70 p-3 rounded-xl border border-blue-100/50 text-center text-xs block mt-2">
+            <div className="p-2 rounded bg-slate-50 border border-slate-100">
+              <div className="text-slate-500 font-bold text-[10px]">Total Komentar Masuk</div>
+              <div className="text-sm font-black text-slate-800 mt-0.5">{totalComments} komentar</div>
+            </div>
+            <div className="p-2 rounded bg-emerald-50/80 border border-emerald-100">
+              <div className="text-emerald-700 font-bold text-[10px]">Komentar Positif (Terfilter)</div>
+              <div className="text-sm font-black text-emerald-800 mt-0.5">{positiveCount} ({positivePercentage.toFixed(1)}%)</div>
+            </div>
+            <div className="p-2 rounded bg-amber-50/80 border border-amber-100">
+              <div className="text-amber-700 font-bold text-[10px]">Saran &amp; Masukan</div>
+              <div className="text-sm font-black text-amber-800 mt-0.5">{constructiveCount} komentar</div>
+            </div>
+          </div>
+        </span>
+      );
+
+      recs = [
+        { 
+          text: `Pertahankan dan dokumentasikan praktik-praktik baik (best practices) yang telah diapresiasi oleh responden di unit "${topPosUnit}" untuk dijadikan percontohan di seluruh unit kerja ${namaRs || 'Rumah Sakit'}.`, 
+          icon: "🏆" 
+        },
+        { 
+          text: `Berikan bentuk penghargaan atau apresiasi (Safety Recognition) secara berkala kepada tim dan pimpinan unit yang berhasil mempertahankan persepsi iklim kerja positif.`, 
+          icon: "🌟" 
+        },
+        { 
+          text: `Manfaatkan poin-poin apresiasi dari ${positiveCount} komentar positif responden sebagai materi 'Success Story' dalam kegiatan Safety Briefing dan Nurse Huddles untuk membangun motivasi tim.`, 
+          icon: "📢" 
+        },
+        { 
+          text: `Sinergikan apresiasi positif staf dengan penyelesaian ${constructiveCount} masukan konstruktif guna menyempurnakan fasilitas, alur kerja, dan jaminan keselamatan secara berkelanjutan.`, 
+          icon: "🎯" 
+        }
       ];
       break;
     }
