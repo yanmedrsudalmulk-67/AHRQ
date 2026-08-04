@@ -77,6 +77,7 @@ export interface ReportData {
     direkturJabatan: string;
     direkturNip?: string;
   };
+  pageImages?: string[];
 }
 
 // Convert base64 data URL to Uint8Array for docx ImageRun

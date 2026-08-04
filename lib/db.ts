@@ -227,107 +227,72 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      if (hospitalId && hospitalId !== 'admin') {
-        // Resolve both UUID, username, and hospital_name
+      const { data, error } = await supabase
+        .from('ahrq_surveys')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data) {
+        const allSurveys = data.map(mapToSurveyData);
+
+        if (!hospitalId || hospitalId === 'admin') {
+          return allSurveys;
+        }
+
+        // Resolve target hospital account identifiers (UUID, username, and nama_rs)
         let uuid = hospitalId;
         let username = hospitalId;
         let hospitalNameResolved = hospitalId;
 
         try {
-          const { data: accounts, error: accErr } = await supabase
+          const { data: accounts } = await supabase
             .from('hospital_accounts')
-            .select('id, username, nama_rs')
-            .or(`id.eq."${hospitalId}",username.eq."${hospitalId}",nama_rs.eq."${hospitalId}"`)
-            .limit(1);
-
-          if (accErr && (accErr.message?.includes('Failed to fetch') || accErr.details?.includes('Failed to fetch'))) {
-            console.warn("Koneksi Supabase tidak dapat dijangkau (Failed to fetch). Mengembalikan data kosong.");
-            return [];
-          }
+            .select('id, username, nama_rs');
 
           if (accounts && accounts.length > 0) {
-            uuid = accounts[0].id;
-            username = accounts[0].username;
-            hospitalNameResolved = accounts[0].nama_rs || hospitalId;
+            const acc = accounts.find((a: any) => 
+              a.id === hospitalId || 
+              a.username === hospitalId || 
+              (a.nama_rs && a.nama_rs.toLowerCase() === hospitalId.toLowerCase())
+            );
+            if (acc) {
+              uuid = acc.id;
+              username = acc.username;
+              hospitalNameResolved = acc.nama_rs || hospitalId;
+            }
           }
-        } catch (err: any) {
-          if (err?.message?.includes('Failed to fetch') || err?.details?.includes('Failed to fetch')) {
-            console.warn("Koneksi Supabase tidak dapat dijangkau (Failed to fetch).");
-            return [];
-          }
-          console.warn("Gagal lookup hospital_accounts in getSurveys:", err);
+        } catch (accErr) {
+          console.warn("Account lookup in getSurveys warning:", accErr);
         }
 
-        try {
-          const { data, error } = await supabase
-            .from('ahrq_surveys')
-            .select('*')
-            .or(`hospital_id.eq."${uuid}",hospital_id.eq."${username}",user_id.eq."${uuid}",user_id.eq."${username}",created_by.eq."${uuid}",created_by.eq."${username}",dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",nama_rs.eq."${hospitalNameResolved}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}"`)
-            .order('created_at', { ascending: false });
+        const tUuidLower = (uuid || '').toLowerCase();
+        const tUsernameLower = (username || '').toLowerCase();
+        const tNameLower = (hospitalNameResolved || '').toLowerCase();
+        const inputIdLower = (hospitalId || '').toLowerCase();
 
-          if (!error && data) {
-            return data.map(mapToSurveyData);
-          }
-          if (error) {
-            if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
-              console.warn("Supabase ahrq_surveys query failed (Failed to fetch): Jaringan atau URL Supabase tidak dapat dijangkau.");
-              return [];
-            }
-            const isColError = error.code === '42703' || 
-                               error.code === 'PGRST204' ||
-                               error.message?.includes('column') || 
-                               error.message?.includes('does not exist') ||
-                               error.message?.includes('schema cache');
-            if (isColError) {
-              throw error;
-            }
-            if (error.code !== 'PGRST125' && error.code !== 'PGRST116') {
-              console.warn("Supabase ahrq_surveys query failed:", error.message || error);
-            }
-          }
-        } catch (innerErr: any) {
-          if (innerErr?.message?.includes('Failed to fetch') || innerErr?.details?.includes('Failed to fetch')) {
-            console.warn("Supabase ahrq_surveys query failed (Failed to fetch).");
-            return [];
-          }
-          // Fallback query using only JSONB dimensi_scores keys (always safe, won't cause 42703 / PGRST204)
-          try {
-            const { data, error } = await supabase
-              .from('ahrq_surveys')
-              .select('*')
-              .or(`dimensi_scores->>username.eq."${uuid}",dimensi_scores->>username.eq."${username}",dimensi_scores->>hospital_id.eq."${uuid}",dimensi_scores->>hospital_id.eq."${username}",dimensi_scores->>user_id.eq."${uuid}",dimensi_scores->>user_id.eq."${username}",unit_kerja.eq."${uuid}",unit_kerja.eq."${username}",dimensi_scores->>hospital_name.eq."${hospitalNameResolved}",nama_rs.eq."${hospitalNameResolved}"`)
-              .order('created_at', { ascending: false });
+        return allSurveys.filter((s: any) => {
+          if (!s) return false;
+          const hId = ((s.dimensiScores as any)?.hospital_id || (s as any).hospital_id || '').toString().toLowerCase();
+          const uId = ((s.dimensiScores as any)?.user_id || (s.dimensiScores as any)?.username || (s as any).user_id || '').toString().toLowerCase();
+          const cBy = ((s.dimensiScores as any)?.created_by || (s as any).created_by || '').toString().toLowerCase();
+          const rsName = (s.namaRs || (s.dimensiScores as any)?.hospital_name || '').toString().toLowerCase();
 
-            if (!error && data) {
-              return data.map(mapToSurveyData);
-            }
-            if (error && !error.message?.includes('Failed to fetch') && !error.details?.includes('Failed to fetch')) {
-              console.error("Fallback query failed:", error.message || error);
-            }
-          } catch (fbErr: any) {
-            if (!fbErr?.message?.includes('Failed to fetch')) {
-              console.warn("Fallback query error:", fbErr?.message || fbErr);
-            }
-          }
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('ahrq_surveys')
-          .select('*')
-          .order('created_at', { ascending: false });
+          return (
+            hId === tUuidLower || hId === tUsernameLower || hId === inputIdLower ||
+            uId === tUuidLower || uId === tUsernameLower || uId === inputIdLower ||
+            cBy === tUuidLower || cBy === tUsernameLower || cBy === inputIdLower ||
+            rsName === tNameLower || rsName === inputIdLower ||
+            (s.id && s.id.toString().toLowerCase() === inputIdLower)
+          );
+        });
+      }
 
-        if (!error && data) {
-          return data.map(mapToSurveyData);
+      if (error) {
+        if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
+          console.warn("Supabase ahrq_surveys query failed (Failed to fetch).");
+          return [];
         }
-        if (error) {
-          if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
-            console.warn("Supabase ahrq_surveys query failed (Failed to fetch): Jaringan atau URL Supabase tidak dapat dijangkau.");
-            return [];
-          }
-          if (error.code !== 'PGRST125' && error.code !== 'PGRST116') {
-            console.warn("Supabase ahrq_surveys query failed:", error.message || error);
-          }
-        }
+        console.warn("Supabase ahrq_surveys query failed:", error.message || error);
       }
     } catch (e: any) {
       if (!e?.message?.includes('Failed to fetch') && !e?.details?.includes('Failed to fetch')) {
@@ -817,7 +782,7 @@ export async function restoreHospitalAccount(id: string, performedBy: string, re
 
 export async function deleteHospitalAccountPermanently(id: string, performedBy: string): Promise<void> {
   const accounts = await getHospitalAccounts();
-  const target = accounts.find(a => a.id === id);
+  const target = accounts.find((a: any) => a.id === id);
   const rsName = target?.namaRs || '';
 
   const supabase = getSupabaseClient();

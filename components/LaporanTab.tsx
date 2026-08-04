@@ -2,7 +2,6 @@
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import hospitalBg from '../src/assets/images/hospital_cover_bg_1785397361439.jpg';
 import { 
   FileText, 
   Download, 
@@ -30,6 +29,10 @@ import {
   HeartPulse,
   Plus,
   Minus,
+  ZoomIn,
+  ZoomOut,
+  TrendingDown,
+  Info,
   LayoutDashboard,
   HelpCircle,
   AlertCircle
@@ -107,48 +110,78 @@ const hexToRgbaStr = (hex: string, alpha: number) => {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 };
 
-const parseOklchToRgb = (oklchStr: string): string => {
-  const match = oklchStr.match(/oklch\(\s*([0-9\.]+)\s+([0-9\.]+)\s+([0-9\.]+)(?:\s*\/\s*([0-9\.\%]+))?\s*\)/);
-  if (!match) return 'rgb(15, 118, 110)';
+const oklabToRgb = (L: number, a: number, b: number, A: number): string => {
+  // LMS
+  const l_ = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3);
+  const m_ = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3);
+  const s_ = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3);
 
-  const L = parseFloat(match[1]);
-  const C = parseFloat(match[2]);
-  const H = parseFloat(match[3]);
-  const A = match[4] ? (match[4].includes('%') ? parseFloat(match[4])/100 : parseFloat(match[4])) : 1;
+  // Linear sRGB
+  const r_lin = +4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
+  const g_lin = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
+  const b_lin = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_;
 
-  if (C < 0.04) {
-    let hex = '#1e293b';
-    if (L > 0.95) hex = '#f8fafc';
-    else if (L > 0.90) hex = '#f1f5f9';
-    else if (L > 0.80) hex = '#e2e8f0';
-    else if (L > 0.70) hex = '#cbd5e1';
-    else if (L > 0.60) hex = '#94a3b8';
-    else if (L > 0.45) hex = '#64748b';
-    else if (L > 0.35) hex = '#475569';
-    else if (L > 0.20) hex = '#334155';
-    
-    if (A < 1) return hexToRgbaStr(hex, A);
-    return hex;
+  const gamma = (c: number) => {
+    const absC = Math.abs(c);
+    const val = absC <= 0.0031308 ? 12.92 * absC : 1.055 * Math.pow(absC, 1 / 2.4) - 0.055;
+    return c < 0 ? -val : val;
+  };
+
+  const r = Math.min(255, Math.max(0, Math.round(gamma(r_lin) * 255)));
+  const g = Math.min(255, Math.max(0, Math.round(gamma(g_lin) * 255)));
+  const bComp = Math.min(255, Math.max(0, Math.round(gamma(b_lin) * 255)));
+
+  if (A < 1) {
+    return `rgba(${r}, ${g}, ${bComp}, ${Number(A.toFixed(3))})`;
+  }
+  return `rgb(${r}, ${g}, ${bComp})`;
+};
+
+const parseOklchToRgb = (colorStr: string): string => {
+  if (!colorStr) return 'rgb(0, 0, 0)';
+
+  // 1. oklch(L C H [/ A])
+  const oklchMatch = colorStr.match(/oklch\(\s*([0-9\.\%]+)\s+([0-9\.\-]+)\s+([0-9\.\-]+)(?:\s*\/\s*([0-9\.\%]+))?\s*\)/i);
+  if (oklchMatch) {
+    let L = parseFloat(oklchMatch[1]);
+    if (oklchMatch[1].includes('%')) L = L / 100;
+    const C = parseFloat(oklchMatch[2]);
+    const H = parseFloat(oklchMatch[3]);
+    let A = 1;
+    if (oklchMatch[4]) {
+      A = parseFloat(oklchMatch[4]);
+      if (oklchMatch[4].includes('%')) A = A / 100;
+    }
+
+    const rad = (H * Math.PI) / 180;
+    const a = C * Math.cos(rad);
+    const b = C * Math.sin(rad);
+
+    return oklabToRgb(L, a, b, A);
   }
 
-  let hex = '#0d9488';
-  
-  if (H >= 340 || H < 45) {
-    hex = L > 0.75 ? '#ffe4e6' : L > 0.5 ? '#f43f5e' : '#be123c';
-  } else if (H >= 45 && H < 110) {
-    hex = L > 0.85 ? '#fef3c7' : L > 0.6 ? '#f59e0b' : '#b45309';
-  } else if (H >= 110 && H < 165) {
-    hex = L > 0.85 ? '#dcfce7' : L > 0.5 ? '#10b981' : '#047857';
-  } else if (H >= 165 && H < 210) {
-    hex = L > 0.85 ? '#ccfbf1' : L > 0.5 ? '#0d9488' : '#0f766e';
-  } else if (H >= 210 && H < 275) {
-    hex = L > 0.85 ? '#dbeafe' : L > 0.5 ? '#3b82f6' : '#1d4ed8';
-  } else if (H >= 275 && H < 340) {
-    hex = L > 0.85 ? '#f3e8ff' : L > 0.5 ? '#8b5cf6' : '#6d28d9';
+  // 2. oklab(L a b [/ A])
+  const oklabMatch = colorStr.match(/oklab\(\s*([0-9\.\%]+)\s+([\-0-9\.\%]+)\s+([\-0-9\.\%]+)(?:\s*\/\s*([0-9\.\%]+))?\s*\)/i);
+  if (oklabMatch) {
+    let L = parseFloat(oklabMatch[1]);
+    if (oklabMatch[1].includes('%')) L = L / 100;
+    let a = parseFloat(oklabMatch[2]);
+    if (oklabMatch[2].includes('%')) a = a / 100;
+    let b = parseFloat(oklabMatch[3]);
+    if (oklabMatch[3].includes('%')) b = b / 100;
+    let A = 1;
+    if (oklabMatch[4]) {
+      A = parseFloat(oklabMatch[4]);
+      if (oklabMatch[4].includes('%')) A = A / 100;
+    }
+
+    return oklabToRgb(L, a, b, A);
   }
 
-  if (A < 1) return hexToRgbaStr(hex, A);
-  return hex;
+  // 3. Fallback for any other modern color syntax
+  if (colorStr.includes('0.5') || colorStr.includes('50%')) return 'rgb(100, 116, 139)';
+  if (colorStr.includes('100%') || colorStr.includes(' 1 ') || colorStr.includes('1)') || colorStr.includes('0.9')) return 'rgb(255, 255, 255)';
+  return 'rgb(30, 41, 59)';
 };
 
 const getBarColorHex = (val: number) => {
@@ -201,8 +234,41 @@ export default function LaporanTab({
   // State Filters
   const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
   const tahunSurvei = selectedYear === 'Semua Tahun' ? 'Semua Tahun' : selectedYear;
-  const [selectedComparisonYear, setSelectedComparisonYear] = useState<string>('none');
-  const [selectedBenchmarkId, setSelectedBenchmarkId] = useState<string>('none');
+  
+  const [selectedComparisonYear, setSelectedComparisonYear] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ahrq_active_comparison_year') || 'none';
+    }
+    return 'none';
+  });
+
+  const [selectedBenchmarkId, setSelectedBenchmarkId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('ahrq_active_benchmark_id') || 'none';
+    }
+    return 'none';
+  });
+
+  // Sync state changes with localStorage for single source of truth across tabs
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedComparisonYear !== 'none') {
+        localStorage.setItem('ahrq_active_comparison_year', selectedComparisonYear);
+      } else {
+        localStorage.removeItem('ahrq_active_comparison_year');
+      }
+    }
+  }, [selectedComparisonYear]);
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedBenchmarkId !== 'none') {
+        localStorage.setItem('ahrq_active_benchmark_id', selectedBenchmarkId);
+      } else {
+        localStorage.removeItem('ahrq_active_benchmark_id');
+      }
+    }
+  }, [selectedBenchmarkId]);
   const [isExporting, setIsExporting] = useState<boolean>(false);
   const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
   const [exportProgress, setExportProgress] = useState<{ current: number; total: number }>({ current: 0, total: 19 });
@@ -235,8 +301,8 @@ export default function LaporanTab({
       try {
         setIsLoadingTarget(true);
         // Using the same secure fetch logic as AnalisaDataTab
-        const { getSecureBenchmarkSurveys } = await import('../lib/db');
-        const data = await getSecureBenchmarkSurveys(requesterId, targetId);
+        const { getSurveys } = await import('../lib/db');
+        const data = await getSurveys(targetId);
         if (isMounted) {
           setTargetHospitalSurveys(data.filter(s => s && isSurveyResponse(s)));
         }
@@ -1202,16 +1268,18 @@ export default function LaporanTab({
     setZoomLevel(100);
 
     // Wait for DOM layout scale to normalize
-    await new Promise(r => setTimeout(r, 400));
+    await new Promise(r => setTimeout(r, 450));
 
-    let restoreStylesheets: (() => void) | null = null;
     let restoreGetComputedStyle: (() => void) | null = null;
 
     try {
       // 1. Temporarily patch window.getComputedStyle to intercept and replace modern color functions with rgb colors
       const originalGetComputedStyle = window.getComputedStyle;
-      const modernColorRegex = /(oklch|oklab|lab|lch)\([^\)]+\)/g;
-      const hasModernColor = (s: string) => s.includes('oklch') || s.includes('oklab') || s.includes('lab(') || s.includes('lch(');
+      const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
+      const hasModernColor = (s: string) => {
+        const lower = s.toLowerCase();
+        return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
+      };
 
       window.getComputedStyle = function (element, pseudoElt) {
         const style = originalGetComputedStyle(element, pseudoElt);
@@ -1238,73 +1306,8 @@ export default function LaporanTab({
         window.getComputedStyle = originalGetComputedStyle;
       };
 
-      // 2. Temporarily clone and replace modern color functions with safe color in active document stylesheets
-      const originalSheetsState: { sheet: CSSStyleSheet; disabled: boolean }[] = [];
-      const tempStyleElements: HTMLStyleElement[] = [];
-
-      try {
-        const sheets = Array.from(document.styleSheets);
-        sheets.forEach((sheet) => {
-          originalSheetsState.push({ sheet, disabled: sheet.disabled });
-          try {
-            let hasModern = false;
-            const rules = sheet.cssRules || sheet.rules;
-            if (rules) {
-              for (let j = 0; j < rules.length; j++) {
-                if (rules[j].cssText && hasModernColor(rules[j].cssText)) {
-                  hasModern = true;
-                  break;
-                }
-              }
-            }
-
-            if (hasModern && rules) {
-              sheet.disabled = true;
-              let newCssText = '';
-              for (let j = 0; j < rules.length; j++) {
-                let ruleText = rules[j].cssText;
-                if (ruleText && hasModernColor(ruleText)) {
-                  ruleText = ruleText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                }
-                newCssText += (ruleText || '') + '\n';
-              }
-
-              const tempStyle = document.createElement('style');
-              tempStyle.setAttribute('data-temp-pdf-style', 'true');
-              tempStyle.textContent = newCssText;
-              document.head.appendChild(tempStyle);
-              tempStyleElements.push(tempStyle);
-            }
-          } catch (e) {
-            if (sheet.ownerNode && sheet.ownerNode instanceof HTMLStyleElement) {
-              const content = sheet.ownerNode.textContent;
-              if (content && hasModernColor(content)) {
-                sheet.disabled = true;
-                const cleanContent = content.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                const tempStyle = document.createElement('style');
-                tempStyle.setAttribute('data-temp-pdf-style', 'true');
-                tempStyle.textContent = cleanContent;
-                document.head.appendChild(tempStyle);
-                tempStyleElements.push(tempStyle);
-              }
-            }
-          }
-        });
-      } catch (errStylesheets) {
-        console.error('Error rewriting stylesheets for PDF:', errStylesheets);
-      }
-
-      restoreStylesheets = () => {
-        originalSheetsState.forEach(({ sheet, disabled }) => {
-          sheet.disabled = disabled;
-        });
-        tempStyleElements.forEach((el) => {
-          el.parentNode?.removeChild(el);
-        });
-      };
-
       const pages = printRef.current.querySelectorAll('.word-page');
-      const totalPages = pages.length || 19;
+      const totalPages = pages.length || 1;
       setExportProgress({ current: 1, total: totalPages });
 
       const pdf = new jsPDF({
@@ -1317,6 +1320,11 @@ export default function LaporanTab({
       for (let i = 0; i < pages.length; i++) {
         setExportProgress({ current: i + 1, total: pages.length });
         const pageEl = pages[i] as HTMLElement;
+        const isLandscape = pageEl.classList.contains('word-page-landscape');
+
+        // Dimensions in pixels for 1:1 A4 mapping (96 dpi)
+        const targetWidthPx = isLandscape ? 1123 : 794;
+        const targetHeightPx = isLandscape ? 794 : 1123;
 
         const canvas = await html2canvas(pageEl, {
           scale: 2,
@@ -1324,8 +1332,52 @@ export default function LaporanTab({
           allowTaint: true,
           logging: false,
           backgroundColor: '#ffffff',
+          width: targetWidthPx,
+          height: targetHeightPx,
+          windowWidth: targetWidthPx,
+          windowHeight: targetHeightPx,
+          scrollX: 0,
+          scrollY: 0,
           onclone: (clonedDoc) => {
-            // 1. Sanitize <style> tags text content
+            // A. Reset print container styles in clonedDoc
+            const printArea = clonedDoc.querySelector('#print-area') as HTMLElement;
+            if (printArea) {
+              printArea.style.transform = 'none';
+              printArea.style.margin = '0';
+              printArea.style.padding = '0';
+              printArea.style.width = '100%';
+              printArea.style.maxWidth = 'none';
+            }
+
+            // B. Clean up page borders, margins, and transforms on cloned pages
+            const clonedPageEls = clonedDoc.querySelectorAll('.word-page');
+            clonedPageEls.forEach((p) => {
+              const el = p as HTMLElement;
+              el.style.border = 'none';
+              el.style.boxShadow = 'none';
+              el.style.borderRadius = '0';
+              el.style.margin = '0 auto';
+              el.style.transform = 'none';
+
+              const isLand = el.classList.contains('word-page-landscape');
+              if (isLand) {
+                el.style.width = '297mm';
+                el.style.height = '210mm';
+                el.style.minWidth = '297mm';
+                el.style.minHeight = '210mm';
+                el.style.maxWidth = '297mm';
+                el.style.maxHeight = '210mm';
+              } else {
+                el.style.width = '210mm';
+                el.style.height = '297mm';
+                el.style.minWidth = '210mm';
+                el.style.minHeight = '297mm';
+                el.style.maxWidth = '210mm';
+                el.style.maxHeight = '210mm';
+              }
+            });
+
+            // C. Sanitize <style> tags in cloned document without deleting rules
             const styleElements = clonedDoc.querySelectorAll('style');
             styleElements.forEach((styleEl) => {
               if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
@@ -1333,40 +1385,27 @@ export default function LaporanTab({
               }
             });
 
-            // 2. Also look at clonedDoc.styleSheets and filter out rules containing modern colors if we can edit them
-            try {
-              for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
-                const sheet = clonedDoc.styleSheets[i];
-                try {
-                  const rules = sheet.cssRules || sheet.rules;
-                  if (!rules) continue;
-                  for (let j = rules.length - 1; j >= 0; j--) {
-                    const rule = rules[j];
-                    if (rule.cssText && hasModernColor(rule.cssText)) {
-                      sheet.deleteRule(j);
-                    }
-                  }
-                } catch (e) {
-                  // Cross-origin stylesheet or other error, ignore
-                }
+            // D. Replace inline style modern colors
+            const allNodes = clonedDoc.querySelectorAll('*');
+            allNodes.forEach((node) => {
+              const htmlNode = node as HTMLElement;
+              if (htmlNode.style && htmlNode.style.cssText && hasModernColor(htmlNode.style.cssText)) {
+                htmlNode.style.cssText = htmlNode.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
               }
-            } catch (e) {
-              // ignore
-            }
+            });
           }
         });
 
-        const isLandscape = pageEl.classList.contains('word-page-landscape');
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = canvas.toDataURL('image/jpeg', 0.98);
 
         if (i > 0) {
           pdf.addPage('a4', isLandscape ? 'landscape' : 'portrait');
         }
 
         if (isLandscape) {
-          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
+          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
         } else {
-          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
+          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
         }
       }
 
@@ -1375,11 +1414,9 @@ export default function LaporanTab({
       pdf.save(`Laporan_Resmi_Budaya_Keselamatan_Pasien_${safeName}_${displayYr}.pdf`);
     } catch (err) {
       console.error('Failed to export PDF:', err);
-      // Fallback to native print if JS canvas export encounters an issue
       window.print();
     } finally {
       if (restoreGetComputedStyle) restoreGetComputedStyle();
-      if (restoreStylesheets) restoreStylesheets();
       setZoomLevel(prevZoom);
       setIsExportingPdf(false);
     }
@@ -1402,8 +1439,11 @@ export default function LaporanTab({
     try {
       // 1. Temporarily patch window.getComputedStyle to intercept and replace modern color functions
       const originalGetComputedStyle = window.getComputedStyle;
-      const modernColorRegex = /(oklch|oklab|lab|lch)\([^\)]+\)/g;
-      const hasModernColor = (s: string) => s.includes('oklch') || s.includes('oklab') || s.includes('lab(') || s.includes('lch(');
+      const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
+      const hasModernColor = (s: string) => {
+        const lower = s.toLowerCase();
+        return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
+      };
 
       window.getComputedStyle = function (element, pseudoElt) {
         const style = originalGetComputedStyle(element, pseudoElt);
@@ -1633,163 +1673,132 @@ export default function LaporanTab({
         </div>
       )}
 
-      {/* CONTROL BAR (NON-PRINTABLE) */}
+      {/* CONTROL BAR - MATCHING ANALISA DATA HEADER CARD DESIGN */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3, ease: 'easeOut' }}
-        className="print:hidden -mx-4 md:-mx-8 -mt-4 md:-mt-8 mb-8 bg-gradient-to-r from-[#0F766E] to-[#0D9488] rounded-b-2xl md:rounded-b-[24px] min-h-[90px] py-4 md:py-0 px-6 md:px-8 shadow-md shadow-teal-900/10 flex items-center relative z-40"
+        exit={{ opacity: 0, y: -20 }}
+        className="print:hidden max-w-7xl mx-auto"
       >
-        <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-4 md:gap-6">
+        <div className="relative overflow-hidden bg-[#14B8A6] rounded-[32px] p-8 md:p-10 shadow-2xl shadow-teal-950/30 mb-8 border border-white/20 backdrop-blur-xl group">
+          {/* Decorative Ambient Glass Elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl group-hover:bg-white/20 transition-all duration-700 pointer-events-none"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-blue-400/20 rounded-full -ml-10 -mb-10 blur-3xl pointer-events-none"></div>
+
+          <div className="relative z-10 space-y-1.5">
+            <h1 className="text-[35px] font-black text-white tracking-tight leading-tight">
+              Laporan Survei Budaya Keselamatan Pasien
+            </h1>
+            <p className="text-teal-50 text-[14px] font-medium leading-relaxed w-full opacity-90">
+              Menampilkan laporan resmi hasil Survei Budaya Keselamatan Pasien AHRQ SOPS v2.0 secara realtime berdasarkan data survei yang telah tersimpan.
+            </p>
+          </div>
+        </div>
+
+        {/* Action Bar Below Header - Tosca Glassmorphism 2.0 Single Row */}
+        <div className="flex flex-wrap items-center justify-start gap-3 bg-teal-500/15 backdrop-blur-md border border-white/30 rounded-[20px] p-3 shadow-[0_8px_32px_0_rgba(20,184,166,0.15)] mb-10 overflow-x-auto hide-scrollbar">
           
-          {/* Left Side: Title & Zoom */}
-          <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 flex-grow">
-            <motion.h1 
-              initial={{ opacity: 0, x: -15 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, delay: 0.05 }}
-              className="text-[20px] md:text-[24px] lg:text-[28px] font-extrabold tracking-tight text-white select-none leading-tight font-sans"
+          {/* 1. Pilih Tahun */}
+          <div className="flex items-center gap-2 bg-white/60 hover:bg-white/80 border border-teal-200/30 rounded-xl px-3.5 h-[42px] text-xs font-bold text-teal-900 transition-all shadow-sm backdrop-blur-md shrink-0">
+            <Calendar className="w-4 h-4 text-teal-600 shrink-0" />
+            <span className="text-teal-800 font-medium whitespace-nowrap">Tahun:</span>
+            <select 
+              value={selectedYear} 
+              onChange={e => setSelectedYear(e.target.value)}
+              className="bg-transparent font-extrabold text-teal-950 outline-none cursor-pointer focus:ring-0 pr-1"
             >
-              LAPORAN SURVEI BUDAYA KESELAMATAN PASIEN
-            </motion.h1>
-            
-            {/* Zoom Scale Controls - Futuristic Pill */}
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.25, delay: 0.15 }}
-              className="flex items-center gap-1 bg-white/10 hover:bg-white/15 border border-white/15 px-2.5 py-1 rounded-full text-xs font-semibold text-white/95 backdrop-blur-md shadow-2xs transition-all duration-200 self-start"
-            >
-              <button 
-                onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))}
-                className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all cursor-pointer text-white"
-                title="Zoom Out"
-              >
-                <Minus className="w-3 h-3 stroke-[2.5]" />
-              </button>
-              <button 
-                onClick={() => setZoomLevel(100)}
-                className="px-2.5 py-0.5 text-[11px] font-bold text-white hover:bg-white/15 rounded-md transition-all cursor-pointer"
-                title="Reset Zoom (100%)"
-              >
-                {zoomLevel}%
-              </button>
-              <button 
-                onClick={() => setZoomLevel(prev => Math.min(150, prev + 10))}
-                className="w-5 h-5 rounded-full flex items-center justify-center hover:bg-white/25 active:scale-90 transition-all cursor-pointer text-white"
-                title="Zoom In"
-              >
-                <Plus className="w-3 h-3 stroke-[2.5]" />
-              </button>
-            </motion.div>
+              {availableYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
 
-          {/* Right Side: Filters & Compact Export Icons */}
-          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto lg:justify-end">
-            
-             {/* Filter Year */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, delay: 0.1 }}
-              className="flex items-center gap-2 bg-white/10 border border-white/15 hover:bg-white/15 rounded-full px-3 py-1.5 h-[34px] text-xs font-bold text-white transition-all shadow-2xs"
+          {/* 2. Perbandingan Periode */}
+          <div className="flex items-center gap-2 bg-white/60 hover:bg-white/80 border border-teal-200/30 rounded-xl px-3.5 h-[42px] text-xs font-bold text-teal-900 transition-all shadow-sm backdrop-blur-md shrink-0">
+            <RefreshCw className="w-4 h-4 text-teal-600 shrink-0" />
+            <span className="text-teal-800 font-medium whitespace-nowrap">Perbandingan Periode:</span>
+            <select 
+              value={selectedComparisonYear} 
+              onChange={e => setSelectedComparisonYear(e.target.value)}
+              className="bg-transparent font-extrabold text-teal-950 outline-none cursor-pointer focus:ring-0 pr-1 max-w-[140px]"
             >
-              <Calendar className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-white/80 font-medium">Tahun:</span>
-              <select 
-                value={selectedYear} 
-                onChange={e => setSelectedYear(e.target.value)}
-                className="bg-transparent font-extrabold text-white outline-none cursor-pointer focus:ring-0 [&>option]:text-slate-800 [&>option]:bg-white pr-1"
-              >
-                {availableYears.map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </motion.div>
-
-            {/* Filter Comparison Year */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, delay: 0.12 }}
-              className="flex items-center gap-2 bg-white/10 border border-white/15 hover:bg-white/15 rounded-full px-3 py-1.5 h-[34px] text-xs font-bold text-white transition-all shadow-2xs"
-            >
-              <RefreshCw className="w-3.5 h-3.5 text-white/80" />
-              <span className="text-white/80 font-medium">Bandingkan:</span>
-              <select 
-                value={selectedComparisonYear} 
-                onChange={e => setSelectedComparisonYear(e.target.value)}
-                className="bg-transparent font-extrabold text-white outline-none cursor-pointer focus:ring-0 [&>option]:text-slate-800 [&>option]:bg-white pr-1"
-              >
-                <option value="none">Tanpa Banding</option>
-                {availableYears.filter(y => y !== 'Semua Tahun' && y !== selectedYear).map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </motion.div>
-
-            {/* Filter Benchmark Hospital */}
-            <motion.div 
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.25, delay: 0.14 }}
-              className={`flex items-center gap-2 border hover:bg-white/15 rounded-full px-3 py-1.5 h-[34px] text-xs font-bold text-white transition-all shadow-2xs ${selectedBenchmarkId !== 'none' ? 'bg-teal-500/20 border-teal-400/50' : 'bg-white/10 border-white/15'}`}
-            >
-              <Globe className={`w-3.5 h-3.5 ${selectedBenchmarkId !== 'none' ? 'text-teal-300' : 'text-white/80'}`} />
-              <span className="text-white/80 font-medium">Benchmark:</span>
-              <select 
-                value={selectedBenchmarkId} 
-                onChange={e => setSelectedBenchmarkId(e.target.value)}
-                className="bg-transparent font-extrabold text-white outline-none cursor-pointer focus:ring-0 [&>option]:text-slate-800 [&>option]:bg-white pr-1 max-w-[120px]"
-              >
-                <option value="none">Pilih RS</option>
-                {accounts.filter(a => a.role === 'rs' && a.id !== (hospitalId || identifier)).map(rs => (
-                  <option key={rs.id} value={rs.id}>{rs.namaRs}</option>
-                ))}
-              </select>
-            </motion.div>
-
-            {/* Premium Circular Export Buttons */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.25, delay: 0.2 }}
-              className="flex items-center gap-2"
-            >
-              {/* Word Button */}
-              <button
-                onClick={handleExportDocx}
-                disabled={isExporting || isExportingPdf}
-                className="w-[34px] h-[34px] rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-blue-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 cursor-pointer shadow-sm relative group active:scale-95 transition-all duration-200 disabled:opacity-50"
-              >
-                <FileText className="w-4.5 h-4.5" />
-                
-                {/* Custom Tooltip */}
-                <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-50 font-bold tracking-wide">
-                  Export Word
-                </span>
-              </button>
-
-              {/* PDF Button */}
-              <button
-                onClick={handleExportPDF}
-                disabled={isExportingPdf || isExporting}
-                className="w-[34px] h-[34px] rounded-full bg-white border border-slate-200/80 flex items-center justify-center text-rose-600 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 cursor-pointer shadow-sm relative group active:scale-95 transition-all duration-200 disabled:opacity-50"
-              >
-                {isExportingPdf ? (
-                  <RefreshCw className="w-4 h-4 animate-spin text-rose-500" />
-                ) : (
-                  <FileText className="w-4.5 h-4.5 text-rose-600" />
-                )}
-
-                {/* Custom Tooltip */}
-                <span className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-2 py-1 rounded shadow-md opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-50 font-bold tracking-wide">
-                  Export PDF
-                </span>
-              </button>
-            </motion.div>
-
+              <option value="none">Tanpa Perbandingan</option>
+              {availableYears.filter(y => y !== 'Semua Tahun' && y !== selectedYear).map(y => (
+                <option key={y} value={y}>vs {y}</option>
+              ))}
+            </select>
           </div>
+
+          {/* 3. Benchmark Rumah Sakit */}
+          <div className={`flex items-center gap-2 border rounded-xl px-3.5 h-[42px] text-xs font-bold transition-all shadow-sm backdrop-blur-md shrink-0 ${selectedBenchmarkId !== 'none' ? 'bg-teal-500/20 border-teal-500/40 text-teal-900' : 'bg-white/60 hover:bg-white/80 border-teal-200/30 text-teal-900'}`}>
+            <Building2 className={`w-4 h-4 shrink-0 text-teal-600`} />
+            <span className={`${selectedBenchmarkId !== 'none' ? 'text-teal-900' : 'text-teal-800'} font-medium whitespace-nowrap`}>Benchmark RS:</span>
+            <select 
+              value={selectedBenchmarkId} 
+              onChange={e => setSelectedBenchmarkId(e.target.value)}
+              className={`bg-transparent font-extrabold outline-none cursor-pointer focus:ring-0 pr-1 max-w-[160px] truncate text-teal-950`}
+            >
+              <option value="none">Benchmark RS</option>
+              {accounts.filter(a => a.role === 'rs' && a.id !== (hospitalId || identifier)).map(rs => {
+                const isApproved = requests.some(r => 
+                  (r.requester_id === hospitalId || r.requester_name.toLowerCase() === namaRs.toLowerCase()) &&
+                  (r.target_id === rs.id || r.target_name.toLowerCase() === rs.namaRs.toLowerCase()) &&
+                  r.status === 'approved'
+                );
+                return (
+                  <option key={rs.id} value={rs.id}>
+                    {rs.namaRs} {isApproved ? '✓' : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+
+          {/* Spacer to push zoom and download to the right on large screens */}
+          <div className="flex-1 hidden xl:block"></div>
+
+          {/* Zoom Controls */}
+          <div className="flex items-center bg-white/60 hover:bg-white/80 border border-teal-200/30 rounded-xl p-1 h-[42px] text-xs font-bold text-teal-900 transition-all shadow-sm backdrop-blur-md shrink-0">
+            <button 
+              onClick={() => setZoomLevel(prev => Math.max(50, prev - 10))}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-white/40 active:scale-95 transition-all cursor-pointer text-teal-850 font-bold"
+              title="Zoom Out"
+            >
+              <ZoomOut className="w-4 h-4 stroke-[2.5] text-teal-600" />
+              <span className="hidden sm:inline">Zoom Out</span>
+            </button>
+            
+            <button 
+              onClick={() => setZoomLevel(100)}
+              className="px-3 py-1.5 text-[11px] font-black text-teal-900 bg-teal-50 hover:bg-teal-100 rounded-md transition-all cursor-pointer mx-1"
+              title="Reset Zoom (100%)"
+            >
+              {zoomLevel}%
+            </button>
+
+            <button 
+              onClick={() => setZoomLevel(prev => Math.min(150, prev + 10))}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg hover:bg-white/40 active:scale-95 transition-all cursor-pointer text-teal-850 font-bold"
+              title="Zoom In"
+            >
+              <ZoomIn className="w-4 h-4 stroke-[2.5] text-teal-600" />
+              <span className="hidden sm:inline">Zoom In</span>
+            </button>
+          </div>
+
+          {/* Download Dokumen */}
+          <button
+            onClick={handleExportPDF}
+            disabled={isExportingPdf || isExporting}
+            className="flex items-center gap-2 bg-[#14B8A6] text-white hover:bg-teal-600 border border-teal-400/50 px-5 h-[42px] rounded-xl text-xs font-extrabold shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 shrink-0"
+          >
+            {isExportingPdf ? (
+              <RefreshCw className="w-4 h-4 animate-spin text-white" />
+            ) : (
+              <Download className="w-4 h-4 text-white" />
+            )}
+            <span>Download Dokumen</span>
+          </button>
         </div>
       </motion.div>
             <style dangerouslySetInnerHTML={{ __html: `
@@ -1835,10 +1844,10 @@ export default function LaporanTab({
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            padding-top: 2.5cm !important;
-            padding-bottom: 2.5cm !important;
-            padding-left: 2.5cm !important;
-            padding-right: 2.5cm !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
             box-sizing: border-box !important;
             background: white !important;
             display: flex !important;
@@ -1858,10 +1867,10 @@ export default function LaporanTab({
             padding-right: 2.5cm !important;
           }
           .print-page.cover-page {
-            padding-top: 2.5cm !important;
-            padding-bottom: 2.5cm !important;
-            padding-left: 2.5cm !important;
-            padding-right: 2.5cm !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
             box-sizing: border-box !important;
           }
           .recharts-responsive-container {
@@ -1897,10 +1906,10 @@ export default function LaporanTab({
           flex-shrink: 0;
         }
         .word-page.cover-page {
-          padding-top: 2.5cm !important;
-          padding-bottom: 2.5cm !important;
-          padding-left: 2.5cm !important;
-          padding-right: 2.5cm !important;
+          padding-top: 0 !important;
+          padding-bottom: 0 !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
           box-sizing: border-box !important;
           position: relative !important;
           overflow: hidden !important;
@@ -1915,8 +1924,8 @@ export default function LaporanTab({
           max-height: 210mm !important;
           padding-top: 2cm !important;
           padding-bottom: 2cm !important;
-          padding-left: 2.5cm !important;
-          padding-right: 2.5cm !important;
+          padding-left: 0 !important;
+          padding-right: 0 !important;
         }
       ` }} />
 
@@ -1991,211 +2000,106 @@ export default function LaporanTab({
           <div className="w-full flex flex-col items-center">
             <div className="word-page cover-page print-page bg-white relative overflow-hidden flex flex-col justify-between select-none">
               
-              {/* TOP VECTOR ARTWORK & HALFTONE DOT MATRIX */}
-              <div className="absolute top-0 left-0 right-0 h-[220px] pointer-events-none z-0">
-                <svg className="w-full h-full" viewBox="0 0 800 220" preserveAspectRatio="none" fill="none">
-                  <defs>
-                    <pattern id="cover-top-dots" x="0" y="0" width="16" height="16" patternUnits="userSpaceOnUse">
-                      <circle cx="2" cy="2" r="1.3" fill="#0D9488" opacity="0.3" />
-                      <circle cx="10" cy="10" r="1.3" fill="#0D9488" opacity="0.2" />
-                    </pattern>
-                    <linearGradient id="top-wave-grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#042F31" />
-                      <stop offset="50%" stopColor="#0F766E" />
-                      <stop offset="100%" stopColor="#14B8A6" />
-                    </linearGradient>
-                    <linearGradient id="top-wave-grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#021C1E" />
-                      <stop offset="100%" stopColor="#0B4A4D" />
-                    </linearGradient>
-                  </defs>
+              {/* BACKGROUND VECTOR GEOMETRICS (Top Right Lines + Bottom Right Diagonal Teal Polygon & Stripes) */}
+              <div className="absolute inset-0 pointer-events-none z-0">
+                <svg className="w-full h-full" viewBox="0 0 800 1130" preserveAspectRatio="none" fill="none">
+                  {/* Top-Right Corner Accent Lines */}
+                  <line x1="580" y1="0" x2="800" y2="220" stroke="#007a78" strokeWidth="2.5" opacity="0.4" />
+                  <line x1="620" y1="0" x2="800" y2="180" stroke="#007a78" strokeWidth="12" opacity="0.85" />
+                  <line x1="680" y1="0" x2="800" y2="120" stroke="#007a78" strokeWidth="22" opacity="0.15" />
 
-                  {/* Top Left Halftone Dots */}
-                  <rect x="0" y="0" width="340" height="180" fill="url(#cover-top-dots)" />
+                  {/* Main Teal Polygon Cutting Diagonally */}
+                  {/* Layer 1: Dark Teal Shadow Base */}
+                  <path d="M -50 1180 L -50 960 L 850 250 L 850 1180 Z" fill="#005250" />
                   
-                  {/* Top Right Dynamic Curved Waves */}
-                  <path
-                    d="M 380 0 C 500 70, 680 130, 800 145 L 800 0 Z"
-                    fill="url(#top-wave-grad2)"
-                  />
-                  <path
-                    d="M 450 0 C 550 55, 690 100, 800 105 L 800 0 Z"
-                    fill="url(#top-wave-grad1)"
-                  />
-                  <path
-                    d="M 530 0 C 620 45, 720 80, 800 85 L 800 0 Z"
-                    fill="#2FA7A7"
-                    opacity="0.85"
-                  />
-                  <path
-                    d="M 380 0 C 500 70, 680 130, 800 145"
-                    stroke="rgba(255,255,255,0.7)"
-                    strokeWidth="2"
-                    fill="none"
-                  />
+                  {/* Layer 2: Main Deep Teal Polygon */}
+                  <path d="M -50 1180 L -50 990 L 850 280 L 850 1180 Z" fill="#007a78" />
+
+                  {/* Layer 3: Dark Accent Bottom-Right Wedge */}
+                  <path d="M 200 1180 L 850 630 L 850 1180 Z" fill="#004846" opacity="0.6" />
+
+                  {/* Parallel Diagonal Accent Stripes along the slope edge */}
+                  {/* Thick Stripe 1 */}
+                  <line x1="-50" y1="945" x2="850" y2="235" stroke="#007a78" strokeWidth="18" />
+                  {/* White Gap Line */}
+                  <line x1="-50" y1="922" x2="850" y2="212" stroke="#ffffff" strokeWidth="6" />
+                  {/* Thin Accent Stripe 2 */}
+                  <line x1="-50" y1="906" x2="850" y2="196" stroke="#007a78" strokeWidth="4" />
+                  {/* Light/Subtle Stripe 3 */}
+                  <line x1="-50" y1="875" x2="850" y2="165" stroke="#007a78" strokeWidth="2" opacity="0.5" />
                 </svg>
               </div>
 
-              {/* CENTER TYPOGRAPHY CONTENT */}
-              <div className="relative z-10 flex-1 flex flex-col justify-center items-center text-center px-8 pt-20 pb-4">
+              {/* BOTTOM RIGHT OVERLAY TEXT ON TEAL AREA */}
+              <div className="absolute bottom-12 sm:bottom-16 right-10 sm:right-14 z-10 text-right text-white max-w-[650px]">
+                {/* Nama Rumah Sakit & Periode Tahun - Rata Kanan di atas "Keselamatan adalah Prioritas" */}
+                <h4 className="font-extrabold text-white text-[40px] sm:text-[52px] tracking-wide uppercase leading-tight font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
+                  {activeHospitalName}
+                </h4>
+                <p className="text-[24px] sm:text-[28px] font-black uppercase tracking-[0.2em] text-white mt-1 mb-5 font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.1)]">
+                  PERIODE TAHUN {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
+                </p>
+
+                <h5 className="font-black text-white text-[14px] sm:text-[16px] tracking-wider uppercase leading-tight mt-6">
+                  KESELAMATAN ADALAH PRIORITAS
+                </h5>
+                <div className="w-12 h-[2px] bg-white/80 my-2.5 ml-auto"></div>
+                <p className="text-[11px] sm:text-[12px] text-teal-50 font-light leading-relaxed">
+                  Bersama membangun budaya keselamatan pasien yang kuat, untuk pelayanan yang bermutu.
+                </p>
+              </div>
+
+              {/* FOREGROUND CONTENT (LEFT ALIGNED) */}
+              <div className="relative z-10 flex-1 flex flex-col justify-start items-start text-left pl-12 sm:pl-16 pr-8 pt-14 sm:pt-20">
                 
-                {/* LAPORAN Subtitle */}
-                <div className="space-y-1.5 mb-5">
-                  <h3 className="text-[15px] sm:text-[17px] font-extrabold uppercase tracking-[0.45em] text-[#2C404E] font-sans">
-                    L A P O R A N
-                  </h3>
-                  <div className="relative w-44 h-[2px] bg-gradient-to-r from-transparent via-[#0D9488]/60 to-transparent mx-auto flex items-center justify-center my-1.5">
-                    <div className="w-8 h-[3px] bg-[#0D9488] rounded-full"></div>
-                  </div>
-                </div>
+                {/* 2026 Year Display */}
+                <h1 className="text-[80px] sm:text-[100px] font-black leading-none text-[#007a78] tracking-tight font-sans">
+                  {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
+                </h1>
+
+                {/* LAPORAN */}
+                <h2 className="text-[48px] sm:text-[60px] font-black leading-none text-[#007a78] tracking-tight mt-1 font-sans uppercase">
+                  LAPORAN
+                </h2>
 
                 {/* SURVEI BUDAYA KESELAMATAN PASIEN */}
-                <div className="space-y-0.5 my-2">
-                  <h1 className="text-[32px] sm:text-[40px] font-black tracking-tight text-[#007A78] uppercase leading-[1.1] font-sans">
+                <div className="mt-2.5 space-y-0">
+                  <h3 className="text-[36px] sm:text-[45px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
                     SURVEI BUDAYA
-                  </h1>
-                  <h1 className="text-[32px] sm:text-[40px] font-black tracking-tight text-[#0B3C3D] uppercase leading-[1.1] font-sans">
+                  </h3>
+                  <h3 className="text-[36px] sm:text-[45px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
                     KESELAMATAN PASIEN
-                  </h1>
+                  </h3>
                 </div>
 
-                {/* BERDASARKAN INSTRUMEN */}
-                <div className="mt-7 mb-2.5">
-                  <p className="text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.24em] text-[#475569]">
-                    BERDASARKAN INSTRUMEN
-                  </p>
-                </div>
+                {/* Short Accent Bar */}
+                <div className="w-16 h-[3.5px] bg-[#007a78] my-6"></div>
+
+                {/* Subtitle: Berdasarkan Instrumen */}
+                <p className="text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.2em] text-slate-600 mb-2 font-sans">
+                  Berdasarkan Instrumen
+                </p>
 
                 {/* Badge Pill: AHRQ SOPS® v2.0 */}
-                <div className="my-2">
-                  <div className="inline-flex items-center justify-center bg-gradient-to-r from-[#008080] via-[#0D9488] to-[#0A4D50] text-white font-black text-sm sm:text-[16px] px-9 py-2.5 rounded-full shadow-lg shadow-teal-900/25 border border-teal-300/40 tracking-wider">
+                <div className="my-1.5">
+                  <div className="inline-flex items-center bg-[#007a78] text-white font-bold text-xs sm:text-[13px] px-5 py-2 rounded-full tracking-wider shadow-sm font-sans">
                     AHRQ SOPS<sup>®</sup> v2.0
                   </div>
                 </div>
 
-                {/* Decorative Diamond Line */}
-                <div className="relative w-28 h-[1px] bg-[#0D9488]/30 mx-auto flex items-center justify-center my-5">
-                  <div className="w-2.5 h-2.5 bg-[#0D9488] rotate-45 rounded-[1px]"></div>
+                {/* Three Outline Icons */}
+                <div className="flex items-center gap-3.5 my-5">
+                  <div className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center p-1.5 shadow-xs">
+                    <TrendingUp className="w-5 h-5 stroke-[2.2]" />
+                  </div>
+                  <div className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center p-1.5 shadow-xs">
+                    <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+                  </div>
+                  <div className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center p-1.5 shadow-xs">
+                    <Users className="w-5 h-5 stroke-[2.2]" />
+                  </div>
                 </div>
 
-                {/* RSUD AL-MULK (Dynamic Hospital Name) */}
-                <div className="my-1">
-                  <h2 className="text-[28px] sm:text-[34px] font-black text-[#0A2E30] uppercase tracking-wide px-4">
-                    {activeHospitalName}
-                  </h2>
-                </div>
-
-                {/* Line below RS Name */}
-                <div className="w-20 h-[2px] bg-[#0D9488]/50 mx-auto my-2.5 rounded-full"></div>
-
-                {/* PERIODE TAHUN 2026 */}
-                <div className="mt-1">
-                  <p className="text-[12px] sm:text-[13px] font-extrabold uppercase tracking-[0.22em] text-[#475569]">
-                    PERIODE TAHUN <span className="text-[#009688] font-black">{selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}</span>
-                  </p>
-                </div>
-
-              </div>
-
-              {/* HOSPITAL BUILDING PHOTO WATERMARK BACKDROP */}
-              <div className="absolute inset-x-0 bottom-[80px] sm:bottom-[100px] top-[160px] pointer-events-none z-0 flex items-end justify-center overflow-hidden px-2">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img 
-                  src={typeof hospitalBg === 'string' ? hospitalBg : hospitalBg.src} 
-                  alt="Hospital Building Backdrop" 
-                  className="w-full h-full max-h-[380px] object-contain object-bottom opacity-35 mix-blend-multiply filter contrast-105"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-
-              {/* BOTTOM DYNAMIC ORGANIC WAVE GRAPHICS */}
-              <div className="relative w-full h-[250px] sm:h-[280px] pointer-events-none z-10 overflow-hidden">
-                <svg className="w-full h-full" viewBox="0 0 800 280" preserveAspectRatio="none" fill="none">
-                  <defs>
-                    <linearGradient id="bottom-wave-grad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#0B4A4D" />
-                      <stop offset="40%" stopColor="#0F766E" />
-                      <stop offset="80%" stopColor="#0A3335" />
-                      <stop offset="100%" stopColor="#021C1E" />
-                    </linearGradient>
-
-                    <linearGradient id="bottom-wave-grad2" x1="0%" y1="0%" x2="100%" y2="0%">
-                      <stop offset="0%" stopColor="#0D9488" />
-                      <stop offset="50%" stopColor="#14B8A6" />
-                      <stop offset="100%" stopColor="#0B4A4D" />
-                    </linearGradient>
-
-                    <linearGradient id="bottom-wave-dark" x1="0%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stopColor="#032224" />
-                      <stop offset="100%" stopColor="#011011" />
-                    </linearGradient>
-
-                    <pattern id="bottom-dots" x="0" y="0" width="12" height="12" patternUnits="userSpaceOnUse">
-                      <circle cx="2" cy="2" r="1" fill="#2FA7A7" opacity="0.35" />
-                    </pattern>
-
-                    {/* Hexagon Pattern */}
-                    <pattern id="bottom-hex-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-                      <path d="M 20 0 L 40 11.5 L 40 34.5 L 20 46 L 0 34.5 L 0 11.5 Z" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1" />
-                    </pattern>
-                  </defs>
-
-                  {/* Layer 1: Dark Deep Wave */}
-                  <path
-                    d="M 0 120 C 180 220, 500 50, 800 150 L 800 280 L 0 280 Z"
-                    fill="url(#bottom-wave-dark)"
-                  />
-
-                  {/* Layer 2: Main Rich Teal Wave matching reference S-curve */}
-                  <path
-                    d="M 0 160 C 220 80, 520 220, 800 90 L 800 280 L 0 280 Z"
-                    fill="url(#bottom-wave-grad1)"
-                  />
-
-                  {/* Layer 3: Accent Front Bright Wave */}
-                  <path
-                    d="M 0 200 C 180 140, 480 210, 800 130 L 800 280 L 0 280 Z"
-                    fill="url(#bottom-wave-grad2)"
-                    opacity="0.88"
-                  />
-
-                  {/* Hexagon Mesh Overlay on Right */}
-                  <rect x="500" y="100" width="300" height="180" fill="url(#bottom-hex-pattern)" opacity="0.7" />
-
-                  {/* Glowing Outline Contour Lines */}
-                  <path
-                    d="M 0 160 C 220 80, 520 220, 800 90"
-                    stroke="rgba(255, 255, 255, 0.85)"
-                    strokeWidth="2.5"
-                    fill="none"
-                  />
-
-                  <path
-                    d="M 0 200 C 180 140, 480 210, 800 130"
-                    stroke="rgba(167, 243, 208, 0.75)"
-                    strokeWidth="1.8"
-                    fill="none"
-                  />
-
-                  {/* ECG Heartbeat Pulse Trace Overlay */}
-                  <path
-                    d="M 260 240 L 300 240 L 310 225 L 320 260 L 330 215 L 340 245 L 350 238 L 360 240 L 420 240"
-                    stroke="rgba(255, 255, 255, 0.75)"
-                    strokeWidth="1.8"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    fill="none"
-                  />
-
-                  {/* Bottom Halftone Dots */}
-                  <rect x="20" y="170" width="200" height="100" fill="url(#bottom-dots)" opacity="0.6" />
-                  <rect x="620" y="150" width="180" height="120" fill="url(#bottom-dots)" opacity="0.5" />
-
-                  {/* Soft Glowing Light Dots / Bokeh */}
-                  <circle cx="680" cy="220" r="3.5" fill="#A7F3D0" opacity="0.8" />
-                  <circle cx="720" cy="205" r="2.5" fill="#FFFFFF" opacity="0.9" />
-                  <circle cx="150" cy="230" r="3" fill="#A7F3D0" opacity="0.7" />
-                </svg>
               </div>
 
             </div>
@@ -3684,14 +3588,14 @@ export default function LaporanTab({
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   {/* Running Header */}
-                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <div className="border-b border-slate-200 pb-2 mb-3 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
                     <span>Rata-Rata Respon Positif Per Item Dimensi (Bagian 4)</span>
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-3">
+                  <section className="space-y-2">
                     {/* Detailed Item Cards */}
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {DIMENSION_ORDER.slice(7, 10).map((dimId, sliceIndex) => {
                         const index = sliceIndex + 7;
                         const dimInfo = DIMENSI_INFO[dimId];
@@ -3712,47 +3616,47 @@ export default function LaporanTab({
                             className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs"
                           >
                             {/* Card Header */}
-                            <div className="p-2.5 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-3">
+                            <div className="p-2 bg-slate-50/70 border-b border-slate-200 relative flex items-center gap-2">
                               <div className="absolute left-0 top-0 bottom-0 w-1 bg-indigo-600"></div>
-                              <div className="w-6 h-6 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
-                                <span className="text-[10px] font-black text-indigo-600">{index + 1}</span>
+                              <div className="w-5.5 h-5.5 bg-white border border-slate-200 rounded-lg flex items-center justify-center shrink-0 shadow-2xs">
+                                <span className="text-[9.5px] font-black text-indigo-600">{index + 1}</span>
                               </div>
                               <div>
-                                <h3 className="text-[10px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
-                                <p className="text-[8px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
+                                <h3 className="text-[9.5px] font-bold text-slate-800 tracking-tight">{dimInfo.nama}</h3>
+                                <p className="text-[7.5px] text-slate-500 font-medium leading-normal">{dimInfo.deskripsi}</p>
                               </div>
                             </div>
 
                             {/* Questions List */}
-                            <div className="p-2.5 space-y-2">
-                              <div className="space-y-2">
+                            <div className="p-2 space-y-1.5">
+                              <div className="space-y-1.5">
                                 {qStats.map(({ q, stat }) => (
-                                  <div key={q.id} className="flex flex-col gap-1">
+                                  <div key={q.id} className="flex flex-col gap-0.5">
                                     {/* Question Code & Text */}
-                                    <div className="flex gap-2">
-                                      <span className="text-[9.5px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
-                                      <p className="text-[9.5px] font-bold text-slate-700 leading-tight">{q.text}</p>
+                                    <div className="flex gap-1.5">
+                                      <span className="text-[9px] font-black text-indigo-600 shrink-0">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
+                                      <p className="text-[9px] font-bold text-slate-700 leading-tight">{q.text}</p>
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-4.5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
+                                    <div className="h-3.5 flex rounded-lg overflow-hidden bg-slate-50 border border-slate-200/60 shadow-inner relative w-full">
                                       <div 
                                         className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700"
                                         style={{ width: `${stat.posPercent}%` }}
                                       >
-                                        {stat.posPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.posPercent}%</span>}
+                                        {stat.posPercent >= 8 && <span className="text-[7px] font-black text-white">{stat.posPercent}%</span>}
                                       </div>
                                       <div 
                                         className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
                                         style={{ width: `${stat.neuPercent}%` }}
                                       >
-                                        {stat.neuPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.neuPercent}%</span>}
+                                        {stat.neuPercent >= 8 && <span className="text-[7px] font-black text-white">{stat.neuPercent}%</span>}
                                       </div>
                                       <div 
                                         className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 border-l border-white/20"
                                         style={{ width: `${stat.negPercent}%` }}
                                       >
-                                        {stat.negPercent >= 8 && <span className="text-[7.5px] font-black text-white">{stat.negPercent}%</span>}
+                                        {stat.negPercent >= 8 && <span className="text-[7px] font-black text-white">{stat.negPercent}%</span>}
                                       </div>
                                     </div>
                                   </div>
@@ -3761,15 +3665,15 @@ export default function LaporanTab({
                             </div>
 
                             {/* Summary Footer */}
-                            <div className="bg-slate-50/50 p-2 border-t border-slate-200 flex justify-between items-center">
-                              <div className="flex items-center gap-2">
-                                <span className="text-[8px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
-                                <span className="text-xs font-black text-slate-800">{avgPosPercent}%</span>
-                                <div className={`px-1.5 py-0.5 rounded-full text-[7.5px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
+                            <div className="bg-slate-50/50 px-2 py-1 border-t border-slate-200 flex justify-between items-center">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[7.5px] text-slate-400 font-black uppercase">RESPON POSITIF:</span>
+                                <span className="text-[11px] font-black text-slate-800">{avgPosPercent}%</span>
+                                <div className={`px-1.5 py-0.5 rounded-full text-[7px] font-black border ${status.bg} ${status.color} ${status.border} uppercase`}>
                                   {status.label}
                                 </div>
                               </div>
-                              <span className="text-[8.5px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
+                              <span className="text-[8px] font-bold text-slate-500">Benchmark: 72.0% - 85.0%</span>
                             </div>
                           </div>
                         );
@@ -3778,12 +3682,12 @@ export default function LaporanTab({
 
                     {/* Interpretasi & Analisa Data Card */}
                     {itemLevelStrengths.length > 0 && itemLevelWeaknesses.length > 0 && (
-                      <div className="bg-indigo-50/40 border border-indigo-100 p-2.5 rounded-xl space-y-1">
-                        <h5 className="text-[10px] font-bold text-indigo-900 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                      <div className="bg-indigo-50/40 border border-indigo-100 p-2 rounded-xl space-y-0.5">
+                        <h5 className="text-[9.5px] font-bold text-indigo-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3 h-3 text-indigo-600 shrink-0" />
                           Interpretasi & Analisa Data Hasil Per Item
                         </h5>
-                        <p className="text-[9px] text-slate-700 leading-relaxed text-justify">
+                        <p className="text-[8.5px] text-slate-700 leading-snug text-justify">
                           Analisis mikro pada tingkat butir pernyataan (item) di <strong>{activeHospitalName}</strong> mengidentifikasi kekuatan utama terletak pada item <strong>{itemLevelStrengths[0].id}</strong> (&ldquo;{itemLevelStrengths[0].text}&rdquo;) dengan pencapaian respon positif sebesar <strong>{itemLevelStrengths[0].score.toFixed(1)}%</strong>, disusul oleh item <strong>{itemLevelStrengths[1].id}</strong> sebesar <strong>{itemLevelStrengths[1].score.toFixed(1)}%</strong>. 
                           Sebaliknya, kerentanan tertinggi diidentifikasi pada item <strong>{itemLevelWeaknesses[0].id}</strong> (&ldquo;{itemLevelWeaknesses[0].text}&rdquo;) yang hanya mengumpulkan respon positif sebesar <strong>{itemLevelWeaknesses[0].score.toFixed(1)}%</strong>, disusul item <strong>{itemLevelWeaknesses[1].id}</strong> sebesar <strong>{itemLevelWeaknesses[1].score.toFixed(1)}%</strong>.
                         </p>
@@ -3791,18 +3695,18 @@ export default function LaporanTab({
                     )}
 
                     {/* Rekomendasi Peningkatan */}
-                    <div className="bg-emerald-50/40 border border-emerald-100 p-2.5 rounded-xl space-y-1">
-                      <h5 className="text-[10px] font-bold text-emerald-900 flex items-center gap-1.5">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="bg-emerald-50/40 border border-emerald-100 p-2 rounded-xl space-y-0.5">
+                      <h5 className="text-[9.5px] font-bold text-emerald-900 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
                         Rekomendasi Strategis Berbasis Hasil Per Item
                       </h5>
-                      <div className="grid grid-cols-2 gap-2 text-[8.5px]">
+                      <div className="grid grid-cols-2 gap-1.5 text-[8px]">
                         {itemLevelWeaknesses.slice(0, 2).map((item, idx) => {
                           const icons = ['💡', '🛠️'];
                           return (
-                            <div key={item.id} className="flex items-start gap-1 bg-white p-1.5 rounded-lg border border-emerald-100/80">
-                              <span className="text-xs shrink-0">{icons[idx]}</span>
-                              <span className="text-slate-700 font-medium leading-normal">
+                            <div key={item.id} className="flex items-start gap-1 bg-white p-1 rounded-lg border border-emerald-100/80">
+                              <span className="text-[10px] shrink-0">{icons[idx]}</span>
+                              <span className="text-slate-700 font-medium leading-snug">
                                 Untuk item <strong>{item.id}</strong> ({item.score.toFixed(1)}%): Rancang panduan teknis operasional terpadu dan selenggarakan workshop penyamaan persepsi.
                               </span>
                             </div>
@@ -4092,39 +3996,70 @@ export default function LaporanTab({
             </div>
           </div>
 
-          {/* LEMBAR 11: Perbandingan dengan Tahun Sebelumnya */}
+          {/* LEMBAR 11: Perbandingan dengan Tahun Sebelumnya / Perbandingan Periode */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
               <div>
                 {/* Running Header */}
                 <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Trend Historis</span>
+                  <span>Analisis Trend Historis & Perbandingan Periode</span>
                   <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
-                <section className="space-y-4">
-                  {/* Part 1: Historical Trend (Perbandingan dengan Tahun Sebelumnya) */}
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-emerald-600" />
-                        3.2.5 Perbandingan Respon Positif Budaya Keselamatan dengan Tahun Sebelumnya
-                      </h4>
-                      <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
-                        Analisis tren longitudinal membandingkan capaian persentase respon positif antara tahun terpilih (<strong>{tahunSurvei}</strong>) dengan tahun sebelumnya (<strong>{previousYear || 'Sebelumnya'}</strong>) guna mendeteksi peningkatan mutu atau penurunan iklim keselamatan:
-                      </p>
-                    </div>
+                <section className="space-y-3">
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-emerald-600" />
+                      3.2.5 Perbandingan Respon Positif Budaya Keselamatan dengan Periode / Tahun Sebelumnya
+                    </h4>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
+                      Analisis tren longitudinal membandingkan capaian persentase respon positif antara tahun terpilih (<strong>{tahunSurvei}</strong>) dengan tahun perbandingan (<strong>{previousYear || 'Sebelumnya'}</strong>) guna mendeteksi peningkatan mutu atau penurunan iklim keselamatan:
+                    </p>
+                  </div>
 
-                    {previousYear && priorYearScores ? (
+                  {previousYear && priorYearScores ? (
+                    <div className="space-y-3">
+                      {/* Grafik Comparison BarChart */}
+                      <div className="bg-slate-50/60 border border-slate-200 p-2.5 rounded-xl">
+                        <div className="flex items-center justify-between text-[10px] font-bold text-slate-700 mb-1 px-1">
+                          <span>Grafik Perbandingan Respon Positif Per Dimensi (%)</span>
+                          <span className="text-emerald-700">{tahunSurvei} vs {previousYear}</span>
+                        </div>
+                        <div className="w-full h-36">
+                          <ResponsiveContainer width="100%" height="100%">
+                            <BarChart 
+                              data={dimensionScores.map(d => {
+                                const prior = priorYearScores.find(p => p.kode === d.kode)?.percentage || 0;
+                                return {
+                                  kode: d.kode,
+                                  [previousYear]: parseFloat(prior.toFixed(1)),
+                                  [tahunSurvei]: parseFloat(d.percentage.toFixed(1))
+                                };
+                              })} 
+                              margin={{ top: 5, right: 10, left: -25, bottom: 0 }}
+                            >
+                              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                              <XAxis dataKey="kode" tick={{ fontSize: 8, fill: '#475569' }} />
+                              <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569' }} unit="%" />
+                              <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold' }} />
+                              <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px' }} />
+                              <Bar dataKey={previousYear} fill="#94a3b8" radius={[3, 3, 0, 0]} name={`Tahun ${previousYear}`} />
+                              <Bar dataKey={tahunSurvei} fill="#0d9488" radius={[3, 3, 0, 0]} name={`Tahun ${tahunSurvei}`} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+
+                      {/* Tabel Perbandingan Periode */}
                       <div className="overflow-x-auto border border-slate-200 rounded-xl">
                         <table className="w-full text-left border-collapse text-[8.5px]">
                           <thead>
                             <tr className="bg-emerald-900 text-white font-extrabold uppercase text-[8px] border-b border-emerald-950">
-                              <th className="p-2 border-r border-emerald-800 w-12 text-center">Kode</th>
-                              <th className="p-2 border-r border-emerald-800">Dimensi Budaya Keselamatan</th>
-                              <th className="p-2 text-center border-r border-emerald-800 w-28">{previousYear} (Prior)</th>
-                              <th className="p-2 text-center border-r border-emerald-800 w-28">{tahunSurvei} (Current)</th>
-                              <th className="p-2 text-center w-28">Tren Perkembangan</th>
+                              <th className="p-1.5 border-r border-emerald-800 w-10 text-center">Kode</th>
+                              <th className="p-1.5 border-r border-emerald-800">Dimensi Budaya Keselamatan</th>
+                              <th className="p-1.5 text-center border-r border-emerald-800 w-24">{previousYear}</th>
+                              <th className="p-1.5 text-center border-r border-emerald-800 w-24">{tahunSurvei}</th>
+                              <th className="p-1.5 text-center w-24">Selisih (Trend)</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
@@ -4133,12 +4068,12 @@ export default function LaporanTab({
                               const diff = d.percentage - prior;
                               return (
                                 <tr key={d.kode} className="hover:bg-slate-50/40">
-                                  <td className="p-2 border-r border-slate-100 text-center font-bold text-slate-700">{d.kode}</td>
-                                  <td className="p-2 border-r border-slate-100 font-semibold text-slate-800">{d.nama}</td>
-                                  <td className="p-2 text-center border-r border-slate-100 font-bold text-slate-500">{prior.toFixed(1)}%</td>
-                                  <td className="p-2 text-center border-r border-slate-100 font-extrabold text-teal-800">{d.percentage.toFixed(1)}%</td>
-                                  <td className="p-2 text-center">
-                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black flex items-center justify-center gap-1 ${diff >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                                  <td className="p-1.5 border-r border-slate-100 text-center font-bold text-slate-700">{d.kode}</td>
+                                  <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{d.nama}</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-bold text-slate-500">{prior.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-extrabold text-teal-800">{d.percentage.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center">
+                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black inline-flex items-center gap-1 ${diff >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                                       {diff >= 0 ? '▲' : '▼'} {diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`}
                                     </span>
                                   </td>
@@ -4148,15 +4083,38 @@ export default function LaporanTab({
                           </tbody>
                         </table>
                       </div>
-                    ) : (
-                      <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-start gap-2.5">
-                        <span className="text-base shrink-0 text-slate-400">ℹ️</span>
-                        <div className="text-[10px] text-slate-600 leading-relaxed text-justify">
-                          Saat ini belum tersedia data survei tahun sebelumnya untuk <strong>{activeHospitalName}</strong> di database. Hasil survei pada tahun <strong>{tahunSurvei}</strong> ini akan berfungsi sebagai baseline (nilai referensi awal) pengukuran. Analisis trend perbandingan berkala (trendline) secara otomatis akan aktif setelah Anda menginput data survei untuk periode tahun berikutnya.
+
+                      {/* Interpretasi & Rekomendasi Tren Periode */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                        <div className="bg-emerald-50/50 border border-emerald-100 p-2.5 rounded-xl space-y-1">
+                          <h5 className="text-[10.5px] font-bold text-emerald-900 flex items-center gap-1">
+                            <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                            Interpretasi Tren Perbandingan
+                          </h5>
+                          <p className="text-[9.5px] text-slate-700 leading-relaxed text-justify">
+                            Secara keseluruhan, perbandingan antara periode <strong>{previousYear}</strong> dan <strong>{tahunSurvei}</strong> menunjukkan dinamika perkembangan budaya keselamatan pasien. Dimensi yang mengalami peningkatan tertinggi mencerminkan efektivitas program intervensi mutu yang telah dijalankan, sedangkan dimensi yang mengalami penurunan memerlukan evaluasi dan penyegaran intervensi secara berkelanjutan.
+                          </p>
+                        </div>
+
+                        <div className="bg-teal-50/50 border border-teal-100 p-2.5 rounded-xl space-y-1">
+                          <h5 className="text-[10.5px] font-bold text-teal-900 flex items-center gap-1">
+                            <Target className="w-3.5 h-3.5 text-teal-600" />
+                            Rekomendasi Tindak Lanjut Periode
+                          </h5>
+                          <p className="text-[9.5px] text-slate-700 leading-relaxed text-justify">
+                            Diprioritaskan untuk mempertahankan pencapaian pada dimensi positif dan memperkuat pemantauan berkala pada dimensi yang mengalami penurunan. Komite Mutu & Keselamatan Pasien direkomendasikan menyusun Rencana Aksi Keselamatan Pasien (RAKP) berbasis target kinerja bulanan.
+                          </p>
                         </div>
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-start gap-2.5">
+                      <Info className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                      <div className="text-[10px] text-slate-600 leading-relaxed text-justify">
+                        Silakan pilih <strong>Perbandingan Periode</strong> pada dropdown filter header di atas (contoh: <em>vs 2025</em> atau <em>vs 2024</em>). Sistem akan secara otomatis mensinkronkan grafik, tabel komparasi, interpretasi, dan rekomendasi berdasarkan data histori database.
+                      </div>
+                    </div>
+                  )}
                 </section>
               </div>
 
@@ -4178,41 +4136,62 @@ export default function LaporanTab({
                   <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                 </div>
 
-                <section className="space-y-4">
-                  {/* Part 2: Benchmarking (Perbandingan dengan Rumah Sakit Lain) */}
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-indigo-600" />
-                        3.2.7 Perbandingan Respon Positif Dimensi Budaya Keselamatan dengan Rumah Sakit Lain (Benchmark)
-                      </h4>
-                      <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
-                        Pengukuran eksternal (benchmarking) membantu mengidentifikasi posisi tawar, gap pencapaian mutu, dan standar pelayanan rumah sakit dibanding fasilitas kesehatan mitra lainnya:
-                      </p>
-                    </div>
+                <section className="space-y-3">
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-indigo-600" />
+                      3.2.7 Perbandingan Respon Positif Dimensi Budaya Keselamatan dengan Rumah Sakit Lain (Benchmark)
+                    </h4>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
+                      Pengukuran eksternal (benchmarking) membantu mengidentifikasi posisi tawar, gap pencapaian mutu, dan standar pelayanan rumah sakit dibanding fasilitas kesehatan mitra lainnya:
+                    </p>
+                  </div>
 
-                    {selectedBenchmarkHospital && benchmarkData ? (
+                  {selectedBenchmarkHospital ? (
+                    currentRequestForSelectedHospital?.status === 'approved' && benchmarkData ? (
                       <div className="space-y-3">
+                        {/* Grafik Benchmark BarChart */}
+                        <div className="bg-indigo-50/40 border border-indigo-100 p-2.5 rounded-xl">
+                          <div className="flex items-center justify-between text-[10px] font-bold text-indigo-900 mb-1 px-1">
+                            <span>Grafik Komparasi Benchmark RS Anda vs RS Pembanding (%)</span>
+                            <span className="text-indigo-700">{selectedBenchmarkHospital.namaRs}</span>
+                          </div>
+                          <div className="w-full h-36">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart data={benchmarkData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                <XAxis dataKey="kode" tick={{ fontSize: 8, fill: '#475569' }} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569' }} unit="%" />
+                                <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold' }} />
+                                <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px' }} />
+                                <Bar dataKey="rsPct" fill="#4f46e5" radius={[3, 3, 0, 0]} name={`${activeHospitalName} (Anda)`} />
+                                <Bar dataKey="benchPct" fill="#94a3b8" radius={[3, 3, 0, 0]} name={selectedBenchmarkHospital.namaRs} />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        {/* Tabel Benchmark */}
                         <div className="overflow-x-auto border border-slate-200 rounded-xl">
                           <table className="w-full text-left border-collapse text-[8.5px]">
                             <thead>
                               <tr className="bg-indigo-900 text-white font-extrabold uppercase text-[8px] border-b border-indigo-950">
-                                <th className="p-2 border-r border-indigo-800 w-12 text-center">Kode</th>
-                                <th className="p-2 border-r border-indigo-800">Dimensi Budaya Keselamatan</th>
-                                <th className="p-2 text-center border-r border-indigo-800 w-28">{activeHospitalName} (Anda)</th>
-                                <th className="p-2 text-center border-r border-indigo-800 w-28">{selectedBenchmarkHospital.namaRs}</th>
-                                <th className="p-2 text-center w-28">Kesenjangan (Gap)</th>
+                                <th className="p-1.5 border-r border-indigo-800 w-10 text-center">Kode</th>
+                                <th className="p-1.5 border-r border-indigo-800">Dimensi Budaya Keselamatan</th>
+                                <th className="p-1.5 text-center border-r border-indigo-800 w-24">{activeHospitalName} (Anda)</th>
+                                <th className="p-1.5 text-center border-r border-indigo-800 w-24">{selectedBenchmarkHospital.namaRs}</th>
+                                <th className="p-1.5 text-center w-24">Kesenjangan (Gap)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
                               {benchmarkData.map(b => (
                                 <tr key={b.kode} className="hover:bg-slate-50/40">
-                                  <td className="p-2 border-r border-slate-100 text-center font-bold text-slate-700">{b.kode}</td>
-                                  <td className="p-2 border-r border-slate-100 font-semibold text-slate-800">{b.nama}</td>
-                                  <td className="p-2 text-center border-r border-slate-100 font-extrabold text-indigo-700 bg-slate-50/20">{b.rsPct.toFixed(1)}%</td>
-                                  <td className="p-2 text-center border-r border-slate-100 font-bold text-slate-500">{b.benchPct.toFixed(1)}%</td>
-                                  <td className="p-2 text-center">
-                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black flex items-center justify-center gap-1 ${b.diff >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                                  <td className="p-1.5 border-r border-slate-100 text-center font-bold text-slate-700">{b.kode}</td>
+                                  <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{b.nama}</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-extrabold text-indigo-700 bg-slate-50/20">{b.rsPct.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-bold text-slate-500">{b.benchPct.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center">
+                                    <span className={`px-2 py-0.5 rounded-full text-[8px] font-black inline-flex items-center gap-1 ${b.diff >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                                       {b.diff >= 0 ? '▲ Lebih Tinggi' : '▼ Lebih Rendah'} {b.diff >= 0 ? `+${b.diff.toFixed(1)}%` : `${b.diff.toFixed(1)}%`}
                                     </span>
                                   </td>
@@ -4222,28 +4201,51 @@ export default function LaporanTab({
                           </table>
                         </div>
 
-                        {/* Interpretasi & Analisa Data Benchmark Card */}
-                        <div className="bg-indigo-50/40 border border-indigo-100 p-3.5 rounded-xl space-y-1.5">
-                          <h5 className="text-[11px] font-bold text-indigo-900 flex items-center gap-1.5">
-                            <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                            Interpretasi & Analisa Data Perbandingan Benchmark
-                          </h5>
-                          <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                            Berdasarkan hasil komparasi formal dengan <strong>{selectedBenchmarkHospital.namaRs}</strong>, rumah sakit Anda menunjukkan performa yang kompetitif. 
-                            Aspek keunggulan tertinggi (gap positif terbesar) berada pada dimensi yang melampaui benchmark secara signifikan. 
-                            Namun, terdapat dimensi di mana rumah sakit Anda masih berada di bawah pencapaian <strong>{selectedBenchmarkHospital.namaRs}</strong>. Kesenjangan negatif ini mengindikasikan adanya ruang peningkatan mutu yang dapat dipelajari secara langsung dari praktik terbaik (best practices) rumah sakit benchmark tersebut.
-                          </p>
+                        {/* Interpretasi & Rekomendasi Benchmark */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                          <div className="bg-indigo-50/50 border border-indigo-100 p-2.5 rounded-xl space-y-1">
+                            <h5 className="text-[10.5px] font-bold text-indigo-900 flex items-center gap-1">
+                              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                              Interpretasi Analisa Benchmark
+                            </h5>
+                            <p className="text-[9.5px] text-slate-700 leading-relaxed text-justify">
+                              Hasil komparasi formal dengan <strong>{selectedBenchmarkHospital.namaRs}</strong> mengidentifikasi posisi tawar mutu layanan. Dimensi dengan gap positif merupakan keunggulan kompetitif rumah sakit Anda, sedangkan dimensi dengan gap negatif menjadi fokus prioritas pembelajaran praktik terbaik.
+                            </p>
+                          </div>
+
+                          <div className="bg-blue-50/50 border border-blue-100 p-2.5 rounded-xl space-y-1">
+                            <h5 className="text-[10.5px] font-bold text-blue-900 flex items-center gap-1">
+                              <Award className="w-3.5 h-3.5 text-blue-600" />
+                              Rekomendasi Pembelajaran Mitra
+                            </h5>
+                            <p className="text-[9.5px] text-slate-700 leading-relaxed text-justify">
+                              Direkomendasikan mengadakan kegiatan <em>comparative bench-learning</em> (studi tiru) ke <strong>{selectedBenchmarkHospital.namaRs}</strong> khusus untuk unit-unit kerja yang memiliki gap capaian di bawah mitra benchmark.
+                            </p>
+                          </div>
                         </div>
                       </div>
                     ) : (
-                      <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl flex items-start gap-2.5">
-                        <span className="text-base shrink-0 text-indigo-500">🌍</span>
-                        <div className="text-[10px] text-slate-600 leading-relaxed text-justify">
-                          Untuk melihat analisis perbandingan performa dimensi budaya keselamatan secara detail, silakan pilih Rumah Sakit Benchmark pada selector di bagian atas halaman laporan. Sistem akan melakukan sinkronisasi database dan menampilkan data perbandingan side-by-side secara dinamis beserta kesenjangan (gap) capaian.
+                      <div className="bg-amber-50/80 border border-amber-200 p-4 rounded-xl space-y-2">
+                        <div className="flex items-center gap-2 text-amber-900 font-extrabold text-xs">
+                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                          <span>Status Benchmark Rumah Sakit</span>
                         </div>
+                        <p className="text-xs text-amber-800 font-bold leading-relaxed">
+                          &ldquo;Belum terdapat Rumah Sakit pembanding yang telah disetujui.&rdquo;
+                        </p>
+                        <p className="text-[10.5px] text-amber-700 leading-relaxed">
+                          Silakan tentukan dan mintakan izin akses benchmark pada menu <strong>Analisa Data → Benchmark dengan Rumah Sakit Lain</strong>. Setelah disetujui oleh Rumah Sakit pembanding, data benchmark otomatis akan terintegrasi pada halaman laporan ini secara realtime.
+                        </p>
                       </div>
-                    )}
-                  </div>
+                    )
+                  ) : (
+                    <div className="bg-slate-50 border border-slate-200 p-3.5 rounded-xl flex items-start gap-2.5">
+                      <Globe className="w-4 h-4 text-indigo-500 shrink-0 mt-0.5" />
+                      <div className="text-[10px] text-slate-600 leading-relaxed text-justify">
+                        Untuk melihat perbandingan benchmark eksternal, silakan pilih Rumah Sakit Pembanding pada dropdown header di atas. Data akan disinkronkan dari database secara realtime.
+                      </div>
+                    </div>
+                  )}
                 </section>
               </div>
 
@@ -4499,12 +4501,9 @@ export default function LaporanTab({
 
                     {/* TANDA TANGAN & TANGGAL PENGESAHAN */}
                     <div className="pt-3 border-t border-slate-200 mt-3">
-                      <div className="grid grid-cols-2 gap-6 text-center text-[10px] mb-2">
-                        <div></div>
-                        <p className="text-center text-[10.5px] text-slate-600 leading-relaxed font-semibold">
-                          {pengesahanConfig?.kota || 'Sukabumi'}, {pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </p>
-                      </div>
+                      <p className="text-right text-[10.5px] text-slate-600 leading-relaxed font-semibold mb-4">
+                        {pengesahanConfig?.kota || 'Sukabumi'}, {pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                      </p>
                       <div className="grid grid-cols-2 gap-6 text-center text-[10px]">
                         <div className="space-y-10">
                           <div>
@@ -4521,7 +4520,7 @@ export default function LaporanTab({
 
                         <div className="space-y-10">
                           <div>
-                            <p className="font-bold text-slate-800">Disusun oleh,</p>
+                            <p className="font-bold text-slate-800">Disiapkan oleh,</p>
                             <p className="font-bold text-slate-900">{pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien'}</p>
                           </div>
                           <div>

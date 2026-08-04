@@ -288,7 +288,23 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [mode, setMode] = useState<'Tunggal' | 'Perbandingan'>('Tunggal');
 
   // Benchmark Hospital Selection State
-  const [selectedBenchmarkHospitalId, setSelectedBenchmarkHospitalId] = useState<string>('default');
+  const [selectedBenchmarkHospitalId, setSelectedBenchmarkHospitalId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('ahrq_active_benchmark_id');
+      if (saved && saved !== 'none') return saved;
+    }
+    return 'default';
+  });
+
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (selectedBenchmarkHospitalId && selectedBenchmarkHospitalId !== 'default') {
+        localStorage.setItem('ahrq_active_benchmark_id', selectedBenchmarkHospitalId);
+      } else {
+        localStorage.removeItem('ahrq_active_benchmark_id');
+      }
+    }
+  }, [selectedBenchmarkHospitalId]);
   const [benchmarkSearchTerm, setBenchmarkSearchTerm] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const [targetHospitalSurveys, setTargetHospitalSurveys] = useState<SurveyData[]>([]);
@@ -534,9 +550,29 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       });
       return customMb;
     }
+
+    // Default benchmark: calculate real-time national average from all other hospital surveys in Supabase
+    const otherHospitalsSurveys = surveys.filter(s => {
+      if (!s || !isSurveyResponse(s)) return false;
+      if (s.id === 'MASTER_BENCHMARK' || s.id.startsWith('LINK_CONFIG_')) return false;
+      if (hospitalId && ((s as any).hospital_id === hospitalId || s.namaRs === namaRs)) return false;
+      return true;
+    });
+
+    if (otherHospitalsSurveys.length > 0) {
+      const nationalScores = computeDimensionScores(otherHospitalsSurveys);
+      const nationalMb: Record<string, { min: number; max: number; avg: number; positivePercent: number }> = {};
+      nationalScores.forEach(ds => {
+        const val = parseFloat(ds.percentage.toFixed(1));
+        nationalMb[ds.id] = { min: val, max: val, avg: val, positivePercent: val };
+        nationalMb[ds.kode] = { min: val, max: val, avg: val, positivePercent: val };
+      });
+      return nationalMb;
+    }
+
     const mb = surveys.find(s => s.id === 'MASTER_BENCHMARK');
     return mb ? (mb.dimensiScores as any) : undefined;
-  }, [surveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, filterTargetSurveysByYear]);
+  }, [surveys, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, filterTargetSurveysByYear, hospitalId, namaRs]);
 
   const [benchmarkInteraksiData, setBenchmarkInteraksiData] = useState<BenchmarkInteraksi[]>([]);
 
@@ -592,31 +628,32 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
     let targetValid = 0;
     const targetCounts = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
-    if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
-      filterTargetSurveysByYear(targetHospitalSurveys).forEach(survey => {
-        const raw = (survey.dimensiScores as any)?._rawAnswers;
-        if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
-          targetCounts[raw.ansE as keyof typeof targetCounts] += 1;
-          targetValid += 1;
-        }
-      });
-    }
+    
+    // Calculate benchmark from active benchmark surveys (target hospital or national average)
+    const surveysToUse = (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0)
+      ? filterTargetSurveysByYear(targetHospitalSurveys)
+      : surveys.filter(s => isSurveyResponse(s) && s.id !== 'MASTER_BENCHMARK' && (!hospitalId || (s as any).hospital_id !== hospitalId));
 
-    const getTargetPct = (val: number, fallback: number) => {
-      if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
-        return targetValid > 0 ? (targetCounts[val as keyof typeof targetCounts] / targetValid) * 100 : 0;
+    surveysToUse.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
+        targetCounts[raw.ansE as keyof typeof targetCounts] += 1;
+        targetValid += 1;
       }
-      return fallback;
+    });
+
+    const getTargetPct = (val: number) => {
+      return targetValid > 0 ? (targetCounts[val as keyof typeof targetCounts] / targetValid) * 100 : 0;
     };
 
     return [
-      { kategori: 'Sangat Baik', 'Rumah Sakit Anda': getPct(counts[5]), [activeBenchmarkLabel]: getTargetPct(5, 35) },
-      { kategori: 'Baik', 'Rumah Sakit Anda': getPct(counts[4]), [activeBenchmarkLabel]: getTargetPct(4, 45) },
-      { kategori: 'Cukup', 'Rumah Sakit Anda': getPct(counts[3]), [activeBenchmarkLabel]: getTargetPct(3, 15) },
-      { kategori: 'Kurang', 'Rumah Sakit Anda': getPct(counts[2]), [activeBenchmarkLabel]: getTargetPct(2, 4) },
-      { kategori: 'Sangat Kurang', 'Rumah Sakit Anda': getPct(counts[1]), [activeBenchmarkLabel]: getTargetPct(1, 1) },
+      { kategori: 'Sangat Baik', 'Rumah Sakit Anda': getPct(counts[5]), [activeBenchmarkLabel]: getTargetPct(5) },
+      { kategori: 'Baik', 'Rumah Sakit Anda': getPct(counts[4]), [activeBenchmarkLabel]: getTargetPct(4) },
+      { kategori: 'Cukup', 'Rumah Sakit Anda': getPct(counts[3]), [activeBenchmarkLabel]: getTargetPct(3) },
+      { kategori: 'Kurang', 'Rumah Sakit Anda': getPct(counts[2]), [activeBenchmarkLabel]: getTargetPct(2) },
+      { kategori: 'Sangat Kurang', 'Rumah Sakit Anda': getPct(counts[1]), [activeBenchmarkLabel]: getTargetPct(1) },
     ];
-  }, [actualSurveys, tahun1, tahun2, mode, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, activeBenchmarkLabel, filterTargetSurveysByYear]);
+  }, [actualSurveys, tahun1, tahun2, mode, selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, activeBenchmarkLabel, filterTargetSurveysByYear, surveys, hospitalId]);
 
   // SOPS 2.0 Question Items Mapping
   const STATEMENTS_A = useMemo(() => [
@@ -678,50 +715,29 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
       return filterTargetSurveysByYear(targetHospitalSurveys);
     }
-    return surveys.filter(s => (s.id === 'MASTER_BENCHMARK' || (s as any).isBenchmark) && !s.id.startsWith('LINK_CONFIG_') && !('token' in ((s.dimensiScores as any) || {})));
-  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, surveys, filterTargetSurveysByYear]);
+    // Default national benchmark: all other hospital survey responses in database
+    return surveys.filter(s => {
+      if (!s || !isSurveyResponse(s)) return false;
+      if (s.id === 'MASTER_BENCHMARK' || s.id.startsWith('LINK_CONFIG_')) return false;
+      if (hospitalId && ((s as any).hospital_id === hospitalId || s.namaRs === namaRs)) return false;
+      return true;
+    });
+  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, surveys, filterTargetSurveysByYear, hospitalId, namaRs]);
 
   const targetDemografiStats = useMemo(() => {
     let surveysToUse: SurveyData[] = activeBenchmarkSurveys;
 
     if (surveysToUse.length === 0) {
       return {
-        total: 4862,
-        posisiData: [
-          { name: 'Perawat', value: 2431 },
-          { name: 'Dokter', value: 972 },
-          { name: 'Staf Administrasi', value: 729 },
-          { name: 'Farmasi', value: 486 },
-          { name: 'Lainnya', value: 244 },
-        ],
-        unitData: [
-          { name: 'Rawat Inap', value: 1945 },
-          { name: 'Rawat Jalan', value: 1215 },
-          { name: 'IGD', value: 729 },
-          { name: 'ICU', value: 486 },
-          { name: 'Instansi Umum', value: 487 },
-        ],
-        g1Data: [
-          { name: 'Kurang dari 1 tahun', value: 486 },
-          { name: '1 hingga 5 tahun', value: 1945 },
-          { name: '6 hingga 10 tahun', value: 1458 },
-          { name: '11 tahun atau lebih', value: 973 },
-        ],
-        g2Data: [
-          { name: 'Kurang dari 1 tahun', value: 729 },
-          { name: '1 hingga 5 tahun', value: 2188 },
-          { name: '6 hingga 10 tahun', value: 1215 },
-          { name: '11 tahun atau lebih', value: 730 },
-        ],
-        g3Data: [
-          { name: 'Kurang dari 20 jam', value: 243 },
-          { name: '20 hingga 39 jam', value: 972 },
-          { name: '40 hingga 59 jam', value: 2917 },
-          { name: '60 jam atau lebih', value: 730 },
-        ],
+        total: 0,
+        posisiData: [],
+        unitData: [],
+        g1Data: [],
+        g2Data: [],
+        g3Data: [],
         g4Data: [
-          { name: 'Ya', value: 4133 },
-          { name: 'Tidak', value: 729 },
+          { name: 'YA, saya melakukan interaksi atau kontak langsung dengan pasien', value: 0 },
+          { name: 'TIDAK, saya TIDAK melakukan interaksi atau kontak langsung dengan pasien', value: 0 }
         ]
       };
     }
@@ -775,8 +791,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     let g4Data;
     if (countLangsung === 0 && countTidak === 0) {
       g4Data = [
-        { name: optLangsung, value: Math.round((total > 0 ? total : 4862) * 0.85) },
-        { name: optTidakLangsung, value: Math.round((total > 0 ? total : 4862) * 0.15) }
+        { name: optLangsung, value: total },
+        { name: optTidakLangsung, value: 0 }
       ];
     } else {
       g4Data = [
@@ -787,7 +803,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
     const unitData = Object.entries(unitCounts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
-    return { total: total > 0 ? total : 4862, posisiData, g1Data, g2Data, g3Data, g4Data, unitData };
+    return { total, posisiData, g1Data, g2Data, g3Data, g4Data, unitData };
   }, [activeBenchmarkSurveys]);
 
   const demografiStats = useMemo(() => {
@@ -1219,19 +1235,19 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   
   const targetReportedEventsStats = useMemo(() => {
-    if (selectedBenchmarkHospitalId !== 'default' && isSelectedTargetApproved && targetHospitalSurveys.length > 0) {
-      return calculateReportedEventsStats(filterTargetSurveysByYear(targetHospitalSurveys));
+    if (activeBenchmarkSurveys.length > 0) {
+      return calculateReportedEventsStats(activeBenchmarkSurveys);
     }
     return null;
-  }, [selectedBenchmarkHospitalId, isSelectedTargetApproved, targetHospitalSurveys, calculateReportedEventsStats, filterTargetSurveysByYear]);
+  }, [activeBenchmarkSurveys, calculateReportedEventsStats]);
 
   const e2ChartData = useMemo(() => {
     const categories = [
-      { label: 'Tidak Pernah', key: 'Tidak ada', defaultBmPct: 45, defaultBmCount: 4862 },
-      { label: '1–2 Kejadian', key: '1 sampai 2', defaultBmPct: 28, defaultBmCount: 3025 },
-      { label: '3–5 Kejadian', key: '3 sampai 5', defaultBmPct: 15, defaultBmCount: 1621 },
-      { label: '6–10 Kejadian', key: '6 hingga 10', defaultBmPct: 8, defaultBmCount: 864 },
-      { label: '≥11 Kejadian', key: '11 atau lebih', defaultBmPct: 4, defaultBmCount: 433 },
+      { label: 'Tidak Pernah', key: 'Tidak ada' },
+      { label: '1–2 Kejadian', key: '1 sampai 2' },
+      { label: '3–5 Kejadian', key: '3 sampai 5' },
+      { label: '6–10 Kejadian', key: '6 hingga 10' },
+      { label: '≥11 Kejadian', key: '11 atau lebih' },
     ];
 
     return categories.map(cat => {
@@ -1244,10 +1260,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       const rsCount = cMap[cat.key] || 0;
       const bmPct = targetReportedEventsStats 
         ? (targetPMap[cat.key] || 0)
-        : cat.defaultBmPct;
+        : 0;
       const bmCount = targetReportedEventsStats 
         ? (targetCMap[cat.key] || 0)
-        : cat.defaultBmCount;
+        : 0;
 
       return {
         kategori: cat.label,
@@ -3198,126 +3214,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </p>
               </div>
             </div>
-
-            {/* Status Alert Banner when a target hospital is selected but not approved */}
-            {selectedBenchmarkHospitalId !== 'default' && !isSelectedTargetApproved && (
-              <div className="mb-6">
-                {currentRequestForSelectedHospital?.status === 'pending' ? (
-                  <div className="p-6 bg-amber-50 border-2 border-amber-200/90 rounded-2xl text-amber-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-amber-100 border border-amber-300 text-amber-700 rounded-xl shrink-0">
-                        <Clock className="w-6 h-6 animate-spin" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Status Akses Benchmark: Menunggu Persetujuan</span>
-                        <h3 className="font-extrabold text-base text-amber-900 mt-0.5">Permintaan Akses Benchmark Sedang Menunggu Persetujuan</h3>
-                        <p className="text-xs text-amber-800 leading-relaxed mt-1">
-                          Permintaan izin benchmark data dari <strong>{selectedTargetHospital?.namaRs}</strong> sedang menunggu persetujuan dari pihak rumah sakit tujuan.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        onClick={() => setSelectedBenchmarkHospitalId('default')}
-                        className="px-4 py-2 bg-white border border-amber-300 hover:bg-amber-100 text-amber-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
-                      >
-                        Gunakan Benchmark Bawaan
-                      </button>
-                    </div>
-                  </div>
-                ) : currentRequestForSelectedHospital?.status === 'rejected' ? (
-                  <div className="p-6 bg-rose-50 border-2 border-rose-200/90 rounded-2xl text-rose-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-rose-100 border border-rose-300 text-rose-700 rounded-xl shrink-0">
-                        <XCircle className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Status Akses Benchmark: Ditolak</span>
-                        <h3 className="font-extrabold text-base text-rose-900 mt-0.5">Permintaan Akses Benchmark Ditolak</h3>
-                        <p className="text-xs text-rose-800 leading-relaxed mt-1">
-                          Permintaan perbandingan data telah ditolak oleh <strong>{selectedTargetHospital?.namaRs}</strong>.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        disabled={isSendingBenchmarkReq}
-                        onClick={handleSendBenchmarkRequest}
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        {isSendingBenchmarkReq ? 'Mengirim...' : 'Kirim Ulang Permintaan'}
-                      </button>
-                      <button
-                        onClick={() => setSelectedBenchmarkHospitalId('default')}
-                        className="px-4 py-2 bg-white border border-rose-300 hover:bg-rose-100 text-rose-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
-                      >
-                        Gunakan Benchmark Bawaan
-                      </button>
-                    </div>
-                  </div>
-                ) : currentRequestForSelectedHospital?.status === 'revoked' ? (
-                  <div className="p-6 bg-rose-50 border-2 border-rose-200/90 rounded-2xl text-rose-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-rose-100 border border-rose-300 text-rose-700 rounded-xl shrink-0">
-                        <ShieldAlert className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Status Akses Benchmark: Akses Dicabut</span>
-                        <h3 className="font-extrabold text-base text-rose-900 mt-0.5">Akses Benchmark Telah Dicabut</h3>
-                        <p className="text-xs text-rose-800 leading-relaxed mt-1">
-                          Akses Benchmark telah dicabut oleh Rumah Sakit tujuan (<strong>{selectedTargetHospital?.namaRs}</strong>).
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        disabled={isSendingBenchmarkReq}
-                        onClick={handleSendBenchmarkRequest}
-                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        {isSendingBenchmarkReq ? 'Mengirim...' : 'Minta Izin Akses Ulang'}
-                      </button>
-                      <button
-                        onClick={() => setSelectedBenchmarkHospitalId('default')}
-                        className="px-4 py-2 bg-white border border-rose-300 hover:bg-rose-100 text-rose-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
-                      >
-                        Gunakan Benchmark Bawaan
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-6 bg-blue-50 border-2 border-blue-200/90 rounded-2xl text-blue-950 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 bg-blue-100 border border-blue-300 text-blue-700 rounded-xl shrink-0">
-                        <Lock className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wider block">Persetujuan Akses Diperlukan</span>
-                        <h3 className="font-extrabold text-base text-blue-900 mt-0.5">Izin Akses Data Benchmark {selectedTargetHospital?.namaRs}</h3>
-                        <p className="text-xs text-blue-800 leading-relaxed mt-1">
-                          Akses perbandingan data membutuhkan persetujuan dari <strong>{selectedTargetHospital?.namaRs}</strong>. Silakan kirim permintaan akses.
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        disabled={isSendingBenchmarkReq}
-                        onClick={handleSendBenchmarkRequest}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer disabled:opacity-50"
-                      >
-                        {isSendingBenchmarkReq ? 'Mengirim...' : 'Kirim Permintaan Benchmark'}
-                      </button>
-                      <button
-                        onClick={() => setSelectedBenchmarkHospitalId('default')}
-                        className="px-4 py-2 bg-white border border-blue-300 hover:bg-blue-100 text-blue-900 font-bold text-xs rounded-xl transition-all cursor-pointer"
-                      >
-                        Gunakan Benchmark Bawaan
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {activeView === 'benchmark' ? (
               !benchmarkSubView ? (

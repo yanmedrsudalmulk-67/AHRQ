@@ -125,7 +125,8 @@ interface SurveyData {
   unitKerja: string;
   jumlahResponden: number;
   tanggalInput: string;
-  dimensiScores: { [key: string]: number }; // Scores 1-5
+  komentar?: string;
+  dimensiScores: { [key: string]: any }; // Scores 1-5
 }
 
 interface InputDataTabProps {
