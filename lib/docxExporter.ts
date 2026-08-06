@@ -421,7 +421,7 @@ export async function exportReportToDocx(data: ReportData) {
           heading1("DAFTAR ISI"),
           new TableOfContents("Daftar Isi", {
             hyperlink: true,
-            headingStyleRange: [1, 3],
+            headingStyleRange: "1-3",
           }),
 
           pageBreak(),

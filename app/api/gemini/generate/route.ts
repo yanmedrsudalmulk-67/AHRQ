@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     const { prompt, model } = await req.json();
     
-    const requestedModel = model || "gemini-3.5-flash";
+    const requestedModel = model || "gemini-3.6-flash";
     const modelsToTry = [requestedModel];
     if (requestedModel !== "gemini-3.1-flash-lite") {
       modelsToTry.push("gemini-3.1-flash-lite");
