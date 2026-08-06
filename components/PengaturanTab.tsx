@@ -52,7 +52,8 @@ import {
   BenchmarkInteraksi,
   getPengesahanConfig,
   savePengesahanConfig,
-  PengesahanConfig
+  PengesahanConfig,
+  SurveyData
 } from '../lib/db';
 import { DIMENSI_INFO } from '../lib/scoring';
 import { BarChart2, Users } from 'lucide-react';
@@ -69,6 +70,7 @@ interface PengaturanTabProps {
   onUpdateWallpaper: (wallpaper: WallpaperData | null) => void;
   activeLogo: LogoData | null;
   onUpdateLogo: (logo: LogoData | null) => void;
+  surveys?: SurveyData[];
 }
 
 export default function PengaturanTab({ 
@@ -80,7 +82,8 @@ export default function PengaturanTab({
   activeWallpaper,
   onUpdateWallpaper,
   activeLogo,
-  onUpdateLogo
+  onUpdateLogo,
+  surveys = []
 }: PengaturanTabProps) {
   const [activeSettingsSection, setActiveSettingsSection] = useState<'profil' | 'posisi' | 'unit' | 'pengesahan'>('profil');
   // Benchmark state
@@ -1946,11 +1949,11 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
       )}
 
       {activeSettingsSection === 'posisi' && (
-        <MasterPosisiTab rsName={namaRs} />
+        <MasterPosisiTab rsName={namaRs} surveys={surveys} />
       )}
 
       {activeSettingsSection === 'unit' && (
-        <MasterUnitTab rsName={namaRs} />
+        <MasterUnitTab rsName={namaRs} surveys={surveys} />
       )}
 
       {activeSettingsSection === 'pengesahan' && (

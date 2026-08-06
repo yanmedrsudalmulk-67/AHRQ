@@ -919,6 +919,7 @@ export default function Dashboard({
             onUpdateWallpaper={onUpdateWallpaper}
             activeLogo={activeLogo}
             onUpdateLogo={onUpdateLogo}
+            surveys={surveysWithConfig}
           />
         )}
 

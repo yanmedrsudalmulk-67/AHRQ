@@ -113,7 +113,7 @@ const E1Tooltip = ({ active, payload, label }: any) => {
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }}></span> 
               {p.name}:
             </span>
-            <strong className="text-sm">{(p.value ?? 0).toFixed(1)}%</strong>
+            <strong className="text-sm">{Number(Number(p.value ?? 0).toFixed(1)).toLocaleString('id-ID')}%</strong>
           </div>
         ))}
       </div>
@@ -141,7 +141,7 @@ const ReportedEventsTooltip = ({ active, payload, label }: any) => {
             </p>
             <div className="pl-4 space-y-0.5 text-slate-300">
               <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
-              <p>Persentase : <span className="font-semibold text-white">{(rsData.value ?? 0).toFixed(1)}%</span></p>
+              <p>Persentase : <span className="font-semibold text-white">{Number(Number(rsData.value ?? 0).toFixed(1)).toLocaleString('id-ID')}%</span></p>
               <p>Jumlah Responden : <span className="font-semibold text-white">{rsData.payload[`${rsData.dataKey} Count`] || rsData.payload['Rumah Sakit Anda Count'] || 0}</span></p>
             </div>
           </div>
@@ -157,7 +157,7 @@ const ReportedEventsTooltip = ({ active, payload, label }: any) => {
               </p>
               <div className="pl-4 space-y-0.5 text-slate-300">
                 <p>Kategori : <span className="font-semibold text-white">{label}</span></p>
-                <p>Persentase : <span className="font-semibold text-white">{(benchmarkData.value ?? 0).toFixed(1)}%</span></p>
+                <p>Persentase : <span className="font-semibold text-white">{Number(Number(benchmarkData.value ?? 0).toFixed(1)).toLocaleString('id-ID')}%</span></p>
                 <p>Jumlah Responden : <span className="font-semibold text-white">{(benchmarkData.payload[`${benchmarkData.dataKey} Count`] || benchmarkData.payload['Data Pembanding Count'] || benchmarkData.payload['Rumah Sakit Uji Coba Count'] || benchmarkData.payload['RS Uji Coba Count'] || benchmarkData.payload['RS Uji Coba atau Rumah Sakit Uji Coba Count'] || 0).toLocaleString('id-ID')}</span></p>
               </div>
             </div>
@@ -683,8 +683,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       }
     });
 
+    const defaultBenchmarkPcts: Record<number, number> = { 5: 28, 4: 39, 3: 23, 2: 9, 1: 1 };
     const getTargetPct = (val: number) => {
-      return targetValid > 0 ? (targetCounts[val as keyof typeof targetCounts] / targetValid) * 100 : 0;
+      if (selectedBenchmarkHospitalId === 'default' || targetValid === 0) {
+        return defaultBenchmarkPcts[val] || 0;
+      }
+      return (targetCounts[val as keyof typeof targetCounts] / targetValid) * 100;
     };
 
     return [
@@ -1276,19 +1280,19 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   
   const targetReportedEventsStats = useMemo(() => {
-    if (activeBenchmarkSurveys.length > 0) {
+    if (selectedBenchmarkHospitalId !== 'default' && activeBenchmarkSurveys.length > 0) {
       return calculateReportedEventsStats(activeBenchmarkSurveys);
     }
     return null;
-  }, [activeBenchmarkSurveys, calculateReportedEventsStats]);
+  }, [activeBenchmarkSurveys, calculateReportedEventsStats, selectedBenchmarkHospitalId]);
 
   const e2ChartData = useMemo(() => {
     const categories = [
-      { label: 'Tidak Pernah', key: 'Tidak ada' },
-      { label: '1–2 Kejadian', key: '1 sampai 2' },
-      { label: '3–5 Kejadian', key: '3 sampai 5' },
-      { label: '6–10 Kejadian', key: '6 hingga 10' },
-      { label: '≥11 Kejadian', key: '11 atau lebih' },
+      { label: 'Tidak Pernah', key: 'Tidak ada', defaultBm: 55 },
+      { label: '1–2 Kejadian', key: '1 sampai 2', defaultBm: 26 },
+      { label: '3–5 Kejadian', key: '3 sampai 5', defaultBm: 13 },
+      { label: '6–10 Kejadian', key: '6 hingga 10', defaultBm: 4 },
+      { label: '≥11 Kejadian', key: '11 atau lebih', defaultBm: 3 },
     ];
 
     return categories.map(cat => {
@@ -1299,12 +1303,12 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
       const rsPct = pMap[cat.key] || 0;
       const rsCount = cMap[cat.key] || 0;
-      const bmPct = targetReportedEventsStats 
+      const bmPct = (selectedBenchmarkHospitalId !== 'default' && targetReportedEventsStats) 
         ? (targetPMap[cat.key] || 0)
-        : 0;
-      const bmCount = targetReportedEventsStats 
+        : cat.defaultBm;
+      const bmCount = (selectedBenchmarkHospitalId !== 'default' && targetReportedEventsStats) 
         ? (targetCMap[cat.key] || 0)
-        : 0;
+        : Math.round(3789 * (cat.defaultBm / 100));
 
       return {
         kategori: cat.label,
@@ -1314,7 +1318,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         [`${activeBenchmarkLabel} Count`]: bmCount
       };
     });
-  }, [reportedEventsComparisonStats, targetReportedEventsStats, activeBenchmarkLabel]);
+  }, [reportedEventsComparisonStats, targetReportedEventsStats, activeBenchmarkLabel, selectedBenchmarkHospitalId]);
 
   const hospitalComments = useMemo(() => {
     const list: { id: string; text: string; unit: string; position: string; date: string }[] = [];
@@ -1642,106 +1646,96 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     const map: Record<string, Record<string, number>> = {};
     masterPositions.forEach(pos => {
       const posName = pos.nama_posisi;
-      let hash = 0;
-      for (let i = 0; i < posName.length; i++) {
-        hash = posName.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const seed = Math.abs(hash);
-      
-      let baseSangatBaik = 28;
-      let baseBaik = 40;
-      let baseCukup = 22;
-      let baseKurang = 8;
-      let baseSangatKurang = 2;
+      const posSurveys = activeBenchmarkSurveys.filter(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw) return (raw.posisiStaf || 'Lainnya') === posName;
+        return (s.unitKerja || 'Perawat') === posName;
+      });
 
-      const lowerName = posName.toLowerCase();
-      if (lowerName.includes('perawat') || lowerName.includes('bidan')) {
-        baseSangatBaik = 24; baseBaik = 36; baseCukup = 25; baseKurang = 13; baseSangatKurang = 2;
-      } else if (lowerName.includes('dokter')) {
-        baseSangatBaik = 31; baseBaik = 33; baseCukup = 27; baseKurang = 7; baseSangatKurang = 2;
-      } else if (lowerName.includes('apoteker')) {
-        baseSangatBaik = 28; baseBaik = 47; baseCukup = 20; baseKurang = 5; baseSangatKurang = 0;
-      }
+      let totalValid = 0;
+      const ratings = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      posSurveys.forEach(survey => {
+        const raw = (survey.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
+          totalValid++;
+          if (raw.ansE >= 1 && raw.ansE <= 5) ratings[raw.ansE as 1|2|3|4|5]++;
+        } else if (survey.dimensiScores?.E1) {
+          totalValid++;
+          const rounded = Math.min(5, Math.max(1, Math.round(survey.dimensiScores.E1))) as 1|2|3|4|5;
+          ratings[rounded]++;
+        }
+      });
 
-      const variance = (seed % 9) - 4; // -4 to +4
-      
-      map[posName] = {
-        'Sangat Baik': Math.max(0, baseSangatBaik + variance),
-        'Baik': Math.max(0, baseBaik - Math.floor(variance / 2)),
-        'Cukup': Math.max(0, baseCukup - Math.ceil(variance / 2)),
-        'Kurang': baseKurang,
-        'Sangat Kurang': baseSangatKurang,
-        'count': 150 + (seed % 300)
-      };
+      if (totalValid > 0) {
+        map[posName] = {
+          'Sangat Baik': (ratings[5] / totalValid) * 100,
+          'Baik': (ratings[4] / totalValid) * 100,
+          'Cukup': (ratings[3] / totalValid) * 100,
+          'Kurang': (ratings[2] / totalValid) * 100,
+          'Sangat Kurang': (ratings[1] / totalValid) * 100,
+          'count': totalValid
+        };
+      } else {
+        let hash = 0;
+        for (let i = 0; i < posName.length; i++) hash = posName.charCodeAt(i) + ((hash << 5) - hash);
+        const seed = Math.abs(hash);
+        const variance = (seed % 9) - 4;
+        map[posName] = {
+          'Sangat Baik': Math.max(0, 28 + variance),
+          'Baik': Math.max(0, 40 - Math.floor(variance / 2)),
+          'Cukup': Math.max(0, 22 - Math.ceil(variance / 2)),
+          'Kurang': 8,
+          'Sangat Kurang': 2,
+          'count': 0
+        };
+      }
     });
     return map;
-  }, [masterPositions]);
+  }, [masterPositions, activeBenchmarkSurveys]);
 
   const positionEventBenchmarks = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     masterPositions.forEach(pos => {
       const posName = pos.nama_posisi;
-      
-      // Seeded values
-      let hash = 0;
-      for (let i = 0; i < posName.length; i++) {
-        hash = posName.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const seed = Math.abs(hash);
+      const posSurveys = activeBenchmarkSurveys.filter(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw) return (raw.posisiStaf || 'Lainnya') === posName;
+        return (s.unitKerja || 'Perawat') === posName;
+      });
 
-      // Baseline depending on role
-      let baseTidakAda = 45;
-      let base1_2 = 28;
-      let base3_5 = 15;
-      let base6_10 = 8;
-      let base11Plus = 4;
-
-      const lowerName = posName.toLowerCase();
-      if (lowerName.includes('perawat') || lowerName.includes('bidan')) {
-        baseTidakAda = 35;
-        base1_2 = 32;
-        base3_5 = 19;
-        base6_10 = 10;
-        base11Plus = 4;
-      } else if (lowerName.includes('dokter')) {
-        baseTidakAda = 52;
-        base1_2 = 25;
-        base3_5 = 13;
-        base6_10 = 7;
-        base11Plus = 3;
-      } else if (lowerName.includes('direktur') || lowerName.includes('kepala') || lowerName.includes('manajer') || lowerName.includes('admin')) {
-        baseTidakAda = 72;
-        base1_2 = 18;
-        base3_5 = 7;
-        base6_10 = 2;
-        base11Plus = 1;
-      }
-
-      const varTidakAda = (seed % 7) - 3; // -3 to +3
-      const var1_2 = ((seed >> 2) % 5) - 2; // -2 to +2
-      const var3_5 = ((seed >> 4) % 5) - 2;
-      const var6_10 = ((seed >> 6) % 3) - 1;
-
-      let vTidakAda = baseTidakAda + varTidakAda;
-      let v1_2 = base1_2 + var1_2;
-      let v3_5 = base3_5 + var3_5;
-      let v6_10 = base6_10 + var6_10;
-      let v11Plus = 100 - (vTidakAda + v1_2 + v3_5 + v6_10);
-      if (v11Plus < 0) {
-        vTidakAda += v11Plus;
-        v11Plus = 0;
-      }
-
-      map[posName] = {
-        'Tidak ada': vTidakAda,
-        '1 sampai 2': v1_2,
-        '3 sampai 5': v3_5,
-        '6 hingga 10': v6_10,
-        '11 atau lebih': v11Plus
+      let totalValid = 0;
+      const counts: Record<string, number> = {
+        'Tidak ada': 0, '1 sampai 2': 0, '3 sampai 5': 0, '6 hingga 10': 0, '11 atau lebih': 0
       };
+
+      posSurveys.forEach(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw) {
+          const val = raw.ansD?.[3];
+          if (val && counts[val] !== undefined) {
+            counts[val] += (s.jumlahResponden || 1);
+            totalValid += (s.jumlahResponden || 1);
+          }
+        }
+      });
+
+      if (totalValid > 0) {
+        map[posName] = {
+          'Tidak ada': (counts['Tidak ada'] / totalValid) * 100,
+          '1 sampai 2': (counts['1 sampai 2'] / totalValid) * 100,
+          '3 sampai 5': (counts['3 sampai 5'] / totalValid) * 100,
+          '6 hingga 10': (counts['6 hingga 10'] / totalValid) * 100,
+          '11 atau lebih': (counts['11 atau lebih'] / totalValid) * 100,
+          'count': totalValid
+        };
+      } else {
+        map[posName] = {
+          'Tidak ada': 55, '1 sampai 2': 26, '3 sampai 5': 13, '6 hingga 10': 4, '11 atau lebih': 3, 'count': 0
+        };
+      }
     });
     return map;
-  }, [masterPositions]);
+  }, [masterPositions, activeBenchmarkSurveys]);
 
   const averageEventsRS = useMemo(() => {
     let totalPoints = 0;
@@ -1766,14 +1760,448 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   }, [filteredSurveysForReportedEvents]);
 
   const averageEventsBenchmark = useMemo(() => {
-    return 2.14;
-  }, []);
+    if (activeBenchmarkSurveys.length === 0) return 2.14;
+    let totalPoints = 0;
+    let countValid = 0;
+    activeBenchmarkSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      if (raw) {
+        const val = raw.ansD?.[3];
+        if (val) {
+          let pts = 0;
+          if (val === '1 sampai 2') pts = 1.5;
+          else if (val === '3 sampai 5') pts = 4;
+          else if (val === '6 hingga 10') pts = 8;
+          else if (val === '11 atau lebih') pts = 12;
+          
+          totalPoints += pts;
+          countValid++;
+        }
+      }
+    });
+    return countValid > 0 ? parseFloat((totalPoints / countValid).toFixed(2)) : 2.14;
+  }, [activeBenchmarkSurveys]);
+
+  const positionAverageBenchmark = useMemo(() => {
+    if (activeBenchmarkSurveys.length > 0) {
+      const scores = computeDimensionScores(activeBenchmarkSurveys);
+      if (scores.length > 0) {
+        const total = scores.reduce((acc, curr) => acc + curr.percentage, 0);
+        return parseFloat((total / scores.length).toFixed(1));
+      }
+    }
+    let sum = 0;
+    let count = 0;
+    DIMENSION_ORDER.forEach(dimId => {
+      if (dimId !== 'd1') {
+        const bMin = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
+        const bMax = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
+        sum += (bMin + bMax) / 2;
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : 65.5;
+  }, [activeBenchmarkSurveys, computeDimensionScores, masterBenchmarkData]);
+
+  const targetPositionDimensionScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    return Object.keys(DIMENSI_INFO).map(dimId => {
+      const result: Record<string, any> = { id: dimId };
+      demografiStats.posisiData.forEach(pos => {
+        const posSurveys = activeBenchmarkSurveys.filter(s => {
+          const raw = (s.dimensiScores as any)?._rawAnswers;
+          if (raw) return (raw.posisiStaf || 'Lainnya') === pos.name;
+          return (s.unitKerja || 'Perawat') === pos.name;
+        });
+        let totalPositive = 0;
+        let totalValid = 0;
+        posSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            DIMENSI_ITEMS[dimId].forEach(item => {
+              let ansVal: any = undefined;
+              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+              const val = Number(ansVal);
+              totalValid++;
+              if (item.isReversed) {
+                if (val === 1 || val === 2) totalPositive++;
+              } else {
+                if (val === 4 || val === 5) totalPositive++;
+              }
+            });
+          } else {
+            const score = survey.dimensiScores?.[dimId] || 3.0;
+            const posRate = scoreToPercent(score);
+            const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
+            totalValid += expectedAnswers;
+            totalPositive += Math.round(expectedAnswers * (posRate / 100));
+          }
+        });
+        result[pos.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : null;
+      });
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.posisiData]);
+
+  const targetPositionItemScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
+      ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
+      ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
+      ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
+      ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
+    ];
+
+    return allQuestions.map(q => {
+      const result: Record<string, any> = {
+        id: q.code || `${q.section}${q.id}`,
+        text: q.text,
+        dimId: q.dim,
+      };
+
+      demografiStats.posisiData.forEach(pos => {
+        const posSurveys = activeBenchmarkSurveys.filter(s => {
+          const raw = (s.dimensiScores as any)?._rawAnswers;
+          if (raw) return (raw.posisiStaf || 'Lainnya') === pos.name;
+          return (s.unitKerja || 'Perawat') === pos.name;
+        });
+
+        let totalValid = 0;
+        let positive = 0;
+
+        posSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            let ansVal: any = undefined;
+            if (q.section === 'A') ansVal = raw.ansA?.[q.id];
+            else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
+            else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
+            else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
+
+            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+            const val = Number(ansVal);
+            totalValid++;
+
+            if (q.isReversed) {
+              if (val === 1 || val === 2) positive++;
+            } else {
+              if (val === 4 || val === 5) positive++;
+            }
+          } else {
+            const score = survey.dimensiScores?.[q.dim] || 3.5;
+            totalValid += 1;
+            if (score >= 4.0) positive++;
+          }
+        });
+
+        result[pos.name] = totalValid > 0 ? parseFloat(((positive / totalValid) * 100).toFixed(1)) : null;
+      });
+
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.posisiData, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
+
+  const targetUnitDimensionScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    return Object.keys(DIMENSI_INFO).map(dimId => {
+      const result: Record<string, any> = { id: dimId };
+      demografiStats.unitData.forEach(u => {
+        const unitSurveys = activeBenchmarkSurveys.filter(s => (s.unitKerja || 'Instansi Umum') === u.name);
+        let totalPositive = 0;
+        let totalValid = 0;
+        unitSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            DIMENSI_ITEMS[dimId].forEach(item => {
+              let ansVal: any = undefined;
+              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+              const val = Number(ansVal);
+              totalValid++;
+              if (item.isReversed) {
+                if (val === 1 || val === 2) totalPositive++;
+              } else {
+                if (val === 4 || val === 5) totalPositive++;
+              }
+            });
+          } else {
+            const score = survey.dimensiScores?.[dimId] || 3.0;
+            const posRate = scoreToPercent(score);
+            const expectedAnswers = DIMENSI_ITEMS[dimId].length * (survey.jumlahResponden || 1);
+            totalValid += expectedAnswers;
+            totalPositive += Math.round(expectedAnswers * (posRate / 100));
+          }
+        });
+        result[u.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : null;
+      });
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.unitData]);
+
+  const targetUnitItemScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
+      ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
+      ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
+      ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
+      ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
+    ];
+
+    return allQuestions.map(q => {
+      const result: Record<string, any> = {
+        id: q.code || `${q.section}${q.id}`,
+        text: q.text,
+        dimId: q.dim,
+      };
+
+      demografiStats.unitData.forEach(u => {
+        const unitSurveys = activeBenchmarkSurveys.filter(s => (s.unitKerja || 'Instansi Umum') === u.name);
+        let totalValid = 0;
+        let positive = 0;
+
+        unitSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            let ansVal: any = undefined;
+            if (q.section === 'A') ansVal = raw.ansA?.[q.id];
+            else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
+            else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
+            else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
+
+            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+            const val = Number(ansVal);
+            totalValid++;
+
+            if (q.isReversed) {
+              if (val === 1 || val === 2) positive++;
+            } else {
+              if (val === 4 || val === 5) positive++;
+            }
+          } else {
+            const score = survey.dimensiScores?.[q.dim] || 3.5;
+            totalValid += 1;
+            if (score >= 4.0) positive++;
+          }
+        });
+
+        result[u.name] = totalValid > 0 ? parseFloat(((positive / totalValid) * 100).toFixed(1)) : null;
+      });
+
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.unitData, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
+
+  const targetTenureDimensionScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    return Object.keys(DIMENSI_INFO).map(dimId => {
+      const result: Record<string, any> = { id: dimId };
+      demografiStats.g1Data.forEach(g1 => {
+        const tenureSurveys = activeBenchmarkSurveys.filter(s => {
+          const raw = (s.dimensiScores as any)?._rawAnswers;
+          if (raw) return (raw.ansG?.[1] || 'Tidak diisi') === g1.name;
+          return false;
+        });
+        let totalPositive = 0;
+        let totalValid = 0;
+        tenureSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            DIMENSI_ITEMS[dimId].forEach(item => {
+              let ansVal: any = undefined;
+              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+              const val = Number(ansVal);
+              totalValid++;
+              if (item.isReversed) {
+                if (val === 1 || val === 2) totalPositive++;
+              } else {
+                if (val === 4 || val === 5) totalPositive++;
+              }
+            });
+          }
+        });
+        result[g1.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : null;
+      });
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.g1Data]);
+
+  const targetTenureItemScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
+      ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
+      ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
+      ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
+      ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
+    ];
+
+    return allQuestions.map(q => {
+      const result: Record<string, any> = {
+        id: q.code || `${q.section}${q.id}`,
+        text: q.text,
+        dimId: q.dim,
+      };
+
+      demografiStats.g1Data.forEach(g1 => {
+        const tenureSurveys = activeBenchmarkSurveys.filter(s => {
+          const raw = (s.dimensiScores as any)?._rawAnswers;
+          if (raw) return (raw.ansG?.[1] || 'Tidak diisi') === g1.name;
+          return false;
+        });
+
+        let totalValid = 0;
+        let positive = 0;
+
+        tenureSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            let ansVal: any = undefined;
+            if (q.section === 'A') ansVal = raw.ansA?.[q.id];
+            else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
+            else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
+            else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
+
+            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+            const val = Number(ansVal);
+            totalValid++;
+
+            if (q.isReversed) {
+              if (val === 1 || val === 2) positive++;
+            } else {
+              if (val === 4 || val === 5) positive++;
+            }
+          }
+        });
+
+        result[g1.name] = totalValid > 0 ? parseFloat(((positive / totalValid) * 100).toFixed(1)) : null;
+      });
+
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.g1Data, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
+
+  const targetInteractionDimensionScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    return Object.keys(DIMENSI_INFO).map(dimId => {
+      const result: Record<string, any> = { id: dimId };
+      demografiStats.g4Data.forEach(g4 => {
+        const interactionSurveys = activeBenchmarkSurveys.filter(s => {
+          const raw = (s.dimensiScores as any)?._rawAnswers;
+          if (raw && raw.ansG && raw.ansG[4]) {
+            return isDirectInteraction(raw.ansG[4]) === isDirectInteraction(g4.name);
+          }
+          return false;
+        });
+        let totalPositive = 0;
+        let totalValid = 0;
+        interactionSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            DIMENSI_ITEMS[dimId].forEach(item => {
+              let ansVal: any = undefined;
+              if (item.section === 'A') ansVal = raw.ansA?.[item.id];
+              else if (item.section === 'B') ansVal = raw.ansB?.[item.id];
+              else if (item.section === 'C') ansVal = raw.ansC?.[item.id];
+              else if (item.section === 'D') ansVal = raw.ansD?.[item.id];
+              else if (item.section === 'F') ansVal = raw.ansF?.[item.id];
+              if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+              const val = Number(ansVal);
+              totalValid++;
+              if (item.isReversed) {
+                if (val === 1 || val === 2) totalPositive++;
+              } else {
+                if (val === 4 || val === 5) totalPositive++;
+              }
+            });
+          }
+        });
+        result[g4.name] = totalValid > 0 ? parseFloat(((totalPositive / totalValid) * 100).toFixed(1)) : null;
+      });
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.g4Data]);
+
+  const targetInteractionItemScores = useMemo(() => {
+    if (activeBenchmarkSurveys.length === 0) return [];
+    const allQuestions: { id: number; code: string; text: string; dim: string; isReversed?: boolean; section: string }[] = [
+      ...STATEMENTS_A.map(q => ({ ...q, section: 'A' })),
+      ...STATEMENTS_B.map(q => ({ ...q, section: 'B' })),
+      ...STATEMENTS_C.map(q => ({ ...q, section: 'C' })),
+      ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
+      ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
+    ];
+
+    return allQuestions.map(q => {
+      const result: Record<string, any> = {
+        id: q.code || `${q.section}${q.id}`,
+        text: q.text,
+        dimId: q.dim,
+      };
+
+      demografiStats.g4Data.forEach(g4 => {
+        const interactionSurveys = activeBenchmarkSurveys.filter(s => {
+          const raw = (s.dimensiScores as any)?._rawAnswers;
+          if (raw && raw.ansG && raw.ansG[4]) {
+            return isDirectInteraction(raw.ansG[4]) === isDirectInteraction(g4.name);
+          }
+          return false;
+        });
+
+        let totalValid = 0;
+        let positive = 0;
+
+        interactionSurveys.forEach(survey => {
+          const raw = (survey.dimensiScores as any)?._rawAnswers;
+          if (raw) {
+            let ansVal: any = undefined;
+            if (q.section === 'A') ansVal = raw.ansA?.[q.id];
+            else if (q.section === 'B') ansVal = raw.ansB?.[q.id];
+            else if (q.section === 'C') ansVal = raw.ansC?.[q.id];
+            else if (q.section === 'D') ansVal = raw.ansD?.[q.id];
+            else if (q.section === 'F') ansVal = raw.ansF?.[q.id];
+
+            if (ansVal === undefined || ansVal === 9 || ansVal === null) return;
+            const val = Number(ansVal);
+            totalValid++;
+
+            if (q.isReversed) {
+              if (val === 1 || val === 2) positive++;
+            } else {
+              if (val === 4 || val === 5) positive++;
+            }
+          }
+        });
+
+        result[g4.name] = totalValid > 0 ? parseFloat(((positive / totalValid) * 100).toFixed(1)) : null;
+      });
+
+      return result;
+    });
+  }, [activeBenchmarkSurveys, demografiStats.g4Data, STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
 
   const computedTableData = useMemo(() => {
     return masterPositions.map(pos => {
       const posName = pos.nama_posisi;
       
-      // Filter the already filtered surveys specifically for this position column!
       const posSurveys = filteredSurveysForReportedEvents.filter(survey => {
         const raw = (survey.dimensiScores as any)?._rawAnswers;
         const posVal = raw ? (raw.posisiStaf || 'Lainnya') : (survey.unitKerja || 'Perawat');
@@ -1782,7 +2210,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
       const totalValid = posSurveys.reduce((sum, s) => sum + (s.jumlahResponden || 1), 0);
 
-      // Count categories
       const counts: Record<string, number> = {
         'Tidak ada': 0,
         '1 sampai 2': 0,
@@ -1809,22 +2236,21 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         '11 atau lebih': totalValid > 0 ? (counts['11 atau lebih'] / totalValid) * 100 : 0
       };
 
-      // Benchmark from positionEventBenchmarks
-      const benchmark = positionEventBenchmarks[posName] || {
-        'Tidak ada': 45,
-        '1 sampai 2': 28,
-        '3 sampai 5': 15,
-        '6 hingga 10': 8,
-        '11 atau lebih': 4
+      const bmObj = positionEventBenchmarks[posName];
+      const benchmark = bmObj || {
+        'Tidak ada': 55,
+        '1 sampai 2': 26,
+        '3 sampai 5': 13,
+        '6 hingga 10': 4,
+        '11 atau lebih': 3
       };
 
-      // Benchmark respondents count (seeded between 100 and 400 based on position)
       let hash = 0;
       for (let i = 0; i < posName.length; i++) {
         hash = posName.charCodeAt(i) + ((hash << 5) - hash);
       }
       const seed = Math.abs(hash);
-      const benchmarkCount = 120 + (seed % 280);
+      const benchmarkCount = bmObj?.count || (120 + (seed % 280));
 
       return {
         id: pos.id,
@@ -2024,40 +2450,86 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     const map: Record<string, Record<string, number>> = {};
     demografiStats.unitData.forEach(u => {
       const uName = u.name;
-      let hash = 0;
-      for (let i = 0; i < uName.length; i++) {
-        hash = uName.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const seed = Math.abs(hash);
-      
-      let baseSangatBaik = 28;
-      let baseBaik = 40;
-      let baseCukup = 22;
-      let baseKurang = 8;
-      let baseSangatKurang = 2;
+      const unitSurveys = activeBenchmarkSurveys.filter(s => (s.unitKerja || 'Instansi Umum') === uName);
 
-      const lowerName = uName.toLowerCase();
-      if (lowerName.includes('rawat inap') || lowerName.includes('icu') || lowerName.includes('igd')) {
-        baseSangatBaik = 25; baseBaik = 38; baseCukup = 24; baseKurang = 11; baseSangatKurang = 2;
-      } else if (lowerName.includes('rawat jalan') || lowerName.includes('poliklinik')) {
-        baseSangatBaik = 32; baseBaik = 42; baseCukup = 19; baseKurang = 5; baseSangatKurang = 2;
-      } else if (lowerName.includes('farmasi') || lowerName.includes('laboratorium')) {
-        baseSangatBaik = 30; baseBaik = 45; baseCukup = 18; baseKurang = 5; baseSangatKurang = 2;
-      }
+      let totalValid = 0;
+      const ratings = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      unitSurveys.forEach(survey => {
+        const raw = (survey.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
+          totalValid++;
+          if (raw.ansE >= 1 && raw.ansE <= 5) ratings[raw.ansE as 1|2|3|4|5]++;
+        } else if (survey.dimensiScores?.E1) {
+          totalValid++;
+          const rounded = Math.min(5, Math.max(1, Math.round(survey.dimensiScores.E1))) as 1|2|3|4|5;
+          ratings[rounded]++;
+        }
+      });
 
-      const variance = (seed % 9) - 4;
-      
-      map[uName] = {
-        'Sangat Baik': Math.max(0, baseSangatBaik + variance),
-        'Baik': Math.max(0, baseBaik - Math.floor(variance / 2)),
-        'Cukup': Math.max(0, baseCukup - Math.ceil(variance / 2)),
-        'Kurang': baseKurang,
-        'Sangat Kurang': baseSangatKurang,
-        'count': 120 + (seed % 250)
-      };
+      if (totalValid > 0) {
+        map[uName] = {
+          'Sangat Baik': (ratings[5] / totalValid) * 100,
+          'Baik': (ratings[4] / totalValid) * 100,
+          'Cukup': (ratings[3] / totalValid) * 100,
+          'Kurang': (ratings[2] / totalValid) * 100,
+          'Sangat Kurang': (ratings[1] / totalValid) * 100,
+          'count': totalValid
+        };
+      } else {
+        if (selectedBenchmarkHospitalId !== 'default' && activeBenchmarkSurveys.length > 0) {
+          // Realtime target hospital overall fallback
+          const overallRatings = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+          let overallTotal = 0;
+          activeBenchmarkSurveys.forEach(survey => {
+            const raw = (survey.dimensiScores as any)?._rawAnswers;
+            if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
+              overallTotal++;
+              if (raw.ansE >= 1 && raw.ansE <= 5) overallRatings[raw.ansE as 1|2|3|4|5]++;
+            } else if (survey.dimensiScores?.E1) {
+              overallTotal++;
+              const rounded = Math.min(5, Math.max(1, Math.round(survey.dimensiScores.E1))) as 1|2|3|4|5;
+              overallRatings[rounded]++;
+            }
+          });
+
+          if (overallTotal > 0) {
+            map[uName] = {
+              'Sangat Baik': (overallRatings[5] / overallTotal) * 100,
+              'Baik': (overallRatings[4] / overallTotal) * 100,
+              'Cukup': (overallRatings[3] / overallTotal) * 100,
+              'Kurang': (overallRatings[2] / overallTotal) * 100,
+              'Sangat Kurang': (overallRatings[1] / overallTotal) * 100,
+              'count': overallTotal
+            };
+          } else {
+            map[uName] = {
+              'Sangat Baik': 0,
+              'Baik': 0,
+              'Cukup': 0,
+              'Kurang': 0,
+              'Sangat Kurang': 0,
+              'count': 0
+            };
+          }
+        } else {
+          // National benchmark fallback
+          let hash = 0;
+          for (let i = 0; i < uName.length; i++) hash = uName.charCodeAt(i) + ((hash << 5) - hash);
+          const seed = Math.abs(hash);
+          const variance = (seed % 9) - 4;
+          map[uName] = {
+            'Sangat Baik': Math.max(0, 28 + variance),
+            'Baik': Math.max(0, 40 - Math.floor(variance / 2)),
+            'Cukup': Math.max(0, 22 - Math.ceil(variance / 2)),
+            'Kurang': 8,
+            'Sangat Kurang': 2,
+            'count': 0
+          };
+        }
+      }
     });
     return map;
-  }, [demografiStats.unitData]);
+  }, [demografiStats.unitData, activeBenchmarkSurveys, selectedBenchmarkHospitalId]);
 
   const activeUnitSafetyScores = useMemo(() => {
     return unitSafetyScores.filter(s => s.count > 0 && s.name.toLowerCase().includes(searchUnitQuery.toLowerCase()));
@@ -2138,20 +2610,79 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         '11 atau lebih': totalValid > 0 ? (counts['11 atau lebih'] / totalValid) * 100 : 0
       };
 
-      const benchmark = {
-        'Tidak ada': 48,
-        '1 sampai 2': 28,
-        '3 sampai 5': 14,
-        '6 hingga 10': 7,
-        '11 atau lebih': 3
+      const bmSurveys = activeBenchmarkSurveys.filter(s => (s.unitKerja || 'Instansi Umum') === unitName);
+      let bmTotalValid = 0;
+      const bmCounts: Record<string, number> = {
+        'Tidak ada': 0, '1 sampai 2': 0, '3 sampai 5': 0, '6 hingga 10': 0, '11 atau lebih': 0
       };
+      bmSurveys.forEach(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansD?.[3] && bmCounts[raw.ansD[3]] !== undefined) {
+          bmCounts[raw.ansD[3]] += (s.jumlahResponden || 1);
+          bmTotalValid += (s.jumlahResponden || 1);
+        }
+      });
 
       let hash = 0;
       for (let i = 0; i < unitName.length; i++) {
         hash = unitName.charCodeAt(i) + ((hash << 5) - hash);
       }
       const seed = Math.abs(hash);
-      const benchmarkCount = 150 + (seed % 250);
+
+      let benchmark;
+      let benchmarkCount;
+
+      if (bmTotalValid > 0) {
+        benchmark = {
+          'Tidak ada': (bmCounts['Tidak ada'] / bmTotalValid) * 100,
+          '1 sampai 2': (bmCounts['1 sampai 2'] / bmTotalValid) * 100,
+          '3 sampai 5': (bmCounts['3 sampai 5'] / bmTotalValid) * 100,
+          '6 hingga 10': (bmCounts['6 hingga 10'] / bmTotalValid) * 100,
+          '11 atau lebih': (bmCounts['11 atau lebih'] / bmTotalValid) * 100
+        };
+        benchmarkCount = bmTotalValid;
+      } else {
+        if (selectedBenchmarkHospitalId !== 'default' && activeBenchmarkSurveys.length > 0) {
+          // Realtime target hospital overall fallback
+          const overallCounts: Record<string, number> = {
+            'Tidak ada': 0, '1 sampai 2': 0, '3 sampai 5': 0, '6 hingga 10': 0, '11 atau lebih': 0
+          };
+          let overallTotal = 0;
+          activeBenchmarkSurveys.forEach(s => {
+            const raw = (s.dimensiScores as any)?._rawAnswers;
+            if (raw && raw.ansD?.[3] && overallCounts[raw.ansD[3]] !== undefined) {
+              overallCounts[raw.ansD[3]] += (s.jumlahResponden || 1);
+              overallTotal += (s.jumlahResponden || 1);
+            }
+          });
+
+          if (overallTotal > 0) {
+            benchmark = {
+              'Tidak ada': (overallCounts['Tidak ada'] / overallTotal) * 100,
+              '1 sampai 2': (overallCounts['1 sampai 2'] / overallTotal) * 100,
+              '3 sampai 5': (overallCounts['3 sampai 5'] / overallTotal) * 100,
+              '6 hingga 10': (overallCounts['6 hingga 10'] / overallTotal) * 100,
+              '11 atau lebih': (overallCounts['11 atau lebih'] / overallTotal) * 100
+            };
+            benchmarkCount = overallTotal;
+          } else {
+            benchmark = {
+              'Tidak ada': 0, '1 sampai 2': 0, '3 sampai 5': 0, '6 hingga 10': 0, '11 atau lebih': 0
+            };
+            benchmarkCount = 0;
+          }
+        } else {
+          // National benchmark fallback
+          benchmark = {
+            'Tidak ada': 55,
+            '1 sampai 2': 26,
+            '3 sampai 5': 13,
+            '6 hingga 10': 4,
+            '11 atau lebih': 3
+          };
+          benchmarkCount = 150 + (seed % 250);
+        }
+      }
 
       return {
         name: unitName,
@@ -2162,7 +2693,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         benchmarkCount
       };
     });
-  }, [demografiStats.unitData, filteredSurveysForReportedEvents]);
+  }, [demografiStats.unitData, filteredSurveysForReportedEvents, activeBenchmarkSurveys, selectedBenchmarkHospitalId]);
 
   const filteredComputedUnitTableData = useMemo(() => {
     return computedUnitEventTableData.filter(row =>
@@ -2225,20 +2756,47 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         '11 atau lebih': totalValid > 0 ? (counts['11 atau lebih'] / totalValid) * 100 : 0
       };
 
-      const benchmark = {
-        'Tidak ada': 48,
-        '1 sampai 2': 28,
-        '3 sampai 5': 14,
-        '6 hingga 10': 7,
-        '11 atau lebih': 3
+      const bmSurveys = activeBenchmarkSurveys.filter(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansG && raw.ansG[4]) {
+          return isDirectInteraction(raw.ansG[4]) === isDirectInteraction(g4Name);
+        }
+        return false;
+      });
+
+      let bmTotalValid = 0;
+      const bmCounts: Record<string, number> = {
+        'Tidak ada': 0, '1 sampai 2': 0, '3 sampai 5': 0, '6 hingga 10': 0, '11 atau lebih': 0
       };
+      bmSurveys.forEach(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansD?.[3] && bmCounts[raw.ansD[3]] !== undefined) {
+          bmCounts[raw.ansD[3]] += (s.jumlahResponden || 1);
+          bmTotalValid += (s.jumlahResponden || 1);
+        }
+      });
 
       let hash = 0;
       for (let i = 0; i < g4Name.length; i++) {
         hash = g4Name.charCodeAt(i) + ((hash << 5) - hash);
       }
       const seed = Math.abs(hash);
-      const benchmarkCount = 1850 + (seed % 400);
+
+      const benchmark = bmTotalValid > 0 ? {
+        'Tidak ada': (bmCounts['Tidak ada'] / bmTotalValid) * 100,
+        '1 sampai 2': (bmCounts['1 sampai 2'] / bmTotalValid) * 100,
+        '3 sampai 5': (bmCounts['3 sampai 5'] / bmTotalValid) * 100,
+        '6 hingga 10': (bmCounts['6 hingga 10'] / bmTotalValid) * 100,
+        '11 atau lebih': (bmCounts['11 atau lebih'] / bmTotalValid) * 100
+      } : {
+        'Tidak ada': 55,
+        '1 sampai 2': 26,
+        '3 sampai 5': 13,
+        '6 hingga 10': 4,
+        '11 atau lebih': 3
+      };
+
+      const benchmarkCount = bmTotalValid > 0 ? bmTotalValid : (1850 + (seed % 400));
 
       return {
         name: g4Name,
@@ -2249,7 +2807,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         benchmarkCount
       };
     });
-  }, [demografiStats.g4Data, filteredSurveysForReportedEvents]);
+  }, [demografiStats.g4Data, filteredSurveysForReportedEvents, activeBenchmarkSurveys]);
 
   const tenureDimensionScores = useMemo(() => {
     return Object.keys(DIMENSI_INFO).map(dimId => {
@@ -2440,31 +2998,52 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     const map: Record<string, Record<string, number>> = {};
     demografiStats.g1Data.forEach(g1 => {
       const g1Name = g1.name;
-      let hash = 0;
-      for (let i = 0; i < g1Name.length; i++) {
-        hash = g1Name.charCodeAt(i) + ((hash << 5) - hash);
+      const tenureSurveys = activeBenchmarkSurveys.filter(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw) return (raw.ansG?.[1] || 'Tidak diisi') === g1Name;
+        return false;
+      });
+
+      let totalValid = 0;
+      const ratings = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      tenureSurveys.forEach(survey => {
+        const raw = (survey.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
+          totalValid++;
+          if (raw.ansE >= 1 && raw.ansE <= 5) ratings[raw.ansE as 1|2|3|4|5]++;
+        } else if (survey.dimensiScores?.E1) {
+          totalValid++;
+          const rounded = Math.min(5, Math.max(1, Math.round(survey.dimensiScores.E1))) as 1|2|3|4|5;
+          ratings[rounded]++;
+        }
+      });
+
+      if (totalValid > 0) {
+        map[g1Name] = {
+          'Sangat Baik': (ratings[5] / totalValid) * 100,
+          'Baik': (ratings[4] / totalValid) * 100,
+          'Cukup': (ratings[3] / totalValid) * 100,
+          'Kurang': (ratings[2] / totalValid) * 100,
+          'Sangat Kurang': (ratings[1] / totalValid) * 100,
+          'count': totalValid
+        };
+      } else {
+        let hash = 0;
+        for (let i = 0; i < g1Name.length; i++) hash = g1Name.charCodeAt(i) + ((hash << 5) - hash);
+        const seed = Math.abs(hash);
+        const variance = (seed % 7) - 3;
+        map[g1Name] = {
+          'Sangat Baik': Math.max(0, 28 + variance),
+          'Baik': Math.max(0, 39 - Math.floor(variance / 2)),
+          'Cukup': Math.max(0, 23 - Math.ceil(variance / 2)),
+          'Kurang': 9,
+          'Sangat Kurang': 1,
+          'count': 0
+        };
       }
-      const seed = Math.abs(hash);
-
-      let baseSangatBaik = 30;
-      let baseBaik = 42;
-      let baseCukup = 20;
-      let baseKurang = 6;
-      let baseSangatKurang = 2;
-
-      const variance = (seed % 7) - 3;
-
-      map[g1Name] = {
-        'Sangat Baik': Math.max(0, baseSangatBaik + variance),
-        'Baik': Math.max(0, baseBaik - Math.floor(variance / 2)),
-        'Cukup': Math.max(0, baseCukup - Math.ceil(variance / 2)),
-        'Kurang': baseKurang,
-        'Sangat Kurang': baseSangatKurang,
-        'count': 1250 + (seed % 350)
-      };
     });
     return map;
-  }, [demografiStats]);
+  }, [demografiStats.g1Data, activeBenchmarkSurveys]);
 
   const activeTenureSafetyScores = useMemo(() => {
     return tenureSafetyScores.filter(s => s.name.toLowerCase().includes(searchTenureQuery.toLowerCase()));
@@ -2519,20 +3098,45 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         '11 atau lebih': totalValid > 0 ? (counts['11 atau lebih'] / totalValid) * 100 : 0
       };
 
-      const benchmark = {
-        'Tidak ada': 48,
-        '1 sampai 2': 28,
-        '3 sampai 5': 14,
-        '6 hingga 10': 7,
-        '11 atau lebih': 3
+      const bmSurveys = activeBenchmarkSurveys.filter(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw) return (raw.ansG?.[1] || 'Tidak diisi') === tenureName;
+        return false;
+      });
+
+      let bmTotalValid = 0;
+      const bmCounts: Record<string, number> = {
+        'Tidak ada': 0, '1 sampai 2': 0, '3 sampai 5': 0, '6 hingga 10': 0, '11 atau lebih': 0
       };
+      bmSurveys.forEach(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansD?.[3] && bmCounts[raw.ansD[3]] !== undefined) {
+          bmCounts[raw.ansD[3]] += (s.jumlahResponden || 1);
+          bmTotalValid += (s.jumlahResponden || 1);
+        }
+      });
 
       let hash = 0;
       for (let i = 0; i < tenureName.length; i++) {
         hash = tenureName.charCodeAt(i) + ((hash << 5) - hash);
       }
       const seed = Math.abs(hash);
-      const benchmarkCount = 150 + (seed % 250);
+
+      const benchmark = bmTotalValid > 0 ? {
+        'Tidak ada': (bmCounts['Tidak ada'] / bmTotalValid) * 100,
+        '1 sampai 2': (bmCounts['1 sampai 2'] / bmTotalValid) * 100,
+        '3 sampai 5': (bmCounts['3 sampai 5'] / bmTotalValid) * 100,
+        '6 hingga 10': (bmCounts['6 hingga 10'] / bmTotalValid) * 100,
+        '11 atau lebih': (bmCounts['11 atau lebih'] / bmTotalValid) * 100
+      } : {
+        'Tidak ada': 55,
+        '1 sampai 2': 26,
+        '3 sampai 5': 13,
+        '6 hingga 10': 4,
+        '11 atau lebih': 3
+      };
+
+      const benchmarkCount = bmTotalValid > 0 ? bmTotalValid : (150 + (seed % 250));
 
       return {
         name: tenureName,
@@ -2543,7 +3147,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         benchmarkCount
       };
     });
-  }, [demografiStats.g1Data, filteredSurveysForReportedEvents]);
+  }, [demografiStats.g1Data, filteredSurveysForReportedEvents, activeBenchmarkSurveys]);
 
   const filteredComputedTenureTableData = useMemo(() => {
     return computedTenureEventTableData.filter(row =>
@@ -2752,37 +3356,54 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     const map: Record<string, Record<string, number>> = {};
     demografiStats.g4Data.forEach(g4 => {
       const g4Name = g4.name;
-      let hash = 0;
-      for (let i = 0; i < g4Name.length; i++) {
-        hash = g4Name.charCodeAt(i) + ((hash << 5) - hash);
-      }
-      const seed = Math.abs(hash);
+      const interactionSurveys = activeBenchmarkSurveys.filter(s => {
+        const raw = (s.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansG && raw.ansG[4]) {
+          return isDirectInteraction(raw.ansG[4]) === isDirectInteraction(g4Name);
+        }
+        return false;
+      });
 
-      let baseSangatBaik = 30;
-      let baseBaik = 42;
-      let baseCukup = 20;
-      let baseKurang = 6;
-      let baseSangatKurang = 2;
+      let totalValid = 0;
+      const ratings = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      interactionSurveys.forEach(survey => {
+        const raw = (survey.dimensiScores as any)?._rawAnswers;
+        if (raw && raw.ansE !== undefined && raw.ansE !== null && raw.ansE !== 9) {
+          totalValid++;
+          if (raw.ansE >= 1 && raw.ansE <= 5) ratings[raw.ansE as 1|2|3|4|5]++;
+        } else if (survey.dimensiScores?.E1) {
+          totalValid++;
+          const rounded = Math.min(5, Math.max(1, Math.round(survey.dimensiScores.E1))) as 1|2|3|4|5;
+          ratings[rounded]++;
+        }
+      });
 
-      if (isDirectInteraction(g4Name)) {
-        baseSangatBaik = 32; baseBaik = 40; baseCukup = 21; baseKurang = 5; baseSangatKurang = 2;
+      if (totalValid > 0) {
+        map[g4Name] = {
+          'Sangat Baik': (ratings[5] / totalValid) * 100,
+          'Baik': (ratings[4] / totalValid) * 100,
+          'Cukup': (ratings[3] / totalValid) * 100,
+          'Kurang': (ratings[2] / totalValid) * 100,
+          'Sangat Kurang': (ratings[1] / totalValid) * 100,
+          'count': totalValid
+        };
       } else {
-        baseSangatBaik = 28; baseBaik = 44; baseCukup = 20; baseKurang = 6; baseSangatKurang = 2;
+        let hash = 0;
+        for (let i = 0; i < g4Name.length; i++) hash = g4Name.charCodeAt(i) + ((hash << 5) - hash);
+        const seed = Math.abs(hash);
+        const variance = (seed % 7) - 3;
+        map[g4Name] = {
+          'Sangat Baik': Math.max(0, 28 + variance),
+          'Baik': Math.max(0, 39 - Math.floor(variance / 2)),
+          'Cukup': Math.max(0, 23 - Math.ceil(variance / 2)),
+          'Kurang': 9,
+          'Sangat Kurang': 1,
+          'count': 0
+        };
       }
-
-      const variance = (seed % 7) - 3;
-
-      map[g4Name] = {
-        'Sangat Baik': Math.max(0, baseSangatBaik + variance),
-        'Baik': Math.max(0, baseBaik - Math.floor(variance / 2)),
-        'Cukup': Math.max(0, baseCukup - Math.ceil(variance / 2)),
-        'Kurang': baseKurang,
-        'Sangat Kurang': baseSangatKurang,
-        'count': 1250 + (seed % 350)
-      };
     });
     return map;
-  }, [demografiStats.g4Data]);
+  }, [demografiStats.g4Data, activeBenchmarkSurveys]);
 
   const interactionReportingScores = useMemo(() => {
     return demografiStats.g4Data.map(g4 => {
@@ -2849,25 +3470,23 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     return sum / DIMENSION_ORDER.length;
   }, [masterBenchmarkData]);
 
-  const positionAverageBenchmark = useMemo(() => {
-    let sum = 0;
-    let count = 0;
-    DIMENSION_ORDER.forEach(dimId => {
-      if (dimId !== 'd1') {
-        const bMin = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].min : DIMENSI_INFO[dimId].benchmarkMin;
-        const bMax = masterBenchmarkData && (masterBenchmarkData as any)[dimId] ? (masterBenchmarkData as any)[dimId].max : DIMENSI_INFO[dimId].benchmarkMax;
-        sum += (bMin + bMax) / 2;
-        count++;
-      }
-    });
-    return count > 0 ? sum / count : 0;
-  }, [masterBenchmarkData]);
-
   const getAverageCompositeForUnit = (unit: string) => {
     let sum = 0;
     let count = 0;
     unitDimensionScores.forEach(row => {
       if (row[unit] !== undefined && row[unit] !== 0) {
+        sum += row[unit];
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : null;
+  };
+
+  const getAverageCompositeForTargetUnit = (unit: string) => {
+    let sum = 0;
+    let count = 0;
+    targetUnitDimensionScores.forEach(row => {
+      if (row[unit] !== undefined && row[unit] !== null && row[unit] !== 0) {
         sum += row[unit];
         count++;
       }
@@ -2887,11 +3506,35 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     return count > 0 ? sum / count : null;
   };
 
+  const getAverageCompositeForTargetTenure = (tenureName: string) => {
+    let sum = 0;
+    let count = 0;
+    targetTenureDimensionScores.forEach(row => {
+      if (row[tenureName] !== undefined && row[tenureName] !== null && row[tenureName] !== 0) {
+        sum += row[tenureName];
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : null;
+  };
+
   const getAverageCompositeForPosition = (position: string) => {
     let sum = 0;
     let count = 0;
     positionDimensionScores.forEach(row => {
       if (row.id !== 'd1' && row[position] !== undefined && row[position] !== 0) {
+        sum += row[position];
+        count++;
+      }
+    });
+    return count > 0 ? sum / count : null;
+  };
+
+  const getAverageCompositeForTargetPosition = (position: string) => {
+    let sum = 0;
+    let count = 0;
+    targetPositionDimensionScores.forEach(row => {
+      if (row.id !== 'd1' && row[position] !== undefined && row[position] !== null && row[position] !== 0) {
         sum += row[position];
         count++;
       }
@@ -2949,11 +3592,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     };
   };
 
-  const getAverageInteraksiStats = (type: 'langsung' | 'tidak') => {
+  const getAverageInteraksiStats = (type: 'langsung' | 'tidak', surveysOverride?: SurveyData[]) => {
     let sum = 0;
     let count = 0;
     DIMENSION_ORDER.forEach(dimId => {
-      const { percentage } = getInteraksiStats(dimId, type);
+      const { percentage } = getInteraksiStats(dimId, type, surveysOverride);
       if (percentage !== null) {
         sum += percentage;
         count++;
@@ -3069,7 +3712,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         >
                           <span className="truncate">
                             {selectedBenchmarkHospitalId === 'default' 
-                              ? `${activeBenchmarkLabel} (Benchmark Bawaan Aplikasi)` 
+                              ? 'RS Uji Coba (Benchmark Bawaan)' 
                               : selectedTargetHospital?.namaRs || 'Pilih Rumah Sakit...'}
                           </span>
                           <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
@@ -3099,7 +3742,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   selectedBenchmarkHospitalId === 'default' ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
                                 }`}
                               >
-                                <span>{activeBenchmarkLabel} (Benchmark Bawaan)</span>
+                                <span>RS Uji Coba (Benchmark Bawaan)</span>
                                 {selectedBenchmarkHospitalId === 'default' && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
                               </button>
 
@@ -3356,7 +3999,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       h3Classes: 'mr-[54px] ml-0 pt-0 text-left'
                     },
                     { 
-                      title: <>Perbandingan Jumlah<br/>Peristiwa Dilaporkan</>, 
+                      title: <>Jumlah Insiden<br/>Keselamatan Pasien<br/>Yang Dilaporkan</>, 
                       desc: 'Perbandingan distribusi jumlah kejadian keselamatan pasien.', 
                       icon: <TriangleAlert className="w-[38px] h-[38px] text-[#6B7280] opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300" />,
                       num: '04',
@@ -3668,13 +4311,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
                           <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
-                            <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
+                            <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-rs-${index}`} fill="#10b981" />
                             ))}
                           </Bar>
                           <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
-                            <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
+                            <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-bp-${index}`} fill="#64748b" />
                             ))}
@@ -3924,7 +4567,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <LabelList 
                                 dataKey="Rumah Sakit Anda" 
                                 position="top" 
-                                formatter={(val: number) => `${val.toFixed(1)}%`} 
+                                formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
                                 fill="#1d4ed8" 
                                 fontSize={11} 
                                 fontWeight="bold" 
@@ -3943,7 +4586,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <LabelList 
                                 dataKey={activeBenchmarkLabel} 
                                 position="top" 
-                                formatter={(val: number) => `${val}%`} 
+                                formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
                                 fill="#4b5563" 
                                 fontSize={11} 
                                 fontWeight="bold" 
@@ -5144,7 +5787,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
                           <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={50}>
-                            <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#be123c" fontSize={11} fontWeight="bold" />
+                            <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#be123c" fontSize={11} fontWeight="bold" />
                           </Bar>
                         </RechartsBarChart>
                       </ResponsiveContainer>
@@ -5292,7 +5935,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <LabelList 
                                 dataKey="Rumah Sakit Anda" 
                                 position="top" 
-                                formatter={(val: number) => `${val.toFixed(1)}%`} 
+                                formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
                                 fill="#6d28d9" 
                                 fontSize={11} 
                                 fontWeight="bold" 
@@ -5310,7 +5953,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <LabelList 
                                   dataKey="Tahun 2" 
                                   position="top" 
-                                  formatter={(val: number) => `${val.toFixed(1)}%`} 
+                                  formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
                                   fill="#c2410c" 
                                   fontSize={11} 
                                   fontWeight="bold" 
@@ -5676,12 +6319,16 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           </tr>
                           <tr className="bg-indigo-50/20 hover:bg-indigo-50 transition-all">
                             <td className="py-4 px-4 font-bold text-emerald-700 text-center border-r border-slate-200 bg-indigo-50">{activeBenchmarkLabel}</td>
-                            <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
-                            {demografiStats.unitData.map((u, unitIdx) => (
-                              <td key={`unit-avg-pilot-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                <span className={getCellColorClass(averageBenchmark)}>{averageBenchmark.toFixed(1)}%</span>
-                              </td>
-                            ))}
+                            <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
+                            {demografiStats.unitData.map((u, unitIdx) => {
+                              const dynamicAvg = getAverageCompositeForTargetUnit(u.name);
+                              const targetVal = (selectedBenchmarkHospitalId !== 'default' && dynamicAvg !== null) ? dynamicAvg : averageBenchmark;
+                              return (
+                                <td key={`unit-avg-pilot-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                  <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
+                                </td>
+                              );
+                            })}
                           </tr>
                         </tbody>
                       </table>
@@ -5848,14 +6495,21 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               {activeBenchmarkLabel}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
-                              3.789
+                              {selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '3.789'}
                             </td>
                             {demografiStats.unitData.length > 0 ? (
-                              demografiStats.unitData.map((u, idx) => (
-                                <td key={`cnt-pilot-unit-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
-                                  3.789
-                                </td>
-                              ))
+                              demografiStats.unitData.map((u, idx) => {
+                                const unitSurveys = activeBenchmarkSurveys.filter(s => {
+                                  const raw = (s.dimensiScores as any)?._rawAnswers;
+                                  if (raw) return (raw.unitKerja || 'Perawat') === u.name;
+                                  return (s.unitKerja || 'Perawat') === u.name;
+                                });
+                                return (
+                                  <td key={`cnt-pilot-unit-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
+                                    {selectedBenchmarkHospitalId !== 'default' ? unitSurveys.length : '3.789'}
+                                  </td>
+                                );
+                              })
                             ) : (
                               <td className="py-2 px-2 text-center text-slate-400">-</td>
                             )}
@@ -5942,11 +6596,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Unit Scores Row 2 (Pilot Benchmark) */}
                                         {demografiStats.unitData.length > 0 ? (
-                                          demografiStats.unitData.map((u, uIdx) => (
-                                            <td key={`pilot-score-unit-${item.id}-${uIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
-                                              {benchVal.toFixed(0)}%
-                                            </td>
-                                          ))
+                                          demografiStats.unitData.map((u, uIdx) => {
+                                            const targetItemObj = targetUnitItemScores.find(t => t.id === item.id);
+                                            const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[u.name] !== undefined)
+                                              ? targetItemObj[u.name]
+                                              : null;
+                                            const displayVal = dynamicVal !== null ? `${dynamicVal.toFixed(0)}%` : `${benchVal.toFixed(0)}%`;
+                                            return (
+                                              <td key={`pilot-score-unit-${item.id}-${uIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
+                                                {displayVal}
+                                              </td>
+                                            );
+                                          })
                                         ) : (
                                           <td className="py-2.5 px-2 text-center text-slate-400">--</td>
                                         )}
@@ -6075,10 +6736,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                           {/* Data Rows for each Safety Rating Category */}
                           {[
-                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 35 },
-                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 45 },
-                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 15 },
-                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 4 },
+                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 28 },
+                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 39 },
+                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 23 },
+                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 9 },
                             { key: 1, benchmarkKey: 'Sangat Kurang', label: 'Buruk', subLabel: 'Poor', bmOverall: 1 },
                           ].map((cat) => {
                             const totalHospCount = activeUnitSafetyScores.reduce((acc, r) => acc + r.count, 0);
@@ -6438,17 +7099,23 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 </tr>
                                 <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
                                   <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
-                                  <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
-                                  {demografiStats.posisiData.map((pos, posIdx) => (
-                                    <td key={`pos-pilot-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                      <div className="flex flex-col items-center justify-center">
-                                        <span className={getCellColorClass(bAvg)}>{bAvg.toFixed(1)}%</span>
-                                        {selectedBenchmarkHospitalId === 'default' && (
-                                          <span className="text-[9px] text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
-                                        )}
-                                      </div>
-                                    </td>
-                                  ))}
+                                  <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
+                                  {demografiStats.posisiData.map((pos, posIdx) => {
+                                    const targetScoreObj = targetPositionDimensionScores.find(s => s.id === dimId);
+                                    const targetVal = (selectedBenchmarkHospitalId !== 'default' && targetScoreObj && targetScoreObj[pos.name] !== undefined)
+                                      ? targetScoreObj[pos.name]
+                                      : bAvg;
+                                    return (
+                                      <td key={`pos-pilot-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                        <div className="flex flex-col items-center justify-center">
+                                          <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
+                                          {selectedBenchmarkHospitalId === 'default' && (
+                                            <span className="text-[9px] text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                          )}
+                                        </div>
+                                      </td>
+                                    );
+                                  })}
                                 </tr>
                               </Fragment>
                             );
@@ -6473,12 +7140,16 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           </tr>
                           <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all">
                             <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
-                            <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
-                            {demografiStats.posisiData.map((pos, posIdx) => (
-                              <td key={`pos-avg-pilot-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                <span className={getCellColorClass(positionAverageBenchmark)}>{positionAverageBenchmark.toFixed(1)}%</span>
-                              </td>
-                            ))}
+                            <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
+                            {demografiStats.posisiData.map((pos, posIdx) => {
+                              const dynamicAvg = getAverageCompositeForTargetPosition(pos.name);
+                              const targetVal = (selectedBenchmarkHospitalId !== 'default' && dynamicAvg !== null) ? dynamicAvg : positionAverageBenchmark;
+                              return (
+                                <td key={`pos-avg-pilot-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                  <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
+                                </td>
+                              );
+                            })}
                           </tr>
                         </tbody>
                       </table>
@@ -6645,14 +7316,21 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               {activeBenchmarkLabel}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
-                              3.789
+                              {selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '3.789'}
                             </td>
                             {demografiStats.posisiData.length > 0 ? (
-                              demografiStats.posisiData.map((pos, idx) => (
-                                <td key={`cnt-pilot-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
-                                  3.789
-                                </td>
-                              ))
+                              demografiStats.posisiData.map((pos, idx) => {
+                                const posSurveys = activeBenchmarkSurveys.filter(s => {
+                                  const raw = (s.dimensiScores as any)?._rawAnswers;
+                                  if (raw) return (raw.posisiStaf || 'Lainnya') === pos.name;
+                                  return (s.unitKerja || 'Perawat') === pos.name;
+                                });
+                                return (
+                                  <td key={`cnt-pilot-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
+                                    {selectedBenchmarkHospitalId !== 'default' ? posSurveys.length : '3.789'}
+                                  </td>
+                                );
+                              })
                             ) : (
                               <td className="py-2 px-2 text-center text-slate-400">-</td>
                             )}
@@ -6739,11 +7417,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Positions Scores Row 2 (Pilot Benchmark) */}
                                         {demografiStats.posisiData.length > 0 ? (
-                                          demografiStats.posisiData.map((pos, pIdx) => (
-                                            <td key={`pilot-score-${item.id}-${pIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
-                                              {benchVal.toFixed(0)}%
-                                            </td>
-                                          ))
+                                          demografiStats.posisiData.map((pos, pIdx) => {
+                                            const targetItemObj = targetPositionItemScores.find(t => t.id === item.id);
+                                            const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[pos.name] !== undefined)
+                                              ? targetItemObj[pos.name]
+                                              : null;
+                                            const displayVal = dynamicVal !== null ? `${dynamicVal.toFixed(0)}%` : `${benchVal.toFixed(0)}%`;
+                                            return (
+                                              <td key={`pilot-score-${item.id}-${pIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
+                                                {displayVal}
+                                              </td>
+                                            );
+                                          })
                                         ) : (
                                           <td className="py-2.5 px-2 text-center text-slate-400">--</td>
                                         )}
@@ -6883,10 +7568,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                           {/* Data Rows for each Safety Rating Category */}
                           {[
-                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 35 },
-                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 45 },
-                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 15 },
-                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 4 },
+                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 28 },
+                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 39 },
+                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 23 },
+                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 9 },
                             { key: 1, benchmarkKey: 'Sangat Kurang', label: 'Buruk', subLabel: 'Poor', bmOverall: 1 },
                           ].map((cat, catIdx) => {
                             const totalHospCount = activePositionSafetyScores.reduce((acc, r) => acc + r.count, 0);
@@ -7091,13 +7776,15 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <tbody className="divide-y divide-slate-200/80">
                           {/* Row 1: Your Hospital Respondents */}
                           <tr className="hover:bg-blue-50/5 transition-colors bg-white">
-                            <td rowSpan={2} className="bg-white p-3.5 border-r border-b border-slate-200/80 align-middle text-center font-bold text-slate-800 text-[12px]">
-                              <div className="flex flex-col gap-0.5 mt-1">
-                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-right pr-2">{namaRs || 'Rumah Sakit'}:</span>
-                                <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-right pr-2">Jumlah Responden</span>
+                            <td rowSpan={2} className="bg-white p-3.5 border-r border-b border-slate-200/80 align-middle text-center">
+                              <div className="flex flex-col gap-1 items-center justify-center text-center">
+                                <span className="text-[11px] md:text-xs italic font-medium text-slate-700 text-center">Jumlah Responden {namaRs || 'Rumah Sakit'}</span>
+                                <span className="text-[11px] md:text-xs italic font-semibold text-slate-900 text-center">Jumlah Responden {activeBenchmarkLabel}</span>
                               </div>
                             </td>
-                            <td className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[13px] bg-white">0</td>
+                            <td className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 text-[13px] bg-white">
+                              {paginatedComputedTableData.reduce((acc, col) => acc + col.totalValid, 0)}
+                            </td>
                             {paginatedComputedTableData.map((col, idx) => (
                               <td key={`rsp-rs-ev-${idx}`} className="p-3 text-center font-medium text-slate-700 border-r border-slate-200/80 last:border-r-0 text-[13px] bg-white">
                                 {col.totalValid}
@@ -7348,21 +8035,26 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       </td>
                                     );
                                   })}
-                                </tr>
-                                <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
+                                                           <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
                                   <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
-                                  <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
-                                  {demografiStats.g1Data.map((g1, tIdx) => (
-                                    <td key={`tenure-pilot-${dimId}-${g1.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
-                                      <div className="flex flex-col items-center justify-center text-center">
-                                        <span className={`text-[14px] text-center ${getCellColorClass(bAvg)}`}>{bAvg.toFixed(1)}%</span>
-                                        {selectedBenchmarkHospitalId === 'default' && (
-                                          <span className="text-[14px] text-center text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
-                                        )}
-                                      </div>
-                                    </td>
-                                  ))}
-                                </tr>
+                                  <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
+                                  {demografiStats.g1Data.map((g1, tIdx) => {
+                                    const targetScoreObj = targetTenureDimensionScores.find(s => s.id === dimId);
+                                    const targetVal = (selectedBenchmarkHospitalId !== 'default' && targetScoreObj && targetScoreObj[g1.name] !== undefined)
+                                      ? targetScoreObj[g1.name]
+                                      : bAvg;
+                                    return (
+                                      <td key={`tenure-pilot-${dimId}-${g1.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
+                                        <div className="flex flex-col items-center justify-center text-center">
+                                          <span className={`text-[14px] text-center ${getCellColorClass(targetVal)}`}>{targetVal.toFixed(1)}%</span>
+                                          {selectedBenchmarkHospitalId === 'default' && (
+                                            <span className="text-[14px] text-center text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
+                                          )}
+                                        </div>
+                                      </td>
+                                    );
+                                  })}
+                                </tr>       </tr>
                               </Fragment>
                             );
                           })}
@@ -7386,12 +8078,16 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           </tr>
                           <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all">
                             <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
-                            <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">-</td>
-                            {demografiStats.g1Data.map((g1, tIdx) => (
-                              <td key={`tenure-avg-pilot-${g1.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
-                                <span className={`font-black text-[14px] ${getCellColorClass(averageBenchmark)}`}>{averageBenchmark.toFixed(1)}%</span>
-                              </td>
-                            ))}
+                            <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
+                            {demografiStats.g1Data.map((g1, tIdx) => {
+                              const dynamicAvg = getAverageCompositeForTargetTenure(g1.name);
+                              const targetVal = (selectedBenchmarkHospitalId !== 'default' && dynamicAvg !== null) ? dynamicAvg : averageBenchmark;
+                              return (
+                                <td key={`tenure-avg-pilot-${g1.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
+                                  <span className={`font-black text-[14px] ${getCellColorClass(targetVal)}`}>{targetVal.toFixed(1)}%</span>
+                                </td>
+                              );
+                            })}
                           </tr>
                         </tbody>
                       </table>
@@ -7558,14 +8254,21 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               {activeBenchmarkLabel}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
-                              3.789
+                              {selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '3.789'}
                             </td>
                             {demografiStats.g1Data.length > 0 ? (
-                              demografiStats.g1Data.map((g1, idx) => (
-                                <td key={`cnt-pilot-tenure-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
-                                  3.789
-                                </td>
-                              ))
+                              demografiStats.g1Data.map((g1, idx) => {
+                                const g1Surveys = activeBenchmarkSurveys.filter(s => {
+                                  const raw = (s.dimensiScores as any)?._rawAnswers;
+                                  if (raw) return (raw.lamaKerja || '< 1 Tahun') === g1.name;
+                                  return ((s as any).lamaKerja || '< 1 Tahun') === g1.name;
+                                });
+                                return (
+                                  <td key={`cnt-pilot-tenure-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
+                                    {selectedBenchmarkHospitalId !== 'default' ? g1Surveys.length : '3.789'}
+                                  </td>
+                                );
+                              })
                             ) : (
                               <td className="py-2 px-2 text-center text-slate-400">-</td>
                             )}
@@ -7652,11 +8355,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Tenure Scores Row 2 (Pilot Benchmark) */}
                                         {demografiStats.g1Data.length > 0 ? (
-                                          demografiStats.g1Data.map((g1, gIdx) => (
-                                            <td key={`pilot-score-tenure-${item.id}-${gIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
-                                              {benchVal.toFixed(0)}%
-                                            </td>
-                                          ))
+                                          demografiStats.g1Data.map((g1, gIdx) => {
+                                            const targetItemObj = targetTenureItemScores.find(t => t.id === item.id);
+                                            const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[g1.name] !== undefined)
+                                              ? targetItemObj[g1.name]
+                                              : null;
+                                            const displayVal = dynamicVal !== null ? `${dynamicVal.toFixed(0)}%` : `${benchVal.toFixed(0)}%`;
+                                            return (
+                                              <td key={`pilot-score-tenure-${item.id}-${gIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
+                                                {displayVal}
+                                              </td>
+                                            );
+                                          })
                                         ) : (
                                           <td className="py-2.5 px-2 text-center text-slate-400">--</td>
                                         )}
@@ -7803,10 +8513,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                           {/* Data Rows for each Safety Rating Category */}
                           {[
-                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 35 },
-                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 45 },
-                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 15 },
-                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 4 },
+                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 28 },
+                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 39 },
+                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 23 },
+                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 9 },
                             { key: 1, benchmarkKey: 'Sangat Kurang', label: 'Buruk', subLabel: 'Poor', bmOverall: 1 },
                           ].map((cat) => {
                             const totalHospCount = activeTenureSafetyScores.reduce((acc, r) => acc + r.count, 0);
@@ -8209,10 +8919,24 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               {(() => { const v = getAverageInteraksiStats('tidak'); return v !== null ? <span className={getCellColorClass(v)}>{v.toFixed(1)}%</span> : '-'; })()}
                             </td>
                             <td className="py-4 px-4 text-center border-r border-slate-200/80 text-slate-700 bg-emerald-50/20">
-                              {benchmarkInteraksiData.length > 0 ? <span className={getCellColorClass(benchmarkInteraksiData.reduce((acc, b) => acc + b.dengan_pasien, 0) / benchmarkInteraksiData.length)}>{(benchmarkInteraksiData.reduce((acc, b) => acc + b.dengan_pasien, 0) / benchmarkInteraksiData.length).toFixed(1)}%</span> : '-'}
+                              {selectedBenchmarkHospitalId !== 'default' && activeBenchmarkSurveys.length > 0 ? (
+                                (() => {
+                                  const v = getAverageInteraksiStats('langsung', activeBenchmarkSurveys);
+                                  return v !== null ? <span className={getCellColorClass(v)}>{v.toFixed(1)}%</span> : '-';
+                                })()
+                              ) : (
+                                benchmarkInteraksiData.length > 0 ? <span className={getCellColorClass(benchmarkInteraksiData.reduce((acc, b) => acc + b.dengan_pasien, 0) / benchmarkInteraksiData.length)}>{(benchmarkInteraksiData.reduce((acc, b) => acc + b.dengan_pasien, 0) / benchmarkInteraksiData.length).toFixed(1)}%</span> : '-'
+                              )}
                             </td>
                             <td className="py-4 px-4 text-center text-slate-700 bg-emerald-50/20">
-                              {benchmarkInteraksiData.length > 0 ? <span className={getCellColorClass(benchmarkInteraksiData.reduce((acc, b) => acc + b.tanpa_pasien, 0) / benchmarkInteraksiData.length)}>{(benchmarkInteraksiData.reduce((acc, b) => acc + b.tanpa_pasien, 0) / benchmarkInteraksiData.length).toFixed(1)}%</span> : '-'}
+                              {selectedBenchmarkHospitalId !== 'default' && activeBenchmarkSurveys.length > 0 ? (
+                                (() => {
+                                  const v = getAverageInteraksiStats('tidak', activeBenchmarkSurveys);
+                                  return v !== null ? <span className={getCellColorClass(v)}>{v.toFixed(1)}%</span> : '-';
+                                })()
+                              ) : (
+                                benchmarkInteraksiData.length > 0 ? <span className={getCellColorClass(benchmarkInteraksiData.reduce((acc, b) => acc + b.tanpa_pasien, 0) / benchmarkInteraksiData.length)}>{(benchmarkInteraksiData.reduce((acc, b) => acc + b.tanpa_pasien, 0) / benchmarkInteraksiData.length).toFixed(1)}%</span> : '-'
+                              )}
                             </td>
                           </tr>
                         </tbody>
@@ -8388,14 +9112,26 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               {activeBenchmarkLabel}: # Responden
                             </td>
                             <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
-                              3.789
+                              {selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '3.789'}
                             </td>
                             {demografiStats.g4Data.length > 0 ? (
-                              demografiStats.g4Data.map((g4, idx) => (
-                                <td key={`cnt-pilot-g4-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
-                                  3.789
-                                </td>
-                              ))
+                              demografiStats.g4Data.map((g4, idx) => {
+                                const g4Surveys = activeBenchmarkSurveys.filter(s => {
+                                  const raw = (s.dimensiScores as any)?._rawAnswers;
+                                  if (raw && raw.ansG && raw.ansG[4]) {
+                                    const isLangsung = isDirectInteraction(raw.ansG[4]);
+                                    return isDirectInteraction(g4.name) ? isLangsung : !isLangsung;
+                                  }
+                                  const sIdx = activeBenchmarkSurveys.indexOf(s);
+                                  const assignedLangsung = (sIdx % 100) < 85;
+                                  return isDirectInteraction(g4.name) ? assignedLangsung : !assignedLangsung;
+                                });
+                                return (
+                                  <td key={`cnt-pilot-g4-${idx}`} className="py-2 px-2 text-center font-bold text-slate-600 bg-slate-100/70">
+                                    {selectedBenchmarkHospitalId !== 'default' ? g4Surveys.length : '3.789'}
+                                  </td>
+                                );
+                              })
                             ) : (
                               <td className="py-2 px-2 text-center text-slate-400">-</td>
                             )}
@@ -8482,11 +9218,18 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                                         {/* Interaction Scores Row 2 (Pilot Benchmark) */}
                                         {demografiStats.g4Data.length > 0 ? (
-                                          demografiStats.g4Data.map((g4, gIdx) => (
-                                            <td key={`pilot-score-${item.id}-${gIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
-                                              {benchVal.toFixed(0)}%
-                                            </td>
-                                          ))
+                                          demografiStats.g4Data.map((g4, gIdx) => {
+                                            const targetItemObj = targetInteractionItemScores.find(t => t.id === item.id);
+                                            const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[g4.name] !== undefined)
+                                              ? targetItemObj[g4.name]
+                                              : null;
+                                            const displayVal = dynamicVal !== null ? `${dynamicVal.toFixed(0)}%` : `${benchVal.toFixed(0)}%`;
+                                            return (
+                                              <td key={`pilot-score-${item.id}-${gIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
+                                                {displayVal}
+                                              </td>
+                                            );
+                                          })
                                         ) : (
                                           <td className="py-2.5 px-2 text-center text-slate-400">--</td>
                                         )}
@@ -8602,10 +9345,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
                           {/* Data Rows for each Safety Rating Category */}
                           {[
-                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 35 },
-                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 45 },
-                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 15 },
-                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 4 },
+                            { key: 5, benchmarkKey: 'Sangat Baik', label: 'Luar Biasa', subLabel: 'Excellent', bmOverall: 28 },
+                            { key: 4, benchmarkKey: 'Baik', label: 'Sangat Baik', subLabel: 'Very Good', bmOverall: 39 },
+                            { key: 3, benchmarkKey: 'Cukup', label: 'Baik', subLabel: 'Good', bmOverall: 23 },
+                            { key: 2, benchmarkKey: 'Kurang', label: 'Cukup', subLabel: 'Fair', bmOverall: 9 },
                             { key: 1, benchmarkKey: 'Sangat Kurang', label: 'Buruk', subLabel: 'Poor', bmOverall: 1 },
                           ].map((cat) => {
                             const totalHospCount = interactionSafetyScores.reduce((acc, r) => acc + r.count, 0);
@@ -9401,16 +10144,16 @@ const DynamicAIAnalysisCards: React.FC<DynamicAIAnalysisCardsProps> = ({
     }
 
     case 'benchmark-reported': {
-      let maxReportedCatBm = { kategori: 'Tidak Pernah Melaporkan Kejadian', val: 0, bmVal: 45 };
+      let maxReportedCatBm = { kategori: 'Tidak Pernah Melaporkan Kejadian', val: 0, bmVal: 55 };
       const detailsList: string[] = [];
 
       if (reportedEventsComparisonStats && reportedEventsComparisonStats.percentages) {
         const categories = [
-          { key: 'Tidak ada', label: 'Tidak Pernah Melaporkan Kejadian', bm: 45 },
-          { key: '1 sampai 2', label: 'Melaporkan 1-2 Kejadian', bm: 28 },
-          { key: '3 sampai 5', label: 'Melaporkan 3-5 Kejadian', bm: 15 },
-          { key: '6 hingga 10', label: 'Melaporkan 6-10 Kejadian', bm: 8 },
-          { key: '11 atau lebih', label: 'Melaporkan 11 atau lebih Kejadian', bm: 4 }
+          { key: 'Tidak ada', label: 'Tidak Pernah Melaporkan Kejadian', bm: 55 },
+          { key: '1 sampai 2', label: 'Melaporkan 1-2 Kejadian', bm: 26 },
+          { key: '3 sampai 5', label: 'Melaporkan 3-5 Kejadian', bm: 13 },
+          { key: '6 hingga 10', label: 'Melaporkan 6-10 Kejadian', bm: 4 },
+          { key: '11 atau lebih', label: 'Melaporkan 11 atau lebih Kejadian', bm: 3 }
         ];
         let maxPct = -1;
         categories.forEach(c => {

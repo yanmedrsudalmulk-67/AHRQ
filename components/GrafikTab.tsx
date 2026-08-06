@@ -238,10 +238,10 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
     const getPct = (val: number) => totalValid > 0 ? (val / totalValid) * 100 : 0;
 
     return [
-      { kategori: 'Sangat Baik', [rsName]: getPct(counts[5]), [activeBenchmarkLabel]: 35 },
-      { kategori: 'Baik', [rsName]: getPct(counts[4]), [activeBenchmarkLabel]: 45 },
-      { kategori: 'Cukup', [rsName]: getPct(counts[3]), [activeBenchmarkLabel]: 15 },
-      { kategori: 'Kurang', [rsName]: getPct(counts[2]), [activeBenchmarkLabel]: 4 },
+      { kategori: 'Sangat Baik', [rsName]: getPct(counts[5]), [activeBenchmarkLabel]: 28 },
+      { kategori: 'Baik', [rsName]: getPct(counts[4]), [activeBenchmarkLabel]: 39 },
+      { kategori: 'Cukup', [rsName]: getPct(counts[3]), [activeBenchmarkLabel]: 23 },
+      { kategori: 'Kurang', [rsName]: getPct(counts[2]), [activeBenchmarkLabel]: 9 },
       { kategori: 'Sangat Kurang', [rsName]: getPct(counts[1]), [activeBenchmarkLabel]: 1 },
     ];
   }, [actualSurveys, tahun1, tahun2, mode, rsName, activeBenchmarkLabel]);
@@ -257,7 +257,7 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }}></span> 
                 {p.name}:
               </span>
-              <strong className="text-sm">{p.value.toFixed(1)}%</strong>
+              <strong className="text-sm">{Number(Number(p.value ?? 0).toFixed(1)).toLocaleString('id-ID')}%</strong>
             </div>
           ))}
         </div>
@@ -485,13 +485,13 @@ export default function GrafikTab({ surveys, namaRs, activeBenchmarkLabel = "RS 
               <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
               <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
               <Bar isAnimationActive={false} dataKey={rsName} fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
-                <LabelList dataKey={rsName} position="top" formatter={(val: number) => `${val.toFixed(1)}%`} fill="#059669" fontSize={11} fontWeight="bold" />
+                <LabelList dataKey={rsName} position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-rs-${index}`} fill="#10b981" />
                 ))}
               </Bar>
               <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
-                <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${val}%`} fill="#475569" fontSize={11} fontWeight="bold" />
+                <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                 {e1Stats.map((entry, index) => (
                   <Cell key={`cell-bp-${index}`} fill="#64748b" />
                 ))}

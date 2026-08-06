@@ -582,6 +582,18 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       }
     }
     loadMasterData();
+
+    const handleMasterUpdate = () => {
+      loadMasterData();
+    };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('master_data_updated', handleMasterUpdate);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('master_data_updated', handleMasterUpdate);
+      }
+    };
   }, [currentRsName]);
   
   // Custom Select Modals

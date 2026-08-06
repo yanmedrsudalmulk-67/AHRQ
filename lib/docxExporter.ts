@@ -16,7 +16,8 @@ import {
   PageNumber,
   NumberFormat,
   Packer,
-  ImageRun
+  ImageRun,
+  TableOfContents
 } from 'docx';
 import { saveAs } from 'file-saver';
 
@@ -418,28 +419,10 @@ export async function exportReportToDocx(data: ReportData) {
 
           // DAFTAR ISI
           heading1("DAFTAR ISI"),
-          p("HALAMAN COVER ........................................................................................................... i", { bold: true, spaceAfter: 60 }),
-          p("DAFTAR ISI .................................................................................................................. ii", { bold: true, spaceAfter: 60 }),
-          p("BAB I PENDAHULUAN ..................................................................................................... 1", { bold: true, spaceAfter: 60 }),
-          p("    1.1 Latar Belakang .................................................................................................... 1", { spaceAfter: 40 }),
-          p("    1.2 Tujuan .................................................................................................................. 1", { spaceAfter: 40 }),
-          p("    1.3 Manfaat ................................................................................................................. 1", { spaceAfter: 60 }),
-          p("BAB II METODOLOGI SURVEI ............................................................................................ 2", { bold: true, spaceAfter: 60 }),
-          p("    2.1 Desain Penelitian / Survei ........................................................................................ 2", { spaceAfter: 40 }),
-          p("    2.2 Waktu dan Lokasi .................................................................................................... 2", { spaceAfter: 40 }),
-          p("    2.3 Populasi dan Sampel ................................................................................................ 2", { spaceAfter: 40 }),
-          p("BAB III HASIL DAN PEMBAHASAN ..................................................................................... 3", { bold: true, spaceAfter: 60 }),
-          p("    3.1 Karakteristik Demografi & Tingkat Respon ............................................................. 3", { spaceAfter: 40 }),
-          p("    3.2 Hasil Pengukuran 10 Dimensi AHRQ ..................................................................... 4", { spaceAfter: 40 }),
-          p("    3.2.2 Rating Keselamatan Pasien Keseluruhan ............................................................. 6", { spaceAfter: 40 }),
-          p("    3.2.3 Frekuensi Insiden Dilaporkan ............................................................................. 7", { spaceAfter: 40 }),
-          p("    3.2.4 Rata-Rata Respon Positif Per Item Dimensi .......................................................... 8", { spaceAfter: 40 }),
-          p("    3.2.5 Analisis Demografis & Komparatif ..................................................................... 12", { spaceAfter: 40 }),
-          p("    3.2.6 Analisis Trend Historis & Benchmark RS ............................................................. 15", { spaceAfter: 40 }),
-          p("    3.3 Pembahasan Analisis Kualitatif ............................................................................... 16", { spaceAfter: 60 }),
-          p("BAB IV KESIMPULAN DAN REKOMENDASI ............................................................................. 17", { bold: true, spaceAfter: 60 }),
-          p("    4.1 Kesimpulan ............................................................................................................ 17", { spaceAfter: 40 }),
-          p("    4.2 Rekomendasi Strategic Action Plan ............................................................................. 17", { spaceAfter: 60 }),
+          new TableOfContents("Daftar Isi", {
+            hyperlink: true,
+            headingStyleRange: [1, 3],
+          }),
 
           pageBreak(),
 
@@ -876,7 +859,7 @@ export async function exportReportToDocx(data: ReportData) {
           p("", { spaceAfter: 120 }),
 
           ...(data.hasBenchmark && data.benchmarkComparison && data.benchmarkComparison.length > 0 ? [
-            heading3(`3.2.4 Analisis Komparasi Benchmark dengan ${data.benchmarkName || 'Rumah Sakit Pembanding'}`),
+            heading3(`3.2.7 Analisis Komparasi Benchmark dengan ${data.benchmarkName || 'Rumah Sakit Pembanding'}`),
             p(`Hasil pembandingan skor % Respon Positif antara ${data.namaRs} dengan ${data.benchmarkName || 'RS Pembanding'} disajikan pada tabel berikut:`),
             new Table({
               width: { size: 100, type: WidthType.PERCENTAGE },

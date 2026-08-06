@@ -1387,7 +1387,12 @@ export async function saveBenchmarkInteraksi(benchmarks: BenchmarkInteraksi[]): 
   }
 }
 
-export async function getMasterPosisi(rsName: string): Promise<PosisiStaff[]> {
+export interface MasterPosisiConfig {
+  positions: PosisiStaff[];
+  customCategories?: string[];
+}
+
+export async function getMasterPosisiConfig(rsName: string): Promise<MasterPosisiConfig> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
@@ -1397,24 +1402,42 @@ export async function getMasterPosisi(rsName: string): Promise<PosisiStaff[]> {
         .eq('id', `MASTER_POSISI_${rsName}`)
         .single();
         
-      if (!error && data && data.dimensi_scores && Array.isArray((data.dimensi_scores as any).positions)) {
-        return (data.dimensi_scores as any).positions as PosisiStaff[];
+      if (!error && data && data.dimensi_scores) {
+        const scores = data.dimensi_scores as any;
+        const positions = Array.isArray(scores.positions) ? (scores.positions as PosisiStaff[]) : DEFAULT_STAFF_POSITIONS;
+        const customCategories = Array.isArray(scores.customCategories) ? (scores.customCategories as string[]) : [];
+        return { positions, customCategories };
       }
     } catch (e) {
-      console.error("Failed to get master posisi", e);
+      console.error("Failed to get master posisi config", e);
     }
   }
-  return DEFAULT_STAFF_POSITIONS;
+  return { positions: DEFAULT_STAFF_POSITIONS, customCategories: [] };
 }
 
-export async function saveMasterPosisi(rsName: string, positions: PosisiStaff[]): Promise<void> {
+export async function getMasterPosisi(rsName: string): Promise<PosisiStaff[]> {
+  const config = await getMasterPosisiConfig(rsName);
+  return config.positions;
+}
+
+export async function saveMasterPosisi(rsName: string, positions: PosisiStaff[], customCategories?: string[]): Promise<void> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const { data: existing } = await supabase.from('ahrq_surveys').select('id').eq('id', `MASTER_POSISI_${rsName}`).single();
+      const { data: existing } = await supabase.from('ahrq_surveys').select('id, dimensi_scores').eq('id', `MASTER_POSISI_${rsName}`).single();
       
+      let finalCats = customCategories;
+      if (!finalCats && existing && existing.dimensi_scores && Array.isArray((existing.dimensi_scores as any).customCategories)) {
+        finalCats = (existing.dimensi_scores as any).customCategories;
+      }
+
+      const payload = {
+        positions,
+        customCategories: finalCats || []
+      };
+
       if (existing) {
-        await supabase.from('ahrq_surveys').update({ dimensi_scores: { positions } }).eq('id', `MASTER_POSISI_${rsName}`);
+        await supabase.from('ahrq_surveys').update({ dimensi_scores: payload }).eq('id', `MASTER_POSISI_${rsName}`);
       } else {
         await supabase.from('ahrq_surveys').insert([{
           id: `MASTER_POSISI_${rsName}`,
@@ -1422,7 +1445,7 @@ export async function saveMasterPosisi(rsName: string, positions: PosisiStaff[])
           unit_kerja: rsName,
           jumlah_responden: 0,
           tanggal_input: new Date().toISOString(),
-          dimensi_scores: { positions }
+          dimensi_scores: payload
         }]);
       }
     } catch (e) {
@@ -1560,7 +1583,12 @@ export const DEFAULT_UNIT_KERJA: UnitKerja[] = [
   { id: 'unit-lainnya-1', kategori: 'Lainnya', nama_unit: 'Lainnya', is_active: true, order: 75 }
 ];
 
-export async function getMasterUnit(rsName: string): Promise<UnitKerja[]> {
+export interface MasterUnitConfig {
+  units: UnitKerja[];
+  customCategories?: string[];
+}
+
+export async function getMasterUnitConfig(rsName: string): Promise<MasterUnitConfig> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
@@ -1570,24 +1598,42 @@ export async function getMasterUnit(rsName: string): Promise<UnitKerja[]> {
         .eq('id', `MASTER_UNIT_${rsName}`)
         .single();
         
-      if (!error && data && data.dimensi_scores && Array.isArray((data.dimensi_scores as any).units)) {
-        return (data.dimensi_scores as any).units as UnitKerja[];
+      if (!error && data && data.dimensi_scores) {
+        const scores = data.dimensi_scores as any;
+        const units = Array.isArray(scores.units) ? (scores.units as UnitKerja[]) : DEFAULT_UNIT_KERJA;
+        const customCategories = Array.isArray(scores.customCategories) ? (scores.customCategories as string[]) : [];
+        return { units, customCategories };
       }
     } catch (e) {
-      console.error("Failed to get master unit", e);
+      console.error("Failed to get master unit config", e);
     }
   }
-  return DEFAULT_UNIT_KERJA;
+  return { units: DEFAULT_UNIT_KERJA, customCategories: [] };
 }
 
-export async function saveMasterUnit(rsName: string, units: UnitKerja[]): Promise<void> {
+export async function getMasterUnit(rsName: string): Promise<UnitKerja[]> {
+  const config = await getMasterUnitConfig(rsName);
+  return config.units;
+}
+
+export async function saveMasterUnit(rsName: string, units: UnitKerja[], customCategories?: string[]): Promise<void> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const { data: existing } = await supabase.from('ahrq_surveys').select('id').eq('id', `MASTER_UNIT_${rsName}`).single();
+      const { data: existing } = await supabase.from('ahrq_surveys').select('id, dimensi_scores').eq('id', `MASTER_UNIT_${rsName}`).single();
       
+      let finalCats = customCategories;
+      if (!finalCats && existing && existing.dimensi_scores && Array.isArray((existing.dimensi_scores as any).customCategories)) {
+        finalCats = (existing.dimensi_scores as any).customCategories;
+      }
+
+      const payload = {
+        units,
+        customCategories: finalCats || []
+      };
+
       if (existing) {
-        await supabase.from('ahrq_surveys').update({ dimensi_scores: { units } }).eq('id', `MASTER_UNIT_${rsName}`);
+        await supabase.from('ahrq_surveys').update({ dimensi_scores: payload }).eq('id', `MASTER_UNIT_${rsName}`);
       } else {
         await supabase.from('ahrq_surveys').insert([{
           id: `MASTER_UNIT_${rsName}`,
@@ -1595,7 +1641,7 @@ export async function saveMasterUnit(rsName: string, units: UnitKerja[]): Promis
           unit_kerja: rsName,
           jumlah_responden: 0,
           tanggal_input: new Date().toISOString(),
-          dimensi_scores: { units }
+          dimensi_scores: payload
         }]);
       }
     } catch (e) {
