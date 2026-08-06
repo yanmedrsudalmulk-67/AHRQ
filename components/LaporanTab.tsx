@@ -2515,8 +2515,20 @@ export default function LaporanTab({
                       <span className="font-mono">2</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
-                      <span>2.3 Populasi, Sampel dan Pengumpulan Data</span>
+                      <span>2.3 Populasi & Sampel</span>
                       <span className="font-mono">2</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>2.4 Instrumen Survei</span>
+                      <span className="font-mono">3</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>2.5 Metode Pengumpulan Data</span>
+                      <span className="font-mono">3</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>2.6 Analisis Data</span>
+                      <span className="font-mono">4</span>
                     </div>
                   </div>
 
@@ -2570,15 +2582,15 @@ export default function LaporanTab({
                   <div className="space-y-1 pt-1">
                     <div className="flex items-baseline justify-between font-bold text-slate-900">
                       <span>BAB IV KESIMPULAN DAN REKOMENDASI</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3}</span>
+                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>4.1 Kesimpulan Laporan</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3}</span>
+                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>4.2 Rekomendasi Strategic Action Plan & Pengesahan</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4}</span>
+                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5}</span>
                     </div>
                   </div>
                 </div>
