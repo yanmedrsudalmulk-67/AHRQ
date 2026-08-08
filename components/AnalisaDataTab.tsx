@@ -492,6 +492,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [currentPageUnit, setCurrentPageUnit] = useState<number>(1);
   const [searchUnitEventQuery, setSearchUnitEventQuery] = useState<string>('');
   const [currentPageUnitEvent, setCurrentPageUnitEvent] = useState<number>(1);
+  const [currentPageUnitDimension, setCurrentPageUnitDimension] = useState<number>(1);
+  const [currentPageUnitItem, setCurrentPageUnitItem] = useState<number>(1);
   const [searchTenureQuery, setSearchTenureQuery] = useState<string>('');
   const [currentPageTenure, setCurrentPageTenure] = useState<number>(1);
   const [searchTenureEventQuery, setSearchTenureEventQuery] = useState<string>('');
@@ -2318,6 +2320,28 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     return demografiStats.posisiData.slice(startIndex, startIndex + itemsPerPagePosisiItem);
   }, [demografiStats.posisiData, currentPagePosisiItem, itemsPerPagePosisiItem]);
 
+  const itemsPerPageUnitDimension = 5;
+
+  const totalPagesUnitDimension = useMemo(() => {
+    return Math.ceil(demografiStats.unitData.length / itemsPerPageUnitDimension) || 1;
+  }, [demografiStats.unitData, itemsPerPageUnitDimension]);
+
+  const paginatedUnitDimensionData = useMemo(() => {
+    const startIndex = (currentPageUnitDimension - 1) * itemsPerPageUnitDimension;
+    return demografiStats.unitData.slice(startIndex, startIndex + itemsPerPageUnitDimension);
+  }, [demografiStats.unitData, currentPageUnitDimension, itemsPerPageUnitDimension]);
+
+  const itemsPerPageUnitItem = 5;
+
+  const totalPagesUnitItem = useMemo(() => {
+    return Math.ceil(demografiStats.unitData.length / itemsPerPageUnitItem) || 1;
+  }, [demografiStats.unitData, itemsPerPageUnitItem]);
+
+  const paginatedUnitItemData = useMemo(() => {
+    const startIndex = (currentPageUnitItem - 1) * itemsPerPageUnitItem;
+    return demografiStats.unitData.slice(startIndex, startIndex + itemsPerPageUnitItem);
+  }, [demografiStats.unitData, currentPageUnitItem, itemsPerPageUnitItem]);
+
   const unitDimensionScores = useMemo(() => {
     return Object.keys(DIMENSI_INFO).map(dimId => {
       const info = DIMENSI_INFO[dimId];
@@ -3477,8 +3501,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     });
   }, [hospitalSurveys, demografiStats]);
 
-  const getCellColorClass = (val: number | null) => {
-    if (val === null) return 'text-slate-500 font-medium';
+  const getCellColorClass = (val: number | null | undefined) => {
+    if (val === null || val === undefined || typeof val !== 'number' || isNaN(val)) return 'text-slate-500 font-medium';
     if (val >= 75) return 'text-emerald-700 bg-emerald-50 border border-emerald-200/60 rounded-lg px-2.5 py-1.5 font-bold inline-block whitespace-nowrap';
     if (val >= 50) return 'text-amber-700 bg-amber-50 border border-amber-200/60 rounded-lg px-2.5 py-1.5 font-bold inline-block whitespace-nowrap';
     return 'text-rose-700 bg-rose-50 border border-rose-200/60 rounded-lg px-2.5 py-1.5 font-bold inline-block whitespace-nowrap';
@@ -3546,7 +3570,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     let sum = 0;
     let count = 0;
     positionDimensionScores.forEach(row => {
-      if (row.id !== 'd1' && row[position] !== undefined && row[position] !== 0) {
+      if (row[position] !== undefined && row[position] !== null && typeof row[position] === 'number' && !isNaN(row[position])) {
         sum += row[position];
         count++;
       }
@@ -3558,7 +3582,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     let sum = 0;
     let count = 0;
     targetPositionDimensionScores.forEach(row => {
-      if (row.id !== 'd1' && row[position] !== undefined && row[position] !== null && row[position] !== 0) {
+      if (row[position] !== undefined && row[position] !== null && typeof row[position] === 'number' && !isNaN(row[position])) {
         sum += row[position];
         count++;
       }
@@ -6250,27 +6274,57 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 <div className="w-full flex flex-col gap-6">
                   {/* Summary Comparison Grid - Detailed Unit Comparison from Report */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
-                    <div className="space-y-3 border-b border-slate-100 pb-5">
-                      <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
-                      <h3 className="text-[17px] font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
-                        <Building2 className="w-6 h-6 text-indigo-600" />
-                        Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
-                      </h3>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
+                        <h3 className="text-[17px] font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
+                          <Building2 className="w-6 h-6 text-indigo-600" />
+                          Perbandingan Rata-rata Respon Positif Dimensi Budaya Keselamatan Pasien Berdasarkan Unit Kerja
+                        </h3>
+                        <p className="text-xs md:text-sm text-slate-500 font-medium">
+                          Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan Unit / Area Kerja (AHRQ SOPS Versi 2.0)
+                        </p>
+                      </div>
+
+                      {/* Pagination Navigation */}
+                      <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto shrink-0">
+                        {totalPagesUnitDimension > 1 && (
+                          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
+                            <button 
+                              onClick={() => setCurrentPageUnitDimension(p => Math.max(1, p - 1))}
+                              disabled={currentPageUnitDimension === 1}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Prev
+                            </button>
+                            <span className="text-[10px] font-black text-slate-500 px-2">
+                              {currentPageUnitDimension} / {totalPagesUnitDimension}
+                            </span>
+                            <button 
+                              onClick={() => setCurrentPageUnitDimension(p => Math.min(totalPagesUnitDimension, p + 1))}
+                              disabled={currentPageUnitDimension === totalPagesUnitDimension}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="overflow-x-auto rounded-[16px] border border-slate-200 shadow-sm bg-white relative custom-scrollbar pb-2">
                       <table className="w-full text-left text-xs border-collapse">
-                        <thead className="bg-[#2563EB] text-white uppercase tracking-wider font-semibold border-b-2 border-blue-700 sticky top-0 z-30">
-                          <tr>
-                            <th className="py-4 px-4 text-center w-12 border-r border-blue-400/40 bg-[#2563EB] text-white">No</th>
-                            <th className="py-4 px-5 min-w-[280px] text-center border-r border-blue-400/40 bg-[#2563EB] text-white">Dimensi Budaya Keselamatan</th>
-                            <th className="py-4 px-4 text-center min-w-[150px] border-r border-blue-400/40 bg-[#2563EB] text-white">Dataset</th>
-                            <th className="py-4 px-4 text-center min-w-[120px] border-r border-blue-400/40 bg-[#2563EB] text-white">Total Responden</th>
-                            {demografiStats.unitData.map(u => (
-                              <th key={u.name} className="py-4 px-5 min-w-[190px] text-center border-r border-blue-400/40 last:border-r-0 font-black bg-[#2563EB] text-white">
+                        <thead>
+                          <tr className="border-b-2 border-slate-200 bg-slate-50 sticky top-0 z-30 text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                            <th className="py-4 px-4 text-center w-12 border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>No</th>
+                            <th className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Dimensi Budaya Keselamatan</th>
+                            <th className="py-4 px-4 text-center min-w-[150px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Dataset</th>
+                            <th className="py-4 px-4 text-center min-w-[120px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Total Responden</th>
+                            {paginatedUnitDimensionData.map(u => (
+                              <th key={u.name} className="py-4 px-5 min-w-[190px] text-center border-r border-slate-200/80 last:border-r-0 font-extrabold text-white" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>
                                 <div className="flex flex-col items-center">
                                   <span className="whitespace-normal break-words">{u.name}</span>
-                                  <span className="text-[10px] text-blue-100 font-mono tracking-normal normal-case mt-0.5">(N = {u.value})</span>
+                                  <span className="text-[10px] text-white/90 font-mono tracking-normal normal-case mt-0.5">(N = {u.value})</span>
                                 </div>
                               </th>
                             ))}
@@ -6296,11 +6350,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   </td>
                                   <td className="py-3 px-4 font-bold text-cyan-700 text-center border-r border-slate-200 bg-[#e0f2fe]">{namaRs || 'RS'}</td>
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200 bg-cyan-50/40">{hospitalSurveys.length}</td>
-                                  {demografiStats.unitData.map((u, unitIdx) => {
+                                  {paginatedUnitDimensionData.map((u, unitIdx) => {
                                     const scoreObj = unitDimensionScores.find(s => s.id === dimId);
                                     const percentage = scoreObj ? scoreObj[u.name] : null;
                                     return (
-                                      <td key={`unit-rs-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200 bg-cyan-50/40 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                      <td key={`unit-rs-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200 bg-cyan-50/40 ${unitIdx === paginatedUnitDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                         {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                       </td>
                                     );
@@ -6309,8 +6363,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <tr className="hover:bg-slate-50 transition-all bg-slate-50/30">
                                   <td className="py-3 px-4 font-bold text-emerald-700 text-center border-r border-slate-200 bg-slate-100">{activeBenchmarkLabel}</td>
                                   <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200 font-bold">-</td>
-                                  {demografiStats.unitData.map((u, unitIdx) => (
-                                    <td key={`unit-pilot-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200 ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                  {paginatedUnitDimensionData.map((u, unitIdx) => (
+                                    <td key={`unit-pilot-${dimId}-${u.name}`} className={`py-3 px-5 text-center border-r border-slate-200 ${unitIdx === paginatedUnitDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                       <div className="flex flex-col items-center justify-center text-center">
                                         <span className={`text-[14px] text-center ${getCellColorClass(bAvg)}`}>{bAvg.toFixed(1)}%</span>
                                         {selectedBenchmarkHospitalId === 'default' && (
@@ -6332,10 +6386,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             </td>
                             <td className="py-4 px-4 font-bold text-cyan-700 text-center border-r border-slate-200 bg-[#cff4fe]">{namaRs || 'RS'}</td>
                             <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200 bg-cyan-50/30">{hospitalSurveys.length}</td>
-                            {demografiStats.unitData.map((u, unitIdx) => {
+                            {paginatedUnitDimensionData.map((u, unitIdx) => {
                               const avgVal = getAverageCompositeForUnit(u.name);
                               return (
-                                <td key={`unit-avg-rs-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200 bg-cyan-50/30 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                <td key={`unit-avg-rs-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200 bg-cyan-50/30 font-black ${unitIdx === paginatedUnitDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                   {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
                               );
@@ -6344,11 +6398,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr className="bg-indigo-50/20 hover:bg-indigo-50 transition-all">
                             <td className="py-4 px-4 font-bold text-emerald-700 text-center border-r border-slate-200 bg-indigo-50">{activeBenchmarkLabel}</td>
                             <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
-                            {demografiStats.unitData.map((u, unitIdx) => {
+                            {paginatedUnitDimensionData.map((u, unitIdx) => {
                               const dynamicAvg = getAverageCompositeForTargetUnit(u.name);
                               const targetVal = (selectedBenchmarkHospitalId !== 'default' && dynamicAvg !== null) ? dynamicAvg : averageBenchmark;
                               return (
-                                <td key={`unit-avg-pilot-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${unitIdx === demografiStats.unitData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                <td key={`unit-avg-pilot-${u.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${unitIdx === paginatedUnitDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                   <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
                                 </td>
                               );
@@ -6450,19 +6504,43 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Filter Tampilan Dimensi</h3>
                         <p className="text-xs text-slate-500 font-medium">Saring butir pertanyaan berdasarkan dimensi spesifik atau tampilkan semua sekaligus.</p>
                       </div>
-                      <div className="w-full md:w-96">
-                        <select
-                          value={selectedItemDimId}
-                          onChange={(e) => setSelectedItemDimId(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer transition-colors font-sans"
-                        >
-                          <option value="all">Semua Dimensi Budaya Keselamatan (32 Item)</option>
-                          {DIMENSION_ORDER.map(dimId => (
-                            <option key={dimId} value={dimId}>
-                              [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+                        <div className="w-full sm:w-80">
+                          <select
+                            value={selectedItemDimId}
+                            onChange={(e) => setSelectedItemDimId(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer transition-colors font-sans"
+                          >
+                            <option value="all">Semua Dimensi Budaya Keselamatan (32 Item)</option>
+                            {DIMENSION_ORDER.map(dimId => (
+                              <option key={dimId} value={dimId}>
+                                [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {totalPagesUnitItem > 1 && (
+                          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
+                            <button 
+                              onClick={() => setCurrentPageUnitItem(p => Math.max(1, p - 1))}
+                              disabled={currentPageUnitItem === 1}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Prev
+                            </button>
+                            <span className="text-[10px] font-black text-slate-500 px-2">
+                              {currentPageUnitItem} / {totalPagesUnitItem}
+                            </span>
+                            <button 
+                              onClick={() => setCurrentPageUnitItem(p => Math.min(totalPagesUnitItem, p + 1))}
+                              disabled={currentPageUnitItem === totalPagesUnitItem}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -6475,15 +6553,15 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <th rowSpan={2} className="py-4 px-3 text-center w-[60px] min-w-[60px] bg-[#1E3A8A] sticky left-0 z-20 shadow-md">Item</th>
                             <th rowSpan={2} className="py-4 px-4 text-center min-w-[280px] bg-[#1E3A8A]">Pertanyaan Survei Berdasarkan Dimensi (Composite Measure)</th>
                             <th rowSpan={2} className="py-4 px-3 text-center min-w-[130px] bg-[#1E3A8A]">Dataset</th>
-                            <th colSpan={Math.max(1, demografiStats.unitData.length)} className="py-3 px-4 text-center bg-[#254BAF] border-b border-blue-700 tracking-widest text-[11px]">
+                            <th colSpan={Math.max(1, paginatedUnitItemData.length)} className="py-3 px-4 text-center bg-[#254BAF] border-b border-blue-700 tracking-widest text-[11px]">
                               Unit / Area Kerja (Unit / Work Area)
                             </th>
                           </tr>
 
                           {/* Unit Names Header Row */}
                           <tr className="bg-[#254BAF] text-white text-[11px] font-bold uppercase tracking-tight divide-x divide-blue-700 border-b border-blue-800">
-                            {demografiStats.unitData.length > 0 ? (
-                              demografiStats.unitData.map((u) => (
+                            {paginatedUnitItemData.length > 0 ? (
+                              paginatedUnitItemData.map((u) => (
                                 <th key={u.name} className="py-3 px-3 text-center min-w-[120px] max-w-[180px] leading-tight font-sans">
                                   <div className="flex flex-col items-center justify-center">
                                     <span className="font-bold">{u.name}</span>
@@ -6503,8 +6581,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
                               {demografiStats.total}
                             </td>
-                            {demografiStats.unitData.length > 0 ? (
-                              demografiStats.unitData.map((u, uIdx) => (
+                            {paginatedUnitItemData.length > 0 ? (
+                              paginatedUnitItemData.map((u, uIdx) => (
                                 <td key={`cnt-rs-unit-${uIdx}`} className="py-2 px-2 text-center font-extrabold text-blue-900 bg-blue-100/50">
                                   {u.value}
                                 </td>
@@ -6521,8 +6599,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
                               {selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '3.789'}
                             </td>
-                            {demografiStats.unitData.length > 0 ? (
-                              demografiStats.unitData.map((u, idx) => {
+                            {paginatedUnitItemData.length > 0 ? (
+                              paginatedUnitItemData.map((u, idx) => {
                                 const unitSurveys = activeBenchmarkSurveys.filter(s => {
                                   const raw = (s.dimensiScores as any)?._rawAnswers;
                                   if (raw) return (raw.unitKerja || 'Perawat') === u.name;
@@ -6546,7 +6624,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             const dimInfo = DIMENSI_INFO[dimId];
                             if (!dimensionItems || dimensionItems.length === 0) return null;
 
-                            const colSpanTotal = 3 + Math.max(1, demografiStats.unitData.length);
+                            const colSpanTotal = 3 + Math.max(1, paginatedUnitItemData.length);
 
                             return (
                               <Fragment key={dimId}>
@@ -6593,8 +6671,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         </td>
 
                                         {/* Unit Scores Row 1 (RS Anda) */}
-                                        {demografiStats.unitData.length > 0 ? (
-                                          demografiStats.unitData.map((u, uIdx) => {
+                                        {paginatedUnitItemData.length > 0 ? (
+                                          paginatedUnitItemData.map((u, uIdx) => {
                                             const val = uItemObj ? uItemObj[u.name] : null;
                                             return (
                                               <td key={`rs-score-unit-${item.id}-${uIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-800 bg-blue-50/20">
@@ -6619,8 +6697,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         </td>
 
                                         {/* Unit Scores Row 2 (Pilot Benchmark) */}
-                                        {demografiStats.unitData.length > 0 ? (
-                                          demografiStats.unitData.map((u, uIdx) => {
+                                        {paginatedUnitItemData.length > 0 ? (
+                                          paginatedUnitItemData.map((u, uIdx) => {
                                             const targetItemObj = targetUnitItemScores.find(t => t.id === item.id);
                                             const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[u.name] !== undefined)
                                               ? targetItemObj[u.name]
@@ -7140,10 +7218,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
                                   {paginatedPosisiDimensionData.map((pos, posIdx) => {
                                     const scoreObj = positionDimensionScores.find(s => s.id === dimId);
-                                    const percentage = scoreObj ? scoreObj[pos.name] : null;
+                                    const percentage = (scoreObj && scoreObj[pos.name] !== undefined && scoreObj[pos.name] !== null) ? scoreObj[pos.name] : null;
                                     return (
                                       <td key={`pos-rs-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                        {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
+                                        {percentage !== null && percentage !== undefined && typeof percentage === 'number' && !isNaN(percentage) ? (
+                                          <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span>
+                                        ) : (
+                                          <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>
+                                        )}
                                       </td>
                                     );
                                   })}
@@ -7153,13 +7235,14 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
                                   {paginatedPosisiDimensionData.map((pos, posIdx) => {
                                     const targetScoreObj = targetPositionDimensionScores.find(s => s.id === dimId);
-                                    const targetVal = (selectedBenchmarkHospitalId !== 'default' && targetScoreObj && targetScoreObj[pos.name] !== undefined)
+                                    const rawTargetVal = (selectedBenchmarkHospitalId !== 'default' && targetScoreObj && targetScoreObj[pos.name] !== undefined && targetScoreObj[pos.name] !== null)
                                       ? targetScoreObj[pos.name]
                                       : bAvg;
+                                    const targetVal = (typeof rawTargetVal === 'number' && !isNaN(rawTargetVal)) ? rawTargetVal : bAvg;
                                     return (
                                       <td key={`pos-pilot-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                         <div className="flex flex-col items-center justify-center">
-                                          <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
+                                          <span className={getCellColorClass(targetVal)}>{typeof targetVal === 'number' ? targetVal.toFixed(1) : '0.0'}%</span>
                                           {selectedBenchmarkHospitalId === 'default' && (
                                             <span className="text-[9px] text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
                                           )}
@@ -7184,7 +7267,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               const avgVal = getAverageCompositeForPosition(pos.name);
                               return (
                                 <td key={`pos-avg-rs-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                  {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
+                                  {avgVal !== null && avgVal !== undefined && typeof avgVal === 'number' && !isNaN(avgVal) ? (
+                                    <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span>
+                                  ) : (
+                                    <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>
+                                  )}
                                 </td>
                               );
                             })}
@@ -7194,10 +7281,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
                             {paginatedPosisiDimensionData.map((pos, posIdx) => {
                               const dynamicAvg = getAverageCompositeForTargetPosition(pos.name);
-                              const targetVal = (selectedBenchmarkHospitalId !== 'default' && dynamicAvg !== null) ? dynamicAvg : positionAverageBenchmark;
+                              const rawTargetVal = (selectedBenchmarkHospitalId !== 'default' && dynamicAvg !== null && dynamicAvg !== undefined) ? dynamicAvg : averageBenchmark;
+                              const targetVal = (typeof rawTargetVal === 'number' && !isNaN(rawTargetVal)) ? rawTargetVal : (averageBenchmark || 0);
                               return (
                                 <td key={`pos-avg-pilot-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
-                                  <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
+                                  <span className={getCellColorClass(targetVal)}>{typeof targetVal === 'number' ? targetVal.toFixed(1) : '0.0'}%</span>
                                 </td>
                               );
                             })}
@@ -7470,7 +7558,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                             const val = pItemObj ? pItemObj[pos.name] : null;
                                             return (
                                               <td key={`rs-score-${item.id}-${pIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-800 bg-blue-50/20">
-                                                {val !== null && val !== undefined ? (
+                                                {val !== null && val !== undefined && typeof val === 'number' && !isNaN(val) ? (
                                                   <span className="text-blue-950 font-black">{val.toFixed(0)}%</span>
                                                 ) : (
                                                   <span className="text-slate-400 font-normal">--</span>
@@ -7497,7 +7585,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                             const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[pos.name] !== undefined)
                                               ? targetItemObj[pos.name]
                                               : null;
-                                            const displayVal = dynamicVal !== null ? `${dynamicVal.toFixed(0)}%` : `${benchVal.toFixed(0)}%`;
+                                            const displayVal = (dynamicVal !== null && dynamicVal !== undefined && typeof dynamicVal === 'number' && !isNaN(dynamicVal))
+                                              ? `${dynamicVal.toFixed(0)}%`
+                                              : (benchVal !== null && benchVal !== undefined && typeof benchVal === 'number' && !isNaN(benchVal))
+                                              ? `${benchVal.toFixed(0)}%`
+                                              : '--';
                                             return (
                                               <td key={`pilot-score-${item.id}-${pIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
                                                 {displayVal}
@@ -8103,25 +8195,31 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
                                   {demografiStats.g1Data.map((g1, tIdx) => {
                                     const scoreObj = tenureDimensionScores.find(s => s.id === dimId);
-                                    const percentage = scoreObj ? scoreObj[g1.name] : null;
+                                    const percentage = (scoreObj && scoreObj[g1.name] !== undefined && scoreObj[g1.name] !== null) ? scoreObj[g1.name] : null;
                                     return (
                                       <td key={`tenure-rs-${dimId}-${g1.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
-                                        {percentage !== null && percentage !== undefined ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
+                                        {percentage !== null && percentage !== undefined && typeof percentage === 'number' && !isNaN(percentage) ? (
+                                          <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span>
+                                        ) : (
+                                          <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>
+                                        )}
                                       </td>
                                     );
                                   })}
-                                                           <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
+                                </tr>
+                                <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
                                   <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
                                   <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
                                   {demografiStats.g1Data.map((g1, tIdx) => {
                                     const targetScoreObj = targetTenureDimensionScores.find(s => s.id === dimId);
-                                    const targetVal = (selectedBenchmarkHospitalId !== 'default' && targetScoreObj && targetScoreObj[g1.name] !== undefined)
+                                    const rawTargetVal = (selectedBenchmarkHospitalId !== 'default' && targetScoreObj && targetScoreObj[g1.name] !== undefined && targetScoreObj[g1.name] !== null)
                                       ? targetScoreObj[g1.name]
                                       : bAvg;
+                                    const targetVal = (typeof rawTargetVal === 'number' && !isNaN(rawTargetVal)) ? rawTargetVal : bAvg;
                                     return (
                                       <td key={`tenure-pilot-${dimId}-${g1.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${tIdx === demografiStats.g1Data.length - 1 ? 'last:border-r-0' : ''}`}>
                                         <div className="flex flex-col items-center justify-center text-center">
-                                          <span className={`text-[14px] text-center ${getCellColorClass(targetVal)}`}>{targetVal.toFixed(1)}%</span>
+                                          <span className={`text-[14px] text-center ${getCellColorClass(targetVal)}`}>{typeof targetVal === 'number' ? targetVal.toFixed(1) : '0.0'}%</span>
                                           {selectedBenchmarkHospitalId === 'default' && (
                                             <span className="text-[14px] text-center text-emerald-600/70 font-mono font-medium mt-0.5">({bMin}% - {bMax}%)</span>
                                           )}
@@ -8129,7 +8227,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                       </td>
                                     );
                                   })}
-                                </tr>       </tr>
+                                </tr>
                               </Fragment>
                             );
                           })}
@@ -8408,7 +8506,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                             const val = tItemObj ? tItemObj[g1.name] : null;
                                             return (
                                               <td key={`rs-score-tenure-${item.id}-${gIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-800 bg-blue-50/20">
-                                                {val !== null && val !== undefined ? (
+                                                {val !== null && val !== undefined && typeof val === 'number' && !isNaN(val) ? (
                                                   <span className="text-blue-950 font-black">{val.toFixed(0)}%</span>
                                                 ) : (
                                                   <span className="text-slate-400 font-normal">--</span>
@@ -8435,7 +8533,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                             const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[g1.name] !== undefined)
                                               ? targetItemObj[g1.name]
                                               : null;
-                                            const displayVal = dynamicVal !== null ? `${dynamicVal.toFixed(0)}%` : `${benchVal.toFixed(0)}%`;
+                                            const displayVal = (dynamicVal !== null && dynamicVal !== undefined && typeof dynamicVal === 'number' && !isNaN(dynamicVal))
+                                              ? `${dynamicVal.toFixed(0)}%`
+                                              : (benchVal !== null && benchVal !== undefined && typeof benchVal === 'number' && !isNaN(benchVal))
+                                              ? `${benchVal.toFixed(0)}%`
+                                              : '--';
                                             return (
                                               <td key={`pilot-score-tenure-${item.id}-${gIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-700 bg-slate-50">
                                                 {displayVal}
