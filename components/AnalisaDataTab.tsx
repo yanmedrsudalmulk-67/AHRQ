@@ -7053,15 +7053,15 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <table className="w-full border-collapse text-left text-xs text-slate-600">
                         <thead>
                           <tr className="border-b-2 border-slate-200 bg-slate-50 sticky top-0 z-30 text-[11px] font-bold uppercase tracking-wider text-slate-700">
-                            <th className="py-4 px-4 text-center w-12 border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#f1f4f8' }}>No</th>
-                            <th className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#f0f2f5' }}>Dimensi Budaya Keselamatan</th>
-                            <th className="py-4 px-4 text-center min-w-[150px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#f8f8f8' }}>Dataset</th>
-                            <th className="py-4 px-4 text-center min-w-[120px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#f6f9fe' }}>Total Responden</th>
-                            {demografiStats.posisiData.map((pos, posIdx) => (
-                              <th key={pos.name} className="py-4 px-5 min-w-[190px] text-center border-r border-slate-200/80 last:border-r-0 font-black text-indigo-600" style={posIdx === 0 ? { backgroundColor: '#18c294', color: '#eeedf4' } : posIdx === 1 ? { backgroundColor: '#18c294', color: '#f0eef8' } : undefined}>
+                            <th className="py-4 px-4 text-center w-12 border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>No</th>
+                            <th className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Dimensi Budaya Keselamatan</th>
+                            <th className="py-4 px-4 text-center min-w-[150px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Dataset</th>
+                            <th className="py-4 px-4 text-center min-w-[120px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Total Responden</th>
+                            {demografiStats.posisiData.map((pos) => (
+                              <th key={pos.name} className="py-4 px-5 min-w-[190px] text-center border-r border-slate-200/80 last:border-r-0 font-extrabold text-white" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>
                                 <div className="flex flex-col items-center">
                                   <span>{pos.name}</span>
-                                  <span className="text-[10px] text-indigo-500/80 font-mono tracking-normal normal-case mt-0.5" style={posIdx === 0 ? { color: '#f7f7f9' } : posIdx === 1 ? { color: '#f1f1f8' } : undefined}>(N = {pos.value})</span>
+                                  <span className="text-[10px] text-white/90 font-mono tracking-normal normal-case mt-0.5">(N = {pos.value})</span>
                                 </div>
                               </th>
                             ))}
