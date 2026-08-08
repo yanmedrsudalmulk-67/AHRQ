@@ -486,6 +486,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
   const [masterPositions, setMasterPositions] = useState<PosisiStaff[]>([]);
   const [searchPositionQuery, setSearchPositionQuery] = useState<string>('');
   const [currentPagePosition, setCurrentPagePosition] = useState<number>(1);
+  const [currentPagePosisiDimension, setCurrentPagePosisiDimension] = useState<number>(1);
+  const [currentPagePosisiItem, setCurrentPagePosisiItem] = useState<number>(1);
   const [searchUnitQuery, setSearchUnitQuery] = useState<string>('');
   const [currentPageUnit, setCurrentPageUnit] = useState<number>(1);
   const [searchUnitEventQuery, setSearchUnitEventQuery] = useState<string>('');
@@ -2293,6 +2295,28 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     const startIndex = (currentPagePosition - 1) * itemsPerPagePosition;
     return filteredComputedTableData.slice(startIndex, startIndex + itemsPerPagePosition);
   }, [filteredComputedTableData, currentPagePosition, itemsPerPagePosition]);
+
+  const itemsPerPagePosisiDimension = 5;
+
+  const totalPagesPosisiDimension = useMemo(() => {
+    return Math.ceil(demografiStats.posisiData.length / itemsPerPagePosisiDimension) || 1;
+  }, [demografiStats.posisiData, itemsPerPagePosisiDimension]);
+
+  const paginatedPosisiDimensionData = useMemo(() => {
+    const startIndex = (currentPagePosisiDimension - 1) * itemsPerPagePosisiDimension;
+    return demografiStats.posisiData.slice(startIndex, startIndex + itemsPerPagePosisiDimension);
+  }, [demografiStats.posisiData, currentPagePosisiDimension, itemsPerPagePosisiDimension]);
+
+  const itemsPerPagePosisiItem = 5;
+
+  const totalPagesPosisiItem = useMemo(() => {
+    return Math.ceil(demografiStats.posisiData.length / itemsPerPagePosisiItem) || 1;
+  }, [demografiStats.posisiData, itemsPerPagePosisiItem]);
+
+  const paginatedPosisiItemData = useMemo(() => {
+    const startIndex = (currentPagePosisiItem - 1) * itemsPerPagePosisiItem;
+    return demografiStats.posisiData.slice(startIndex, startIndex + itemsPerPagePosisiItem);
+  }, [demografiStats.posisiData, currentPagePosisiItem, itemsPerPagePosisiItem]);
 
   const unitDimensionScores = useMemo(() => {
     return Object.keys(DIMENSI_INFO).map(dimId => {
@@ -7038,15 +7062,42 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 <div className="w-full flex flex-col gap-6">
                   {/* Summary Comparison Grid - Detailed Position Comparison from Report */}
                   <div className="bg-white p-6 rounded-[24px] border border-slate-100 shadow-sm space-y-6">
-                    <div className="space-y-3 border-b border-slate-100 pb-5">
-                      <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
-                      <h3 className="text-[17px] font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
-                        <Users className="w-6 h-6 text-indigo-600" />
-                        Perbandingan Rata-rata Persentase Respon Positif Dimensi Berdasarkan Posisi Staf
-                      </h3>
-                      <p className="text-xs md:text-sm text-slate-500 font-medium">
-                        Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
-                      </p>
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                      <div className="space-y-2">
+                        <span className="text-xs font-bold text-cyan-600 tracking-widest uppercase font-mono">TABEL PERBANDINGAN DIMENSI</span>
+                        <h3 className="text-[17px] font-bold text-slate-800 tracking-tight flex items-center gap-2.5">
+                          <Users className="w-6 h-6 text-indigo-600" />
+                          Perbandingan Rata-rata Persentase Respon Positif Dimensi Berdasarkan Posisi Staf
+                        </h3>
+                        <p className="text-xs md:text-sm text-slate-500 font-medium">
+                          Perbandingan antara {namaRs || 'Rumah Sakit'} dan {activeBenchmarkLabel} berdasarkan Posisi Staf (AHRQ SOPS Versi 2.0)
+                        </p>
+                      </div>
+
+                      {/* Pagination Navigation */}
+                      <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto shrink-0">
+                        {totalPagesPosisiDimension > 1 && (
+                          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
+                            <button 
+                              onClick={() => setCurrentPagePosisiDimension(p => Math.max(1, p - 1))}
+                              disabled={currentPagePosisiDimension === 1}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Prev
+                            </button>
+                            <span className="text-[10px] font-black text-slate-500 px-2">
+                              {currentPagePosisiDimension} / {totalPagesPosisiDimension}
+                            </span>
+                            <button 
+                              onClick={() => setCurrentPagePosisiDimension(p => Math.min(totalPagesPosisiDimension, p + 1))}
+                              disabled={currentPagePosisiDimension === totalPagesPosisiDimension}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white/50 relative max-h-[650px] custom-scrollbar pb-2">
@@ -7057,7 +7108,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <th className="py-4 px-5 min-w-[280px] text-center border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Dimensi Budaya Keselamatan</th>
                             <th className="py-4 px-4 text-center min-w-[150px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Dataset</th>
                             <th className="py-4 px-4 text-center min-w-[120px] border-r border-slate-200/80 shadow-sm" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>Total Responden</th>
-                            {demografiStats.posisiData.map((pos) => (
+                            {paginatedPosisiDimensionData.map((pos) => (
                               <th key={pos.name} className="py-4 px-5 min-w-[190px] text-center border-r border-slate-200/80 last:border-r-0 font-extrabold text-white" style={{ backgroundColor: '#18c294', color: '#ffffff' }}>
                                 <div className="flex flex-col items-center">
                                   <span>{pos.name}</span>
@@ -7087,11 +7138,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   </td>
                                   <td className="py-3 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/40">{namaRs || 'RS'}</td>
                                   <td className="py-3 px-4 text-center font-extrabold text-slate-700 border-r border-slate-200/80 bg-cyan-50/40">{hospitalSurveys.length}</td>
-                                  {demografiStats.posisiData.map((pos, posIdx) => {
+                                  {paginatedPosisiDimensionData.map((pos, posIdx) => {
                                     const scoreObj = positionDimensionScores.find(s => s.id === dimId);
                                     const percentage = scoreObj ? scoreObj[pos.name] : null;
                                     return (
-                                      <td key={`pos-rs-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                      <td key={`pos-rs-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 bg-cyan-50/40 ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                         {percentage !== null ? <span className={getCellColorClass(percentage)}>{percentage.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                       </td>
                                     );
@@ -7100,13 +7151,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                 <tr className="hover:bg-slate-50/30 transition-all bg-slate-50/10">
                                   <td className="py-3 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
                                   <td className="py-3 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
-                                  {demografiStats.posisiData.map((pos, posIdx) => {
+                                  {paginatedPosisiDimensionData.map((pos, posIdx) => {
                                     const targetScoreObj = targetPositionDimensionScores.find(s => s.id === dimId);
                                     const targetVal = (selectedBenchmarkHospitalId !== 'default' && targetScoreObj && targetScoreObj[pos.name] !== undefined)
                                       ? targetScoreObj[pos.name]
                                       : bAvg;
                                     return (
-                                      <td key={`pos-pilot-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                      <td key={`pos-pilot-${dimId}-${pos.name}`} className={`py-3 px-5 text-center border-r border-slate-200/80 ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                         <div className="flex flex-col items-center justify-center">
                                           <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
                                           {selectedBenchmarkHospitalId === 'default' && (
@@ -7129,10 +7180,10 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             </td>
                             <td className="py-4 px-4 font-bold text-cyan-600 text-center border-r border-slate-200/80 bg-cyan-50/30">{namaRs || 'RS'}</td>
                             <td className="py-4 px-4 text-center font-black text-slate-700 border-r border-slate-200/80 bg-cyan-50/30">{hospitalSurveys.length}</td>
-                            {demografiStats.posisiData.map((pos, posIdx) => {
+                            {paginatedPosisiDimensionData.map((pos, posIdx) => {
                               const avgVal = getAverageCompositeForPosition(pos.name);
                               return (
-                                <td key={`pos-avg-rs-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                <td key={`pos-avg-rs-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 bg-cyan-50/30 font-black ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                   {avgVal !== null ? <span className={getCellColorClass(avgVal)}>{avgVal.toFixed(1)}%</span> : <span className="text-slate-400 italic text-[11px]">Data Belum Tersedia</span>}
                                 </td>
                               );
@@ -7141,11 +7192,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <tr className="bg-indigo-50/20 hover:bg-indigo-50/30 transition-all">
                             <td className="py-4 px-4 font-bold text-emerald-600 text-center border-r border-slate-200/80">{activeBenchmarkLabel}</td>
                             <td className="py-4 px-4 text-center text-slate-400 border-r border-slate-200/80 font-bold">{selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '-'}</td>
-                            {demografiStats.posisiData.map((pos, posIdx) => {
+                            {paginatedPosisiDimensionData.map((pos, posIdx) => {
                               const dynamicAvg = getAverageCompositeForTargetPosition(pos.name);
                               const targetVal = (selectedBenchmarkHospitalId !== 'default' && dynamicAvg !== null) ? dynamicAvg : positionAverageBenchmark;
                               return (
-                                <td key={`pos-avg-pilot-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === demografiStats.posisiData.length - 1 ? 'last:border-r-0' : ''}`}>
+                                <td key={`pos-avg-pilot-${pos.name}`} className={`py-4 px-5 text-center border-r border-slate-200/80 font-black ${posIdx === paginatedPosisiDimensionData.length - 1 ? 'last:border-r-0' : ''}`}>
                                   <span className={getCellColorClass(targetVal)}>{targetVal.toFixed(1)}%</span>
                                 </td>
                               );
@@ -7247,19 +7298,43 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Tabel Perbandingan Per Item Berdasarkan Posisi Staf</h3>
                         <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan posisi staf antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.</p>
                       </div>
-                      <div className="w-full md:w-96">
-                        <select
-                          value={selectedItemDimId}
-                          onChange={(e) => setSelectedItemDimId(e.target.value)}
-                          className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer transition-colors font-sans"
-                        >
-                          <option value="all">Semua Dimensi Budaya Keselamatan (32 Item)</option>
-                          {DIMENSION_ORDER.map(dimId => (
-                            <option key={dimId} value={dimId}>
-                              [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto shrink-0">
+                        <div className="w-full sm:w-80">
+                          <select
+                            value={selectedItemDimId}
+                            onChange={(e) => setSelectedItemDimId(e.target.value)}
+                            className="w-full bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer transition-colors font-sans"
+                          >
+                            <option value="all">Semua Dimensi Budaya Keselamatan (32 Item)</option>
+                            {DIMENSION_ORDER.map(dimId => (
+                              <option key={dimId} value={dimId}>
+                                [{DIMENSI_INFO[dimId].kode}] {DIMENSI_INFO[dimId].nama}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {totalPagesPosisiItem > 1 && (
+                          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
+                            <button 
+                              onClick={() => setCurrentPagePosisiItem(p => Math.max(1, p - 1))}
+                              disabled={currentPagePosisiItem === 1}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Prev
+                            </button>
+                            <span className="text-[10px] font-black text-slate-500 px-2">
+                              {currentPagePosisiItem} / {totalPagesPosisiItem}
+                            </span>
+                            <button 
+                              onClick={() => setCurrentPagePosisiItem(p => Math.min(totalPagesPosisiItem, p + 1))}
+                              disabled={currentPagePosisiItem === totalPagesPosisiItem}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:bg-white disabled:opacity-40 transition-all cursor-pointer"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -7272,15 +7347,15 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <th rowSpan={2} className="py-4 px-3 text-center w-[60px] min-w-[60px] bg-[#1E3A8A] sticky left-0 z-20 shadow-md">Item</th>
                             <th rowSpan={2} className="py-4 px-4 text-center min-w-[280px] bg-[#1E3A8A]">Pertanyaan Survei Berdasarkan Dimensi (Composite Measure)</th>
                             <th rowSpan={2} className="py-4 px-3 text-center min-w-[130px] bg-[#1E3A8A]">Dataset</th>
-                            <th colSpan={Math.max(1, demografiStats.posisiData.length)} className="py-3 px-4 text-center bg-[#254BAF] border-b border-blue-700 tracking-widest text-[11px]">
+                            <th colSpan={Math.max(1, paginatedPosisiItemData.length)} className="py-3 px-4 text-center bg-[#254BAF] border-b border-blue-700 tracking-widest text-[11px]">
                               Posisi / Jabatan Staf (Staff Position)
                             </th>
                           </tr>
 
                           {/* Position Names Header Row */}
                           <tr className="bg-[#254BAF] text-white text-[11px] font-bold uppercase tracking-tight divide-x divide-blue-700 border-b border-blue-800">
-                            {demografiStats.posisiData.length > 0 ? (
-                              demografiStats.posisiData.map((pos) => (
+                            {paginatedPosisiItemData.length > 0 ? (
+                              paginatedPosisiItemData.map((pos) => (
                                 <th key={pos.name} className="py-3 px-3 text-center min-w-[120px] max-w-[180px] leading-tight font-sans">
                                   <div className="flex flex-col items-center justify-center">
                                     <span className="font-bold">{pos.name}</span>
@@ -7300,8 +7375,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <td className="py-2 px-3 text-center font-extrabold text-blue-900 bg-blue-100">
                               {demografiStats.total}
                             </td>
-                            {demografiStats.posisiData.length > 0 ? (
-                              demografiStats.posisiData.map((pos, pIdx) => (
+                            {paginatedPosisiItemData.length > 0 ? (
+                              paginatedPosisiItemData.map((pos, pIdx) => (
                                 <td key={`cnt-rs-${pIdx}`} className="py-2 px-2 text-center font-extrabold text-blue-900 bg-blue-100/50">
                                   {pos.value}
                                 </td>
@@ -7318,8 +7393,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             <td className="py-2 px-3 text-center font-bold text-slate-600 bg-slate-100">
                               {selectedBenchmarkHospitalId !== 'default' ? activeBenchmarkSurveys.length : '3.789'}
                             </td>
-                            {demografiStats.posisiData.length > 0 ? (
-                              demografiStats.posisiData.map((pos, idx) => {
+                            {paginatedPosisiItemData.length > 0 ? (
+                              paginatedPosisiItemData.map((pos, idx) => {
                                 const posSurveys = activeBenchmarkSurveys.filter(s => {
                                   const raw = (s.dimensiScores as any)?._rawAnswers;
                                   if (raw) return (raw.posisiStaf || 'Lainnya') === pos.name;
@@ -7343,7 +7418,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             const dimInfo = DIMENSI_INFO[dimId];
                             if (!dimensionItems || dimensionItems.length === 0) return null;
 
-                            const colSpanTotal = 3 + Math.max(1, demografiStats.posisiData.length);
+                            const colSpanTotal = 3 + Math.max(1, paginatedPosisiItemData.length);
 
                             return (
                               <Fragment key={dimId}>
@@ -7390,8 +7465,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         </td>
 
                                         {/* Positions Scores Row 1 (RS Anda) */}
-                                        {demografiStats.posisiData.length > 0 ? (
-                                          demografiStats.posisiData.map((pos, pIdx) => {
+                                        {paginatedPosisiItemData.length > 0 ? (
+                                          paginatedPosisiItemData.map((pos, pIdx) => {
                                             const val = pItemObj ? pItemObj[pos.name] : null;
                                             return (
                                               <td key={`rs-score-${item.id}-${pIdx}`} className="py-2.5 px-2 text-center font-bold text-slate-800 bg-blue-50/20">
@@ -7416,8 +7491,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         </td>
 
                                         {/* Positions Scores Row 2 (Pilot Benchmark) */}
-                                        {demografiStats.posisiData.length > 0 ? (
-                                          demografiStats.posisiData.map((pos, pIdx) => {
+                                        {paginatedPosisiItemData.length > 0 ? (
+                                          paginatedPosisiItemData.map((pos, pIdx) => {
                                             const targetItemObj = targetPositionItemScores.find(t => t.id === item.id);
                                             const dynamicVal = (selectedBenchmarkHospitalId !== 'default' && targetItemObj && targetItemObj[pos.name] !== undefined)
                                               ? targetItemObj[pos.name]
