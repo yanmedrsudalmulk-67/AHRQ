@@ -32,7 +32,9 @@ export interface ReportData {
   demographics: {
     profesi: { category: string; count: number; percentage: string }[];
     masaKerja: { category: string; count: number; percentage: string }[];
+    masaKerjaUnit?: { category: string; count: number; percentage: string }[];
     jamKerja: { category: string; count: number; percentage: string }[];
+    interaksiKontak?: { category: string; count: number; percentage: string }[];
     unitKerja: { category: string; count: number; percentage: string }[];
   };
   dimensionScores: {
@@ -79,6 +81,19 @@ export interface ReportData {
     direkturNip?: string;
   };
   pageImages?: string[];
+  positionDimensionScores?: any[];
+  unitDimensionScores?: any[];
+  tenureDimensionScores?: any[];
+  workHoursDimensionScores?: any[];
+  comments?: {
+    total: number;
+    positive: number;
+    constructive: number;
+    positivePercentage: number;
+    constructivePercentage: number;
+    recommendations: string[];
+    analysisText?: string;
+  };
 }
 
 // Convert base64 data URL to Uint8Array for docx ImageRun
@@ -316,6 +331,24 @@ export async function exportReportToDocx(data: ReportData) {
     });
   };
 
+  const heading4 = (text: string) => {
+    return new Paragraph({
+      heading: HeadingLevel.HEADING_4,
+      alignment: AlignmentType.LEFT,
+      spacing: { before: 140, after: 70 },
+      keepNext: true,
+      children: [
+        new TextRun({
+          text,
+          bold: true,
+          font: "Calibri",
+          size: 20, // 10pt
+          color: "475569",
+        }),
+      ],
+    });
+  };
+
   const bullet = (text: string, level = 0) => {
     return new Paragraph({
       bullet: { level },
@@ -432,7 +465,7 @@ export async function exportReportToDocx(data: ReportData) {
           heading2("1.1 Latar Belakang"),
           p("Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Berdasarkan pandangan global dan standar akreditasi rumah sakit, upaya peningkatan keselamatan pasien tidak hanya berfokus pada penerapan prosedur operasional standar dan penyediaan sarana prasarana, tetapi juga sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi."),
           p("Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma yang dibagikan oleh staf rumah sakit mengenai apa yang penting dan bagaimana perilaku terkait keselamatan diwujudkan. Budaya yang kuat memafasilitasi komunikasi yang terbuka, pelaporan insiden tanpa rasa takut akan hukuman (non-punitive environment), pembelajaran berkelanjutan dari kesalahan, serta kerja sama tim yang solid antar unit."),
-          p("Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Patient Safety Culture (SOPS®) Version 2.0. Versi ini menyempurnakan dimensi pengukuran terdahulu agar lebih relevan dengan dinamika pelayanan kesehatan modern, berfokus pada respons terhadap kesalahan, dukungan kepemimpinan, pembelajaran organisasi, dan komunikasi yang terbuka."),
+          p("Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0. Versi ini menyempurnakan dimensi pengukuran terdahulu agar lebih relevan dengan dinamika pelayanan kesehatan modern, berfokus pada respons terhadap kesalahan, dukungan kepemimpinan, pembelajaran organisasi, dan komunikasi yang terbuka."),
           p(`Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan (strengths) serta area yang membutuhkan peningkatan (areas for improvement) di ${data.namaRs}. Hasil dari survei ini menjadi landasan berbasis data (data-driven) dalam merumuskan strategi perbaikan mutu dan keselamatan pasien secara terarah dan berkelanjutan.`),
 
           heading2("1.2 Tujuan"),
@@ -645,7 +678,7 @@ export async function exportReportToDocx(data: ReportData) {
               new TableRow({
                 children: [
                   createHeaderCell("Karakteristik", AlignmentType.LEFT),
-                  createHeaderCell("Kategori", AlignmentType.LEFT),
+                  createHeaderCell("Kategori / Detail", AlignmentType.LEFT),
                   createHeaderCell("Jumlah (n)", AlignmentType.CENTER),
                   createHeaderCell("Persentase (%)", AlignmentType.CENTER),
                 ],
@@ -653,7 +686,7 @@ export async function exportReportToDocx(data: ReportData) {
               ...data.demographics.profesi.map((item, idx) => 
                 new TableRow({
                   children: [
-                    createCell(idx === 0 ? "Profesi / Peran" : "", true),
+                    createCell(idx === 0 ? "Posisi / Jabatan" : "", true),
                     createCell(item.category),
                     createCell(item.count.toString(), false, AlignmentType.CENTER),
                     createCell(item.percentage, false, AlignmentType.CENTER),
@@ -663,17 +696,47 @@ export async function exportReportToDocx(data: ReportData) {
               ...data.demographics.masaKerja.map((item, idx) => 
                 new TableRow({
                   children: [
-                    createCell(idx === 0 ? "Masa Kerja di RS" : "", true),
+                    createCell(idx === 0 ? "Masa Kerja di RS Ini" : "", true),
                     createCell(item.category),
                     createCell(item.count.toString(), false, AlignmentType.CENTER),
                     createCell(item.percentage, false, AlignmentType.CENTER),
                   ],
                 })
               ),
+              ...(data.demographics.masaKerjaUnit ? data.demographics.masaKerjaUnit.map((item, idx) => 
+                new TableRow({
+                  children: [
+                    createCell(idx === 0 ? "Masa Kerja di Unit Kerja" : "", true),
+                    createCell(item.category),
+                    createCell(item.count.toString(), false, AlignmentType.CENTER),
+                    createCell(item.percentage, false, AlignmentType.CENTER),
+                  ],
+                })
+              ) : []),
               ...data.demographics.jamKerja.map((item, idx) => 
                 new TableRow({
                   children: [
-                    createCell(idx === 0 ? "Jam Kerja / Minggu" : "", true),
+                    createCell(idx === 0 ? "Jam Kerja per Minggu" : "", true),
+                    createCell(item.category),
+                    createCell(item.count.toString(), false, AlignmentType.CENTER),
+                    createCell(item.percentage, false, AlignmentType.CENTER),
+                  ],
+                })
+              ),
+              ...(data.demographics.interaksiKontak ? data.demographics.interaksiKontak.map((item, idx) => 
+                new TableRow({
+                  children: [
+                    createCell(idx === 0 ? "Interaksi Kontak Pasien" : "", true),
+                    createCell(item.category),
+                    createCell(item.count.toString(), false, AlignmentType.CENTER),
+                    createCell(item.percentage, false, AlignmentType.CENTER),
+                  ],
+                })
+              ) : []),
+              ...data.demographics.unitKerja.map((item, idx) => 
+                new TableRow({
+                  children: [
+                    createCell(idx === 0 ? "Unit / Area Kerja" : "", true),
                     createCell(item.category),
                     createCell(item.count.toString(), false, AlignmentType.CENTER),
                     createCell(item.percentage, false, AlignmentType.CENTER),
@@ -858,6 +921,165 @@ export async function exportReportToDocx(data: ReportData) {
 
           p("", { spaceAfter: 120 }),
 
+          // 3.2.5 Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Karakteristik Demografis
+          heading3("3.2.5 Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Karakteristik Demografis"),
+          p("Budaya keselamatan pasien bersifat heterogen dan dapat dirasakan berbeda antar profesi, unit pelayanan, maupun lama masa bakti staf."),
+
+          // A. Berdasarkan Posisi Staf (Profesi)
+          ...(data.positionDimensionScores ? [
+            heading4("A. Perbandingan Dimensi Berdasarkan Posisi Staf (Profesi)"),
+            p("Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan posisi staf (profesi) di rumah sakit:"),
+            ...(() => {
+              const list = data.demographics.profesi || [];
+              const chunks: Array<typeof list> = [];
+              for (let i = 0; i < list.length; i += 5) {
+                chunks.push(list.slice(i, i + 5));
+              }
+              return chunks.map((chunk, chunkIdx) => {
+                const colNames = chunk.map(c => c.category);
+                return new Table({
+                  width: { size: 100, type: WidthType.PERCENTAGE },
+                  rows: [
+                    new TableRow({
+                      tableHeader: true,
+                      cantSplit: true,
+                      children: [
+                        createHeaderCell("No.", AlignmentType.CENTER),
+                        createHeaderCell(`Dimensi Budaya Keselamatan (Bagian ${chunkIdx + 1})`, AlignmentType.LEFT),
+                        ...chunk.map(col => createHeaderCell(`${col.category} (N=${col.count})`, AlignmentType.CENTER)),
+                      ],
+                    }),
+                    ...data.dimensionScores.map((dim, idx) => {
+                      const scoreObj = data.positionDimensionScores?.find(s => s.id === dim.id);
+                      return new TableRow({
+                        cantSplit: true,
+                        children: [
+                          createCell(`${idx + 1}`, false, AlignmentType.CENTER),
+                          createCell(dim.nama),
+                          ...colNames.map(name => {
+                            const val = scoreObj ? scoreObj[name] : null;
+                            return createCell(
+                              val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-',
+                              true,
+                              AlignmentType.CENTER,
+                              "F9FAFB"
+                            );
+                          }),
+                        ],
+                      });
+                    })
+                  ],
+                });
+              });
+            })(),
+            p("", { spaceAfter: 120 })
+          ] : []),
+
+          // B. Berdasarkan Unit Kerja
+          ...(data.unitDimensionScores ? [
+            heading4("B. Perbandingan Dimensi Berdasarkan Unit Kerja"),
+            p("Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan unit/area kerja di rumah sakit:"),
+            ...(() => {
+              const list = data.demographics.unitKerja || [];
+              const chunks: Array<typeof list> = [];
+              for (let i = 0; i < list.length; i += 5) {
+                chunks.push(list.slice(i, i + 5));
+              }
+              return chunks.map((chunk, chunkIdx) => {
+                const colNames = chunk.map(c => c.category);
+                return new Table({
+                  width: { size: 100, type: WidthType.PERCENTAGE },
+                  rows: [
+                    new TableRow({
+                      tableHeader: true,
+                      cantSplit: true,
+                      children: [
+                        createHeaderCell("No.", AlignmentType.CENTER),
+                        createHeaderCell(`Dimensi Budaya Keselamatan (Bagian ${chunkIdx + 1})`, AlignmentType.LEFT),
+                        ...chunk.map(col => createHeaderCell(`${col.category} (N=${col.count})`, AlignmentType.CENTER)),
+                      ],
+                    }),
+                    ...data.dimensionScores.map((dim, idx) => {
+                      const scoreObj = data.unitDimensionScores?.find(s => s.id === dim.id);
+                      return new TableRow({
+                        cantSplit: true,
+                        children: [
+                          createCell(`${idx + 1}`, false, AlignmentType.CENTER),
+                          createCell(dim.nama),
+                          ...colNames.map(name => {
+                            const val = scoreObj ? scoreObj[name] : null;
+                            return createCell(
+                              val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-',
+                              true,
+                              AlignmentType.CENTER,
+                              "F9FAFB"
+                            );
+                          }),
+                        ],
+                      });
+                    })
+                  ],
+                });
+              });
+            })(),
+            p("", { spaceAfter: 120 })
+          ] : []),
+
+          // C. Berdasarkan Masa Kerja & Jam Kerja
+          ...(data.tenureDimensionScores && data.workHoursDimensionScores ? [
+            heading4("C. Perbandingan Berdasarkan Masa Kerja & Jam Kerja"),
+            p("Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan masa kerja (lama bekerja) staf di rumah sakit dan unit kerja saat ini, serta jumlah jam kerja per minggu:"),
+            new Table({
+              width: { size: 100, type: WidthType.PERCENTAGE },
+              rows: [
+                new TableRow({
+                  tableHeader: true,
+                  cantSplit: true,
+                  children: [
+                    createHeaderCell("No.", AlignmentType.CENTER),
+                    createHeaderCell("Dimensi Budaya Keselamatan", AlignmentType.LEFT),
+                    // Tenure (4 columns)
+                    ...data.demographics.masaKerja.slice(0, 4).map(col => createHeaderCell(`MK: ${col.category.replace('hingga', '-').replace('atau lebih', '+')}`, AlignmentType.CENTER)),
+                    // Work Hours (4 columns)
+                    ...data.demographics.jamKerja.slice(0, 4).map(col => createHeaderCell(`JK: ${col.category.replace('hingga', '-').replace('atau lebih', '+')}`, AlignmentType.CENTER)),
+                  ],
+                }),
+                ...data.dimensionScores.map((dim, idx) => {
+                  const tenureObj = data.tenureDimensionScores?.find(s => s.id === dim.id);
+                  const workHoursObj = data.workHoursDimensionScores?.find(s => s.id === dim.id);
+                  return new TableRow({
+                    cantSplit: true,
+                    children: [
+                      createCell(`${idx + 1}`, false, AlignmentType.CENTER),
+                      createCell(dim.nama),
+                      // Tenure columns
+                      ...data.demographics.masaKerja.slice(0, 4).map(col => {
+                        const val = tenureObj ? tenureObj[col.category] : null;
+                        return createCell(
+                          val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-',
+                          true,
+                          AlignmentType.CENTER,
+                          "F3F4F6"
+                        );
+                      }),
+                      // Work Hours columns
+                      ...data.demographics.jamKerja.slice(0, 4).map(col => {
+                        const val = workHoursObj ? workHoursObj[col.category] : null;
+                        return createCell(
+                          val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-',
+                          true,
+                          AlignmentType.CENTER,
+                          "F0FDFA"
+                        );
+                      }),
+                    ],
+                  });
+                })
+              ],
+            }),
+            p("", { spaceAfter: 120 })
+          ] : []),
+
           ...(data.hasBenchmark && data.benchmarkComparison && data.benchmarkComparison.length > 0 ? [
             heading3(`3.2.7 Analisis Komparasi Benchmark dengan ${data.benchmarkName || 'Rumah Sakit Pembanding'}`),
             p(`Hasil pembandingan skor % Respon Positif antara ${data.namaRs} dengan ${data.benchmarkName || 'RS Pembanding'} disajikan pada tabel berikut:`),
@@ -909,6 +1131,30 @@ export async function exportReportToDocx(data: ReportData) {
                 ]
               })
             ] : []),
+            p("", { spaceAfter: 120 })
+          ] : []),
+
+          ...(data.comments ? [
+            heading3(`3.2.8 Hasil Analisis Kualitatif dan Rekomendasi Peningkatan Budaya Keselamatan Pasien`),
+            p(`Berdasarkan masukan responden survei budaya keselamatan pasien tahun ${data.tahun} di ${data.namaRs}:`, { bold: true, spaceAfter: 60 }),
+            p(`• Total Komentar Masuk: ${data.comments.total} komentar`, { spaceAfter: 40 }),
+            p(`• Komentar Positif: ${data.comments.positivePercentage}% (${data.comments.positive} komentar)`, { spaceAfter: 40 }),
+            p(`• Saran & Masukan Konstruktif: ${data.comments.constructivePercentage}% (${data.comments.constructive} komentar)`, { spaceAfter: 80 }),
+            
+            heading4(`3.2.8.1 Interpretasi & Analisis Data`),
+            ...(data.comments.total > 0 ? [
+              p(data.comments.analysisText || `Berdasarkan hasil analisis kualitatif terhadap total ${data.comments.total} komentar bebas responden pada survei budaya keselamatan pasien tahun ${data.tahun} di ${data.namaRs}, secara otomatis teridentifikasi sebanyak ${data.comments.positive} komentar positif (${data.comments.positivePercentage}%) dan ${data.comments.constructive} komentar berisi saran atau masukan konstruktif (${data.comments.constructivePercentage}%).`, { spaceAfter: 120 })
+            ] : [
+              p(`Belum terdapat komentar atau masukan responden pada tahun survei yang dipilih.`, { italic: true, spaceAfter: 120 })
+            ]),
+
+            heading4(`3.2.8.2 Rekomendasi Peningkatan`),
+            p(`Berikut adalah rangkuman rekomendasi peningkatan berdasarkan analisis kualitatif dari responden survei:`, { spaceAfter: 120 }),
+            ...(data.comments.recommendations.length > 0 ? data.comments.recommendations.map((rec, idx) => {
+              return p(`• ${rec}`, { spaceAfter: 80 });
+            }) : [
+              p(`Belum terdapat rekomendasi pada tahun survei yang dipilih.`, { italic: true, spaceAfter: 120 })
+            ]),
             p("", { spaceAfter: 120 })
           ] : []),
 

@@ -35,7 +35,8 @@ import {
   Info,
   LayoutDashboard,
   HelpCircle,
-  AlertCircle
+  AlertCircle,
+  MessageSquare
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -54,6 +55,59 @@ import { exportReportToDocx, ReportData } from '../lib/docxExporter';
 import { getPengesahanConfig, PengesahanConfig, isSurveyResponse } from '../lib/db';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+
+export const isPositiveComment = (text: string): boolean => {
+  if (!text || typeof text !== 'string') return false;
+  const lower = text.toLowerCase().trim();
+
+  const negativePhrases = [
+    'tidak baik', 'kurang baik', 'kurang puas', 'buruk', 'jelek', 'kecewa', 'parah',
+    'lambat', 'cuek', 'marah', 'masih kurang', 'sangat kurang', 'tidak peduli', 'tidak ramah',
+    'tidak aman', 'tidak nyaman', 'kurang kompak', 'kurang solid', 'kurang koordinasi',
+    'kurang komunikasi', 'tidak adil', 'buruk sekali', 'kurang memuaskan', 'sangat mengecewakan',
+    'sangat buruk', 'kurang disiplin', 'tidak disiplin', 'kurang teratur', 'sulit', 'perselisihan'
+  ];
+
+  for (const neg of negativePhrases) {
+    if (lower.includes(neg)) {
+      return false;
+    }
+  }
+
+  const positiveKeywords = [
+    'baik', 'bagus', 'terbaik', 'puas', 'mantap', 'keren', 'apresiasi', 'terima kasih',
+    'terimakasih', 'makasih', 'dukung', 'mendukung', 'kompak', 'solid', 'ramah', 'aman',
+    'nyaman', 'disiplin', 'responsif', 'cepat', 'hebat', 'kooperatif', 'peduli', 'tingkatkan',
+    'pertahankan', 'lanjutkan', 'sesuai', 'efektif', 'harmonis', 'kekeluargaan', 'semangat',
+    'proaktif', 'teratur', 'tertib', 'transparan', 'luar biasa', 'senang', 'memuaskan',
+    'sudah baik', 'sangat baik', 'cukup baik', 'apresiasi tinggi', 'sangat bagus', 'kondusif',
+    'saling bantu', 'saling mendukung', 'penuh tanggung jawab', 'pilar', 'positif'
+  ];
+
+  for (const keyword of positiveKeywords) {
+    if (lower.includes(keyword)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+export const isConstructiveComment = (text: string): boolean => {
+  if (!text || typeof text !== 'string') return false;
+  const lower = text.toLowerCase().trim();
+  const constructiveKeywords = [
+    'saran', 'masukan', 'perlu', 'harus', 'sebaiknya', 'ditingkatkan', 'diperbaiki', 
+    'kurang', 'mohon', 'harap', 'tambah', 'evaluasi', 'sosialisasi', 'dukungan', 
+    'fasilitas', 'kebijakan', 'sistem', 'komunikasi'
+  ];
+  for (const keyword of constructiveKeywords) {
+    if (lower.includes(keyword)) {
+      return true;
+    }
+  }
+  return false;
+};
 
 function extractYear(tanggalStr?: string): string {
   if (!tanggalStr) return new Date().getFullYear().toString();
@@ -670,29 +724,77 @@ export default function LaporanTab({
 
     if (flatDemografiRows.length === 0) return pages;
 
-    const PAGE_1_LIMIT = 12;
-    const CONT_LIMIT = 18;
+    const TOTAL = flatDemografiRows.length;
+
+    // Capacities for pagination:
+    const CAP_FIRST_WITH_SUMMARY = 10;
+    const CAP_FIRST_NO_SUMMARY = 18;
+    const CAP_MID_NO_SUMMARY = 25;
+    const CAP_LAST_WITH_SUMMARY = 13;
+
+    // Case 1: Fits on Page 1 WITH summary
+    if (TOTAL <= CAP_FIRST_WITH_SUMMARY) {
+      pages.push({
+        rows: flatDemografiRows,
+        isFirstPage: true,
+        isLastPage: true
+      });
+      return pages;
+    }
 
     let currentIndex = 0;
 
-    // Page 1
-    const page1Rows = flatDemografiRows.slice(0, PAGE_1_LIMIT);
+    // Page 1 (First page, no summary)
+    let page1Limit = CAP_FIRST_NO_SUMMARY;
+    const remAfterP1 = TOTAL - page1Limit;
+
+    if (remAfterP1 > 0 && remAfterP1 <= CAP_LAST_WITH_SUMMARY) {
+      // Fits on Page 2 with summary perfectly
+      page1Limit = CAP_FIRST_NO_SUMMARY;
+    } else if (remAfterP1 > CAP_LAST_WITH_SUMMARY && remAfterP1 <= CAP_LAST_WITH_SUMMARY + CAP_MID_NO_SUMMARY) {
+      // Remaining will take 2 pages: take enough on page 1 so middle page fills nicely
+      page1Limit = Math.min(CAP_FIRST_NO_SUMMARY, Math.max(10, TOTAL - CAP_LAST_WITH_SUMMARY - 10));
+    }
+
+    const page1Rows = flatDemografiRows.slice(0, page1Limit);
     currentIndex += page1Rows.length;
+
     pages.push({
       rows: page1Rows,
       isFirstPage: true,
-      isLastPage: currentIndex >= flatDemografiRows.length
+      isLastPage: currentIndex >= TOTAL
     });
 
     // Continuation pages
-    while (currentIndex < flatDemografiRows.length) {
-      const nextRows = flatDemografiRows.slice(currentIndex, currentIndex + CONT_LIMIT);
-      currentIndex += nextRows.length;
-      pages.push({
-        rows: nextRows,
-        isFirstPage: false,
-        isLastPage: currentIndex >= flatDemografiRows.length
-      });
+    while (currentIndex < TOTAL) {
+      const remaining = TOTAL - currentIndex;
+
+      if (remaining <= CAP_LAST_WITH_SUMMARY) {
+        // Fits on this last page WITH summary!
+        pages.push({
+          rows: flatDemografiRows.slice(currentIndex, currentIndex + remaining),
+          isFirstPage: false,
+          isLastPage: true
+        });
+        currentIndex += remaining;
+      } else if (remaining <= CAP_LAST_WITH_SUMMARY + CAP_MID_NO_SUMMARY) {
+        // Two pages left: 1 middle page + 1 last page with summary
+        const midTake = Math.min(CAP_MID_NO_SUMMARY, remaining - 5);
+        pages.push({
+          rows: flatDemografiRows.slice(currentIndex, currentIndex + midTake),
+          isFirstPage: false,
+          isLastPage: false
+        });
+        currentIndex += midTake;
+      } else {
+        // More than two pages left: fill middle page up to capacity
+        pages.push({
+          rows: flatDemografiRows.slice(currentIndex, currentIndex + CAP_MID_NO_SUMMARY),
+          isFirstPage: false,
+          isLastPage: false
+        });
+        currentIndex += CAP_MID_NO_SUMMARY;
+      }
     }
 
     return pages;
@@ -719,7 +821,7 @@ export default function LaporanTab({
   }, [demografiStats.unitData]);
 
   const totalReportPages = useMemo(() => {
-    return 4 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 6;
+    return 5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 7;
   }, [demografiPages.length, profesiPages.length, unitPages.length]);
 
   const renderDemografiTableRows = (
@@ -772,18 +874,18 @@ export default function LaporanTab({
             {rIdx === 0 && (
               <td
                 rowSpan={block.rows.length}
-                className="p-1.5 font-bold text-slate-850 border-r border-slate-200 align-top max-w-[120px] break-words text-[9px]"
+                className="py-1.5 px-2.5 font-bold text-slate-850 border-r border-slate-200 align-top w-[22%] break-words text-[9px] text-left"
               >
                 {categoryDisplayName}
               </td>
             )}
-            <td className="p-1.5 border-r border-slate-200 text-slate-700 max-w-[200px] break-words text-[9px]">
+            <td className="py-1.5 px-2.5 border-r border-slate-200 text-slate-700 w-[48%] break-words text-[9px] text-left">
               {rItem.name}
             </td>
-            <td className="p-1.5 border-r border-slate-200 text-center font-bold text-slate-900 text-[9px]">
+            <td className="py-1.5 px-2 border-r border-slate-200 text-center font-bold text-slate-900 w-[15%] text-[9px]">
               {rItem.value}
             </td>
-            <td className="p-1.5 text-center font-bold text-teal-700 text-[9px]">
+            <td className="py-1.5 px-2 text-center font-bold text-teal-700 w-[15%] text-[9px]">
               {rItem.pctStr}
             </td>
           </tr>
@@ -1168,7 +1270,9 @@ export default function LaporanTab({
     return {
       profesi: formatDataArray(demografiStats.posisiData),
       masaKerja: formatDataArray(demografiStats.g1Data),
+      masaKerjaUnit: formatDataArray(demografiStats.g2Data),
       jamKerja: formatDataArray(demografiStats.g3Data),
+      interaksiKontak: formatDataArray(demografiStats.g4Data || []),
       unitKerja: formatDataArray(demografiStats.unitData),
       g4Data: formatDataArray(demografiStats.g4Data || [])
     };
@@ -1483,6 +1587,58 @@ export default function LaporanTab({
     };
   }, [dimensionScores]);
 
+  // Qualitative Comments Analysis
+  const commentsStats = useMemo(() => {
+    let total = 0;
+    let positiveCount = 0;
+    const posUnits: Record<string, number> = {};
+    const posPositions: Record<string, number> = {};
+
+    activeSurveys.forEach(survey => {
+      const raw = (survey.dimensiScores as any)?._rawAnswers;
+      const text = (survey as any).komentar || raw?.komentar || raw?.bagian_h || raw?.bagianH || (survey.dimensiScores as any)?.komentar || '';
+      
+      if (text && typeof text === 'string' && text.trim().length > 0) {
+        total++;
+        if (isPositiveComment(text)) {
+          positiveCount++;
+          const unitName = raw?.unitKerja || survey.unitKerja || 'Umum';
+          const posName = raw?.posisiStaf || 'Tenaga Kesehatan';
+          posUnits[unitName] = (posUnits[unitName] || 0) + 1;
+          posPositions[posName] = (posPositions[posName] || 0) + 1;
+        }
+      }
+    });
+
+    const topPosUnit = Object.entries(posUnits).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unit Pelayanan';
+    const topPosPosition = Object.entries(posPositions).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Tenaga Kesehatan';
+
+    const constructiveCount = total - positiveCount;
+    const positivePercentage = total > 0 ? (positiveCount / total) * 100 : 0;
+    const constructivePercentage = total > 0 ? (constructiveCount / total) * 100 : 0;
+
+    const currentYearStr = selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear;
+
+    const analysisText = `Berdasarkan analisis kualitatif dari total ${total} komentar responden pada survei budaya keselamatan pasien tahun ${currentYearStr} di ${activeHospitalName}, secara otomatis terfilter ${positiveCount} komentar positif (${positivePercentage.toFixed(1)}% dari keseluruhan komentar). Apresiasi positif terbanyak disampaikan oleh staf dari kelompok posisi ${topPosPosition} di ${topPosUnit}, yang menyoroti aspek kekuatan seperti tingginya rasa kekeluargaan, kerjasama tim yang kompak, komunikasi yang suportif, serta komitmen pimpinan dalam menjaga keselamatan pasien.`;
+
+    const recs = [
+      `Pertahankan dan dokumentasikan praktik-praktik baik (best practices) yang telah diapresiasi oleh responden di unit "${topPosUnit}" untuk dijadikan percontohan di seluruh unit kerja ${activeHospitalName}.`,
+      `Berikan bentuk penghargaan atau apresiasi (Safety Recognition) secara berkala kepada tim dan pimpinan unit yang berhasil mempertahankan persepsi iklim kerja positif.`,
+      `Manfaatkan poin-poin apresiasi dari ${positiveCount} komentar positif responden sebagai materi 'Success Story' dalam kegiatan Safety Briefing dan Nurse Huddles untuk membangun motivasi tim.`,
+      `Sinergikan apresiasi positif staf dengan penyelesaian ${constructiveCount} masukan konstruktif guna menyempurnakan fasilitas, alur kerja, dan jaminan keselamatan secara berkelanjutan.`
+    ];
+
+    return {
+      total,
+      positive: positiveCount,
+      constructive: constructiveCount,
+      positivePercentage: parseFloat(positivePercentage.toFixed(1)),
+      constructivePercentage: parseFloat(constructivePercentage.toFixed(1)),
+      recommendations: recs,
+      analysisText
+    };
+  }, [activeSurveys, activeHospitalName, selectedYear]);
+
   // Benchmark Approved Hospitals List
   const approvedBenchmarkHospitals = useMemo(() => {
     return accounts.filter(a => a.namaRs && a.namaRs !== activeHospitalName);
@@ -1568,10 +1724,22 @@ export default function LaporanTab({
     setIsExportingPdf(true);
 
     const prevZoom = zoomLevel;
+    const prevScrollX = window.scrollX;
+    const prevScrollY = window.scrollY;
+
+    // Scroll window to top-left to avoid html2canvas offset/displacement bugs
+    window.scrollTo(0, 0);
     setZoomLevel(100);
 
-    // Wait for DOM layout scale to normalize
+    // Wait for DOM layout scale and web fonts to normalize
     await new Promise(r => setTimeout(r, 450));
+    if (document.fonts && document.fonts.ready) {
+      try {
+        await document.fonts.ready;
+      } catch (e) {
+        // ignore font loading error
+      }
+    }
 
     let restoreGetComputedStyle: (() => void) | null = null;
 
@@ -1621,8 +1789,11 @@ export default function LaporanTab({
       });
 
       for (let i = 0; i < pages.length; i++) {
-        setExportProgress({ current: i + 1, total: pages.length });
+        setExportProgress({ current: i + 1, total: totalPages });
+        await new Promise(r => setTimeout(r, 50)); // Allow UI to update and DOM to repaint
+
         const pageEl = pages[i] as HTMLElement;
+        pageEl.setAttribute('data-currently-exporting', 'true');
         const isLandscape = pageEl.classList.contains('word-page-landscape');
 
         // Dimensions in pixels for 1:1 A4 mapping (96 dpi)
@@ -1630,7 +1801,7 @@ export default function LaporanTab({
         const targetHeightPx = isLandscape ? 794 : 1123;
 
         const canvas = await html2canvas(pageEl, {
-          scale: 2,
+          scale: 2, // 2x high resolution crisp rendering
           useCORS: true,
           allowTaint: true,
           logging: false,
@@ -1640,7 +1811,22 @@ export default function LaporanTab({
           windowWidth: targetWidthPx,
           windowHeight: targetHeightPx,
           scrollX: 0,
-              onclone: (clonedDoc) => {
+          scrollY: 0,
+          onclone: (clonedDoc) => {
+            // Ensure cloned document body and html elements are allowed to expand naturally
+            clonedDoc.documentElement.style.width = 'auto';
+            clonedDoc.documentElement.style.height = 'auto';
+            clonedDoc.documentElement.style.margin = '0';
+            clonedDoc.documentElement.style.padding = '0';
+            clonedDoc.documentElement.style.overflow = 'visible';
+
+            clonedDoc.body.style.width = 'auto';
+            clonedDoc.body.style.height = 'auto';
+            clonedDoc.body.style.margin = '0';
+            clonedDoc.body.style.padding = '0';
+            clonedDoc.body.style.overflow = 'visible';
+            clonedDoc.body.style.position = 'relative';
+
             // A. Inject global overrides into cloned document
             const pdfOverrideStyle = clonedDoc.createElement('style');
             pdfOverrideStyle.textContent = `
@@ -1650,112 +1836,125 @@ export default function LaporanTab({
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 box-sizing: border-box !important;
+                -webkit-font-smoothing: antialiased !important;
               }
-              .word-page {
-                box-shadow: none !important;
-                border: none !important;
-                border-radius: 0 !important;
-                margin: 0 auto !important;
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: auto !important;
+                height: auto !important;
+                min-width: none !important;
+                min-height: none !important;
+                max-width: none !important;
+                max-height: none !important;
+                background: #ffffff !important;
+                overflow: visible !important;
+              }
+              /* Middle Alignment Overrides for Tables, Charts & Bar Charts */
+              table, table th, table td, th, td {
+                vertical-align: middle !important;
+              }
+              svg text, svg tspan, .recharts-text, .recharts-label, .recharts-cartesian-axis-tick-value {
+                dominant-baseline: central !important;
+                alignment-baseline: middle !important;
+                vertical-align: middle !important;
+              }
+              .bg-emerald-500, .bg-yellow-500, .bg-rose-500, .bg-red-500, .bg-blue-500, .bg-slate-400, .bg-slate-500, .bg-indigo-500, .bg-purple-500 {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+              }
+              .bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span, .bg-red-500 span, .bg-blue-500 span, .bg-slate-400 span, .bg-slate-500 span, .bg-indigo-500 span, .bg-purple-500 span,
+              .bg-emerald-500 p, .bg-yellow-500 p, .bg-rose-500 p, .bg-red-500 p, .bg-blue-500 p, .bg-slate-400 p, .bg-slate-500 p, .bg-indigo-500 p, .bg-purple-500 p {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                line-height: 1 !important;
+                height: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                vertical-align: middle !important;
                 transform: none !important;
               }
             `;
             clonedDoc.head.appendChild(pdfOverrideStyle);
 
-            // B. Reset print container styles in clonedDoc
-            const printArea = clonedDoc.querySelector('#print-area') as HTMLElement;
-            if (printArea) {
-              printArea.style.transform = 'none';
-              printArea.style.margin = '0';
-              printArea.style.padding = '0';
-              printArea.style.width = '100%';
-              printArea.style.maxWidth = 'none';
+            // B. Find and isolate the page being currently exported
+            const clonedPage = clonedDoc.querySelector('[data-currently-exporting="true"]') as HTMLElement;
+            if (clonedPage) {
+              const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
+              const hasModernColor = (s: string) => {
+                const lower = s.toLowerCase();
+                return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
+              };
+
+              const allNodes = clonedPage.querySelectorAll('*');
+              allNodes.forEach((node) => {
+                const htmlNode = node as HTMLElement;
+                if (htmlNode.style && htmlNode.style.cssText && hasModernColor(htmlNode.style.cssText)) {
+                  htmlNode.style.cssText = htmlNode.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                }
+              });
+
+              if (clonedPage.style && clonedPage.style.cssText && hasModernColor(clonedPage.style.cssText)) {
+                clonedPage.style.cssText = clonedPage.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+              }
+
+              // Isolate: empty the body and append ONLY the clonedPage
+              clonedDoc.body.innerHTML = '';
+              clonedDoc.body.appendChild(clonedPage);
+
+              // Set strict dimensions and positioning on the isolated page to align 100% with viewport origin (0,0)
+              clonedPage.style.position = 'absolute';
+              clonedPage.style.top = '0';
+              clonedPage.style.left = '0';
+              clonedPage.style.margin = '0';
+              clonedPage.style.padding = '2.5cm'; // Maintain requested 25mm margins!
+              clonedPage.style.boxSizing = 'border-box';
+              clonedPage.style.transform = 'none';
+              clonedPage.style.backgroundColor = '#ffffff';
+
+              const isLand = clonedPage.classList.contains('word-page-landscape');
+              if (isLand) {
+                clonedPage.style.width = '1123px';
+                clonedPage.style.height = '794px';
+                clonedPage.style.minWidth = '1123px';
+                clonedPage.style.minHeight = '794px';
+                clonedPage.style.maxWidth = '1123px';
+                clonedPage.style.maxHeight = '794px';
+              } else {
+                clonedPage.style.width = '794px';
+                clonedPage.style.height = '1123px';
+                clonedPage.style.minWidth = '794px';
+                clonedPage.style.minHeight = '1123px';
+                clonedPage.style.maxWidth = '794px';
+                clonedPage.style.maxHeight = '1123px';
+              }
             }
 
-            // C. Clean up page borders, margins, and transforms on cloned pages
-            const clonedPageEls = clonedDoc.querySelectorAll('.word-page');
-            clonedPageEls.forEach((p) => {
-              const el = p as HTMLElement;
-              el.style.border = 'none';
-              el.style.boxShadow = 'none';
-              el.style.borderRadius = '0';
-              el.style.margin = '0 auto';
-              el.style.transform = 'none';
-
-              const isLand = el.classList.contains('word-page-landscape');
-              if (isLand) {
-                el.style.width = '297mm';
-                el.style.height = '210mm';
-                el.style.minWidth = '297mm';
-                el.style.minHeight = '210mm';
-                el.style.maxWidth = '297mm';
-                el.style.maxHeight = '210mm';
-              } else {
-                el.style.width = '210mm';
-                el.style.height = '297mm';
-                el.style.minWidth = '210mm';
-                el.style.minHeight = '297mm';
-                el.style.maxWidth = '210mm';
-                el.style.maxHeight = '297mm';
-              }
-            });
-
-            // D. Force progress bar segments and labels centering
-            const progressSegments = clonedDoc.querySelectorAll('.bg-emerald-500, .bg-yellow-500, .bg-rose-500');
-            progressSegments.forEach((seg) => {
-              const htmlSeg = seg as HTMLElement;
-              htmlSeg.style.display = 'flex';
-              htmlSeg.style.alignItems = 'center';
-              htmlSeg.style.justifyContent = 'center';
-              htmlSeg.style.lineHeight = '1';
-              htmlSeg.style.height = '100%';
-              htmlSeg.style.overflow = 'hidden';
-              htmlSeg.style.transition = 'none';
-            });
-
-            const progressSpans = clonedDoc.querySelectorAll('.bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span');
-            progressSpans.forEach((sp) => {
-              const htmlSp = sp as HTMLElement;
-              htmlSp.style.display = 'inline-flex';
-              htmlSp.style.alignItems = 'center';
-              htmlSp.style.justifyContent = 'center';
-              htmlSp.style.lineHeight = '1';
-              htmlSp.style.fontSize = '8.5px';
-              htmlSp.style.fontWeight = '800';
-              htmlSp.style.color = '#ffffff';
-              htmlSp.style.margin = '0';
-              htmlSp.style.padding = '0 2px';
-              htmlSp.style.whiteSpace = 'nowrap';
-            });
-
-            // E. Sanitize <style> tags in cloned document without deleting rules
+            // C. Sanitize <style> tags in cloned document without deleting rules
             const styleElements = clonedDoc.querySelectorAll('style');
             styleElements.forEach((styleEl) => {
               if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
                 styleEl.textContent = styleEl.textContent.replace(modernColorRegex, (m) => parseOklchToRgb(m));
               }
             });
-
-            // F. Replace inline style modern colors
-            const allNodes = clonedDoc.querySelectorAll('*');
-            allNodes.forEach((node) => {
-              const htmlNode = node as HTMLElement;
-              if (htmlNode.style && htmlNode.style.cssText && hasModernColor(htmlNode.style.cssText)) {
-                htmlNode.style.cssText = htmlNode.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-              }
-            });
           }
         });
 
-        const imgData = canvas.toDataURL('image/jpeg', 0.98);
+        pageEl.removeAttribute('data-currently-exporting');
+
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
         if (i > 0) {
           pdf.addPage('a4', isLandscape ? 'landscape' : 'portrait');
         }
 
         if (isLandscape) {
-          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
         } else {
-          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297);
+          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
         }
       }
 
@@ -1768,6 +1967,7 @@ export default function LaporanTab({
     } finally {
       if (restoreGetComputedStyle) restoreGetComputedStyle();
       setZoomLevel(prevZoom);
+      window.scrollTo(prevScrollX, prevScrollY);
       setIsExportingPdf(false);
     }
   };
@@ -1778,6 +1978,11 @@ export default function LaporanTab({
     setIsExporting(true);
 
     const prevZoom = zoomLevel;
+    const prevScrollX = window.scrollX;
+    const prevScrollY = window.scrollY;
+
+    // Scroll window to top-left to avoid html2canvas offset/displacement bugs
+    window.scrollTo(0, 0);
     setZoomLevel(100);
 
     // Wait for DOM layout scale to normalize
@@ -1894,6 +2099,12 @@ export default function LaporanTab({
       for (let i = 0; i < pages.length; i++) {
         setExportProgress({ current: i + 1, total: pages.length });
         const pageEl = pages[i] as HTMLElement;
+        pageEl.setAttribute('data-currently-exporting', 'true');
+        const isLandscape = pageEl.classList.contains('word-page-landscape');
+
+        // Dimensions in pixels for 1:1 A4 mapping (96 dpi)
+        const targetWidthPx = isLandscape ? 1123 : 794;
+        const targetHeightPx = isLandscape ? 794 : 1123;
 
         const canvas = await html2canvas(pageEl, {
           scale: 2,
@@ -1901,8 +2112,134 @@ export default function LaporanTab({
           allowTaint: true,
           logging: false,
           backgroundColor: '#ffffff',
+          width: targetWidthPx,
+          height: targetHeightPx,
+          windowWidth: targetWidthPx,
+          windowHeight: targetHeightPx,
+          scrollX: 0,
+          scrollY: 0,
           onclone: (clonedDoc) => {
-            // 1. Sanitize <style> tags text content
+            // Ensure cloned document body and html elements are allowed to expand naturally
+            clonedDoc.documentElement.style.width = 'auto';
+            clonedDoc.documentElement.style.height = 'auto';
+            clonedDoc.documentElement.style.margin = '0';
+            clonedDoc.documentElement.style.padding = '0';
+            clonedDoc.documentElement.style.overflow = 'visible';
+
+            clonedDoc.body.style.width = 'auto';
+            clonedDoc.body.style.height = 'auto';
+            clonedDoc.body.style.margin = '0';
+            clonedDoc.body.style.padding = '0';
+            clonedDoc.body.style.overflow = 'visible';
+            clonedDoc.body.style.position = 'relative';
+
+            // A. Inject global overrides into cloned document
+            const pdfOverrideStyle = clonedDoc.createElement('style');
+            pdfOverrideStyle.textContent = `
+              * {
+                transition: none !important;
+                animation: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                box-sizing: border-box !important;
+                -webkit-font-smoothing: antialiased !important;
+              }
+              html, body {
+                margin: 0 !important;
+                padding: 0 !important;
+                width: auto !important;
+                height: auto !important;
+                min-width: none !important;
+                min-height: none !important;
+                max-width: none !important;
+                max-height: none !important;
+                background: #ffffff !important;
+                overflow: visible !important;
+              }
+              /* Middle Alignment Overrides for Tables, Charts & Bar Charts */
+              table, table th, table td, th, td {
+                vertical-align: middle !important;
+              }
+              svg text, svg tspan, .recharts-text, .recharts-label, .recharts-cartesian-axis-tick-value {
+                dominant-baseline: central !important;
+                alignment-baseline: middle !important;
+                vertical-align: middle !important;
+              }
+              .bg-emerald-500, .bg-yellow-500, .bg-rose-500, .bg-red-500, .bg-blue-500, .bg-slate-400, .bg-slate-500, .bg-indigo-500, .bg-purple-500 {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+              }
+              .bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span, .bg-red-500 span, .bg-blue-500 span, .bg-slate-400 span, .bg-slate-500 span, .bg-indigo-500 span, .bg-purple-500 span,
+              .bg-emerald-500 p, .bg-yellow-500 p, .bg-rose-500 p, .bg-red-500 p, .bg-blue-500 p, .bg-slate-400 p, .bg-slate-500 p, .bg-indigo-500 p, .bg-purple-500 p {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                line-height: 1 !important;
+                height: 100% !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                vertical-align: middle !important;
+                transform: none !important;
+              }
+            `;
+            clonedDoc.head.appendChild(pdfOverrideStyle);
+
+            // B. Find and isolate the page being currently exported
+            const clonedPage = clonedDoc.querySelector('[data-currently-exporting="true"]') as HTMLElement;
+            if (clonedPage) {
+              const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
+              const hasModernColor = (s: string) => {
+                const lower = s.toLowerCase();
+                return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
+              };
+
+              const allNodes = clonedPage.querySelectorAll('*');
+              allNodes.forEach((node) => {
+                const htmlNode = node as HTMLElement;
+                if (htmlNode.style && htmlNode.style.cssText && hasModernColor(htmlNode.style.cssText)) {
+                  htmlNode.style.cssText = htmlNode.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+                }
+              });
+
+              if (clonedPage.style && clonedPage.style.cssText && hasModernColor(clonedPage.style.cssText)) {
+                clonedPage.style.cssText = clonedPage.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
+              }
+
+              // Isolate: empty the body and append ONLY the clonedPage
+              clonedDoc.body.innerHTML = '';
+              clonedDoc.body.appendChild(clonedPage);
+
+              // Set strict dimensions and positioning on the isolated page to align 100% with viewport origin (0,0)
+              clonedPage.style.position = 'absolute';
+              clonedPage.style.top = '0';
+              clonedPage.style.left = '0';
+              clonedPage.style.margin = '0';
+              clonedPage.style.padding = '2.5cm'; // Maintain requested 25mm margins!
+              clonedPage.style.boxSizing = 'border-box';
+              clonedPage.style.transform = 'none';
+              clonedPage.style.backgroundColor = '#ffffff';
+
+              const isLand = clonedPage.classList.contains('word-page-landscape');
+              if (isLand) {
+                clonedPage.style.width = '1123px';
+                clonedPage.style.height = '794px';
+                clonedPage.style.minWidth = '1123px';
+                clonedPage.style.minHeight = '794px';
+                clonedPage.style.maxWidth = '1123px';
+                clonedPage.style.maxHeight = '794px';
+              } else {
+                clonedPage.style.width = '794px';
+                clonedPage.style.height = '1123px';
+                clonedPage.style.minWidth = '794px';
+                clonedPage.style.minHeight = '1123px';
+                clonedPage.style.maxWidth = '794px';
+                clonedPage.style.maxHeight = '1123px';
+              }
+            }
+
+            // C. Sanitize <style> tags text content
             const styleElements = clonedDoc.querySelectorAll('style');
             styleElements.forEach((styleEl) => {
               if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
@@ -1932,6 +2269,8 @@ export default function LaporanTab({
             }
           }
         });
+
+        pageEl.removeAttribute('data-currently-exporting');
 
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         pageImages.push(imgData);
@@ -1963,6 +2302,7 @@ export default function LaporanTab({
         moderates,
         recommendations,
         hasBenchmark: !!benchmarkData,
+        comments: commentsStats,
         benchmarkName: selectedBenchmarkHospital?.namaRs || undefined,
         benchmarkComparison: benchmarkData || undefined,
         hasYearComparison: !!yearComparisonData,
@@ -1977,7 +2317,11 @@ export default function LaporanTab({
           direkturJabatan: pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit',
           direkturNip: pengesahanConfig?.direkturNip || '19780512 200501 1 002'
         },
-        pageImages
+        pageImages,
+        positionDimensionScores,
+        unitDimensionScores,
+        tenureDimensionScores,
+        workHoursDimensionScores
       };
 
       await exportReportToDocx(reportPayload);
@@ -1988,6 +2332,7 @@ export default function LaporanTab({
       if (restoreGetComputedStyle) restoreGetComputedStyle();
       if (restoreStylesheets) restoreStylesheets();
       setZoomLevel(prevZoom);
+      window.scrollTo(prevScrollX, prevScrollY);
       setIsExporting(false);
       setShowDownloadDropdown(false);
     }
@@ -2194,10 +2539,10 @@ export default function LaporanTab({
             margin: 0 !important;
             border: none !important;
             box-shadow: none !important;
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-            padding-left: 0 !important;
-            padding-right: 0 !important;
+            padding-top: 2.5cm !important;
+            padding-bottom: 2.5cm !important;
+            padding-left: 2.5cm !important;
+            padding-right: 2.5cm !important;
             box-sizing: border-box !important;
             background: white !important;
             display: flex !important;
@@ -2211,10 +2556,10 @@ export default function LaporanTab({
             min-height: 210mm !important;
             height: 210mm !important;
             max-height: 210mm !important;
-            padding-top: 1.5cm !important;
-            padding-bottom: 1.5cm !important;
-            padding-left: 1.5cm !important;
-            padding-right: 1.5cm !important;
+            padding-top: 2.5cm !important;
+            padding-bottom: 2.5cm !important;
+            padding-left: 2.5cm !important;
+            padding-right: 2.5cm !important;
           }
           .print-page.cover-page {
             padding-top: 0 !important;
@@ -2226,6 +2571,30 @@ export default function LaporanTab({
           .recharts-responsive-container {
             width: 100% !important;
             height: 180px !important;
+          }
+          table, th, td {
+            vertical-align: middle !important;
+          }
+          svg text, svg tspan, .recharts-text, .recharts-label, .recharts-cartesian-axis-tick-value {
+            dominant-baseline: central !important;
+            alignment-baseline: middle !important;
+            vertical-align: middle !important;
+          }
+          .bg-emerald-500, .bg-yellow-500, .bg-rose-500, .bg-red-500, .bg-blue-500, .bg-slate-400, .bg-slate-500, .bg-indigo-500, .bg-purple-500 {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+          .bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span, .bg-red-500 span, .bg-blue-500 span, .bg-slate-400 span, .bg-slate-500 span, .bg-indigo-500 span, .bg-purple-500 span {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            line-height: 1 !important;
+            height: 100% !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            vertical-align: middle !important;
           }
         }
         .preview-container {
@@ -2272,10 +2641,10 @@ export default function LaporanTab({
           height: 210mm !important;
           min-height: 210mm !important;
           max-height: 210mm !important;
-          padding-top: 1.5cm !important;
-          padding-bottom: 1.5cm !important;
-          padding-left: 1.5cm !important;
-          padding-right: 1.5cm !important;
+          padding-top: 2.5cm !important;
+          padding-bottom: 2.5cm !important;
+          padding-left: 2.5cm !important;
+          padding-right: 2.5cm !important;
         }
       ` }} />
 
@@ -2400,45 +2769,45 @@ export default function LaporanTab({
               </div>
 
               {/* FOREGROUND CONTENT (LEFT ALIGNED) */}
-              <div className="relative z-10 flex-1 flex flex-col justify-start items-start text-left pl-12 sm:pl-16 pr-8 pt-14 sm:pt-20">
+              <div className="absolute top-12 sm:top-16 left-12 sm:left-16 right-12 sm:right-16 z-10 flex flex-col justify-start items-start text-left">
                 
                 {/* 2026 Year Display */}
-                <h1 className="text-[80px] sm:text-[100px] font-black leading-none text-[#007a78] tracking-tight font-sans">
+                <h1 className="text-[72px] sm:text-[84px] font-black leading-none text-[#007a78] tracking-tight font-sans">
                   {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
                 </h1>
 
                 {/* LAPORAN */}
-                <h2 className="text-[48px] sm:text-[60px] font-black leading-none text-[#007a78] tracking-tight mt-1 font-sans uppercase">
+                <h2 className="text-[40px] sm:text-[48px] font-black leading-none text-[#007a78] tracking-tight mt-1 font-sans uppercase">
                   LAPORAN
                 </h2>
 
                 {/* SURVEI BUDAYA KESELAMATAN PASIEN */}
-                <div className="mt-2.5 space-y-0">
-                  <h3 className="text-[36px] sm:text-[45px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
+                <div className="mt-2 space-y-0">
+                  <h3 className="text-[30px] sm:text-[36px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
                     SURVEI BUDAYA
                   </h3>
-                  <h3 className="text-[36px] sm:text-[45px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
+                  <h3 className="text-[30px] sm:text-[36px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
                     KESELAMATAN PASIEN
                   </h3>
                 </div>
 
                 {/* Short Accent Bar */}
-                <div className="w-16 h-[3.5px] bg-[#007a78] my-6"></div>
+                <div className="w-16 h-[3.5px] bg-[#007a78] my-2.5"></div>
 
                 {/* Subtitle: Berdasarkan Instrumen */}
-                <p className="text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.2em] text-slate-600 mb-2 font-sans">
+                <p className="text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.2em] text-slate-600 mb-1 font-sans">
                   Berdasarkan Instrumen
                 </p>
 
                 {/* Badge Pill: AHRQ SOPS® v2.0 */}
-                <div className="my-1.5">
-                  <div className="inline-flex items-center bg-[#007a78] text-white font-bold text-xs sm:text-[13px] px-5 py-2 rounded-full tracking-wider shadow-sm font-sans">
+                <div className="my-0.5">
+                  <div className="inline-flex items-center bg-[#007a78] text-white font-bold text-xs sm:text-[13px] px-4 py-1.5 rounded-full tracking-wider shadow-sm font-sans">
                     AHRQ SOPS<sup>®</sup> v2.0
                   </div>
                 </div>
 
                 {/* Three Outline Icons */}
-                <div className="flex items-center gap-3.5 my-5">
+                <div className="flex items-center gap-3.5 my-2">
                   <div className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center p-1.5 shadow-xs">
                     <TrendingUp className="w-5 h-5 stroke-[2.2]" />
                   </div>
@@ -2504,93 +2873,97 @@ export default function LaporanTab({
                   <div className="space-y-1 pt-1">
                     <div className="flex items-baseline justify-between font-bold text-slate-900">
                       <span>BAB II METODOLOGI SURVEI</span>
-                      <span className="font-mono">2</span>
+                      <span className="font-mono">3</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>2.1 Desain Penelitian / Survei</span>
-                      <span className="font-mono">2</span>
+                      <span className="font-mono">3</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>2.2 Waktu dan Lokasi Survei</span>
-                      <span className="font-mono">2</span>
+                      <span className="font-mono">3</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>2.3 Populasi & Sampel</span>
-                      <span className="font-mono">2</span>
+                      <span className="font-mono">3</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>2.4 Instrumen Survei</span>
-                      <span className="font-mono">3</span>
+                      <span className="font-mono">4</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>2.5 Metode Pengumpulan Data</span>
-                      <span className="font-mono">3</span>
+                      <span className="font-mono">4</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>2.6 Analisis Data</span>
-                      <span className="font-mono">4</span>
+                      <span className="font-mono">5</span>
                     </div>
                   </div>
 
                   <div className="space-y-1 pt-1">
                     <div className="flex items-baseline justify-between font-bold text-slate-900">
                       <span>BAB III HASIL DAN PEMBAHASAN</span>
-                      <span className="font-mono">5</span>
+                      <span className="font-mono">6</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.1 Gambaran Umum & Karakteristik Responden</span>
-                      <span className="font-mono">5</span>
+                      <span className="font-mono">6</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2 Hasil Pengukuran 10 Dimensi Budaya Keselamatan (Tabel)</span>
-                      <span className="font-mono">{5 + demografiPages.length}</span>
+                      <span className="font-mono">{6 + demografiPages.length}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2.1 Interpretasi & Rekomendasi 10 Dimensi</span>
-                      <span className="font-mono">{5 + demografiPages.length + 1}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 1}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2.2 Penilaian Keselamatan Pasien Keseluruhan (Overall Rating)</span>
-                      <span className="font-mono">{5 + demografiPages.length + 2}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 2}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2.3 Frekuensi Pelaporan Insiden Keselamatan Pasien</span>
-                      <span className="font-mono">{5 + demografiPages.length + 3}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 3}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2.4 Rata-Rata Respon Positif Per Item Dimensi (d1 - d10)</span>
-                      <span className="font-mono">{5 + demografiPages.length + 4}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 4}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2.5 Analisis Komparatif Respon Positif Segmental</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2.6 Analisis Tren Historis (Tahun Sebelumnya)</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 1}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 1}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.2.7 Analisis Benchmarking (Mitra Rumah Sakit)</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 2}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 2}</span>
+                    </div>
+                    <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
+                      <span>3.2.8 Analisis Kualitatif & Rekomendasi Peningkatan</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>3.3 Pembahasan</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4}</span>
                     </div>
                   </div>
 
                   <div className="space-y-1 pt-1">
                     <div className="flex items-baseline justify-between font-bold text-slate-900">
                       <span>BAB IV KESIMPULAN DAN REKOMENDASI</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>4.1 Kesimpulan Laporan</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5}</span>
                     </div>
                     <div className="pl-4 flex justify-between text-slate-600 text-[11px]">
                       <span>4.2 Rekomendasi Strategic Action Plan & Pengesahan</span>
-                      <span className="font-mono">{5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5}</span>
+                      <span className="font-mono">{6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 6}</span>
                     </div>
                   </div>
                 </div>
@@ -2604,65 +2977,122 @@ export default function LaporanTab({
             </div>
           </div>
 
-          {/* LEMBAR 3: BAB I PENDAHULUAN */}
+          {/* LEMBAR 3: BAB I PENDAHULUAN - HALAMAN 1 */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span></span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span></span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    <div className="text-center mb-6 space-y-1">
+                      <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB I</h2>
+                      <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">PENDAHULUAN</h2>
+                      <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
+                    </div>
+
+                    <div className="space-y-2.5 text-xs text-slate-700 leading-relaxed text-justify">
+                      <h3 className="font-bold text-slate-900">1.1 Latar Belakang</h3>
+                      <p>
+                         Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Upaya peningkatan keselamatan pasien sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi.
+                      </p>
+                      <p>
+                         Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma staf rumah sakit mengenai perilaku terkait keselamatan. Budaya yang kuat memfasilitasi komunikasi terbuka, pelaporan tanpa hukuman (non-punitive environment), pembelajaran dari kesalahan, dan kerja sama tim yang solid.
+                      </p>
+                      <p>
+                         Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Safety Culture (SOPS®) Version 2.0. Versi ini menyempurnakan dimensi pengukuran terdahulu agar lebih relevan dengan dinamika pelayanan kesehatan modern, berfokus pada respons terhadap kesalahan, dukungan kepemimpinan, pembelajaran organisasi, dan komunikasi yang terbuka.
+                      </p>
+                      <p>
+                        Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan (strengths) serta area yang membutuhkan peningkatan (areas for improvement) di <strong className="text-slate-900">{activeHospitalName}</strong>. Hasil dari survei ini menjadi landasan berbasis data (data-driven) dalam merumuskan strategi perbaikan mutu dan keselamatan pasien secara terarah dan berkelanjutan.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2 text-xs text-slate-700 leading-relaxed text-justify">
+                      <h3 className="font-bold text-slate-900 text-xs">1.2 Tujuan</h3>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-xs">1.2.1 Tujuan Umum</h4>
+                        <p className="pl-2 mt-0.5 text-justify">
+                          Mengetahui gambaran penerapan budaya keselamatan pasien di <strong className="text-slate-900">{activeHospitalName}</strong> menggunakan instrumen AHRQ Versi 2.0 sebagai dasar penyusunan program peningkatan mutu dan keselamatan pasien.
+                        </p>
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-xs mt-1.5">1.2.2 Tujuan Khusus</h4>
+                        <ol className="list-decimal pl-6 mt-1 space-y-1 text-justify">
+                          <li>Mengidentifikasi karakteristik responden berdasarkan unit kerja, profesi, lama bekerja, dan jam kerja per minggu.</li>
+                          <li>Menganalisis persentase respon positif (% Positive Response) pada 10 dimensi budaya keselamatan pasien AHRQ Versi 2.0.</li>
+                          <li>Mengetahui persepsi staf terhadap tingkat keselamatan pasien secara keseluruhan (Overall Patient Safety Rating) di <strong className="text-slate-900">{activeHospitalName}</strong>.</li>
+                          <li>Mengidentifikasi dimensi yang menjadi kekuatan area (strengths, &ge;75% respon positif) dan area yang memerlukan perbaikan (areas for improvement, &lt;50% respon positif).</li>
+                          <li>Menyediakan data acuan (baseline data) untuk evaluasi berkala dan pembandingan (benchmarking) budaya keselamatan pasien di masa mendatang.</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </section>
                 </div>
 
-                <section className="space-y-4">
-                  <div className="text-center mb-6 space-y-1">
-                    <h2 className="text-xs font-black text-slate-500 tracking-widest">BAB I</h2>
-                    <h2 className="text-base font-black text-teal-800 uppercase tracking-wide">PENDAHULUAN</h2>
-                    <div className="h-0.5 w-12 bg-teal-600 mx-auto mt-1"></div>
-                  </div>
-
-                  <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
-                    <h3 className="font-bold text-slate-900">1.1 Latar Belakang</h3>
-                    <p>
-                       Keselamatan pasien merupakan prioritas utama dan prinsip mendasar dalam pelayanan kesehatan di rumah sakit. Upaya peningkatan keselamatan pasien sangat bergantung pada budaya keselamatan pasien (patient safety culture) yang hidup di dalam organisasi.
-                    </p>
-                    <p>
-                       Budaya keselamatan pasien didefinisikan sebagai nilai, keyakinan, dan norma staf rumah sakit mengenai perilaku terkait keselamatan. Budaya yang kuat memfasilitasi komunikasi terbuka, pelaporan tanpa hukuman (non-punitive environment), pembelajaran dari kesalahan, dan kerja sama tim yang solid.
-                    </p>
-                    <p>
-                       Untuk mengukur dan mengevaluasi sejauh mana budaya keselamatan telah tertanam di rumah sakit, diperlukan instrumen pengukuran yang valid, handal, dan terstandar secara internasional. Agency for Healthcare Research and Quality (AHRQ) telah memperbarui instrumen pengukuran melalui AHRQ Hospital Survey on Patient Patient Safety Culture (SOPS®) Version 2.0. Versi ini menyempurnakan dimensi pengukuran terdahulu agar lebih relevan dengan dinamika pelayanan kesehatan modern, berfokus pada respons terhadap kesalahan, dukungan kepemimpinan, pembelajaran organisasi, dan komunikasi yang terbuka.
-                    </p>
-                    <p>
-                      Pelaksanaan survei budaya keselamatan pasien berbasis AHRQ Versi 2.0 ini dilakukan untuk memetakan kekuatan (strengths) serta area yang membutuhkan peningkatan (areas for improvement) di <strong className="text-slate-900">{activeHospitalName}</strong>. Hasil dari survei ini menjadi landasan berbasis data (data-driven) dalam merumuskan strategi perbaikan mutu dan keselamatan pasien secara terarah dan berkelanjutan.
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
-                    <h3 className="font-bold text-slate-900">1.2 Tujuan</h3>
-                    <p>
-                      <strong>Tujuan Umum:</strong> Mengetahui gambaran penerapan budaya keselamatan pasien di <strong className="text-slate-900">{activeHospitalName}</strong> menggunakan instrumen AHRQ Versi 2.0 sebagai dasar penyusunan program mutu.
-                    </p>
-                    <p>
-                      <strong>Tujuan Khusus:</strong> Mengidentifikasi karakteristik responden, menganalisis 10 dimensi AHRQ, memetakan keunggulan dan area perbaikan kualitatif, serta menyediakan database acuan (baseline).
-                    </p>
-                  </div>
-
-                  <div className="space-y-2 text-xs text-slate-700 leading-relaxed">
-                    <h3 className="font-bold text-slate-900">1.3 Manfaat</h3>
-                    <p>
-                      Menyediakan data objektif bagi Manajemen RS, mempermudah tim pengelola mutu dalam menetapkan intervensi prioritas, serta mendorong keterbukaan pelaporan bagi staf klinis.
-                    </p>
-                  </div>
-                </section>
-
-              {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
-                <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 1 dari {totalReportPages}</span>
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 1 dari {totalReportPages}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+
+          {/* LEMBAR 4: BAB I PENDAHULUAN - HALAMAN 2 */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Pendahuluan (Lanjutan)</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
+
+                  <section className="space-y-4">
+                    <div className="space-y-3 text-xs text-slate-700 leading-relaxed text-justify">
+                      <h3 className="font-bold text-slate-900 text-xs">1.3 Manfaat</h3>
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-xs">1.3.1 Bagi Manajemen Rumah Sakit</h4>
+                        <ol className="list-decimal pl-6 mt-1 space-y-1 text-justify">
+                          <li>Menyediakan data objektif mengenai persepsi staf terhadap budaya keselamatan pasien di seluruh tingkatan unit.</li>
+                          <li>Menjadi acuan pengambilan keputusan strategis dan alokasi sumber daya dalam program keselamatan pasien.</li>
+                          <li>Membantu kepemimpinan rumah sakit dalam membangun lingkungan kerja yang mendukung pelaporan insiden tanpa rasa takut (just culture).</li>
+                        </ol>
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-xs mt-2">1.3.2 Bagi Pengelola Mutu dan Keselamatan Pasien Rumah Sakit</h4>
+                        <ol className="list-decimal pl-6 mt-1 space-y-1 text-justify">
+                          <li>Mempermudah pemetaan fokus intervensi dan prioritas perbaikan mutu di unit-unit kerja yang membutuhkan pendampingan khusus.</li>
+                          <li>Memenuhi persyaratan standar akreditasi rumah sakit terkait pengukuran berkala budaya keselamatan pasien.</li>
+                        </ol>
+                      </div>
+
+                      <div>
+                        <h4 className="font-bold text-slate-800 text-xs mt-2">1.3.3 Bagi Staf dan Unit Kerja</h4>
+                        <ol className="list-decimal pl-6 mt-1 space-y-1 text-justify">
+                          <li>Menjadi sarana bagi staf untuk menyuarakan persepsi, kendala, dan masukan terkait keselamatan pasien secara anonim dan terstruktur.</li>
+                          <li>Mendorong kolaborasi, komunikasi interprofesi, dan kesadaran kolektif antar unit kerja untuk menciptakan lingkungan pelayanan yang aman bagi pasien.</li>
+                        </ol>
+                      </div>
+                    </div>
+                  </section>
+                </div>
+
+                {/* Running Footer */}
+                <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+                  <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                  <span>Halaman 2 dari {totalReportPages}</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* LEMBAR 5: BAB II METODOLOGI SURVEI - BAGIAN 1 */}
           <div className="w-full flex flex-col items-center">
@@ -2759,7 +3189,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman 2 dari {totalReportPages}</span>
+                <span>Halaman 3 dari {totalReportPages}</span>
               </div>
             </div>
           </div>
@@ -2825,7 +3255,7 @@ export default function LaporanTab({
                             <strong>Penyebaran Tautan/Kuesioner:</strong> Disebarkan melalui koordinasi Kepala Unit/Ruangan dan Tim Komite Mutu.
                           </li>
                           <li>
-                            <strong>Prinsip Anonimitas:</strong> Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kerahasiaan (anonymity) dan kejujuran jawaban tanpa kekhawatiran akan adanya sanksi/dampak karir.
+                            <strong>Prinsip Anonimitas:</strong> Responden tidak diminta mencantumkan nama atau NIP untuk menjamin kerahasiaan (anonymity) dan kejujuran jawaban tanpa kekhawatirkan akan adanya sanksi/dampak karir.
                           </li>
                           <li>
                             <strong>Monitoring Response Rate:</strong> Tim pelaksana melakukan pemantauan harian terhadap tingkat partisipasi di tiap unit untuk memastikan keterwakilan data.
@@ -2839,7 +3269,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 3 dari {totalReportPages}</span>
+                  <span>Halaman 4 dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -2916,7 +3346,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman 4 dari {totalReportPages}</span>
+                  <span>Halaman 5 dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -2924,7 +3354,7 @@ export default function LaporanTab({
 
           {/* LEMBAR 6: BAB III HASIL & PEMBAHASAN - Karakteristik Responden & Demografi (Dynamic Auto-Pagination Pages) */}
           {demografiPages.map((pageItem, pageIdx) => {
-            const currentPageNum = 5 + pageIdx;
+            const currentPageNum = 6 + pageIdx;
             return (
               <div key={`demo-page-${pageIdx}`} className="w-full flex flex-col items-center">
                 <div className="word-page print-page">
@@ -2969,14 +3399,14 @@ export default function LaporanTab({
                         )}
 
                         {/* Tabel Demografi Responden */}
-                        <div className="overflow-x-auto border border-slate-200 rounded-xl text-[9px]">
-                          <table className="w-full text-left border-collapse">
+                        <div className="w-full border border-slate-200 rounded-xl text-[9px] overflow-hidden">
+                          <table className="w-full table-fixed text-left border-collapse">
                             <thead>
                               <tr className="bg-[#14B8A6] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
-                                <th className="p-2 border-r border-white/20 text-center w-[120px]">Karakteristik</th>
-                                <th className="p-2 border-r border-white/20 text-center">Kategori / Detail</th>
-                                <th className="p-2 border-r border-white/20 text-center w-[85px]">Jumlah (n)</th>
-                                <th className="p-2 text-center w-[95px]">Persentase (%)</th>
+                                <th className="py-2 px-2.5 border-r border-white/20 text-left w-[22%]">Karakteristik</th>
+                                <th className="py-2 px-2.5 border-r border-white/20 text-left w-[48%]">Kategori / Detail</th>
+                                <th className="py-2 px-2 border-r border-white/20 text-center w-[15%]">Jumlah (n)</th>
+                                <th className="py-2 px-2 text-center w-[15%]">Persentase (%)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-200">
@@ -3079,48 +3509,51 @@ export default function LaporanTab({
                     </div>
 
                     <div className="w-full text-[9.5px]">
-                      {/* Table Header Row */}
-                      <div className="grid grid-cols-12 gap-2 pb-2 mb-2 border-b border-slate-100 font-bold uppercase tracking-wider text-slate-400 text-[8.5px]">
-                        <div className="col-span-1 text-left pl-1">NO.</div>
-                        <div className="col-span-5 text-left">KOMPONEN BUDAYA KESELAMATAN PASIEN</div>
-                        <div className="col-span-6 text-center">PERSENTASE RESPONS POSITIF</div>
-                      </div>
+                      <table className="w-full table-fixed border-collapse text-[9.5px]">
+                        <thead>
+                          <tr className="border-b border-slate-100 font-bold uppercase tracking-wider text-slate-400 text-[8.5px]">
+                            <th className="pb-2 text-left pl-1 font-bold" style={{ width: '6%' }}>NO.</th>
+                            <th className="pb-2 text-left font-bold" style={{ width: '44%' }}>KOMPONEN BUDAYA KESELAMATAN PASIEN</th>
+                            <th className="pb-2 text-center font-bold" style={{ width: '50%' }}>PERSENTASE RESPONS POSITIF</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-50 font-medium">
+                          {dimensionScores.map((row, i) => {
+                            const getBarColor = (val: number) => {
+                              if (val >= 85) return 'bg-blue-500';
+                              if (val >= 70) return 'bg-emerald-500';
+                              if (val >= 50) return 'bg-yellow-500';
+                              return 'bg-red-500';
+                            };
 
-                      {/* Dimension Rows */}
-                      <div className="space-y-2 font-medium">
-                        {dimensionScores.map((row, i) => {
-                          const getBarColor = (val: number) => {
-                            if (val >= 85) return 'bg-blue-500';
-                            if (val >= 70) return 'bg-emerald-500';
-                            if (val >= 50) return 'bg-yellow-500';
-                            return 'bg-red-500';
-                          };
-
-                          return (
-                            <div key={row.id} className="grid grid-cols-12 gap-2 items-center py-1 border-b border-slate-50 last:border-b-0">
-                              <div className="col-span-1 font-bold text-slate-400 text-left text-[10px] pl-1">
-                                {i + 1}.
-                              </div>
-                              <div className="col-span-5 font-bold text-slate-700 text-[9.5px] leading-snug whitespace-normal break-words pr-2">
-                                {row.nama}
-                              </div>
-                              <div className="col-span-6 flex items-center gap-2">
-                                <div className="flex-1 bg-slate-100 rounded-lg h-5 relative overflow-hidden flex items-center border border-slate-200/80 shadow-xs">
-                                  <div 
-                                    style={{ width: `${Math.min(100, Math.max(0, row.percentage))}%` }}
-                                    className={`h-full ${getBarColor(row.percentage)} relative transition-all duration-300 rounded-l-md`}
-                                  >
-                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                            return (
+                              <tr key={row.id}>
+                                <td className="py-1.5 font-bold text-slate-400 text-left text-[10px] pl-1 align-middle" style={{ width: '6%' }}>
+                                  {i + 1}.
+                                </td>
+                                <td className="py-1.5 font-bold text-slate-700 text-[9.5px] leading-snug whitespace-normal break-words pr-2 align-middle" style={{ width: '44%' }}>
+                                  {row.nama}
+                                </td>
+                                <td className="py-1.5 align-middle" style={{ width: '50%' }}>
+                                  <div className="flex items-center gap-2">
+                                    <div className="flex-1 bg-slate-100 rounded-lg h-5 relative overflow-hidden flex items-center border border-slate-200/80 shadow-xs">
+                                      <div 
+                                        style={{ width: `${Math.min(100, Math.max(0, row.percentage))}%` }}
+                                        className={`h-full ${getBarColor(row.percentage)} relative transition-all duration-300 rounded-l-md`}
+                                      >
+                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
+                                      </div>
+                                    </div>
+                                    <span className="w-10 text-right font-extrabold text-slate-900 text-[10px] shrink-0">
+                                      {row.percentage.toFixed(0)}%
+                                    </span>
                                   </div>
-                                </div>
-                                <span className="w-10 text-right font-extrabold text-slate-900 text-[10px] shrink-0">
-                                  {row.percentage.toFixed(0)}%
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
 
                     <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap gap-3.5 items-center justify-center text-[8px] font-bold text-slate-600">
@@ -3272,20 +3705,20 @@ export default function LaporanTab({
                       </div>
 
                       {/* Grafik Penilaian Insiden Keselamatan Pasien */}
-                      <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                        <h5 className="text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                        <h5 className="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
                           <BarChart2 className="w-3.5 h-3.5 text-rose-500" />
                           Grafik Penilaian Insiden Keselamatan Pasien (Overall Rating)
                         </h5>
-                        <div className="h-[150px] w-full">
+                        <div className="h-[185px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={safetyRatingData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+                            <BarChart data={safetyRatingData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 9, fontWeight: 600 }} tickLine={false} />
-                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 8.5 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700 }} tickLine={false} />
+                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
                               <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px' }} />
-                              <Bar dataKey="percentage" name="Persentase" fill="#f43f5e" radius={[4, 4, 0, 0]} maxBarSize={35} isAnimationActive={false}>
-                                <LabelList dataKey="percentage" position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#475569" fontSize={9} fontWeight="bold" />
+                              <Bar dataKey="percentage" name="Persentase" fill="#f43f5e" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                                <LabelList dataKey="percentage" position="top" offset={5} formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#334155" fontSize={9.5} fontWeight="bold" />
                                 {safetyRatingData.distribution.map((entry, index) => {
                                   const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#b91c1c'];
                                   return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
@@ -3297,42 +3730,73 @@ export default function LaporanTab({
                       </div>
 
                       {/* Interpretasi & Analisa Data Card */}
-                      <div className="bg-blue-50/40 border border-blue-100 p-3 rounded-xl space-y-1">
+                      <div className="bg-blue-50/40 border border-blue-100 p-3.5 rounded-xl space-y-2">
                         <h5 className="text-[11px] font-bold text-blue-900 flex items-center gap-1.5">
                           <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                          Interpretasi & Analisa Data
+                          Interpretasi & Analisa Data Otomatis
                         </h5>
-                        <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                          Penilaian keselamatan pasien secara keseluruhan (overall safety rating) oleh staf pada tahun <strong>{tahunSurvei}</strong> di <strong>{activeHospitalName}</strong> menghasilkan proporsi respons positif (kombinasi predikat Sangat Baik & Baik) sebesar <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong>. 
-                          Mayoritas staf memberikan penilaian keselamatan pada rentang kategori <strong>&ldquo;{safetyRatingHighestCat.name}&rdquo;</strong> sebesar <strong>{safetyRatingHighestCat.percentage}</strong>. 
-                          Meskipun iklim keselamatan dinilai cukup baik, upaya peningkatan mutu berkelanjutan tetap harus didukung demi mencapai target ideal &ge;80% respons positif.
-                        </p>
+                        <div className="text-[10px] text-slate-700 leading-relaxed text-justify space-y-1.5">
+                          <p>
+                            Hasil pengukuran tingkat keselamatan pasien secara keseluruhan (<em>overall safety rating</em>) oleh staf pada periode survei tahun <strong>{tahunSurvei}</strong> di <strong>{activeHospitalName}</strong> mencatatkan persentase respon positif sebesar <strong>{safetyRatingData.positivePct.toFixed(1)}%</strong> (kombinasi predikat Sangat Baik dan Baik). Mayoritas responden memberikan penilaian dominan pada kategori <strong>&ldquo;{safetyRatingHighestCat.name}&rdquo;</strong> yaitu mencapai <strong>{safetyRatingHighestCat.percentage}</strong>.
+                          </p>
+                          <p>
+                            Secara analitis, persepsi keselamatan pasien di tingkat unit kerja merupakan cerminan dari efektivitas standar operasional prosedur, iklim kepemimpinan klinis, serta ketersediaan sarana pendukung keselamatan. Capaian ini menunjukkan fondasi keselamatan pasien yang relatif baik, namun memerlukan penguatan berkelanjutan untuk menekan potensi eror klinis serta mendorong pencapaian target ideal nasional (&ge;80% respon positif).
+                          </p>
+                        </div>
                         
-                        {/* Category Breakout Badges */}
-                        <div className="grid grid-cols-5 gap-1.5 pt-1">
-                          {safetyRatingData.distribution.map(g => (
-                            <div key={g.name} className="p-1.5 rounded-lg bg-white border border-blue-100 text-center shadow-2xs">
-                              <div className="text-slate-500 font-bold text-[8px] truncate">{g.name}</div>
-                              <div className="text-[10px] font-extrabold text-teal-800 mt-0.5">{g.percentage}</div>
-                            </div>
-                          ))}
+                        {/* Category Breakout Badges as solid robust HTML Table */}
+                        <div className="pt-1.5">
+                          <table className="w-full table-fixed border-collapse">
+                            <tbody>
+                              <tr>
+                                {safetyRatingData.distribution.map(g => (
+                                  <td key={g.name} className="p-0.5" style={{ width: '20%' }}>
+                                    <div className="p-1.5 rounded-lg bg-white border border-blue-100 text-center shadow-2xs">
+                                      <div className="text-slate-500 font-bold text-[8px] leading-tight block whitespace-nowrap overflow-hidden text-ellipsis">{g.name}</div>
+                                      <div className="text-[10px] font-extrabold text-teal-800 mt-0.5 block whitespace-nowrap">{g.percentage}</div>
+                                    </div>
+                                  </td>
+                                ))}
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
 
                       {/* Rekomendasi Peningkatan */}
-                      <div className="bg-emerald-50/40 border border-emerald-100 p-3 rounded-xl space-y-1">
+                      <div className="bg-emerald-50/40 border border-emerald-100 p-3.5 rounded-xl space-y-2">
                         <h5 className="text-[11px] font-bold text-emerald-900 flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                          Rekomendasi Peningkatan
+                          Rekomendasi Peningkatan Komprehensif
                         </h5>
                         <div className="grid grid-cols-2 gap-2 text-[9px]">
-                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-emerald-100/80">
-                            <span className="text-sm shrink-0">🔎</span>
-                            <span className="text-slate-700 font-medium">Lakukan monitoring berkala di unit-unit klinis kritis (IGD, ICU, Kamar Operasi) yang rentan memiliki gap keselamatan pasien.</span>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">🔎</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">Audit & Monitoring Unit Kritis:</span>
+                              <span className="text-slate-600 leading-normal block">Mengintensifkan pemantauan budaya keselamatan berkala pada unit berisiko tinggi (IGD, ICU, Kamar Bedah) guna mendeteksi potensi insiden medis secara dini.</span>
+                            </div>
                           </div>
-                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-emerald-100/80">
-                            <span className="text-sm shrink-0">👣</span>
-                            <span className="text-slate-700 font-medium">Jadwalkan &apos;Safety Walkrounds&apos; (Ronde Keselamatan) yang melibatkan jajaran direksi untuk berdialog langsung dengan staf.</span>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">👣</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">Executive Safety Walkrounds:</span>
+                              <span className="text-slate-600 leading-normal block">Menyelenggarakan ronde keselamatan direksi dan pimpinan unit secara rutin untuk berdialog langsung dengan staf garis depan mengenai hambatan klinis.</span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">🎯</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">Debriefing Pasca-Tindakan Klinis:</span>
+                              <span className="text-slate-600 leading-normal block">Mewajibkan sesi *debriefing* tim dan forum *Clinical Peer Review* non-punitif untuk mengevaluasi efektivitas prosedur operasional harian.</span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-emerald-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">📊</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">Umpan Balik Indikator Transparan:</span>
+                              <span className="text-slate-600 leading-normal block">Menyediakan papan informasi/dashboard terbuka terkait perkembangan mutu dan keselamatan pasien untuk memotivasi partisipasi seluruh pegawai.</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3379,20 +3843,20 @@ export default function LaporanTab({
                       </div>
 
                       {/* Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan */}
-                      <div className="bg-slate-50/50 p-2 rounded-xl border border-slate-100">
-                        <h5 className="text-[11px] font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                      <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
+                        <h5 className="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
                           <BarChart2 className="w-3.5 h-3.5 text-purple-500" />
                           Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan
                         </h5>
-                        <div className="h-[150px] w-full">
+                        <div className="h-[185px] w-full">
                           <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={reportedEventsData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 10, right: 15, left: -15, bottom: 5 }}>
+                            <BarChart data={reportedEventsData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#475569', fontSize: 9, fontWeight: 600 }} tickLine={false} />
-                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 8.5 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
+                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700 }} tickLine={false} />
+                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
                               <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px' }} />
-                              <Bar dataKey="percentage" name="Persentase" fill="#8b5cf6" radius={[4, 4, 0, 0]} maxBarSize={35} isAnimationActive={false}>
-                                <LabelList dataKey="percentage" position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#475569" fontSize={9} fontWeight="bold" />
+                              <Bar dataKey="percentage" name="Persentase" fill="#8b5cf6" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                                <LabelList dataKey="percentage" position="top" offset={5} formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#334155" fontSize={9.5} fontWeight="bold" />
                                 {reportedEventsData.distribution.map((entry, index) => {
                                   const colors = ['#64748b', '#8b5cf6', '#6366f1', '#0d9488', '#d97706'];
                                   return <Cell key={`cell-rep-${index}`} fill={colors[index % colors.length]} />;
@@ -3404,41 +3868,73 @@ export default function LaporanTab({
                       </div>
 
                       {/* Interpretasi & Analisa Data Card */}
-                      <div className="bg-purple-50/40 border border-purple-100 p-3 rounded-xl space-y-1">
+                      <div className="bg-purple-50/40 border border-purple-100 p-3.5 rounded-xl space-y-2">
                         <h5 className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
                           <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                          Interpretasi & Analisa Data
+                          Interpretasi & Analisa Data Otomatis
                         </h5>
-                        <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
-                          Berdasarkan data pelaporan insiden dalam 12 bulan terakhir (Tahun <strong>{tahunSurvei}</strong>), kategori dengan persentase tertinggi di <strong>{activeHospitalName}</strong> adalah <strong>&ldquo;{reportedEventsHighestCat.name}&rdquo;</strong> sebesar <strong>{reportedEventsHighestCat.percentage}</strong>. 
-                          Tingginya angka staf yang tidak melapor atau jarang melapor menunjukkan adanya potensi fenomena <em>underreporting</em> (kejadian yang disembunyikan atau tidak dicatatkan) akibat rasa takut atau birokrasi yang rumit.
-                        </p>
+                        <div className="text-[10px] text-slate-700 leading-relaxed text-justify space-y-1.5">
+                          <p>
+                            Berdasarkan data frekuensi pelaporan insiden keselamatan pasien dalam 12 bulan terakhir (Tahun <strong>{tahunSurvei}</strong>) di <strong>{activeHospitalName}</strong>, proporsi staf yang aktif melaporkan insiden tercatat sebesar <strong>{reportedEventsData.reportedAnyPct.toFixed(1)}%</strong>. Distribusi jawaban responden menunjukkan kelompok dominan berada pada kategori <strong>&ldquo;{reportedEventsHighestCat.name}&rdquo;</strong> dengan persentase sebesar <strong>{reportedEventsHighestCat.percentage}</strong>.
+                          </p>
+                          <p>
+                            Analisis mendalam mengindikasikan bahwa frekuensi pelaporan sangat dipengaruhi oleh tingkat keterbukaan budaya organisasi. Dominasi kategori pelaporan yang rendah sering kali mengisyaratkan fenomena <em>underreporting</em>, di mana insiden medis (KNC/KTD) tidak tercatat akibat kekhawatiran staf akan sanksi (<em>blame culture</em>), alur pelaporan yang membingungkan, atau belum terwujudnya umpan balik nyata dari komite keselamatan pasien.
+                          </p>
+                        </div>
                         
-                        {/* Category Breakout Badges */}
-                        <div className="grid grid-cols-5 gap-1.5 pt-1">
-                          {reportedEventsData.distribution.map(e => (
-                            <div key={e.name} className="p-1.5 rounded-lg bg-white border border-purple-100 text-center shadow-2xs">
-                              <div className="text-slate-500 font-bold text-[8px] truncate">{e.name}</div>
-                              <div className="text-[10px] font-extrabold text-purple-800 mt-0.5">{e.percentage}</div>
-                            </div>
-                          ))}
+                        {/* Category Breakout Badges as solid robust HTML Table */}
+                        <div className="pt-1.5">
+                          <table className="w-full table-fixed border-collapse">
+                            <tbody>
+                              <tr>
+                                {reportedEventsData.distribution.map(e => (
+                                  <td key={e.name} className="p-0.5" style={{ width: '20%' }}>
+                                    <div className="p-1.5 rounded-lg bg-white border border-purple-100 text-center shadow-2xs">
+                                      <div className="text-slate-500 font-bold text-[8px] leading-tight block whitespace-nowrap overflow-hidden text-ellipsis">{e.name}</div>
+                                      <div className="text-[10px] font-extrabold text-purple-800 mt-0.5 block whitespace-nowrap">{e.percentage}</div>
+                                    </div>
+                                  </td>
+                                ))}
+                              </tr>
+                            </tbody>
+                          </table>
                         </div>
                       </div>
 
                       {/* Rekomendasi Peningkatan */}
-                      <div className="bg-amber-50/40 border border-amber-100 p-3 rounded-xl space-y-1">
+                      <div className="bg-amber-50/40 border border-amber-100 p-3.5 rounded-xl space-y-2">
                         <h5 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
                           <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                          Rekomendasi Peningkatan
+                          Rekomendasi Peningkatan Komprehensif
                         </h5>
                         <div className="grid grid-cols-2 gap-2 text-[9px]">
-                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-amber-100/80">
-                            <span className="text-sm shrink-0">🛡️</span>
-                            <span className="text-slate-700 font-medium">Terapkan prinsip Just Culture secara konsisten untuk menjamin tidak adanya sanksi sepihak (non-punitive) bagi pelapor insiden.</span>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">🛡️</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">Budaya Bebas Sanksi (Just Culture):</span>
+                              <span className="text-slate-600 leading-normal block">Menjamin perlindungan kerahasiaan penuh dan prinsip *non-punitive* bagi staf yang melaporkan insiden demi membangun iklim keterbukaan.</span>
+                            </div>
                           </div>
-                          <div className="flex items-start gap-1.5 bg-white p-1.5 rounded-lg border border-amber-100/80">
-                            <span className="text-sm shrink-0">📱</span>
-                            <span className="text-slate-700 font-medium">Sederhanakan proses pengisian formulir laporan insiden menjadi digital yang dapat diselesaikan dalam waktu kurang dari 3 menit.</span>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">📱</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">E-Pelaporan Digital Ringkas:</span>
+                              <span className="text-slate-600 leading-normal block">Menyederhanakan formulir pelaporan menjadi sistem digital mobile/web yang dapat diisi secara cepat (&lt;2 menit) dengan opsi anonimitas.</span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">⏱️</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">Respon Cepat & RCA Terstruktur:</span>
+                              <span className="text-slate-600 leading-normal block">Memastikan komite KTRS memberikan respon cepat dan melaksanakan *Root Cause Analysis* (RCA) untuk membagikan *lesson learned* ke unit.</span>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80 shadow-2xs">
+                            <span className="text-base shrink-0 leading-none">🏆</span>
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-800 block">Program Safety Champion & Reward:</span>
+                              <span className="text-slate-600 leading-normal block">Memberikan apresiasi dan penghargaan bagi unit/staf yang aktif melaporkan insiden sebagai wujud komitmen mutu rumah sakit.</span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -3477,8 +3973,30 @@ export default function LaporanTab({
                       </p>
                     </div>
 
+                    {/* Keterangan Warna Respon Item (Legend Bar) */}
+                    <div className="bg-slate-50/90 border border-slate-200/90 px-3 py-2 rounded-xl flex items-center justify-between text-[10px] font-bold text-slate-700 shadow-2xs">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Positif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Netral</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Negatif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Tidak Menjawab / Tidak Tahu</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Detailed Item Cards */}
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
                       {DIMENSION_ORDER.slice(0, 2).map((dimId, sliceIndex) => {
                         const index = sliceIndex;
                         const dimInfo = DIMENSI_INFO[dimId];
@@ -3511,10 +4029,10 @@ export default function LaporanTab({
                             </div>
 
                             {/* Questions List */}
-                            <div className="p-2.5 space-y-2">
-                              <div className="space-y-2">
+                            <div className="p-3 space-y-2.5">
+                              <div className="space-y-2.5">
                                 {qStats.map(({ q, stat }) => (
-                                  <div key={q.id} className="flex flex-col gap-1">
+                                  <div key={q.id} className="flex flex-col gap-1.5">
                                     {/* Question Code & Text */}
                                     <div className="flex items-start gap-2">
                                       <span className="w-9 shrink-0 text-[10px] font-black text-indigo-600 leading-snug">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
@@ -3522,25 +4040,39 @@ export default function LaporanTab({
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-[18px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
-                                      <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
-                                        style={{ width: `${stat.posPercent}%` }}
-                                      >
-                                        {stat.posPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.neuPercent}%` }}
-                                      >
-                                        {stat.neuPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.negPercent}%` }}
-                                      >
-                                        {stat.negPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
-                                      </div>
+                                    <div className="h-[19px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
+                                      {stat.posPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.posPercent}%` }}
+                                        >
+                                          {stat.posPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.posPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.neuPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-yellow-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.neuPercent}%` }}
+                                        >
+                                          {stat.neuPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.neuPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.negPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-rose-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.negPercent}%` }}
+                                        >
+                                          {stat.negPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.negPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.missingPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-slate-400 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.missingPercent}%` }}
+                                        >
+                                          {stat.missingPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.missingPercent}%</span>}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -3585,9 +4117,31 @@ export default function LaporanTab({
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-3">
+                  <section className="space-y-3.5">
+                    {/* Keterangan Warna Respon Item (Legend Bar) */}
+                    <div className="bg-slate-50/90 border border-slate-200/90 px-3 py-2 rounded-xl flex items-center justify-between text-[10px] font-bold text-slate-700 shadow-2xs">
+                      <div className="flex items-center gap-4 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Positif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Netral</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Negatif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Tidak Menjawab / Tidak Tahu</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Detailed Item Cards */}
-                    <div className="space-y-3">
+                    <div className="space-y-3.5">
                       {DIMENSION_ORDER.slice(2, 4).map((dimId, sliceIndex) => {
                         const index = sliceIndex + 2;
                         const dimInfo = DIMENSI_INFO[dimId];
@@ -3620,10 +4174,10 @@ export default function LaporanTab({
                             </div>
 
                             {/* Questions List */}
-                            <div className="p-2.5 space-y-2">
-                              <div className="space-y-2">
+                            <div className="p-3 space-y-2.5">
+                              <div className="space-y-2.5">
                                 {qStats.map(({ q, stat }) => (
-                                  <div key={q.id} className="flex flex-col gap-1">
+                                  <div key={q.id} className="flex flex-col gap-1.5">
                                     {/* Question Code & Text */}
                                     <div className="flex items-start gap-2">
                                       <span className="w-9 shrink-0 text-[10px] font-black text-indigo-600 leading-snug">{q.code}{(q as any).isReversed && !q.code.endsWith('R') ? 'R' : ''}</span>
@@ -3631,25 +4185,39 @@ export default function LaporanTab({
                                     </div>
 
                                     {/* Bar Chart */}
-                                    <div className="h-[18px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
-                                      <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
-                                        style={{ width: `${stat.posPercent}%` }}
-                                      >
-                                        {stat.posPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.neuPercent}%` }}
-                                      >
-                                        {stat.neuPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.negPercent}%` }}
-                                      >
-                                        {stat.negPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
-                                      </div>
+                                    <div className="h-[19px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
+                                      {stat.posPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.posPercent}%` }}
+                                        >
+                                          {stat.posPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.posPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.neuPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-yellow-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.neuPercent}%` }}
+                                        >
+                                          {stat.neuPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.neuPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.negPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-rose-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.negPercent}%` }}
+                                        >
+                                          {stat.negPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.negPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.missingPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-slate-400 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.missingPercent}%` }}
+                                        >
+                                          {stat.missingPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.missingPercent}%</span>}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -3695,6 +4263,28 @@ export default function LaporanTab({
                   </div>
 
                   <section className="space-y-3">
+                    {/* Keterangan Warna Respon Item (Legend Bar) */}
+                    <div className="bg-slate-50/90 border border-slate-200/90 px-3 py-1.5 rounded-xl flex items-center justify-between text-[9.5px] font-bold text-slate-700 shadow-2xs">
+                      <div className="flex items-center gap-3.5 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Positif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Netral</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Negatif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Tidak Menjawab / Tidak Tahu</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Detailed Item Cards */}
                     <div className="space-y-3">
                       {DIMENSION_ORDER.slice(4, 7).map((dimId, sliceIndex) => {
@@ -3741,24 +4331,38 @@ export default function LaporanTab({
 
                                     {/* Bar Chart */}
                                     <div className="h-[18px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
-                                      <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
-                                        style={{ width: `${stat.posPercent}%` }}
-                                      >
-                                        {stat.posPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.neuPercent}%` }}
-                                      >
-                                        {stat.neuPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.negPercent}%` }}
-                                      >
-                                        {stat.negPercent >= 8 && <span className="text-[8.5px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
-                                      </div>
+                                      {stat.posPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.posPercent}%` }}
+                                        >
+                                          {stat.posPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.posPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.neuPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-yellow-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.neuPercent}%` }}
+                                        >
+                                          {stat.neuPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.neuPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.negPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-rose-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.negPercent}%` }}
+                                        >
+                                          {stat.negPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.negPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.missingPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-slate-400 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.missingPercent}%` }}
+                                        >
+                                          {stat.missingPercent >= 10 && <span className="text-[8.5px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.missingPercent}%</span>}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -3804,6 +4408,28 @@ export default function LaporanTab({
                   </div>
 
                   <section className="space-y-2.5">
+                    {/* Keterangan Warna Respon Item (Legend Bar) */}
+                    <div className="bg-slate-50/90 border border-slate-200/90 px-3 py-1.5 rounded-xl flex items-center justify-between text-[9px] font-bold text-slate-700 shadow-2xs">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Positif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-yellow-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Netral</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Negatif</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2.5 h-2.5 rounded-full bg-slate-400 shrink-0 shadow-2xs"></span>
+                          <span className="font-bold text-slate-700">Tidak Menjawab / Tidak Tahu</span>
+                        </div>
+                      </div>
+                    </div>
+
                     {/* Detailed Item Cards */}
                     <div className="space-y-2.5">
                       {DIMENSION_ORDER.slice(7, 10).map((dimId, sliceIndex) => {
@@ -3850,24 +4476,38 @@ export default function LaporanTab({
 
                                     {/* Bar Chart */}
                                     <div className="h-[16px] flex rounded-md overflow-hidden bg-slate-100 border border-slate-200/80 relative w-full">
-                                      <div 
-                                        className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden"
-                                        style={{ width: `${stat.posPercent}%` }}
-                                      >
-                                        {stat.posPercent >= 8 && <span className="text-[8px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.posPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-yellow-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.neuPercent}%` }}
-                                      >
-                                        {stat.neuPercent >= 8 && <span className="text-[8px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.neuPercent}%</span>}
-                                      </div>
-                                      <div 
-                                        className="h-full bg-rose-500 flex items-center justify-center border-l border-white/20 overflow-hidden"
-                                        style={{ width: `${stat.negPercent}%` }}
-                                      >
-                                        {stat.negPercent >= 8 && <span className="text-[8px] font-extrabold text-white leading-none inline-block select-none px-0.5">{stat.negPercent}%</span>}
-                                      </div>
+                                      {stat.posPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-emerald-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.posPercent}%` }}
+                                        >
+                                          {stat.posPercent >= 10 && <span className="text-[8px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.posPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.neuPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-yellow-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.neuPercent}%` }}
+                                        >
+                                          {stat.neuPercent >= 10 && <span className="text-[8px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.neuPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.negPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-rose-500 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.negPercent}%` }}
+                                        >
+                                          {stat.negPercent >= 10 && <span className="text-[8px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.negPercent}%</span>}
+                                        </div>
+                                      )}
+                                      {stat.missingPercent > 0 && (
+                                        <div 
+                                          className="h-full bg-slate-400 flex items-center justify-center overflow-hidden shrink-0 relative"
+                                          style={{ width: `${stat.missingPercent}%` }}
+                                        >
+                                          {stat.missingPercent >= 10 && <span className="text-[8px] font-extrabold text-white leading-none select-none px-0.5 whitespace-nowrap flex items-center justify-center h-full w-full">{stat.missingPercent}%</span>}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
                                 ))}
@@ -3968,13 +4608,13 @@ export default function LaporanTab({
                             A. Perbandingan Dimensi Berdasarkan Posisi Staf (Profesi {pIdx > 0 ? `Lanjutan ${pIdx + 1}` : ''})
                           </h5>
                           <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                            <table className="w-full text-left border-collapse text-[7.5px]">
+                            <table className="w-full table-fixed text-left border-collapse text-[7.5px]">
                               <thead>
                                 <tr className="bg-indigo-900 text-white font-extrabold text-[7.5px] uppercase border-b border-indigo-950">
-                                  <th className="p-1 border-r border-indigo-800 w-8 text-center">No</th>
-                                  <th className="p-1 border-r border-indigo-800 min-w-[140px]">Dimensi Budaya Keselamatan</th>
+                                  <th className="p-1 border-r border-indigo-800 text-center" style={{ width: '5%' }}>No</th>
+                                  <th className="p-1 border-r border-indigo-800" style={{ width: '35%' }}>Dimensi Budaya Keselamatan</th>
                                   {posChunk.map(pos => (
-                                    <th key={pos.name} className="p-1 text-center border-r border-indigo-800 min-w-[70px]">
+                                    <th key={pos.name} className="p-1 text-center border-r border-indigo-800" style={{ width: `${60 / posChunk.length}%` }}>
                                       {pos.name} <span className="font-mono font-normal block text-[6.5px] text-indigo-200">(N={pos.value})</span>
                                     </th>
                                   ))}
@@ -3986,12 +4626,12 @@ export default function LaporanTab({
                                   const scoreObj = positionDimensionScores.find(s => s.id === dimId);
                                   return (
                                     <tr key={dimId} className="hover:bg-slate-50/40">
-                                      <td className="p-1 border-r border-slate-100 text-center font-bold text-indigo-700">{idx + 1}</td>
-                                      <td className="p-1 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
+                                      <td className="p-1 border-r border-slate-100 text-center font-bold text-indigo-700" style={{ width: '5%' }}>{idx + 1}</td>
+                                      <td className="p-1 border-r border-slate-100 font-semibold text-slate-800 break-words text-[8.5px]" style={{ width: '35%' }}>{info.nama}</td>
                                       {posChunk.map(pos => {
                                         const val = scoreObj ? scoreObj[pos.name] : null;
                                         return (
-                                          <td key={pos.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
+                                          <td key={pos.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20" style={{ width: `${60 / posChunk.length}%` }}>
                                             {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
                                           </td>
                                         );
@@ -4049,13 +4689,13 @@ export default function LaporanTab({
                             B. Perbandingan Dimensi Berdasarkan Unit Kerja {uIdx > 0 ? `(Lanjutan ${uIdx + 1})` : ''}
                           </h5>
                           <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                            <table className="w-full text-left border-collapse text-[7.5px]">
+                            <table className="w-full table-fixed text-left border-collapse text-[7.5px]">
                               <thead>
                                 <tr className="bg-teal-800 text-white font-extrabold text-[7.5px] uppercase border-b border-teal-900">
-                                  <th className="p-1 border-r border-teal-700 w-8 text-center">No</th>
-                                  <th className="p-1 border-r border-teal-700 min-w-[140px]">Dimensi Budaya Keselamatan</th>
+                                  <th className="p-1 border-r border-teal-700 text-center" style={{ width: '5%' }}>No</th>
+                                  <th className="p-1 border-r border-teal-700" style={{ width: '35%' }}>Dimensi Budaya Keselamatan</th>
                                   {unitChunk.map(u => (
-                                    <th key={u.name} className="p-1 text-center border-r border-teal-700 min-w-[70px]">
+                                    <th key={u.name} className="p-1 text-center border-r border-teal-700" style={{ width: `${60 / unitChunk.length}%` }}>
                                       {u.name} <span className="font-mono font-normal block text-[6.5px] text-teal-200">(N={u.value})</span>
                                     </th>
                                   ))}
@@ -4067,12 +4707,12 @@ export default function LaporanTab({
                                   const scoreObj = unitDimensionScores.find(s => s.id === dimId);
                                   return (
                                     <tr key={dimId} className="hover:bg-slate-50/40">
-                                      <td className="p-1 border-r border-slate-100 text-center font-bold text-teal-700">{idx + 1}</td>
-                                      <td className="p-1 border-r border-slate-100 font-semibold text-slate-800">{info.nama}</td>
+                                      <td className="p-1 border-r border-slate-100 text-center font-bold text-teal-700" style={{ width: '5%' }}>{idx + 1}</td>
+                                      <td className="p-1 border-r border-slate-100 font-semibold text-slate-800 break-words text-[8.5px]" style={{ width: '35%' }}>{info.nama}</td>
                                       {unitChunk.map(u => {
                                         const val = scoreObj ? scoreObj[u.name] : null;
                                         return (
-                                          <td key={u.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20">
+                                          <td key={u.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-slate-50/20" style={{ width: `${60 / unitChunk.length}%` }}>
                                             {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
                                           </td>
                                         );
@@ -4099,39 +4739,39 @@ export default function LaporanTab({
           })}
 
           <div className="w-full flex flex-col items-center">
-            <div className="word-page print-page">
+            <div className="word-page word-page-landscape print-page">
               <div className="flex-1 flex flex-col justify-between">
                 <div>
                   {/* Running Header */}
                   <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                    <span>Analisis Demografis & Komparatif (Lanjutan)</span>
+                    <span>Analisis Demografis & Komparatif (Masa Kerja & Jam Kerja)</span>
                     <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
                   </div>
 
-                  <section className="space-y-4">
+                  <section className="space-y-2.5">
                     {/* C. Berdasarkan Masa Kerja & Jam Kerja */}
-                    <div className="space-y-1.5 pt-1">
-                      <h5 className="text-[10px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1.5 rounded-lg border border-slate-100">
+                    <div className="space-y-1 pt-0.5">
+                      <h5 className="text-[9.5px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1 px-2 rounded-lg border border-slate-100">
                         <span className="w-1.5 h-3 bg-amber-600 rounded-sm"></span>
                         C. Perbandingan Dimensi Berdasarkan Masa Kerja (Lama Kerja) & Jam Kerja per Minggu
                       </h5>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="w-full text-left border-collapse text-[8px]">
+                      <table className="w-full table-fixed text-left border-collapse text-[7.5px]">
                         <thead>
-                          <tr className="bg-slate-800 text-white font-extrabold text-[7.5px] uppercase border-b border-slate-900">
-                            <th rowSpan={2} className="p-1.5 border-r border-slate-700 w-8 text-center align-middle">No</th>
-                            <th rowSpan={2} className="p-1.5 border-r border-slate-700 min-w-[120px] align-middle">Dimensi Budaya Keselamatan</th>
-                            <th colSpan={4} className="p-1.5 text-center border-r border-slate-700 bg-slate-700">Masa Kerja (Staff Tenure)</th>
-                            <th colSpan={3} className="p-1.5 text-center bg-slate-600">Jam Kerja per Minggu</th>
+                          <tr className="bg-slate-800 text-white font-extrabold text-[7px] uppercase border-b border-slate-900">
+                            <th rowSpan={2} className="py-1 px-1 border-r border-slate-700 text-center align-middle" style={{ width: '4%' }}>No</th>
+                            <th rowSpan={2} className="py-1 px-1 border-r border-slate-700 align-middle" style={{ width: '32%' }}>Dimensi Budaya Keselamatan</th>
+                            <th colSpan={4} className="py-1 px-1 text-center border-r border-slate-700 bg-slate-700" style={{ width: '32%' }}>Masa Kerja (Staff Tenure)</th>
+                            <th colSpan={4} className="py-1 px-1 text-center bg-slate-600" style={{ width: '32%' }}>Jam Kerja per Minggu</th>
                           </tr>
-                          <tr className="bg-slate-700 text-white font-bold text-[7.5px] uppercase border-b border-slate-850 divide-x divide-slate-600">
+                          <tr className="bg-slate-700 text-white font-bold text-[7px] uppercase border-b border-slate-850 divide-x divide-slate-600">
                             {demografiStats.g1Data.slice(0, 4).map(g1 => (
-                              <th key={g1.name} className="p-1 text-center min-w-[55px] font-medium leading-tight">
+                              <th key={g1.name} className="py-0.5 px-0.5 text-center font-medium leading-tight" style={{ width: '8%' }}>
                                 {g1.name.replace('hingga', '-').replace('atau lebih', '+')}
                               </th>
                             ))}
-                            {demografiStats.g3Data.slice(0, 3).map(g3 => (
-                              <th key={g3.name} className="p-1 text-center min-w-[55px] font-medium leading-tight">
+                            {demografiStats.g3Data.slice(0, 4).map(g3 => (
+                              <th key={g3.name} className="py-0.5 px-0.5 text-center font-medium leading-tight" style={{ width: '8%' }}>
                                 {g3.name.replace('hingga', '-').replace('atau lebih', '+')}
                               </th>
                             ))}
@@ -4144,20 +4784,20 @@ export default function LaporanTab({
                             const wObj = workHoursDimensionScores.find(s => s.id === dimId);
                             return (
                               <tr key={dimId} className="hover:bg-slate-50/40">
-                                <td className="p-1 border-r border-slate-100 text-center font-bold text-slate-700">{idx + 1}</td>
-                                <td className="p-1 border-r border-slate-100 font-semibold text-slate-800 text-[8.5px]">{info.nama}</td>
+                                <td className="py-0.5 px-1 border-r border-slate-100 text-center font-bold text-slate-700" style={{ width: '4%' }}>{idx + 1}</td>
+                                <td className="py-0.5 px-1 border-r border-slate-100 font-semibold text-slate-800 text-[8px] break-words" style={{ width: '32%' }}>{info.nama}</td>
                                 {demografiStats.g1Data.slice(0, 4).map(g1 => {
                                   const val = tObj ? tObj[g1.name] : null;
                                   return (
-                                    <td key={g1.name} className="p-1 text-center border-r border-slate-100 font-bold text-teal-800 bg-teal-50/10">
+                                    <td key={g1.name} className="py-0.5 px-1 text-center border-r border-slate-100 font-bold text-teal-800 bg-teal-50/10" style={{ width: '8%' }}>
                                       {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
                                     </td>
                                   );
                                 })}
-                                {demografiStats.g3Data.slice(0, 3).map(g3 => {
+                                {demografiStats.g3Data.slice(0, 4).map(g3 => {
                                   const val = wObj ? wObj[g3.name] : null;
                                   return (
-                                    <td key={g3.name} className="p-1 text-center border-r border-slate-100 font-bold text-indigo-800 bg-indigo-50/10 last:border-r-0">
+                                    <td key={g3.name} className="py-0.5 px-1 text-center border-r border-slate-100 font-bold text-indigo-800 bg-indigo-50/10 last:border-r-0" style={{ width: '8%' }}>
                                       {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
                                     </td>
                                   );
@@ -4171,12 +4811,12 @@ export default function LaporanTab({
                   </div>
 
                   {/* Interpretasi & Analisa Data Card */}
-                  <div className="bg-indigo-50/40 border border-indigo-100 p-3.5 rounded-xl space-y-1.5">
-                    <h5 className="text-[11px] font-bold text-indigo-900 flex items-center gap-1.5">
-                      <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                  <div className="bg-indigo-50/40 border border-indigo-100 p-2.5 px-3 rounded-xl space-y-1">
+                    <h5 className="text-[10px] font-bold text-indigo-900 flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-indigo-600" />
                       Interpretasi & Analisa Data Karakteristik Demografis
                     </h5>
-                    <p className="text-[10px] text-slate-700 leading-relaxed text-justify">
+                    <p className="text-[9px] text-slate-700 leading-snug text-justify">
                       Hasil analisa silang menunjukkan variasi budaya keselamatan yang dipengaruhi secara langsung oleh faktor demografis:
                       (1) <strong>Berdasarkan Profesi</strong>, terdapat kesenjangan pandangan di mana posisi staf dengan interaksi klinis terpadat cenderung menunjukkan respon positif yang dinamis dibanding staf administrasi. 
                       (2) <strong>Berdasarkan Unit Kerja</strong>, unit dengan beban kerja dan stressor tinggi seperti IGD dan ICU memerlukan perhatian khusus karena berpotensi mengalami kelelahan staf (burnout) yang dapat berdampak langsung pada penurunan kualitas iklim keselamatan.
@@ -4185,27 +4825,27 @@ export default function LaporanTab({
                   </div>
 
                   {/* Rekomendasi Peningkatan */}
-                  <div className="bg-amber-50/40 border border-amber-100 p-3.5 rounded-xl space-y-1.5">
-                    <h5 className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                  <div className="bg-amber-50/40 border border-amber-100 p-2.5 px-3 rounded-xl space-y-1">
+                    <h5 className="text-[10px] font-bold text-amber-900 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3 h-3 text-amber-600" />
                       Rekomendasi Peningkatan Intervensi Segmental
                     </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[9.5px]">
-                      <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                        <span className="text-sm shrink-0">👥</span>
-                        <span className="text-slate-700 font-medium">Lakukan focus group discussion (FGD) khusus per kelompok profesi klinis untuk menggali hambatan komunikasi yang unik di unit masing-masing.</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-[8.5px]">
+                      <div className="flex items-start gap-1 bg-white p-1.5 px-2 rounded-lg border border-amber-100/80">
+                        <span className="text-xs shrink-0">👥</span>
+                        <span className="text-slate-700 font-medium leading-tight">Lakukan focus group discussion (FGD) khusus per kelompok profesi klinis untuk menggali hambatan komunikasi yang unik di unit masing-masing.</span>
                       </div>
-                      <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                        <span className="text-sm shrink-0">🏥</span>
-                        <span className="text-slate-700 font-medium">Prioritaskan dukungan sumber daya ketenagaan ekstra bagi unit-unit kritis (IGD, ICU, Kamar Operasi) dengan tingkat respon positif &lt;50%.</span>
+                      <div className="flex items-start gap-1 bg-white p-1.5 px-2 rounded-lg border border-amber-100/80">
+                        <span className="text-xs shrink-0">🏥</span>
+                        <span className="text-slate-700 font-medium leading-tight">Prioritaskan dukungan sumber daya ketenagaan ekstra bagi unit-unit kritis (IGD, ICU, Kamar Operasi) dengan tingkat respon positif &lt;50%.</span>
                       </div>
-                      <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                        <span className="text-sm shrink-0">⏰</span>
-                        <span className="text-slate-700 font-medium">Kendalikan kebijakan jam lembur staf secara ketat guna menekan tingkat fatigue (kelelahan ekstrim) demi keselamatan prosedur pelayanan.</span>
+                      <div className="flex items-start gap-1 bg-white p-1.5 px-2 rounded-lg border border-amber-100/80">
+                        <span className="text-xs shrink-0">⏰</span>
+                        <span className="text-slate-700 font-medium leading-tight">Kendalikan kebijakan jam lembur staf secara ketat guna menekan tingkat fatigue (kelelahan ekstrim) demi keselamatan prosedur pelayanan.</span>
                       </div>
-                      <div className="flex items-start gap-1.5 bg-white p-2 rounded-lg border border-amber-100/80">
-                        <span className="text-sm shrink-0">🎓</span>
-                        <span className="text-slate-700 font-medium">Sediakan program orientasi budaya keselamatan yang komprehensif bagi staf baru yang memiliki masa bakti di bawah satu tahun.</span>
+                      <div className="flex items-start gap-1 bg-white p-1.5 px-2 rounded-lg border border-amber-100/80">
+                        <span className="text-xs shrink-0">🎓</span>
+                        <span className="text-slate-700 font-medium leading-tight">Sediakan program orientasi budaya keselamatan yang komprehensif bagi staf baru yang memiliki masa bakti di bawah satu tahun.</span>
                       </div>
                     </div>
                   </div>
@@ -4267,8 +4907,8 @@ export default function LaporanTab({
                               <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569' }} unit="%" />
                               <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold' }} />
                               <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px' }} />
-                              <Bar dataKey={previousYear} fill="#94a3b8" radius={[3, 3, 0, 0]} name={`Tahun ${previousYear}`} />
-                              <Bar dataKey={tahunSurvei} fill="#0d9488" radius={[3, 3, 0, 0]} name={`Tahun ${tahunSurvei}`} />
+                              <Bar dataKey={previousYear} fill="#94a3b8" radius={[3, 3, 0, 0]} name={`Tahun ${previousYear}`} isAnimationActive={false} />
+                              <Bar dataKey={tahunSurvei} fill="#0d9488" radius={[3, 3, 0, 0]} name={`Tahun ${tahunSurvei}`} isAnimationActive={false} />
                             </BarChart>
                           </ResponsiveContainer>
                         </div>
@@ -4276,14 +4916,14 @@ export default function LaporanTab({
 
                       {/* Tabel Perbandingan Periode */}
                       <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                        <table className="w-full text-left border-collapse text-[8.5px]">
+                        <table className="w-full table-fixed text-left border-collapse text-[8.5px]">
                           <thead>
                             <tr className="bg-emerald-900 text-white font-extrabold uppercase text-[8px] border-b border-emerald-950">
-                              <th className="p-1.5 border-r border-emerald-800 w-10 text-center">Kode</th>
-                              <th className="p-1.5 border-r border-emerald-800">Dimensi Budaya Keselamatan</th>
-                              <th className="p-1.5 text-center border-r border-emerald-800 w-24">{previousYear}</th>
-                              <th className="p-1.5 text-center border-r border-emerald-800 w-24">{tahunSurvei}</th>
-                              <th className="p-1.5 text-center w-24">Selisih (Trend)</th>
+                              <th className="p-1.5 border-r border-emerald-800 text-center" style={{ width: '10%' }}>Kode</th>
+                              <th className="p-1.5 border-r border-emerald-800" style={{ width: '45%' }}>Dimensi Budaya Keselamatan</th>
+                              <th className="p-1.5 text-center border-r border-emerald-800" style={{ width: '15%' }}>{previousYear}</th>
+                              <th className="p-1.5 text-center border-r border-emerald-800" style={{ width: '15%' }}>{tahunSurvei}</th>
+                              <th className="p-1.5 text-center" style={{ width: '15%' }}>Selisih (Trend)</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
@@ -4292,11 +4932,11 @@ export default function LaporanTab({
                               const diff = d.percentage - prior;
                               return (
                                 <tr key={d.kode} className="hover:bg-slate-50/40">
-                                  <td className="p-1.5 border-r border-slate-100 text-center font-bold text-slate-700">{d.kode}</td>
-                                  <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{d.nama}</td>
-                                  <td className="p-1.5 text-center border-r border-slate-100 font-bold text-slate-500">{prior.toFixed(1)}%</td>
-                                  <td className="p-1.5 text-center border-r border-slate-100 font-extrabold text-teal-800">{d.percentage.toFixed(1)}%</td>
-                                  <td className="p-1.5 text-center">
+                                  <td className="p-1.5 border-r border-slate-100 text-center font-bold text-slate-700" style={{ width: '10%' }}>{d.kode}</td>
+                                  <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800 break-words" style={{ width: '45%' }}>{d.nama}</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-bold text-slate-500" style={{ width: '15%' }}>{prior.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-extrabold text-teal-800" style={{ width: '15%' }}>{d.percentage.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center" style={{ width: '15%' }}>
                                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-black inline-flex items-center gap-1 ${diff >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                                       {diff >= 0 ? '▲' : '▼'} {diff >= 0 ? `+${diff.toFixed(1)}%` : `${diff.toFixed(1)}%`}
                                     </span>
@@ -4388,8 +5028,8 @@ export default function LaporanTab({
                                 <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569' }} unit="%" />
                                 <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold' }} />
                                 <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px' }} />
-                                <Bar dataKey="rsPct" fill="#4f46e5" radius={[3, 3, 0, 0]} name={`${activeHospitalName} (Anda)`} />
-                                <Bar dataKey="benchPct" fill="#94a3b8" radius={[3, 3, 0, 0]} name={selectedBenchmarkHospital.namaRs} />
+                                <Bar dataKey="rsPct" fill="#4f46e5" radius={[3, 3, 0, 0]} name={`${activeHospitalName} (Anda)`} isAnimationActive={false} />
+                                <Bar dataKey="benchPct" fill="#94a3b8" radius={[3, 3, 0, 0]} name={selectedBenchmarkHospital.namaRs} isAnimationActive={false} />
                               </BarChart>
                             </ResponsiveContainer>
                           </div>
@@ -4397,26 +5037,26 @@ export default function LaporanTab({
 
                         {/* Tabel Benchmark */}
                         <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                          <table className="w-full text-left border-collapse text-[8.5px]">
+                          <table className="w-full table-fixed text-left border-collapse text-[8.5px]">
                             <thead>
                               <tr className="bg-indigo-900 text-white font-extrabold uppercase text-[8px] border-b border-indigo-950">
-                                <th className="p-1.5 border-r border-indigo-800 w-10 text-center">Kode</th>
-                                <th className="p-1.5 border-r border-indigo-800">Dimensi Budaya Keselamatan</th>
-                                <th className="p-1.5 text-center border-r border-indigo-800 w-24">{activeHospitalName} (Anda)</th>
-                                <th className="p-1.5 text-center border-r border-indigo-800 w-24">{selectedBenchmarkHospital.namaRs}</th>
-                                <th className="p-1.5 text-center w-24">Kesenjangan (Gap)</th>
+                                <th className="p-1.5 border-r border-indigo-800 text-center" style={{ width: '10%' }}>Kode</th>
+                                <th className="p-1.5 border-r border-indigo-800" style={{ width: '40%' }}>Dimensi Budaya Keselamatan</th>
+                                <th className="p-1.5 text-center border-r border-indigo-800" style={{ width: '15%' }}>{activeHospitalName} (Anda)</th>
+                                <th className="p-1.5 text-center border-r border-indigo-800" style={{ width: '15%' }}>{selectedBenchmarkHospital.namaRs}</th>
+                                <th className="p-1.5 text-center" style={{ width: '20%' }}>Kesenjangan (Gap)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
                               {benchmarkData.map(b => (
                                 <tr key={b.kode} className="hover:bg-slate-50/40">
-                                  <td className="p-1.5 border-r border-slate-100 text-center font-bold text-slate-700">{b.kode}</td>
-                                  <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800">{b.nama}</td>
-                                  <td className="p-1.5 text-center border-r border-slate-100 font-extrabold text-indigo-700 bg-slate-50/20">{b.rsPct.toFixed(1)}%</td>
-                                  <td className="p-1.5 text-center border-r border-slate-100 font-bold text-slate-500">{b.benchPct.toFixed(1)}%</td>
-                                  <td className="p-1.5 text-center">
+                                  <td className="p-1.5 border-r border-slate-100 text-center font-bold text-slate-700" style={{ width: '10%' }}>{b.kode}</td>
+                                  <td className="p-1.5 border-r border-slate-100 font-semibold text-slate-800 break-words" style={{ width: '40%' }}>{b.nama}</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-extrabold text-indigo-700 bg-slate-50/20" style={{ width: '15%' }}>{b.rsPct.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center border-r border-slate-100 font-bold text-slate-500" style={{ width: '15%' }}>{b.benchPct.toFixed(1)}%</td>
+                                  <td className="p-1.5 text-center" style={{ width: '20%' }}>
                                     <span className={`px-2 py-0.5 rounded-full text-[8px] font-black inline-flex items-center gap-1 ${b.diff >= 0 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                                      {b.diff >= 0 ? '▲ Lebih Tinggi' : '▼ Lebih Rendah'} {b.diff >= 0 ? `+${b.diff.toFixed(1)}%` : `${b.diff.toFixed(1)}%`}
+                                      {b.diff >= 0 ? '▲ +' : '▼ '} {b.diff >= 0 ? `+${b.diff.toFixed(1)}%` : `${b.diff.toFixed(1)}%`}
                                     </span>
                                   </td>
                                 </tr>
@@ -4474,9 +5114,103 @@ export default function LaporanTab({
               </div>
 
               {/* Running Footer */}
-              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400 mt-auto">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
                 <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 2} dari {totalReportPages}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* LEMBAR 11.5: BAB III HASIL & PEMBAHASAN - Kualitatif */}
+          <div className="w-full flex flex-col items-center">
+            <div className="word-page print-page">
+              <div>
+                {/* Running Header */}
+                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                  <span>Analisis Kualitatif & Rekomendasi</span>
+                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                </div>
+
+                <section className="space-y-4">
+                  <div>
+                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-indigo-600" />
+                      3.2.8 Hasil Analisis Kualitatif dan Rekomendasi Peningkatan Budaya Keselamatan Pasien
+                    </h4>
+                    <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
+                      Berdasarkan masukan responden survei budaya keselamatan pasien tahun {selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear} di {activeHospitalName}:
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                    <div className="bg-slate-50 border border-slate-200 p-3 rounded-xl">
+                      <div className="text-slate-500 font-bold text-[9px] mb-1">TOTAL KOMENTAR MASUK</div>
+                      <div className="text-slate-900 font-black text-lg md:text-xl">
+                        {commentsStats.total} <span className="text-[10px] font-medium text-slate-500">komentar</span>
+                      </div>
+                    </div>
+                    
+                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-xl">
+                      <div className="text-emerald-700 font-bold text-[9px] mb-1 uppercase tracking-wide">Komentar Positif</div>
+                      <div className="text-emerald-900 font-black text-lg md:text-xl flex items-baseline gap-1.5">
+                        {commentsStats.positivePercentage}%
+                        <span className="text-[10px] font-medium text-emerald-600">({commentsStats.positive} komentar)</span>
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl">
+                      <div className="text-amber-700 font-bold text-[9px] mb-1 uppercase tracking-wide">Saran & Masukan Konstruktif</div>
+                      <div className="text-amber-900 font-black text-lg md:text-xl flex items-baseline gap-1.5">
+                        {commentsStats.constructivePercentage}%
+                        <span className="text-[10px] font-medium text-amber-600">({commentsStats.constructive} komentar)</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h5 className="font-bold text-slate-800 text-[11px]">3.2.8.1 Interpretasi & Analisis Data</h5>
+                    <div className="bg-indigo-50/50 border border-indigo-100 p-3.5 rounded-xl text-[10px] text-slate-700 leading-relaxed text-justify">
+                      {commentsStats.total > 0 ? (
+                        <p>{commentsStats.analysisText}</p>
+                      ) : (
+                        <p className="text-slate-500 italic">Belum terdapat komentar atau masukan responden pada tahun survei yang dipilih.</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h5 className="font-bold text-slate-800 text-[11px]">3.2.8.2 Rekomendasi Peningkatan</h5>
+                    <p className="text-[10px] text-slate-600 leading-relaxed">
+                      Berikut adalah rangkuman rekomendasi peningkatan berdasarkan analisis kualitatif dari responden survei:
+                    </p>
+                    
+                    <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                      <ul className="text-[9.5px] text-slate-700 space-y-2.5">
+                        {commentsStats.recommendations.length > 0 ? commentsStats.recommendations.map((rec, idx) => {
+                          const icons = ["🏆", "🌟", "📢", "🎯"];
+                          return (
+                            <li key={idx} className="flex gap-2 items-start">
+                              <span className="bg-white shadow-sm border border-slate-200 w-5 h-5 rounded-md flex items-center justify-center text-[10px] shrink-0 select-none">
+                                {icons[idx] || "✨"}
+                              </span>
+                              <span className="font-medium leading-relaxed">{rec}</span>
+                            </li>
+                          );
+                        }) : (
+                          <li className="text-slate-500 italic">
+                            Belum terdapat rekomendasi pada tahun survei yang dipilih.
+                          </li>
+                        )}
+                      </ul>
+                    </div>
+                  </div>
+                </section>
+              </div>
+
+              {/* Running Footer */}
+              <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400 mt-auto">
+                <span>Laporan Survei Budaya Keselamatan Pasien</span>
+                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
@@ -4582,7 +5316,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3} dari {totalReportPages}</span>
+                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
@@ -4664,7 +5398,7 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4} dari {totalReportPages}</span>
+                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
@@ -4762,7 +5496,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5} dari {totalReportPages}</span>
+                  <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 6} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>

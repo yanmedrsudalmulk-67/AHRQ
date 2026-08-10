@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { LogIn, ArrowLeft, ShieldCheck, ClipboardCheck, Eye, EyeOff } from 'lucide-react';
 import bcrypt from 'bcryptjs';
+import { motion } from 'motion/react';
 import { getHospitalAccounts, updateLastLogin } from '../lib/db';
 import { LogoData } from '../lib/logo';
 
@@ -303,6 +304,43 @@ export default function LoginScreen({
           )}
         </div>
       </div>
+
+      {/* Contact Person Card - Modern Glassmorphism 2.0 */}
+      <motion.a
+        href="https://wa.me/6285722784507"
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.45, ease: 'easeOut' }}
+        className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-30 flex items-center gap-3.5 p-4 bg-white/72 backdrop-blur-[18px] backdrop-saturate-[150%] border border-white/55 rounded-[18px] shadow-[0_12px_35px_rgba(15,23,42,0.12),inset_0_1px_0_rgba(255,255,255,0.65)] hover:-translate-y-0.5 hover:shadow-[0_16px_40px_rgba(15,23,42,0.18),inset_0_1px_0_rgba(255,255,255,0.75)] hover:border-white/70 hover:bg-white/80 transition-all duration-300 cursor-pointer group select-none"
+        style={{
+          maxWidth: 'min(320px, calc(100vw - 32px))'
+        }}
+        aria-label="Hubungi Contact Person melalui WhatsApp"
+      >
+        <div className="shrink-0 bg-emerald-500/10 p-2 rounded-xl border border-emerald-500/20 group-hover:bg-emerald-500/15 group-hover:border-emerald-500/30 transition-all duration-300">
+          <svg
+            className="w-6 h-6 text-emerald-500 fill-emerald-500 transition-transform duration-300 group-hover:scale-110"
+            viewBox="0 0 16 16"
+            fill="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path d="M13.601 2.326A7.854 7.854 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.933 7.933 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.898 7.898 0 0 0 13.6 2.326zM7.994 14.521a6.573 6.573 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.557 6.557 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592zm3.618-4.955c-.199-.099-1.18-.583-1.362-.649-.182-.065-.315-.099-.447.1-.133.197-.513.649-.629.78-.117.132-.234.148-.432.05-.199-.099-.838-.309-1.597-.984-.589-.526-.989-1.178-1.105-1.376-.117-.198-.012-.305.087-.403.09-.089.199-.232.299-.348.1-.116.133-.197.199-.33.066-.131.033-.247-.017-.348-.05-.1-.447-1.077-.612-1.47-.16-.389-.323-.335-.447-.34-.117-.006-.252-.007-.387-.007a.74.74 0 0 0-.537.25c-.182.197-.696.68-.696 1.658 0 .979.711 1.925.811 2.058.1.132 1.399 2.136 3.39 2.995.474.205.845.328 1.134.42.478.152.914.13 1.258.079.384-.058 1.18-.482 1.347-.946.168-.464.168-.863.118-.946-.05-.084-.183-.133-.38-.232z" />
+          </svg>
+        </div>
+        <div className="flex flex-col min-w-0">
+          <span className="text-[9px] font-black uppercase tracking-widest text-slate-500/90 mb-0.5 leading-none">
+            CONTACT PERSON
+          </span>
+          <span className="font-bold text-[#1E3A8A] text-[13.5px] leading-snug truncate group-hover:text-[#2FA7A7] transition-colors">
+            Erma Ermawaty, S. Psi
+          </span>
+          <span className="font-semibold text-slate-600 text-[12px] leading-none mt-1">
+            0857-2278-4507
+          </span>
+        </div>
+      </motion.a>
     </div>
   );
 }

@@ -4834,22 +4834,22 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                           </div>
                                           <div className="w-full h-6 flex rounded-xl overflow-hidden bg-slate-50 border border-slate-200/60 shadow-[0_4px_12px_rgba(15,23,42,0.18)] relative">
                                             <div
-                                              className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
+                                              className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out relative"
                                               style={{ width: `${stat.posPercent}%` }}
                                             >
-                                              {stat.posPercent >= 10 && <span className="text-[9px] font-black text-white">{stat.posPercent}%</span>}
+                                              {stat.posPercent >= 10 && <span className="text-[9px] font-black text-white leading-none select-none flex items-center justify-center h-full w-full">{stat.posPercent}%</span>}
                                             </div>
                                             <div
-                                              className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20 relative"
                                               style={{ width: `${stat.neuPercent}%` }}
                                             >
-                                              {stat.neuPercent >= 10 && <span className="text-[9px] font-black text-white">{stat.neuPercent}%</span>}
+                                              {stat.neuPercent >= 10 && <span className="text-[9px] font-black text-white leading-none select-none flex items-center justify-center h-full w-full">{stat.neuPercent}%</span>}
                                             </div>
                                             <div
-                                              className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20 relative"
                                               style={{ width: `${stat.negPercent}%` }}
                                             >
-                                              {stat.negPercent >= 10 && <span className="text-[9px] font-black text-white">{stat.negPercent}%</span>}
+                                              {stat.negPercent >= 10 && <span className="text-[9px] font-black text-white leading-none select-none flex items-center justify-center h-full w-full">{stat.negPercent}%</span>}
                                             </div>
                                           </div>
                                         </div>
@@ -4867,22 +4867,22 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                           </div>
                                           <div className="w-full h-6 flex rounded-xl overflow-hidden bg-emerald-50/40 border border-emerald-200/60 shadow-[0_4px_12px_rgba(15,23,42,0.18)] relative">
                                             <div
-                                              className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out"
+                                              className="h-full bg-emerald-500 flex items-center justify-center transition-all duration-700 ease-out relative"
                                               style={{ width: `${bmStat.posPercent}%` }}
                                             >
-                                              {bmStat.posPercent >= 10 && <span className="text-[9px] font-black text-white">{bmStat.posPercent}%</span>}
+                                              {bmStat.posPercent >= 10 && <span className="text-[9px] font-black text-white leading-none select-none flex items-center justify-center h-full w-full">{bmStat.posPercent}%</span>}
                                             </div>
                                             <div
-                                              className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              className="h-full bg-yellow-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20 relative"
                                               style={{ width: `${bmStat.neuPercent}%` }}
                                             >
-                                              {bmStat.neuPercent >= 10 && <span className="text-[9px] font-black text-white">{bmStat.neuPercent}%</span>}
+                                              {bmStat.neuPercent >= 10 && <span className="text-[9px] font-black text-white leading-none select-none flex items-center justify-center h-full w-full">{bmStat.neuPercent}%</span>}
                                             </div>
                                             <div
-                                              className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20"
+                                              className="h-full bg-rose-500 flex items-center justify-center transition-all duration-700 ease-out border-l border-white/20 relative"
                                               style={{ width: `${bmStat.negPercent}%` }}
                                             >
-                                              {bmStat.negPercent >= 10 && <span className="text-[9px] font-black text-white">{bmStat.negPercent}%</span>}
+                                              {bmStat.negPercent >= 10 && <span className="text-[9px] font-black text-white leading-none select-none flex items-center justify-center h-full w-full">{bmStat.negPercent}%</span>}
                                             </div>
                                           </div>
                                         </div>

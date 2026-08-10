@@ -189,4 +189,24 @@ html, body {
   contain-intrinsic-size: 100px 500px;
 }
 
+/* Bar Chart Percentage Text Precision Alignment */
+.bg-emerald-500, .bg-yellow-500, .bg-rose-500, .bg-red-500, .bg-blue-500, .bg-emerald-600, .bg-amber-500 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+}
+
+.bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span, .bg-red-500 span, .bg-blue-500 span, .bg-emerald-600 span, .bg-amber-500 span {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
+  height: 100% !important;
+  width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  text-align: center !important;
+}
+
 
