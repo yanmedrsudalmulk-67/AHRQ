@@ -169,6 +169,41 @@ const ReportedEventsTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
+const STATIC_BENCHMARK_DATA: Record<string, { benchmark: number; min: number; max: number }> = {
+  'B1': { benchmark: 80, min: 66, max: 89 },
+  'B2R': { benchmark: 78, min: 64, max: 91 },
+  'B3': { benchmark: 86, min: 71, max: 94 },
+  'A1': { benchmark: 88, min: 77, max: 96 },
+  'A8': { benchmark: 86, min: 76, max: 95 },
+  'A9R': { benchmark: 69, min: 49, max: 88 },
+  'C4': { benchmark: 83, min: 74, max: 94 },
+  'C5': { benchmark: 72, min: 56, max: 90 },
+  'C6': { benchmark: 74, min: 58, max: 85 },
+  'C7R': { benchmark: 73, min: 59, max: 89 },
+  'D1': { benchmark: 64, min: 37, max: 83 },
+  'D2': { benchmark: 84, min: 71, max: 97 },
+  'A4': { benchmark: 71, min: 55, max: 85 },
+  'A12': { benchmark: 68, min: 54, max: 80 },
+  'A14R': { benchmark: 78, min: 60, max: 88 },
+  'C1': { benchmark: 68, min: 40, max: 80 },
+  'C2': { benchmark: 72, min: 52, max: 86 },
+  'C3': { benchmark: 68, min: 50, max: 79 },
+  'F1': { benchmark: 81, min: 61, max: 94 },
+  'F2': { benchmark: 79, min: 50, max: 86 },
+  'F3R': { benchmark: 64, min: 34, max: 75 },
+  'A6R': { benchmark: 57, min: 38, max: 78 },
+  'A7R': { benchmark: 54, min: 33, max: 73 },
+  'A10': { benchmark: 60, min: 54, max: 82 },
+  'A13R': { benchmark: 65, min: 51, max: 79 },
+  'F4R': { benchmark: 45, min: 24, max: 69 },
+  'F5R': { benchmark: 55, min: 21, max: 81 },
+  'F6': { benchmark: 73, min: 50, max: 88 },
+  'A2': { benchmark: 52, min: 35, max: 73 },
+  'A3R': { benchmark: 51, min: 28, max: 71 },
+  'A5R': { benchmark: 62, min: 45, max: 78 },
+  'A11R': { benchmark: 58, min: 35, max: 79 },
+};
+
 const BENCHMARK_ITEMS: Record<string, number> = {
   // d7 (Komunikasi tentang Kesalahan: Avg 64.5%)
   'C1': 62.0, 'C2': 68.0, 'C3': 63.0,
@@ -603,9 +638,9 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
         let sumBm = 0;
         items.forEach(item => {
           const code = item.section + item.id + (item.isReversed ? 'R' : '');
-          const bmObj = DEFAULT_PILOT_BENCHMARK_ITEMS[code] || DEFAULT_PILOT_BENCHMARK_ITEMS[item.section + item.id];
-          if (bmObj) {
-            sumBm += bmObj.benchmark;
+          const bmVal = BENCHMARK_ITEMS[code] || BENCHMARK_ITEMS[item.section + item.id];
+          if (bmVal !== undefined) {
+            sumBm += bmVal;
           } else {
             sumBm += 70;
           }
@@ -650,22 +685,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
 
   const dataTahun1 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun1), masterBenchmarkData), [actualSurveys, tahun1, masterBenchmarkData]);
   const dataTahun2 = useMemo(() => computeDimensionScores(actualSurveys.filter(s => extractYear(s.tanggalInput) === tahun2), masterBenchmarkData), [actualSurveys, tahun2, masterBenchmarkData]);
-
-  const combinedData = useMemo(() => {
-    return dataTahun1.map((d1, i) => {
-      const d2 = dataTahun2[i];
-      return {
-        dimensiSingkat: d1.nama,
-        kode: d1.kode,
-        'Capaian': parseFloat(d1.percentage.toFixed(2)),
-        'Tahun 1': parseFloat(d1.percentage.toFixed(2)),
-        'Tahun 2': parseFloat(d2 ? d2.percentage.toFixed(2) : '0'),
-        'BenchmarkMin': d1.benchmarkMin,
-        'BenchmarkMax': d1.benchmarkMax,
-        id: d1.id, d1, d2
-      };
-    });
-  }, [dataTahun1, dataTahun2]);
 
   const allSelectableYears = useMemo(() => {
     const years = new Set([...actualDataYears, '2024', '2025', '2026']);
@@ -983,6 +1002,48 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     ...STATEMENTS_D.map(q => ({ ...q, section: 'D' })),
     ...STATEMENTS_F.map(q => ({ ...q, section: 'F' }))
   ], [STATEMENTS_A, STATEMENTS_B, STATEMENTS_C, STATEMENTS_D, STATEMENTS_F]);
+
+  const combinedData = useMemo(() => {
+    return dataTahun1.map((d1, i) => {
+      const d2 = dataTahun2[i];
+      let bVal = d1.percentage;
+      let bMin = d1.benchmarkMin;
+      let bMax = d1.benchmarkMax;
+
+      if (selectedBenchmarkHospitalId === 'default') {
+        const dimId = d1.id;
+        const qs = ALL_QUESTIONS.filter(q => q.dim === dimId);
+        const bms = qs.map(q => {
+          const qCode = q.code.endsWith('R') || q.isReversed ? (q.code.endsWith('R') ? q.code : q.code + 'R') : q.code;
+          return STATIC_BENCHMARK_DATA[qCode] || STATIC_BENCHMARK_DATA[q.code];
+        }).filter(b => b !== undefined);
+        
+        if (bms.length > 0) {
+          bVal = bms.reduce((a, b) => a + b.benchmark, 0) / bms.length;
+          bMin = Math.min(...bms.map(b => b.min));
+          bMax = Math.max(...bms.map(b => b.max));
+        }
+      } else if (masterBenchmarkData && (masterBenchmarkData as any)[d1.id]) {
+        const m = (masterBenchmarkData as any)[d1.id];
+        bVal = m.positivePercent ?? m.avg ?? bVal;
+        bMin = m.min ?? bMin;
+        bMax = m.max ?? bMax;
+      }
+
+      return {
+        dimensiSingkat: d1.nama,
+        kode: d1.kode,
+        'Capaian': parseFloat(d1.percentage.toFixed(2)),
+        'Tahun 1': parseFloat(d1.percentage.toFixed(2)),
+        'Tahun 2': parseFloat(d2 ? d2.percentage.toFixed(2) : '0'),
+        'Benchmark': parseFloat(bVal.toFixed(2)),
+        'BenchmarkMin': bMin,
+        'BenchmarkMax': bMax,
+        id: d1.id, 
+        d1, d2
+      };
+    });
+  }, [dataTahun1, dataTahun2, selectedBenchmarkHospitalId, masterBenchmarkData, ALL_QUESTIONS]);
 
   const calculateReportedEventsStats = useCallback((surveys: any[]) => {
     const counts: Record<string, number> = {
@@ -3692,7 +3753,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
     {
       id: 'benchmark',
       title: `Hasil Perbandingan Dengan ${activeBenchmarkLabel}`,
-      description: 'Analisis Perbandingan hasil survei dengan rumah sakit uji coba.',
+      description: `Analisis perbandingan hasil survei dengan ${activeBenchmarkLabel}.`,
       icon: <Building2 />,
       color: 'from-[#10B981] to-[#059669]'
     },
@@ -3783,7 +3844,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         >
                           <span className="truncate">
                             {selectedBenchmarkHospitalId === 'default' 
-                              ? 'RS Uji Coba (Benchmark Bawaan)' 
+                              ? 'RS Uji Coba' 
                               : selectedTargetHospital?.namaRs || 'Pilih Rumah Sakit...'}
                           </span>
                           <ChevronDown className="w-4 h-4 text-slate-400 shrink-0 ml-2" />
@@ -3813,7 +3874,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   selectedBenchmarkHospitalId === 'default' ? 'bg-blue-50 text-blue-700' : 'hover:bg-slate-50 text-slate-700'
                                 }`}
                               >
-                                <span>RS Uji Coba (Benchmark Bawaan)</span>
+                                <span>RS Uji Coba</span>
                                 {selectedBenchmarkHospitalId === 'default' && <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />}
                               </button>
 
@@ -4189,11 +4250,11 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                               <th className="p-3 w-64 align-bottom">Komponen Budaya<br/>Keselamatan Pasien</th>
                               <th className="p-3 align-bottom text-center">Persentase Respons Positif</th>
                               <th className={`p-3 text-center border-l border-slate-200 ${selectedBenchmarkHospitalId === 'default' ? 'w-40' : 'w-40'}`}>
-                                <div>{selectedBenchmarkHospitalId === 'default' ? `Rata-rata ${activeBenchmarkLabel}` : activeBenchmarkLabel}<br/>(% Respons Positif)</div>
+                                <div>{selectedBenchmarkHospitalId === 'default' ? 'RS Uji Coba' : activeBenchmarkLabel}<br/>(% Respons Positif)</div>
                                 {selectedBenchmarkHospitalId === 'default' && (
                                   <div className="flex justify-between mt-2 pt-2 border-t border-slate-200 text-teal-600">
-                                    <span className="w-1/2 text-center">MIN</span>
-                                    <span className="w-1/2 text-center border-l border-slate-200">MAX</span>
+                                    <span className="w-1/2 text-center text-[10px]">MIN</span>
+                                    <span className="w-1/2 text-center border-l border-slate-200 text-[10px]">MAX</span>
                                   </div>
                                 )}
                               </th>
@@ -4218,7 +4279,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         {/* Bar Rumah Sakit Anda */}
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center justify-between text-[11px] font-black">
-                                            <span className="text-blue-800 tracking-tight">{namaRs || 'Rumah Sakit'}</span>
+                                            <span className="text-blue-800 tracking-tight">{namaRs || 'Rumah Sakit Anda'}</span>
                                             <span className="text-xs font-black text-slate-800">{row.Capaian.toFixed(1)}%</span>
                                           </div>
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
@@ -4235,14 +4296,16 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center justify-between text-[11px] font-black">
                                             <span className="text-emerald-800 tracking-tight truncate" title={activeBenchmarkLabel}>
-                                              {activeBenchmarkLabel}
+                                              {selectedBenchmarkHospitalId === 'default' ? 'RS Uji Coba' : activeBenchmarkLabel}
                                             </span>
-                                            <span className="text-xs font-black text-emerald-700">{(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)).toFixed(1)}%</span>
+                                            <span className="text-xs font-black text-emerald-700">
+                                              {row.Benchmark.toFixed(1)}%
+                                            </span>
                                           </div>
                                           <div className="w-full bg-slate-100 rounded-md h-5 relative overflow-hidden flex items-center border border-slate-200 shadow-inner">
                                             <div 
-                                              style={{ transformOrigin: 'left', width: `${masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)}%` }}
-                                              className={`h-full ${getBarColor(masterBenchmarkData && masterBenchmarkData[((row as any).dimId || row.id)] ? (masterBenchmarkData[((row as any).dimId || row.id)].positivePercent ?? masterBenchmarkData[((row as any).dimId || row.id)].avg ?? ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0)) : ((DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMin + DIMENSI_INFO[((row as any).dimId || row.id)]?.benchmarkMax) / 2 || 75.0))} opacity-85 relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu shadow-[2px_3px_6px_rgba(15,23,42,0.35)]`}
+                                              style={{ transformOrigin: 'left', width: `${row.Benchmark}%` }}
+                                              className={`h-full ${getBarColor(row.Benchmark)} opacity-85 relative group-hover:brightness-110 animate-bar-grow-delayed transform-gpu shadow-[2px_3px_6px_rgba(15,23,42,0.35)]`}
                                             >
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white/20"></div>
                                             </div>
@@ -4283,8 +4346,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   {selectedBenchmarkHospitalId === 'default' && (
                                     <td className="p-0 border-l border-slate-200 text-center font-bold text-slate-700 text-sm align-middle bg-slate-50">
                                       <div className="flex h-full items-center justify-center min-h-[60px]">
-                                        <span className="w-1/2 py-2">{row.d1.benchmarkMin}%</span>
-                                        <span className="w-1/2 py-2 border-l border-slate-200">{row.d1.benchmarkMax}%</span>
+                                        <span className="w-1/2 py-2">{row.BenchmarkMin}%</span>
+                                        <span className="w-1/2 py-2 border-l border-slate-200">{row.BenchmarkMax}%</span>
                                       </div>
                                     </td>
                                   )}
@@ -4381,13 +4444,13 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                           <YAxis type="number" domain={[0, 100]} stroke="#64748b" tickFormatter={(val) => `${val}%`} />
                           <RechartsTooltip content={<E1Tooltip />} cursor={{ fill: 'rgba(0, 0, 0, 0.02)' }} />
                           <Legend verticalAlign="top" height={36} wrapperStyle={{ color: '#475569', fontSize: '13px', fontWeight: 'bold' }} />
-                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+                          <Bar isAnimationActive={false} name={namaRs || 'Rumah Sakit Anda'} dataKey="Rumah Sakit Anda" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                             <LabelList dataKey="Rumah Sakit Anda" position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#059669" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-rs-${index}`} fill="#10b981" />
                             ))}
                           </Bar>
-                          <Bar isAnimationActive={false} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
+                          <Bar isAnimationActive={false} name={selectedBenchmarkHospitalId === 'default' ? 'RS Uji Coba' : activeBenchmarkLabel} dataKey={activeBenchmarkLabel} fill="#64748b" radius={[4, 4, 0, 0]} maxBarSize={60} filter="url(#shadow-raised)">
                             <LabelList dataKey={activeBenchmarkLabel} position="top" formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#475569" fontSize={11} fontWeight="bold" />
                             {e1Stats.map((entry, index) => (
                               <Cell key={`cell-bp-${index}`} fill="#64748b" />
@@ -4628,7 +4691,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             />
                             <Bar 
                               isAnimationActive={false} 
-                              name={namaRs || 'Rumah Sakit'}
+                              name={namaRs || 'Rumah Sakit Anda'}
                               dataKey="Rumah Sakit Anda" 
                               fill="url(#royalBlueGrad3D)" 
                               radius={[8, 8, 0, 0]} 
@@ -4646,6 +4709,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                             </Bar>
                             <Bar 
                               isAnimationActive={false} 
+                              name={selectedBenchmarkHospitalId === 'default' ? 'RS Uji Coba' : activeBenchmarkLabel}
                               dataKey={activeBenchmarkLabel} 
                               fill="url(#greyGrad3D)" 
                               stroke="#6B7280" 
@@ -4757,24 +4821,53 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       const qStats = questions.map(q => {
                         const stat = calculateQuestionStats(q);
                         const stat2 = mode === 'Perbandingan' ? calculateQuestionStats(q, hospitalSurveys2) : null;
-                        const bmStatRaw = calculateQuestionStats(q, activeBenchmarkSurveys.length > 0 ? activeBenchmarkSurveys : undefined);
+                        
+                        let bmStat;
+                        
+                        if (selectedBenchmarkHospitalId === 'default') {
+                          // Use the static dataset provided in instructions
+                          const qCode = q.code.endsWith('R') || q.isReversed ? (q.code.endsWith('R') ? q.code : q.code + 'R') : q.code;
+                          const staticData = STATIC_BENCHMARK_DATA[qCode] || STATIC_BENCHMARK_DATA[q.code];
+                          
+                          if (staticData) {
+                            const bmPosP = staticData.benchmark;
+                            const bmNeuP = 15;
+                            const bmNegP = Math.max(0, 100 - bmPosP - bmNeuP);
+                            bmStat = {
+                              pos: 0, neu: 0, neg: 0, missing: 0, total: 0,
+                              posPercent: bmPosP,
+                              neuPercent: bmNeuP,
+                              negPercent: bmNegP,
+                              missingPercent: 0,
+                              min: staticData.min,
+                              max: staticData.max
+                            };
+                          }
+                        }
 
-                        let bmStat = bmStatRaw;
-                        if (!bmStatRaw || bmStatRaw.total === 0) {
-                          const dimBmVal = masterBenchmarkData && (masterBenchmarkData as any)[dimId]
-                            ? ((masterBenchmarkData as any)[dimId].positivePercent ?? (masterBenchmarkData as any)[dimId].avg ?? (masterBenchmarkData as any)[dimId].min ?? 75)
-                            : (DIMENSI_INFO[dimId] ? (DIMENSI_INFO[dimId].benchmarkMin + DIMENSI_INFO[dimId].benchmarkMax) / 2 : 75);
-                          const bmPosP = Math.min(100, Math.max(0, Math.round(dimBmVal)));
-                          const bmNeuP = Math.min(100 - bmPosP, 15);
-                          const bmNegP = Math.min(100 - bmPosP - bmNeuP, 10);
-                          const bmMissP = Math.max(0, 100 - bmPosP - bmNeuP - bmNegP);
-                          bmStat = {
-                            pos: 0, neu: 0, neg: 0, missing: 0, total: 0,
-                            posPercent: bmPosP,
-                            neuPercent: bmNeuP,
-                            negPercent: bmNegP,
-                            missingPercent: bmMissP
-                          };
+                        if (!bmStat) {
+                          const bmStatRaw = calculateQuestionStats(q, activeBenchmarkSurveys.length > 0 ? activeBenchmarkSurveys : undefined);
+                          bmStat = bmStatRaw;
+                          if (!bmStat || bmStat.total === 0) {
+                            const qCode = q.section + q.id;
+                            const exactBmVal = BENCHMARK_ITEMS[qCode] || BENCHMARK_ITEMS[q.code];
+                            const dimBmVal = exactBmVal !== undefined 
+                              ? exactBmVal 
+                              : (masterBenchmarkData && (masterBenchmarkData as any)[dimId]
+                                ? ((masterBenchmarkData as any)[dimId].positivePercent ?? (masterBenchmarkData as any)[dimId].avg ?? (masterBenchmarkData as any)[dimId].min ?? 75)
+                                : (DIMENSI_INFO[dimId] ? (DIMENSI_INFO[dimId].benchmarkMin + DIMENSI_INFO[dimId].benchmarkMax) / 2 : 75));
+                            const bmPosP = Math.min(100, Math.max(0, Math.round(dimBmVal)));
+                            const bmNeuP = Math.min(100 - bmPosP, 15);
+                            const bmNegP = Math.min(100 - bmPosP - bmNeuP, 10);
+                            const bmMissP = Math.max(0, 100 - bmPosP - bmNeuP - bmNegP);
+                            bmStat = {
+                              pos: 0, neu: 0, neg: 0, missing: 0, total: 0,
+                              posPercent: bmPosP,
+                              neuPercent: bmNeuP,
+                              negPercent: bmNegP,
+                              missingPercent: bmMissP
+                            };
+                          }
                         }
 
                         sumPosPercent += stat.posPercent;
@@ -4819,7 +4912,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                   <th className="p-4 align-bottom">Pernyataan / Kuesioner</th>
                                   <th className="p-4 align-bottom text-center">Persentase Respons Pasien (Positif/Netral/Negatif)</th>
                                   <th className="p-4 w-44 text-center border-l border-slate-200/50 bg-slate-50/60">
-                                    <div>{selectedBenchmarkHospitalId === 'default' ? `Rata-rata ${activeBenchmarkLabel}` : activeBenchmarkLabel}<br/>(% Respons Positif)</div>
+                                    <div>{selectedBenchmarkHospitalId === 'default' ? 'RS Uji Coba' : activeBenchmarkLabel}<br/>(% Respons Positif)</div>
                                     {selectedBenchmarkHospitalId === 'default' && (
                                       <div className="flex justify-between mt-2 pt-2 border-t border-slate-200/50 text-teal-600">
                                         <span className="w-1/2 text-center text-[9px]">MIN</span>
@@ -4848,7 +4941,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center justify-between text-[11px] font-extrabold">
                                             <span className="text-[11px] text-blue-700 font-black tracking-tight" title={namaRs || 'Rumah Sakit'}>
-                                              {namaRs || 'RS'} {mode === 'Perbandingan' ? `(${tahun1})` : ''}
+                                              {namaRs || 'Rumah Sakit Anda'} {mode === 'Perbandingan' ? `(${tahun1})` : ''}
                                             </span>
                                             <div className="flex items-center gap-1.5 shrink-0">
                                               <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
@@ -4881,7 +4974,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center justify-between text-[11px] font-extrabold">
                                             <span className="text-[11px] text-emerald-700 font-black tracking-tight" title={activeBenchmarkLabel}>
-                                              {activeBenchmarkLabel}
+                                              {selectedBenchmarkHospitalId === 'default' ? 'RS Uji Coba' : activeBenchmarkLabel}
                                             </span>
                                             <div className="flex items-center gap-1.5 shrink-0">
                                               <div className="w-1.5 h-3 bg-slate-400 rounded-full"></div>
@@ -4950,8 +5043,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                                     {selectedBenchmarkHospitalId === 'default' && (
                                       <td className="p-0 border-l border-slate-200/50 text-center font-bold text-slate-700 text-xs align-middle bg-slate-50/60 w-44">
                                         <div className="flex h-full items-center justify-center min-h-[50px]">
-                                          <span className="w-1/2 py-2">{bMin}%</span>
-                                          <span className="w-1/2 py-2 border-l border-slate-200/50">{bMax}%</span>
+                                          <span className="w-1/2 py-2">{(bmStat as any).min ?? bMin}%</span>
+                                          <span className="w-1/2 py-2 border-l border-slate-200/50">{(bmStat as any).max ?? bMax}%</span>
                                         </div>
                                       </td>
                                     )}
@@ -7484,43 +7577,58 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                 </div>
               ) : (
                 <div className="w-full flex flex-col gap-6">
-                  {/* Summary Cards Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Summary Cards Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     {/* Card 1: Total Responden */}
-                    <div className="bg-white border border-slate-200 p-5 rounded-[20px] shadow-sm flex items-center gap-4">
-                      <div className="p-3.5 bg-blue-50 text-blue-600 rounded-2xl">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ duration: 0.3 }}
+                      className="bg-white/80 backdrop-blur-xl border border-white/80 p-5 rounded-[22px] shadow-xl shadow-slate-900/10 hover:shadow-2xl hover:shadow-slate-900/15 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4 group/card"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 shadow-inner">
                         <Users className="w-6 h-6" />
                       </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Total Responden</span>
-                        <span className="text-2xl font-black text-slate-800 italic block">{computedTableData.reduce((sum, r) => sum + r.totalValid, 0)}</span>
-                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">staf aktif berpartisipasi</span>
+                      <div className="space-y-0.5 font-sans">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Responden</span>
+                        <h4 className="text-2xl font-extrabold text-slate-800 tracking-tight">{computedTableData.reduce((sum, r) => sum + r.totalValid, 0)}</h4>
+                        <p className="text-[10px] font-medium text-slate-500">Staf Aktif Berpartisipasi</p>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Card 2: Jumlah Posisi Staf */}
-                    <div className="bg-white border border-slate-200 p-5 rounded-[20px] shadow-sm flex items-center gap-4">
-                      <div className="p-3.5 bg-emerald-50 text-emerald-600 rounded-2xl">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ duration: 0.3, delay: 0.05 }}
+                      className="bg-white/80 backdrop-blur-xl border border-white/80 p-5 rounded-[22px] shadow-xl shadow-slate-900/10 hover:shadow-2xl hover:shadow-slate-900/15 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4 group/card"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0 shadow-inner">
                         <Activity className="w-6 h-6" />
                       </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Jumlah Posisi Staf</span>
-                        <span className="text-2xl font-black text-slate-800 italic block">{masterPositions.filter(p => p.is_active).length}</span>
-                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">peran terdaftar di sistem</span>
+                      <div className="space-y-0.5 font-sans">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Jumlah Posisi Staf</span>
+                        <h4 className="text-2xl font-extrabold text-slate-800 tracking-tight">{masterPositions.filter(p => p.is_active).length}</h4>
+                        <p className="text-[10px] font-medium text-slate-500">Peran Terdaftar di Sistem</p>
                       </div>
-                    </div>
+                    </motion.div>
 
                     {/* Card 3: Rata-rata RS Anda */}
-                    <div className="bg-white border border-slate-200 p-5 rounded-[20px] shadow-sm flex items-center gap-4">
-                      <div className="p-3.5 bg-indigo-50 text-indigo-600 rounded-2xl">
+                    <motion.div 
+                      initial={{ opacity: 0, y: 15 }} 
+                      animate={{ opacity: 1, y: 0 }} 
+                      transition={{ duration: 0.3, delay: 0.1 }}
+                      className="bg-white/80 backdrop-blur-xl border border-white/80 p-5 rounded-[22px] shadow-xl shadow-slate-900/10 hover:shadow-2xl hover:shadow-slate-900/15 hover:-translate-y-0.5 transition-all duration-300 flex items-center gap-4 group/card"
+                    >
+                      <div className="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600 shrink-0 shadow-inner">
                         <TrendingUp className="w-6 h-6" />
                       </div>
-                      <div>
-                        <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
-                        <span className="text-2xl font-black text-slate-800 italic block">{averageEventsRS.toFixed(2)}</span>
-                        <span className="text-[9px] font-semibold text-slate-400 block mt-0.5">peristiwa / responden / th</span>
+                      <div className="space-y-0.5 font-sans">
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata {namaRs || 'RS'}</span>
+                        <h4 className="text-2xl font-extrabold text-slate-800 tracking-tight">{averageEventsRS.toFixed(2)}</h4>
+                        <p className="text-[10px] font-medium text-slate-500">Peristiwa / Responden / TH</p>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
 
                   {/* Main Table Card (New AHRQ SOPS Design) */}

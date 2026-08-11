@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users, Search, Plus, Trash2, Edit2, Check, X, ShieldAlert, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { PosisiStaff, getMasterPosisiConfig, saveMasterPosisi, SurveyData } from '../lib/db';
@@ -58,19 +58,19 @@ export default function MasterPosisiTab({ rsName, surveys = [] }: MasterPosisiTa
     }, 3500);
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     const config = await getMasterPosisiConfig(rsName);
     setPositions(config.positions || []);
     setCustomCategories(config.customCategories || []);
     setIsLoading(false);
-  };
+  }, [rsName]);
 
   useEffect(() => {
     if (rsName) {
       loadData();
     }
-  }, [rsName]);
+  }, [rsName, loadData]);
 
   const notifyMasterDataUpdated = () => {
     if (typeof window !== 'undefined') {

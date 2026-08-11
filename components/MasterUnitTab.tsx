@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { MapPin, Search, Plus, Trash2, Edit2, Check, X, ShieldAlert, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
 import { UnitKerja, getMasterUnitConfig, saveMasterUnit, updateSurveyUnitName, SurveyData } from '../lib/db';
@@ -61,19 +61,19 @@ export default function MasterUnitTab({ rsName, surveys = [] }: MasterUnitTabPro
     }, 3500);
   };
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     const config = await getMasterUnitConfig(rsName);
     setUnits(config.units || []);
     setCustomCategories(config.customCategories || []);
     setIsLoading(false);
-  };
+  }, [rsName]);
 
   useEffect(() => {
     if (rsName) {
       loadData();
     }
-  }, [rsName]);
+  }, [rsName, loadData]);
 
   const notifyMasterDataUpdated = () => {
     if (typeof window !== 'undefined') {

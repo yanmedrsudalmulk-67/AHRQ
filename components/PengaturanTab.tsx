@@ -563,7 +563,24 @@ DROP POLICY IF EXISTS "Memperbarui Publik Logo" ON storage.objects;
 CREATE POLICY "Memperbarui Publik Logo" ON storage.objects FOR UPDATE USING (bucket_id = 'logos');
 
 DROP POLICY IF EXISTS "Menghapus Publik Logo" ON storage.objects;
-CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucket_id = 'logos');`;
+CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucket_id = 'logos');
+
+-- 6. Set Up Storage Bucket untuk Unggah Banner Header
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('dashboard', 'dashboard', true)
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Membaca Publik Banner" ON storage.objects;
+CREATE POLICY "Membaca Publik Banner" ON storage.objects FOR SELECT USING (bucket_id = 'dashboard');
+
+DROP POLICY IF EXISTS "Mengunggah Publik Banner" ON storage.objects;
+CREATE POLICY "Mengunggah Publik Banner" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'dashboard');
+
+DROP POLICY IF EXISTS "Memperbarui Publik Banner" ON storage.objects;
+CREATE POLICY "Memperbarui Publik Banner" ON storage.objects FOR UPDATE USING (bucket_id = 'dashboard');
+
+DROP POLICY IF EXISTS "Menghapus Publik Banner" ON storage.objects;
+CREATE POLICY "Menghapus Publik Banner" ON storage.objects FOR DELETE USING (bucket_id = 'dashboard');`;
 
     navigator.clipboard.writeText(sqlText);
     setCopiedSql(true);

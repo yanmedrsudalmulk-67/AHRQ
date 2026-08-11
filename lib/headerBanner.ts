@@ -17,6 +17,56 @@ function base64ToBlob(base64: string, mimeType: string): Blob {
   return new Blob([byteArray], { type: mimeType });
 }
 
+// Compress Base64 image to maximum 1200px width/height to reduce size while maintaining quality for banners
+export function compressHeaderImageBase64(base64Str: string, maxDimension: number = 1200): Promise<string> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined' || !base64Str.startsWith('data:image/')) {
+      resolve(base64Str);
+      return;
+    }
+
+    const img = new Image();
+    img.src = base64Str;
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width);
+          width = maxDimension;
+        } else {
+          width = Math.round((width * maxDimension) / height);
+          height = maxDimension;
+        }
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve(base64Str);
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      try {
+        const compressed = canvas.toDataURL('image/jpeg', 0.85); // Use JPEG for banners to save space
+        resolve(compressed);
+      } catch (e) {
+        console.warn("Gagal mengompresi gambar header, gunakan aslinya:", e);
+        resolve(base64Str);
+      }
+    };
+
+    img.onerror = () => {
+      resolve(base64Str);
+    };
+  });
+}
+
 export async function getHeaderImage(): Promise<HeaderImageData | null> {
   const supabase = getSupabaseClient();
   if (supabase) {
@@ -62,14 +112,24 @@ export async function saveHeaderImage(
   fileName?: string
 ): Promise<HeaderImageData> {
   let finalUrl = fileDataUrl;
+
+  // Step 0: Compress image if it is a Base64 string to prevent payload size issues
+  if (fileDataUrl.startsWith('data:image/')) {
+    try {
+      finalUrl = await compressHeaderImageBase64(fileDataUrl);
+    } catch (e) {
+      console.warn("Gagal mengompresi gambar header:", e);
+    }
+  }
+
   const supabase = getSupabaseClient();
-  const isDataUrl = fileDataUrl.startsWith('data:');
+  const isDataUrl = finalUrl.startsWith('data:');
 
   if (supabase) {
     if (isDataUrl) {
       try {
-        const mimeType = fileDataUrl.substring(fileDataUrl.indexOf(":") + 1, fileDataUrl.indexOf(";"));
-        const blob = base64ToBlob(fileDataUrl, mimeType);
+        const mimeType = finalUrl.substring(finalUrl.indexOf(":") + 1, finalUrl.indexOf(";"));
+        const blob = base64ToBlob(finalUrl, mimeType);
         const rawExt = fileName?.split('.').pop() || 'png';
         const fileExt = rawExt.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'png';
         const storagePath = `custom_header_${Date.now()}.${fileExt}`;
@@ -90,6 +150,7 @@ export async function saveHeaderImage(
 
         if (uploadError) {
           console.warn("Upload storage warning, using fallback url:", uploadError.message);
+          // Don't throw here, if upload fails we can still store the base64 in the DB (though not ideal)
         } else if (uploadData) {
           const { data: urlData } = supabase.storage
             .from('dashboard')

@@ -372,7 +372,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[22px] bg-white/80 backdrop-blur-md border border-slate-200 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.1),0_10px_15px_-6px_rgba(0,0,0,0.1)] flex flex-col justify-between items-start gap-8 pt-10 md:pt-8"
+      className="relative overflow-hidden w-full p-6 md:p-8 rounded-[22px] bg-white border border-slate-200/80 shadow-[0_15px_35px_-5px_rgba(0,0,0,0.07),0_10px_15px_-6px_rgba(0,0,0,0.04)] flex flex-col justify-between items-start gap-8 pt-10 md:pt-8"
     >
       {/* Top Right Year Selector */}
       <div className="absolute top-4 right-4 md:top-6 md:right-8 z-10" ref={dropdownRef}>
@@ -513,8 +513,8 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
               <div 
                 className="w-full h-full relative"
                 style={{
-                  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 12%, rgba(0,0,0,0.9) 35%, black 100%)',
-                  maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 12%, rgba(0,0,0,0.9) 35%, black 100%)'
+                  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 4%, black 12%, black 100%)',
+                  maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 4%, black 12%, black 100%)'
                 }}
               >
                 <img
@@ -534,11 +534,11 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
                 />
               </div>
 
-              {/* Soft Feather Overlay on Left Edge for ultimate seamless blending */}
-              <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white via-white/60 to-transparent pointer-events-none" />
-              {/* Subtle top/bottom fade for perfect integration */}
-              <div className="absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
-              <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white/60 to-transparent pointer-events-none" />
+              {/* Soft Feather Overlay strictly at the left edge */}
+              <div className="absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white via-white/40 to-transparent pointer-events-none" />
+              {/* Minimal top/bottom fade for subtle integration */}
+              <div className="absolute inset-x-0 top-0 h-3 bg-gradient-to-b from-white/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-3 bg-gradient-to-t from-white/30 to-transparent pointer-events-none" />
             </div>
           </motion.div>
         )}
