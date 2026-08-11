@@ -5168,7 +5168,7 @@ export default function LaporanTab({
                   </div>
 
                   <div className="space-y-3">
-                    <h5 className="font-bold text-slate-800 text-[11px]">3.2.8.1 Interpretasi & Analisis Data</h5>
+                    <h5 className="font-bold text-slate-800 text-[11px]">1. Interpretasi & Analisis Data</h5>
                     <div className="bg-indigo-50/50 border border-indigo-100 p-3.5 rounded-xl text-[10px] text-slate-700 leading-relaxed text-justify">
                       {commentsStats.total > 0 ? (
                         <p>{commentsStats.analysisText}</p>
@@ -5179,7 +5179,7 @@ export default function LaporanTab({
                   </div>
 
                   <div className="space-y-3">
-                    <h5 className="font-bold text-slate-800 text-[11px]">3.2.8.2 Rekomendasi Peningkatan</h5>
+                    <h5 className="font-bold text-slate-800 text-[11px]">2. Rekomendasi Peningkatan</h5>
                     <p className="text-[10px] text-slate-600 leading-relaxed">
                       Berikut adalah rangkuman rekomendasi peningkatan berdasarkan analisis kualitatif dari responden survei:
                     </p>

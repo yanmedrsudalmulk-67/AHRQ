@@ -7,6 +7,7 @@ import RegisterScreen from '../components/RegisterScreen';
 import Dashboard from '../components/Dashboard';
 import { getWallpaper, WallpaperData } from '../lib/wallpaper';
 import { getLogo, LogoData } from '../lib/logo';
+import { getHeaderImage, HeaderImageData } from '../lib/headerBanner';
 
 export default function Home() {
   const [screen, setScreen] = useState<'welcome' | 'login' | 'register' | 'dashboard'>('welcome');
@@ -16,11 +17,12 @@ export default function Home() {
   const [namaRs, setNamaRs] = useState('');
   const [wallpaper, setWallpaper] = useState<WallpaperData | null>(null);
   const [activeLogo, setActiveLogo] = useState<LogoData | null>(null);
+  const [activeHeaderImage, setActiveHeaderImage] = useState<HeaderImageData | null>(null);
   
   // Keep list of registered hospitals in state so they persist during active session
   const [registeredHospitals, setRegisteredHospitals] = useState<Array<{ username: string; kodeRs: string; namaRs: string }>>([]);
 
-  // Load wallpaper and logo on mount
+  // Load wallpaper, logo, and header image on mount
   useEffect(() => {
     async function loadPreferences() {
       const savedWallpaper = await getWallpaper();
@@ -31,6 +33,11 @@ export default function Home() {
       const savedLogo = await getLogo();
       if (savedLogo) {
         setActiveLogo(savedLogo);
+      }
+
+      const savedHeaderImage = await getHeaderImage();
+      if (savedHeaderImage) {
+        setActiveHeaderImage(savedHeaderImage);
       }
     }
     loadPreferences();
@@ -123,6 +130,8 @@ export default function Home() {
           onUpdateWallpaper={setWallpaper}
           activeLogo={activeLogo}
           onUpdateLogo={setActiveLogo}
+          activeHeaderImage={activeHeaderImage}
+          onUpdateHeaderImage={setActiveHeaderImage}
         />
       )}
     </main>

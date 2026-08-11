@@ -38,6 +38,7 @@ import { getSurveys, saveSurvey, getHospitalAccounts, deleteSurvey, getBenchmark
 import { computeDimensionScores } from '../lib/scoring';
 import { WallpaperData } from '../lib/wallpaper';
 import { LogoData } from '../lib/logo';
+import { HeaderImageData } from '../lib/headerBanner';
 import DashboardHeader from './DashboardHeader';
 
 interface SurveyData {
@@ -60,6 +61,8 @@ interface DashboardProps {
   onUpdateWallpaper: (wallpaper: WallpaperData | null) => void;
   activeLogo: LogoData | null;
   onUpdateLogo: (logo: LogoData | null) => void;
+  activeHeaderImage?: HeaderImageData | null;
+  onUpdateHeaderImage?: (headerImage: HeaderImageData | null) => void;
 }
 
 export default function Dashboard({ 
@@ -72,7 +75,9 @@ export default function Dashboard({
   activeWallpaper,
   onUpdateWallpaper,
   activeLogo,
-  onUpdateLogo
+  onUpdateLogo,
+  activeHeaderImage,
+  onUpdateHeaderImage
 }: DashboardProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'analisa-data' | 'input' | 'laporan' | 'pengaturan' | 'persetujuan' | 'master-posisi' | 'master-unit' | 'persetujuan-benchmark'>('dashboard');
   const mainContainerRef = useRef<HTMLElement | null>(null);
@@ -479,7 +484,7 @@ export default function Dashboard({
         </header>
 
         {/* Navigation - Sidebar on Desktop, Bottom Bar on Mobile */}
-        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-teal-950/45 bg-[#14B8A6] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-[#14B8A6] md:pt-5 md:pb-5`}>
+        <aside className={`w-[calc(100%-24px)] fixed bottom-3 left-3 right-3 z-50 rounded-3xl border border-white/25 shadow-2xl shadow-teal-950/45 bg-[#1E6F73] text-white flex flex-col shrink-0 no-print transition-all duration-300 ease-in-out pb-1 pt-0 md:relative md:bottom-0 md:left-0 md:right-0 md:w-auto md:mx-0 ${isSidebarCollapsed ? 'md:w-20' : 'md:w-64'} md:h-full md:rounded-none md:border-none md:shadow-2xl md:bg-[#1E6F73] md:pt-5 md:pb-5`}>
           
           {/* Tombol Collapse / Hide Sidebar - Terletak Sejajar Dengan Tulisan AHRQ SOPS v2.0 */}
           <button
@@ -658,6 +663,7 @@ export default function Dashboard({
               selectedYear={selectedYear}
               availableYears={availableYears}
               onYearChange={setSelectedYear}
+              headerImage={activeHeaderImage}
             />
 
             {/* Filter Fasyankes / Rumah Sakit - Khusus Admin Utama */}
@@ -718,112 +724,118 @@ export default function Dashboard({
               {/* Card 1: Total Responden */}
               <div 
                 onClick={() => setShowRespondentsModal(true)}
-                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-300 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
+                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[2.5rem] relative border border-slate-300 shadow-[0_10px_25px_rgba(0,0,0,0.12)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.20)] transition-all transform-gpu duration-300 mt-2 mb-2 pt-5 pb-[68px] px-5 text-center group"
               >
                 {/* Top right shape */}
-                <div className="absolute top-6 right-0 w-14 h-7 bg-teal-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
+                <div className="absolute top-4 right-0 w-12 h-6 bg-teal-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
                 
                 {/* Icon */}
-                <div className="flex justify-center mb-5 relative z-10">
-                  <Users className="w-10 h-10 text-slate-800 group-hover:text-teal-600 transition-colors" strokeWidth={1.5} />
+                <div className="flex justify-center mb-2 relative z-10">
+                  <Users className="w-8 h-8 text-slate-800 group-hover:text-teal-600 transition-colors" strokeWidth={1.5} />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-[20px] font-black text-slate-800 uppercase tracking-widest mb-3">
+                <h3 className="text-[16px] font-black text-slate-800 uppercase tracking-widest mb-1">
                   Total Responden
                 </h3>
 
                 {/* Description */}
-                <p className="text-slate-500 text-[11px] leading-relaxed max-w-[90%] mx-auto mb-4 font-medium">
+                <p className="text-slate-500 text-[11px] leading-tight max-w-[90%] mx-auto mb-2 font-medium">
                   Staf Fasyankes Yang Mengisi Survei
                 </p>
 
                 {/* Value */}
-                <div className="text-[35px] italic font-extrabold text-slate-800">
+                <div 
+                  className="text-[28px] italic font-extrabold text-slate-800 leading-none"
+                  style={{ margin: '0px', marginBottom: '4px', paddingTop: '0px' }}
+                >
                   {totalRespondents}
                 </div>
 
                 {/* Ribbon Structure */}
-                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-teal-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
+                <div className="absolute bottom-3 left-[-10px] right-[-10px] h-10 bg-teal-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
                 
                 {/* Left fold */}
-                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-teal-700 border-l-[12px] border-l-transparent z-0" />
+                <div className="absolute bottom-[52px] left-[-10px] w-0 h-0 border-b-[10px] border-b-teal-700 border-l-[10px] border-l-transparent z-0" />
                 {/* Right fold */}
-                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-teal-700 border-r-[12px] border-r-transparent z-0" />
+                <div className="absolute bottom-[52px] right-[-10px] w-0 h-0 border-b-[10px] border-b-teal-700 border-r-[10px] border-r-transparent z-0" />
 
                 {/* Center Hump */}
-                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-teal-500 rounded-full z-10 transition-colors" />
+                <div className="absolute bottom-[22px] left-1/2 -translate-x-1/2 w-[50px] h-[50px] bg-teal-500 rounded-full z-10 transition-colors" />
                 
                 {/* White Circle */}
-                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(20,184,166,0.5)] group-hover:shadow-[0_0_25px_rgba(20,184,166,0.9)] group-hover:-translate-y-1 transition-all duration-300">
+                <div className="absolute bottom-[27px] left-1/2 -translate-x-1/2 w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_12px_rgba(20,184,166,0.5)] group-hover:shadow-[0_0_20px_rgba(20,184,166,0.9)] group-hover:-translate-y-0.5 transition-all duration-300">
                   <div className="absolute inset-0 rounded-full bg-teal-400/50 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
-                  <UserCheck className="w-6 h-6 text-teal-600 drop-shadow-[0_0_8px_rgba(20,184,166,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
+                  <UserCheck className="w-5 h-5 text-teal-600 drop-shadow-[0_0_6px_rgba(20,184,166,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
                 </div>
               </div>
 
               {/* Card 2: Unit / Area Kerja Terdata */}
               <div 
                 onClick={() => setShowUnitsModal(true)}
-                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-300 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group"
+                className="cursor-pointer bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[2.5rem] relative border border-slate-300 shadow-[0_10px_25px_rgba(0,0,0,0.12)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.20)] transition-all transform-gpu duration-300 mt-2 mb-2 pt-5 pb-[68px] px-5 text-center group"
               >
                 {/* Top right shape */}
-                <div className="absolute top-6 right-0 w-14 h-7 bg-[#2563EB] transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
+                <div className="absolute top-4 right-0 w-12 h-6 bg-[#2563EB] transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
                 
                 {/* Icon */}
-                <div className="flex justify-center mb-5 relative z-10">
-                  <Building2 className="w-10 h-10 text-slate-800 group-hover:text-[#2563EB] transition-colors" strokeWidth={1.5} />
+                <div className="flex justify-center mb-2 relative z-10">
+                  <Building2 className="w-8 h-8 text-slate-800 group-hover:text-[#2563EB] transition-colors" strokeWidth={1.5} />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-[20px] font-black text-slate-800 uppercase tracking-widest mb-3">
+                <h3 className="text-[16px] font-black text-slate-800 uppercase tracking-widest mb-1">
                   Area Kerja Terdata
                 </h3>
 
                 {/* Description */}
-                <p className="text-slate-500 text-[11px] leading-relaxed max-w-[90%] mx-auto mb-4 font-medium">
+                <p className="text-slate-500 text-[11px] leading-tight max-w-[90%] mx-auto mb-2 font-medium">
                   Total Unit / Area Kerja Yang Mengisi Survei
                 </p>
 
                 {/* Value */}
-                <div className="text-[35px] italic font-extrabold text-slate-800">
+                <div 
+                  className="text-[28px] italic font-extrabold text-slate-800 leading-none"
+                  style={{ marginBottom: '0px' }}
+                >
                   {totalUnits}
                 </div>
 
                 {/* Ribbon Structure */}
-                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] rounded-b-xl rounded-t-sm z-10 transition-colors" />
+                <div className="absolute bottom-3 left-[-10px] right-[-10px] h-10 bg-gradient-to-r from-[#2563EB] to-[#1D4ED8] rounded-b-xl rounded-t-sm z-10 transition-colors" />
                 
                 {/* Left fold */}
-                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-[#1E3A8A] border-l-[12px] border-l-transparent z-0" />
+                <div className="absolute bottom-[52px] left-[-10px] w-0 h-0 border-b-[10px] border-b-[#1E3A8A] border-l-[10px] border-l-transparent z-0" />
                 {/* Right fold */}
-                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-[#1E3A8A] border-r-[12px] border-r-transparent z-0" />
+                <div className="absolute bottom-[52px] right-[-10px] w-0 h-0 border-b-[10px] border-b-[#1E3A8A] border-r-[10px] border-r-transparent z-0" />
 
                 {/* Center Hump */}
-                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-[#2563EB] rounded-full z-10 transition-colors" />
+                <div className="absolute bottom-[22px] left-1/2 -translate-x-1/2 w-[50px] h-[50px] bg-[#2563EB] rounded-full z-10 transition-colors" />
                 
                 {/* White Circle */}
-                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(37,99,235,0.5)] group-hover:shadow-[0_0_25px_rgba(37,99,235,0.9)] group-hover:-translate-y-1 transition-all duration-300">
+                <div className="absolute bottom-[27px] left-1/2 -translate-x-1/2 w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_12px_rgba(37,99,235,0.5)] group-hover:shadow-[0_0_20px_rgba(37,99,235,0.9)] group-hover:-translate-y-0.5 transition-all duration-300">
                   <div className="absolute inset-0 rounded-full bg-[#2563EB]/40 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
-                  <Briefcase className="w-6 h-6 text-[#2563EB] drop-shadow-[0_0_8px_rgba(37,99,235,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
+                  <Briefcase className="w-5 h-5 text-[#2563EB] drop-shadow-[0_0_6px_rgba(37,99,235,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
                 </div>
               </div>
 
               {/* Card 3: Rata-Rata Respon Positif */}
-              <div className="bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[3rem] relative border border-slate-300 shadow-[0_15px_35px_rgba(0,0,0,0.15)] hover:shadow-[0_20px_45px_rgba(0,0,0,0.24)] transition-all transform-gpu duration-300 mt-4 mb-4 pt-8 pb-[100px] px-6 text-center group">
+              <div className="bg-white rounded-tr-2xl rounded-br-2xl rounded-bl-2xl rounded-tl-[2.5rem] relative border border-slate-300 shadow-[0_10px_25px_rgba(0,0,0,0.12)] hover:shadow-[0_15px_35px_rgba(0,0,0,0.20)] transition-all transform-gpu duration-300 mt-2 mb-2 pt-5 pb-[68px] px-5 text-center group">
                 {/* Top right shape */}
-                <div className="absolute top-6 right-0 w-14 h-7 bg-orange-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
+                <div className="absolute top-4 right-0 w-12 h-6 bg-orange-500 transition-transform duration-300 origin-right group-hover:scale-105 rounded-l-md" style={{ clipPath: 'polygon(25% 0, 100% 0, 100% 100%, 0 100%)' }} />
                 
                 {/* Icon */}
-                <div className="flex justify-center mb-5 relative z-10">
-                  <TrendingUp className="w-10 h-10 text-slate-800 group-hover:text-orange-600 transition-colors" strokeWidth={1.5} />
+                <div className="flex justify-center mb-2 relative z-10">
+                  <TrendingUp className="w-8 h-8 text-slate-800 group-hover:text-orange-600 transition-colors" strokeWidth={1.5} />
                 </div>
 
                 {/* Title */}
-                <h3 className="text-[20px] font-black text-slate-800 uppercase tracking-widest mb-3">
+                <h3 className="text-[16px] font-black text-slate-800 uppercase tracking-widest mb-1">
                   Respon Positif
                 </h3>
 
                 {/* Description */}
-                <p className="text-slate-500 text-[10px] leading-relaxed max-w-[90%] mx-auto mb-4 font-medium">
+                <p className="text-slate-500 text-[10px] leading-tight max-w-[90%] mx-auto mb-2 font-medium">
                   {overallScorePercent >= 75 
                     ? 'Area Kekuatan (strengths, ≥75% respon positif)' 
                     : overallScorePercent === 0 
@@ -834,25 +846,25 @@ export default function Dashboard({
                 </p>
 
                 {/* Value */}
-                <div className="text-[35px] italic font-extrabold text-orange-600">
+                <div className="text-[28px] italic font-extrabold text-orange-600 leading-none">
                   {overallScorePercent}%
                 </div>
 
                 {/* Ribbon Structure */}
-                <div className="absolute bottom-4 left-[-12px] right-[-12px] h-12 bg-orange-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
+                <div className="absolute bottom-3 left-[-10px] right-[-10px] h-10 bg-orange-500 rounded-b-xl rounded-t-sm z-10 transition-colors" />
                 
                 {/* Left fold */}
-                <div className="absolute bottom-[64px] left-[-12px] w-0 h-0 border-b-[12px] border-b-orange-700 border-l-[12px] border-l-transparent z-0" />
+                <div className="absolute bottom-[52px] left-[-10px] w-0 h-0 border-b-[10px] border-b-orange-700 border-l-[10px] border-l-transparent z-0" />
                 {/* Right fold */}
-                <div className="absolute bottom-[64px] right-[-12px] w-0 h-0 border-b-[12px] border-b-orange-700 border-r-[12px] border-r-transparent z-0" />
+                <div className="absolute bottom-[52px] right-[-10px] w-0 h-0 border-b-[10px] border-b-orange-700 border-r-[10px] border-r-transparent z-0" />
 
                 {/* Center Hump */}
-                <div className="absolute bottom-[32px] left-1/2 -translate-x-1/2 w-[60px] h-[60px] bg-orange-500 rounded-full z-10 transition-colors" />
+                <div className="absolute bottom-[22px] left-1/2 -translate-x-1/2 w-[50px] h-[50px] bg-orange-500 rounded-full z-10 transition-colors" />
                 
                 {/* White Circle */}
-                <div className="absolute bottom-[38px] left-1/2 -translate-x-1/2 w-[48px] h-[48px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_15px_rgba(249,115,22,0.5)] group-hover:shadow-[0_0_25px_rgba(249,115,22,0.9)] group-hover:-translate-y-1 transition-all duration-300">
+                <div className="absolute bottom-[27px] left-1/2 -translate-x-1/2 w-[40px] h-[40px] bg-white rounded-full flex items-center justify-center z-20 shadow-[0_0_12px_rgba(249,115,22,0.5)] group-hover:shadow-[0_0_20px_rgba(249,115,22,0.9)] group-hover:-translate-y-0.5 transition-all duration-300">
                   <div className="absolute inset-0 rounded-full bg-orange-400/50 opacity-0 group-hover:animate-ping" style={{ animationDuration: '1.5s' }}></div>
-                  <Award className="w-6 h-6 text-orange-600 drop-shadow-[0_0_8px_rgba(249,115,22,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
+                  <Award className="w-5 h-5 text-orange-600 drop-shadow-[0_0_6px_rgba(249,115,22,0.8)] group-hover:scale-110 transition-transform duration-300 relative z-10" strokeWidth={2.5} />
                 </div>
               </div>
 
@@ -919,6 +931,8 @@ export default function Dashboard({
             onUpdateWallpaper={onUpdateWallpaper}
             activeLogo={activeLogo}
             onUpdateLogo={onUpdateLogo}
+            activeHeaderImage={activeHeaderImage}
+            onUpdateHeaderImage={onUpdateHeaderImage}
             surveys={surveysWithConfig}
           />
         )}

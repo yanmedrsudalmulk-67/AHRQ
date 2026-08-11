@@ -1140,7 +1140,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {/* Card Tanggal & Tahun Pengisian */}
               <div 
                 id="date-year-picker-card" 
-                className="flex items-center gap-2 bg-white border border-white/80 rounded-xl px-3 py-1 shadow-md h-[44px] hover:bg-slate-50 transition-all duration-300"
+                className="flex items-center gap-2 bg-white border border-white/90 rounded-xl px-3 py-1 shadow-[0_4px_12px_rgba(0,0,0,0.18),0_2px_4px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 h-[44px] hover:bg-slate-50 transition-all duration-300"
               >
                 {/* Tanggal Picker */}
                 <div className="flex items-center gap-1.5">
@@ -1207,7 +1207,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               {!isPublic && (
                 <button
                   onClick={() => setShowLinkModal(true)}
-                  className="flex items-center gap-2 bg-white hover:bg-teal-50 text-[#1E6F73] border border-white/80 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md cursor-pointer"
+                  className="flex items-center gap-2 bg-white hover:bg-teal-50 text-[#1E6F73] border border-white/90 px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-[0_4px_12px_rgba(0,0,0,0.18),0_2px_4px_rgba(0,0,0,0.12)] hover:shadow-[0_6px_16px_rgba(0,0,0,0.25)] hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                 >
                   <Share2 className="w-4 h-4 text-[#1E6F73]" />
                   Bagikan Link

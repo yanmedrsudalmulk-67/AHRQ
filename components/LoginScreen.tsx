@@ -163,7 +163,7 @@ export default function LoginScreen({
             )}
           </div>
           <div className="space-y-2">
-            <h2 className="text-[33px] font-sans font-black text-[#2fc9c0] tracking-tight drop-shadow-sm">Selamat Datang</h2>
+            <h2 className="text-[33px] font-sans font-black text-[#1E6F73] tracking-tight drop-shadow-sm">Selamat Datang</h2>
             <div className="text-[10px] sm:text-[10.5px] text-slate-700 font-extrabold uppercase tracking-wider leading-snug space-y-0.5">
               <p className="text-slate-600">SILAHKAN MASUK UNTUK MENGAKSES</p>
               <p className="text-[#45556c] font-black text-[11px] sm:text-[11.5px] tracking-tight">SISTEM SURVEI BUDAYA KESELAMATAN PASIEN</p>

@@ -1141,14 +1141,14 @@ export async function exportReportToDocx(data: ReportData) {
             p(`• Komentar Positif: ${data.comments.positivePercentage}% (${data.comments.positive} komentar)`, { spaceAfter: 40 }),
             p(`• Saran & Masukan Konstruktif: ${data.comments.constructivePercentage}% (${data.comments.constructive} komentar)`, { spaceAfter: 80 }),
             
-            heading4(`3.2.8.1 Interpretasi & Analisis Data`),
+            heading4(`1. Interpretasi & Analisis Data`),
             ...(data.comments.total > 0 ? [
               p(data.comments.analysisText || `Berdasarkan hasil analisis kualitatif terhadap total ${data.comments.total} komentar bebas responden pada survei budaya keselamatan pasien tahun ${data.tahun} di ${data.namaRs}, secara otomatis teridentifikasi sebanyak ${data.comments.positive} komentar positif (${data.comments.positivePercentage}%) dan ${data.comments.constructive} komentar berisi saran atau masukan konstruktif (${data.comments.constructivePercentage}%).`, { spaceAfter: 120 })
             ] : [
               p(`Belum terdapat komentar atau masukan responden pada tahun survei yang dipilih.`, { italic: true, spaceAfter: 120 })
             ]),
 
-            heading4(`3.2.8.2 Rekomendasi Peningkatan`),
+            heading4(`2. Rekomendasi Peningkatan`),
             p(`Berikut adalah rangkuman rekomendasi peningkatan berdasarkan analisis kualitatif dari responden survei:`, { spaceAfter: 120 }),
             ...(data.comments.recommendations.length > 0 ? data.comments.recommendations.map((rec, idx) => {
               return p(`• ${rec}`, { spaceAfter: 80 });

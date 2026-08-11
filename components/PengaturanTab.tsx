@@ -39,6 +39,7 @@ import {
 import bcrypt from 'bcryptjs';
 import { saveWallpaper, clearWallpaper, WallpaperData } from '../lib/wallpaper';
 import { saveLogo, clearLogo, LogoData } from '../lib/logo';
+import { saveHeaderImage, clearHeaderImage, HeaderImageData } from '../lib/headerBanner';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
 import { 
   syncAllLocalDataToSupabase, 
@@ -56,7 +57,7 @@ import {
   SurveyData
 } from '../lib/db';
 import { DIMENSI_INFO } from '../lib/scoring';
-import { BarChart2, Users } from 'lucide-react';
+import { BarChart2, Users, Sparkles } from 'lucide-react';
 import MasterPosisiTab from './MasterPosisiTab';
 import MasterUnitTab from './MasterUnitTab';
 
@@ -70,6 +71,8 @@ interface PengaturanTabProps {
   onUpdateWallpaper: (wallpaper: WallpaperData | null) => void;
   activeLogo: LogoData | null;
   onUpdateLogo: (logo: LogoData | null) => void;
+  activeHeaderImage?: HeaderImageData | null;
+  onUpdateHeaderImage?: (headerImage: HeaderImageData | null) => void;
   surveys?: SurveyData[];
 }
 
@@ -83,6 +86,8 @@ export default function PengaturanTab({
   onUpdateWallpaper,
   activeLogo,
   onUpdateLogo,
+  activeHeaderImage,
+  onUpdateHeaderImage,
   surveys = []
 }: PengaturanTabProps) {
   const [activeSettingsSection, setActiveSettingsSection] = useState<'profil' | 'posisi' | 'unit' | 'pengesahan'>('profil');
@@ -253,9 +258,27 @@ export default function PengaturanTab({
   const [logoUrlInput, setLogoUrlInput] = useState('');
   const [activeLogoSubTab, setActiveLogoSubTab] = useState<'upload' | 'url'>('upload');
 
+  // Header Banner Image states
+  const [headerImageInput, setHeaderImageInput] = useState<string | null>(null);
+  const [headerImagePosition, setHeaderImagePosition] = useState<'center' | 'center-right' | 'top-right' | 'bottom-right'>('center-right');
+  const [isUploadingHeader, setIsUploadingHeader] = useState(false);
+  const [headerUploadError, setHeaderUploadError] = useState<string | null>(null);
+  const [isHeaderImageDragOver, setIsHeaderImageDragOver] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const headerFileInputRef = useRef<HTMLInputElement>(null);
   const hasSupabase = isSupabaseConnected();
+
+  useEffect(() => {
+    if (activeHeaderImage) {
+      setHeaderImageInput(activeHeaderImage.url);
+      setHeaderImagePosition(activeHeaderImage.position || 'center-right');
+    } else {
+      setHeaderImageInput(null);
+      setHeaderImagePosition('center-right');
+    }
+  }, [activeHeaderImage]);
 
   // Pengesahan Halaman State
   const [pengesahanForm, setPengesahanForm] = useState<PengesahanConfig>({
@@ -763,6 +786,73 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
         setIsUploadingLogo(false);
       }
     }
+  };
+
+  const handleHeaderFileSelect = (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      setHeaderUploadError('Ukuran file terlalu besar. Maksimal 5MB.');
+      return;
+    }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      setHeaderUploadError('Format file tidak didukung. Harap unggah berkas berformat JPG, JPEG, PNG, atau WEBP.');
+      return;
+    }
+    setHeaderUploadError(null);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setHeaderImageInput(e.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveHeaderImage = async () => {
+    if (role !== 'admin') {
+      showToast('🚫 Akses Ditolak: Hanya Admin Utama yang dapat mengkonfigurasi Gambar Card Header.', 'error');
+      return;
+    }
+    if (!headerImageInput) return;
+    setIsUploadingHeader(true);
+    setHeaderUploadError(null);
+    try {
+      const saved = await saveHeaderImage(headerImageInput, headerImagePosition, 'header_banner.png');
+      onUpdateHeaderImage?.(saved);
+      showToast('✅ Gambar Card Header berhasil diperbarui', 'success');
+    } catch (err: any) {
+      console.error('Gagal menyimpan gambar header:', err);
+      setHeaderUploadError(err?.message || 'Gagal menyimpan gambar header.');
+    } finally {
+      setIsUploadingHeader(false);
+    }
+  };
+
+  const handleClearHeaderImage = async () => {
+    if (role !== 'admin') return;
+    if (confirm('Apakah Anda yakin ingin menghapus gambar Card Header Dashboard dan kembali menggunakan tampilan awal?')) {
+      setIsUploadingHeader(true);
+      try {
+        await clearHeaderImage();
+        onUpdateHeaderImage?.(null);
+        setHeaderImageInput(null);
+        setHeaderUploadError(null);
+        showToast('✅ Gambar Card Header berhasil dihapus', 'success');
+      } catch (err: any) {
+        console.error('Gagal menghapus gambar header:', err);
+      } finally {
+        setIsUploadingHeader(false);
+      }
+    }
+  };
+
+  const handleCancelHeaderChanges = () => {
+    if (activeHeaderImage) {
+      setHeaderImageInput(activeHeaderImage.url);
+      setHeaderImagePosition(activeHeaderImage.position || 'center-right');
+    } else {
+      setHeaderImageInput(null);
+      setHeaderImagePosition('center-right');
+    }
+    setHeaderUploadError(null);
   };
 
   return (
@@ -1572,6 +1662,228 @@ CREATE POLICY "Menghapus Publik Logo" ON storage.objects FOR DELETE USING (bucke
             <p>
               Logo kustom secara otomatis disinkronkan ke tabel <code className="text-indigo-600 font-mono font-bold">app_settings</code> dan media berkas disimpan ke dalam bucket <code className="text-indigo-600 font-mono font-bold">logos</code> di Supabase Anda, serta disimpan di peramban secara otomatis sebagai cadangan instan.
             </p>
+          </div>
+        </div>
+        )}
+
+        {/* Banner / Gambar Card Header Dashboard Konfigurasi */}
+        {role === 'admin' && (
+        <div className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-3">
+            <div>
+              <h3 className="text-[16px] font-semibold text-slate-800 flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-teal-600" />
+                <span>Banner / Gambar Card Header Dashboard</span>
+              </h3>
+              <p className="text-[12px] text-slate-500 mt-1">
+                Atur gambar visual khusus pada sisi kanan Card Header Dashboard utama untuk tampilan modern, elegan, dan profesional.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              {activeHeaderImage && (
+                <button
+                  type="button"
+                  onClick={handleClearHeaderImage}
+                  disabled={isUploadingHeader}
+                  className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Hapus Gambar
+                </button>
+              )}
+            </div>
+          </div>
+
+          {headerUploadError && (
+            <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-medium flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-rose-500 shrink-0" />
+              <span>{headerUploadError}</span>
+            </div>
+          )}
+
+          {/* Section A: Upload Controls & Position Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* File Upload Box */}
+            <div className="space-y-3">
+              <label className="text-xs font-bold text-slate-700 block">
+                Pilih / Unggah Berkas Gambar Banner
+              </label>
+              
+              <input
+                type="file"
+                ref={headerFileInputRef}
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleHeaderFileSelect(file);
+                }}
+              />
+
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsHeaderImageDragOver(true);
+                }}
+                onDragLeave={() => setIsHeaderImageDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsHeaderImageDragOver(false);
+                  const file = e.dataTransfer.files?.[0];
+                  if (file) handleHeaderFileSelect(file);
+                }}
+                onClick={() => headerFileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all duration-300 ${
+                  isHeaderImageDragOver
+                    ? 'border-teal-500 bg-teal-50/50 scale-[1.01]'
+                    : 'border-slate-200 hover:border-teal-500/60 bg-slate-50/50 hover:bg-teal-50/20'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <div className="p-3 bg-teal-50 rounded-2xl border border-teal-100 text-teal-600">
+                    <UploadCloud className="w-6 h-6" />
+                  </div>
+                  <div className="text-xs font-bold text-slate-700">
+                    {headerImageInput ? 'Ganti Gambar Card Header' : 'Unggah Gambar Card Header'}
+                  </div>
+                  <p className="text-[11px] text-slate-500 max-w-xs">
+                    Klik atau geser file ke sini. Format yang diperbolehkan: <strong className="text-slate-700">JPG, JPEG, PNG, WEBP</strong> (Maks. 5MB).
+                  </p>
+                  <p className="text-[10px] text-teal-600 font-semibold bg-teal-50 px-2 py-0.5 rounded-md border border-teal-200/50">
+                    Rekomendasi Rasio Landscape: 16:9 atau 3:1
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Image Position Adjuster */}
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">
+                  Sesuaikan Posisi Gambar Header
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Tentukan titik fokus penyesuaian cropping gambar agar selalu tampil proporsional pada Card Header.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { id: 'center-right', label: 'Center Right (Default)' },
+                  { id: 'center', label: 'Center' },
+                  { id: 'top-right', label: 'Top Right' },
+                  { id: 'bottom-right', label: 'Bottom Right' }
+                ].map((pos) => (
+                  <button
+                    key={pos.id}
+                    type="button"
+                    onClick={() => setHeaderImagePosition(pos.id as any)}
+                    className={`p-2.5 rounded-xl border text-xs font-semibold flex items-center justify-between transition-all cursor-pointer ${
+                      headerImagePosition === pos.id
+                        ? 'bg-teal-50 border-teal-500 text-teal-800 shadow-xs'
+                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                    }`}
+                  >
+                    <span>{pos.label}</span>
+                    {headerImagePosition === pos.id && <Check className="w-4 h-4 text-teal-600" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Section B: Live Card Header Preview */}
+          <div className="space-y-3 pt-2 border-t border-slate-100">
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-teal-600" />
+                <span>Preview Card Header Dashboard</span>
+              </label>
+              <span className="text-[11px] text-slate-400 font-mono">Tampilan Langsung di Dashboard</span>
+            </div>
+
+            {/* Mini Card Header Simulation */}
+            <div className="p-4 sm:p-6 rounded-[20px] bg-white/80 backdrop-blur-md border border-slate-200 shadow-md relative overflow-hidden flex flex-col md:flex-row justify-between items-center gap-4">
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg sm:text-xl font-black text-[#5CC8C9]">Selamat Siang ☀️</span>
+                </div>
+                <h4 className="text-xl sm:text-2xl font-extrabold text-[#2FA7A7]">
+                  Hai, Sobat <span className="text-[#2FA7A7]">{namaRs || 'RS Sehat Abadi'}</span>
+                </h4>
+                <p className="text-xs sm:text-sm font-bold text-[#1E6F73] font-['Poppins',sans-serif]">
+                  Selamat Datang di Aplikasi Sistem Survei Budaya Keselamatan Pasien
+                </p>
+              </div>
+
+              <div className="w-full md:w-60 lg:w-72 shrink-0 relative self-stretch flex items-center">
+                {headerImageInput ? (
+                  <div className="relative w-full h-28 sm:h-32 overflow-hidden rounded-xl">
+                    <div 
+                      className="w-full h-full relative"
+                      style={{
+                        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 12%, rgba(0,0,0,0.9) 35%, black 100%)',
+                        maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 12%, rgba(0,0,0,0.9) 35%, black 100%)'
+                      }}
+                    >
+                      <img
+                        src={headerImageInput}
+                        alt="Header preview"
+                        className="w-full h-full object-cover"
+                        style={{
+                          objectPosition: headerImagePosition === 'center'
+                            ? 'center center'
+                            : headerImagePosition === 'top-right'
+                            ? 'right top'
+                            : headerImagePosition === 'bottom-right'
+                            ? 'right bottom'
+                            : 'right center'
+                        }}
+                      />
+                    </div>
+                    {/* Soft Feather Overlays */}
+                    <div className="absolute inset-y-0 left-0 w-16 bg-gradient-to-r from-white via-white/60 to-transparent pointer-events-none" />
+                    <div className="absolute inset-x-0 bottom-0 h-4 bg-gradient-to-t from-white/50 to-transparent pointer-events-none" />
+                  </div>
+                ) : (
+                  <div className="w-full h-28 sm:h-32 rounded-[16px] border-2 border-dashed border-slate-200 bg-slate-50 flex flex-col items-center justify-center p-3 text-center text-slate-400">
+                    <ImageIcon className="w-6 h-6 mb-1 text-slate-300" />
+                    <span className="text-[11px] font-semibold">Desain Bawaan (Tanpa Gambar)</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Section C: Action Buttons */}
+          <div className="flex justify-end items-center gap-3 pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              onClick={handleCancelHeaderChanges}
+              disabled={isUploadingHeader}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-all cursor-pointer"
+            >
+              Batal
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSaveHeaderImage}
+              disabled={isUploadingHeader || !headerImageInput}
+              className="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-2 shadow-lg shadow-teal-600/20 transition-all cursor-pointer"
+            >
+              {isUploadingHeader ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Menyimpan...</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Gambar</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
         )}

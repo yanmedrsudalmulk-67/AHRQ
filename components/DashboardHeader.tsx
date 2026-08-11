@@ -215,6 +215,8 @@ function ModernNightMoonIcon() {
   );
 }
 
+import { HeaderImageData } from '../lib/headerBanner';
+
 interface SurveyData {
   id: string;
   namaRs: string;
@@ -231,13 +233,19 @@ interface DashboardHeaderProps {
   selectedYear: string;
   availableYears: string[];
   onYearChange: (year: string) => void;
+  headerImage?: HeaderImageData | null;
 }
 
-export default function DashboardHeader({ role, namaRs, surveys, selectedYear, availableYears, onYearChange }: DashboardHeaderProps) {
+export default function DashboardHeader({ role, namaRs, surveys, selectedYear, availableYears, onYearChange, headerImage }: DashboardHeaderProps) {
   const [timeString, setTimeString] = useState<string>('');
   const [dateString, setDateString] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setImageError(false);
+  }, [headerImage?.url]);
 
   // Close dropdown on click outside
   useEffect(() => {
@@ -413,77 +421,127 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
       <div className="absolute -bottom-10 -left-10 w-72 h-72 bg-blue-500/5 rounded-full filter blur-[80px] pointer-events-none -z-10" />
       <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-48 h-48 bg-teal-500/5 rounded-full filter blur-[60px] pointer-events-none -z-10" />
 
-      {/* Left Column: Greeting, Welcome Messages (100% on Desktop) */}
-      <div className="flex-1 w-full min-w-0 flex items-stretch gap-4 md:gap-5">
-        {/* Teal Vertical Accent Bar with vertical moving color animation */}
-        <motion.div 
-          animate={{ 
-            backgroundPosition: ["0% 0%", "0% 100%", "0% 0%"]
-          }}
-          transition={{
-            duration: 4,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          style={{
-            backgroundSize: "100% 200%",
-            backgroundImage: "linear-gradient(to bottom, #2dd4bf, #14b8a6, #0d9488, #14b8a6, #2dd4bf)"
-          }}
-          className="w-1 md:w-1.5 rounded-full shadow-xs shrink-0" 
-        />
-        
-        <div className="space-y-4 min-w-0 w-full">
-          <div className="space-y-1.5 min-w-0 w-full">
-            {/* Row 1: Greeting with Premium 3D Icon */}
-            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
-              <motion.div 
-                variants={sapaanVariants}
-                className="text-[22px] md:text-[36px] font-black text-[#5CC8C9] leading-tight md:leading-none tracking-tight whitespace-normal break-words font-['Poppins',sans-serif]"
-              >
-                {greeting.text}
-              </motion.div>
-              
-              <div className="relative inline-flex items-center justify-center shrink-0">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={greeting.type}
-                    initial={{ opacity: 0, scale: 0.7, rotate: -15, y: 5 }}
-                    animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.7, rotate: 15, y: -5 }}
-                    transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
-                    className="flex items-center justify-center p-1 cursor-default hover:scale-110 transition-transform duration-300 filter drop-shadow-[0_5px_8px_rgba(15,23,42,0.35)]"
-                  >
-                    {renderGreetingIcon(greeting.type)}
-                  </motion.div>
-                </AnimatePresence>
+      {/* Content Layout Container: Left Text Content + Right Header Banner Image */}
+      <div className="flex flex-col lg:flex-row justify-between items-center gap-6 lg:gap-8 w-full">
+        {/* Left Column: Greeting, Welcome Messages */}
+        <div className="flex-1 w-full min-w-0 flex items-stretch gap-4 md:gap-5">
+          {/* Teal Vertical Accent Bar with vertical moving color animation */}
+          <motion.div 
+            animate={{ 
+              backgroundPosition: ["0% 0%", "0% 100%", "0% 0%"]
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+            style={{
+              backgroundSize: "100% 200%",
+              backgroundImage: "linear-gradient(to bottom, #2dd4bf, #14b8a6, #0d9488, #14b8a6, #2dd4bf)"
+            }}
+            className="w-1 md:w-1.5 rounded-full shadow-xs shrink-0" 
+          />
+          
+          <div className="space-y-4 min-w-0 w-full">
+            <div className="space-y-1.5 min-w-0 w-full">
+              {/* Row 1: Greeting with Premium 3D Icon */}
+              <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                <motion.div 
+                  variants={sapaanVariants}
+                  className="text-[22px] md:text-[36px] font-black text-[#1E6F73] leading-tight md:leading-none tracking-tight whitespace-normal break-words font-['Poppins',sans-serif]"
+                >
+                  {greeting.text}
+                </motion.div>
+                
+                <div className="relative inline-flex items-center justify-center shrink-0">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={greeting.type}
+                      initial={{ opacity: 0, scale: 0.7, rotate: -15, y: 5 }}
+                      animate={{ opacity: 1, scale: 1, rotate: 0, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.7, rotate: 15, y: -5 }}
+                      transition={{ duration: 0.45, ease: [0.34, 1.56, 0.64, 1] }}
+                      className="flex items-center justify-center p-1 cursor-default hover:scale-110 transition-transform duration-300 filter drop-shadow-[0_5px_8px_rgba(15,23,42,0.35)]"
+                    >
+                      {renderGreetingIcon(greeting.type)}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
               </div>
+              
+              {/* Row 2: Hospital Title with Gradient Accent & Glow */}
+              <motion.h2 
+                variants={namaRsVariants}
+                className="text-[30px] leading-[30px] font-extrabold text-[#1E6F73] tracking-tight break-words whitespace-normal font-sans"
+              >
+                Hai, Sobat <span className="text-[#1E6F73] font-extrabold">{displayHospital}</span>
+              </motion.h2>
             </div>
-            
-            {/* Row 2: Hospital Title with Gradient Accent & Glow */}
-            <motion.h2 
-              variants={namaRsVariants}
-              className="text-[28px] md:text-[48px] font-extrabold text-[#2FA7A7] tracking-tight leading-tight md:leading-none break-words whitespace-normal font-sans"
-            >
-              Hai, Sobat <span className="text-[#2FA7A7] font-extrabold">{displayHospital}</span>
-            </motion.h2>
-          </div>
 
-          {/* Row 3: Subtitle & Description */}
-          <div className="space-y-2">
-            <motion.p 
-              variants={subjudulVariants}
-              className="text-[18px] md:text-[22px] font-bold text-[#1E6F73] leading-tight"
-            >
-              Selamat Datang di Aplikasi <span className="font-extrabold text-[#1E6F73]">Sistem Survei Budaya Keselamatan Pasien</span>
-            </motion.p>
-            <motion.p 
-              variants={deskripsiVariants}
-              className="text-[12px] md:text-[12px] text-slate-600 font-medium leading-[1.7]"
-            >
-              {"\"Kelola survei, analisis hasil, dan tingkatkan budaya keselamatan pasien melalui dashboard analitik berbasis AHRQ SOPS Version 2.0.\""}
-            </motion.p>
+            {/* Row 3: Subtitle & Description */}
+            <div className="space-y-2">
+              <motion.p 
+                variants={subjudulVariants}
+                className="text-[13px] font-bold text-[#45556C] leading-tight font-['Poppins',sans-serif] mb-2"
+              >
+                Selamat Datang di Aplikasi <span className="text-[13px] font-bold text-[#45556C] font-['Poppins',sans-serif]">Sistem Survei Budaya Keselamatan Pasien</span>
+              </motion.p>
+              <motion.p 
+                variants={deskripsiVariants}
+                className="text-[13px] text-slate-600 font-medium leading-[1.7]"
+              >
+                {"\"Kelola survei, analisis hasil, dan tingkatkan budaya keselamatan pasien melalui dashboard analitik berbasis AHRQ SOPS Version 2.0.\""}
+              </motion.p>
+            </div>
           </div>
         </div>
+
+        {/* Right Column: Header Banner Image */}
+        {headerImage?.url && !imageError && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, x: 20 }}
+            animate={{ opacity: 1, scale: 1, x: 0 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full lg:w-[360px] xl:w-[420px] shrink-0 relative group self-stretch flex items-center"
+          >
+            {/* Ambient Soft Glow Behind Image */}
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-l from-teal-500/15 via-cyan-400/10 to-transparent rounded-2xl filter blur-xl pointer-events-none -z-10" />
+
+            {/* Seamless Image Container without box/borders */}
+            <div className="relative w-full h-44 sm:h-48 md:h-52 lg:h-56 overflow-hidden rounded-2xl pointer-events-none">
+              {/* Gradient Mask & Image Integration */}
+              <div 
+                className="w-full h-full relative"
+                style={{
+                  WebkitMaskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 12%, rgba(0,0,0,0.9) 35%, black 100%)',
+                  maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 12%, rgba(0,0,0,0.9) 35%, black 100%)'
+                }}
+              >
+                <img
+                  src={headerImage.url}
+                  alt="Banner Card Header Dashboard"
+                  onError={() => setImageError(true)}
+                  className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.03] filter brightness-[1.02] contrast-[1.02]"
+                  style={{
+                    objectPosition: headerImage.position === 'center'
+                      ? 'center center'
+                      : headerImage.position === 'top-right'
+                      ? 'right top'
+                      : headerImage.position === 'bottom-right'
+                      ? 'right bottom'
+                      : 'right center'
+                  }}
+                />
+              </div>
+
+              {/* Soft Feather Overlay on Left Edge for ultimate seamless blending */}
+              <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white via-white/60 to-transparent pointer-events-none" />
+              {/* Subtle top/bottom fade for perfect integration */}
+              <div className="absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-white/60 to-transparent pointer-events-none" />
+            </div>
+          </motion.div>
+        )}
       </div>
     </motion.div>
   );
