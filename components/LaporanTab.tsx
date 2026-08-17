@@ -4187,29 +4187,43 @@ export default function LaporanTab({
                   </div>
 
                   <section className="space-y-2.5">
-                    {/* C. Berdasarkan Masa Kerja & Jam Kerja */}
-                    <div className="space-y-1 pt-0.5">
+         {/* C. Berdasarkan Masa Kerja & Jam Kerja */}
+                    <div className="space-y-1">
                       <h5 className="text-[9.5px] font-bold text-slate-800 flex items-center gap-1 bg-slate-50 p-1 px-2 rounded-lg border border-slate-100">
                         <span className="w-1.5 h-3 bg-amber-600 rounded-sm"></span>
                         C. Perbandingan Dimensi Berdasarkan Masa Kerja (Lama Kerja) & Jam Kerja per Minggu
                       </h5>
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
                       <table className="w-full table-fixed text-left border-collapse text-[7.5px]">
+                        <colgroup>
+                          <col style={{ width: '5%' }} />
+                          <col style={{ width: '35%' }} />
+                          {demografiStats.g1Data.slice(0, 4).map(g1 => (
+                            <col key={`col-g1-${g1.name}`} style={{ width: `${30 / Math.max(1, demografiStats.g1Data.slice(0, 4).length)}%` }} />
+                          ))}
+                          {demografiStats.g3Data.slice(0, 4).map(g3 => (
+                            <col key={`col-g3-${g3.name}`} style={{ width: `${30 / Math.max(1, demografiStats.g3Data.slice(0, 4).length)}%` }} />
+                          ))}
+                        </colgroup>
                         <thead>
-                          <tr className="bg-slate-800 text-white font-extrabold text-[7px] uppercase border-b border-slate-900">
-                            <th rowSpan={2} className="py-1 px-1 border-r border-slate-700 text-center align-middle" style={{ width: '4%' }}>No</th>
-                            <th rowSpan={2} className="py-1 px-1 border-r border-slate-700 text-center align-middle" style={{ width: '32%', textAlign: 'center', verticalAlign: 'middle' }}>Dimensi Budaya Keselamatan</th>
-                            <th colSpan={4} className="py-1 px-1 text-center border-r border-slate-700 bg-slate-700" style={{ width: '32%' }}>Masa Kerja (Staff Tenure)</th>
-                            <th colSpan={4} className="py-1 px-1 text-center bg-slate-600" style={{ width: '32%' }}>Jam Kerja per Minggu</th>
+                          <tr className="bg-slate-800 text-white font-extrabold text-[7.5px] uppercase border-b border-slate-700">
+                            <th rowSpan={2} className="p-1 border-r border-slate-700 text-center align-middle" style={{ width: '5%', textAlign: 'center' }}>No</th>
+                            <th rowSpan={2} className="p-1 border-r border-slate-700 text-center align-middle" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
+                            <th colSpan={demografiStats.g1Data.slice(0, 4).length || 4} className="p-1 text-center border-r border-slate-700 bg-slate-700" style={{ width: '30%', textAlign: 'center' }}>
+                              Masa Kerja (Staff Tenure)
+                            </th>
+                            <th colSpan={demografiStats.g3Data.slice(0, 4).length || 4} className="p-1 text-center bg-slate-650" style={{ width: '30%', textAlign: 'center' }}>
+                              Jam Kerja per Minggu
+                            </th>
                           </tr>
-                          <tr className="bg-slate-700 text-white font-bold text-[7px] uppercase border-b border-slate-850 divide-x divide-slate-600">
+                          <tr className="bg-slate-750 text-white font-bold text-[7px] uppercase border-b border-slate-800 bg-slate-700">
                             {demografiStats.g1Data.slice(0, 4).map(g1 => (
-                              <th key={g1.name} className="py-0.5 px-0.5 text-center font-medium leading-tight" style={{ width: '8%' }}>
+                              <th key={g1.name} className="py-0.5 px-0.5 text-center font-medium leading-tight border-r border-slate-600" style={{ width: `${30 / Math.max(1, demografiStats.g1Data.slice(0, 4).length)}%`, textAlign: 'center' }}>
                                 {g1.name.replace('hingga', '-').replace('atau lebih', '+')}
                               </th>
                             ))}
                             {demografiStats.g3Data.slice(0, 4).map(g3 => (
-                              <th key={g3.name} className="py-0.5 px-0.5 text-center font-medium leading-tight" style={{ width: '8%' }}>
+                              <th key={g3.name} className="py-0.5 px-0.5 text-center font-medium leading-tight border-r border-slate-600 last:border-r-0" style={{ width: `${30 / Math.max(1, demografiStats.g3Data.slice(0, 4).length)}%`, textAlign: 'center' }}>
                                 {g3.name.replace('hingga', '-').replace('atau lebih', '+')}
                               </th>
                             ))}
@@ -4222,12 +4236,12 @@ export default function LaporanTab({
                             const wObj = workHoursDimensionScores.find(s => s.id === dimId);
                             return (
                               <tr key={dimId} className="hover:bg-slate-50/40">
-                                <td className="py-0.5 px-1 border-r border-slate-100 text-center font-bold text-slate-700" style={{ width: '4%' }}>{idx + 1}</td>
-                                <td className="py-0.5 px-1 border-r border-slate-100 font-semibold text-slate-800 text-[8px] break-words" style={{ width: '32%' }}>{info.nama}</td>
+                                <td className="p-1 border-r border-slate-100 text-center font-bold text-amber-700" style={{ width: '5%' }}>{idx + 1}</td>
+                                <td className="p-1 border-r border-slate-100 font-semibold text-slate-800 break-words text-[8.5px]" style={{ width: '35%' }}>{info.nama}</td>
                                 {demografiStats.g1Data.slice(0, 4).map(g1 => {
                                   const val = tObj ? tObj[g1.name] : null;
                                   return (
-                                    <td key={g1.name} className="py-0.5 px-1 text-center border-r border-slate-100 font-bold text-teal-800 bg-teal-50/10" style={{ width: '8%' }}>
+                                    <td key={g1.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-teal-800 bg-teal-50/20" style={{ width: `${30 / Math.max(1, demografiStats.g1Data.slice(0, 4).length)}%` }}>
                                       {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
                                     </td>
                                   );
@@ -4235,7 +4249,7 @@ export default function LaporanTab({
                                 {demografiStats.g3Data.slice(0, 4).map(g3 => {
                                   const val = wObj ? wObj[g3.name] : null;
                                   return (
-                                    <td key={g3.name} className="py-0.5 px-1 text-center border-r border-slate-100 font-bold text-indigo-800 bg-indigo-50/10 last:border-r-0" style={{ width: '8%' }}>
+                                    <td key={g3.name} className="p-1 text-center border-r border-slate-100 font-extrabold text-indigo-800 bg-indigo-50/20 last:border-r-0" style={{ width: `${30 / Math.max(1, demografiStats.g3Data.slice(0, 4).length)}%` }}>
                                       {val !== undefined && val !== null ? `${val.toFixed(1)}%` : '-'}
                                     </td>
                                   );
