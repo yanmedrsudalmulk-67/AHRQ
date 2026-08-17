@@ -5129,7 +5129,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                   </div>
 
                   {/* 6 Submenu cards with different color bottom borders */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full items-stretch">
                     {[
                       { 
                         title: 'Demografi Responden', 
@@ -5178,25 +5178,27 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                         key={idx}
                         whileHover={{ y: -5 }}
                         onClick={() => setHospitalSubView(item.title)}
-                        className={`bg-white rounded-[20px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col cursor-pointer relative overflow-hidden ${item.hoverClass} group pb-8`}
+                        className={`bg-white rounded-[20px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 hover:shadow-lg transition-all flex flex-col justify-between cursor-pointer overflow-hidden ${item.hoverClass} group h-full min-h-[290px]`}
                       >
-                        <div className="flex items-start justify-between mb-4">
-                          <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
-                            {item.icon}
+                        <div className="p-6 pb-7 flex flex-col flex-1">
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="p-3 bg-slate-50 rounded-xl group-hover:scale-110 transition-transform duration-300">
+                              {item.icon}
+                            </div>
+                          </div>
+                          <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors min-h-[3.25rem] flex items-center leading-snug">
+                            {item.title}
+                          </h3>
+                          <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6">
+                            {item.desc}
+                          </p>
+                          <div className="flex items-center text-blue-600 font-bold text-xs group-hover:translate-x-1 transition-transform mt-auto pt-2">
+                            Lihat Detail
+                            <ChevronRight className="w-3.5 h-3.5 ml-1" />
                           </div>
                         </div>
-                        <h3 className="text-lg font-bold text-slate-800 mb-2 group-hover:text-blue-700 transition-colors">
-                          {item.title}
-                        </h3>
-                        <p className="text-slate-500 text-xs font-medium leading-relaxed mb-6 flex-1">
-                          {item.desc}
-                        </p>
-                        <div className="flex items-center text-blue-600 font-bold text-xs group-hover:translate-x-1 transition-transform mt-auto">
-                          Lihat Detail
-                          <ChevronRight className="w-3.5 h-3.5 ml-1" />
-                        </div>
                         {/* Dynamic identity line at the bottom */}
-                        <div className={`absolute bottom-0 left-0 right-0 h-1.5 ${item.lineBg} rounded-b-[20px] transition-all duration-300 group-hover:h-2.5`} />
+                        <div className={`w-full h-1.5 ${item.lineBg} transition-all duration-300 group-hover:h-2.5 shrink-0`} />
                       </motion.div>
                     ))}
                   </div>
