@@ -36,7 +36,8 @@ import {
   LayoutDashboard,
   HelpCircle,
   AlertCircle,
-  MessageSquare
+  MessageSquare,
+  Loader2
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -51,10 +52,9 @@ import {
   LabelList
 } from 'recharts';
 import { computeDimensionScores, DIMENSI_INFO, DIMENSI_ITEMS, scoreToPercent } from '../lib/scoring';
-import { exportReportToDocx, ReportData } from '../lib/docxExporter';
 import { getPengesahanConfig, PengesahanConfig, isSurveyResponse } from '../lib/db';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas-pro';
 
 export const isPositiveComment = (text: string): boolean => {
   if (!text || typeof text !== 'string') return false;
@@ -170,87 +170,6 @@ const STATEMENTS_F = [
 
 const DIMENSION_ORDER = ['d1', 'd2', 'd3', 'd4', 'd5', 'd6', 'd7', 'd8', 'd9', 'd10'];
 
-const hexToRgbaStr = (hex: string, alpha: number) => {
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-};
-
-const oklabToRgb = (L: number, a: number, b: number, A: number): string => {
-  // LMS
-  const l_ = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3);
-  const m_ = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3);
-  const s_ = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3);
-
-  // Linear sRGB
-  const r_lin = +4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_;
-  const g_lin = -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_;
-  const b_lin = -0.0041960863 * l_ - 0.7034186147 * m_ + 1.7076147010 * s_;
-
-  const gamma = (c: number) => {
-    const absC = Math.abs(c);
-    const val = absC <= 0.0031308 ? 12.92 * absC : 1.055 * Math.pow(absC, 1 / 2.4) - 0.055;
-    return c < 0 ? -val : val;
-  };
-
-  const r = Math.min(255, Math.max(0, Math.round(gamma(r_lin) * 255)));
-  const g = Math.min(255, Math.max(0, Math.round(gamma(g_lin) * 255)));
-  const bComp = Math.min(255, Math.max(0, Math.round(gamma(b_lin) * 255)));
-
-  if (A < 1) {
-    return `rgba(${r}, ${g}, ${bComp}, ${Number(A.toFixed(3))})`;
-  }
-  return `rgb(${r}, ${g}, ${bComp})`;
-};
-
-const parseOklchToRgb = (colorStr: string): string => {
-  if (!colorStr) return 'rgb(0, 0, 0)';
-
-  // 1. oklch(L C H [/ A])
-  const oklchMatch = colorStr.match(/oklch\(\s*([0-9\.\%]+)\s+([0-9\.\-]+)\s+([0-9\.\-]+)(?:\s*\/\s*([0-9\.\%]+))?\s*\)/i);
-  if (oklchMatch) {
-    let L = parseFloat(oklchMatch[1]);
-    if (oklchMatch[1].includes('%')) L = L / 100;
-    const C = parseFloat(oklchMatch[2]);
-    const H = parseFloat(oklchMatch[3]);
-    let A = 1;
-    if (oklchMatch[4]) {
-      A = parseFloat(oklchMatch[4]);
-      if (oklchMatch[4].includes('%')) A = A / 100;
-    }
-
-    const rad = (H * Math.PI) / 180;
-    const a = C * Math.cos(rad);
-    const b = C * Math.sin(rad);
-
-    return oklabToRgb(L, a, b, A);
-  }
-
-  // 2. oklab(L a b [/ A])
-  const oklabMatch = colorStr.match(/oklab\(\s*([0-9\.\%]+)\s+([\-0-9\.\%]+)\s+([\-0-9\.\%]+)(?:\s*\/\s*([0-9\.\%]+))?\s*\)/i);
-  if (oklabMatch) {
-    let L = parseFloat(oklabMatch[1]);
-    if (oklabMatch[1].includes('%')) L = L / 100;
-    let a = parseFloat(oklabMatch[2]);
-    if (oklabMatch[2].includes('%')) a = a / 100;
-    let b = parseFloat(oklabMatch[3]);
-    if (oklabMatch[3].includes('%')) b = b / 100;
-    let A = 1;
-    if (oklabMatch[4]) {
-      A = parseFloat(oklabMatch[4]);
-      if (oklabMatch[4].includes('%')) A = A / 100;
-    }
-
-    return oklabToRgb(L, a, b, A);
-  }
-
-  // 3. Fallback for any other modern color syntax
-  if (colorStr.includes('0.5') || colorStr.includes('50%')) return 'rgb(100, 116, 139)';
-  if (colorStr.includes('100%') || colorStr.includes(' 1 ') || colorStr.includes('1)') || colorStr.includes('0.9')) return 'rgb(255, 255, 255)';
-  return 'rgb(30, 41, 59)';
-};
-
 const getBarColorHex = (val: number) => {
   if (val >= 85) return '#3b82f6';
   if (val >= 70) return '#10b981';
@@ -342,12 +261,10 @@ export default function LaporanTab({
       }
     }
   }, [selectedBenchmarkId]);
-  const [isExporting, setIsExporting] = useState<boolean>(false);
-  const [isExportingPdf, setIsExportingPdf] = useState<boolean>(false);
-  const [exportProgress, setExportProgress] = useState<{ current: number; total: number }>({ current: 0, total: 19 });
-  const [showDownloadDropdown, setShowDownloadDropdown] = useState<boolean>(false);
   const [pengesahanConfig, setPengesahanConfig] = useState<PengesahanConfig | null>(null);
   const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [isExporting, setIsExporting] = useState<boolean>(false);
+  const [exportProgress, setExportProgress] = useState<{ current: number; total: number } | null>(null);
   const [targetHospitalSurveys, setTargetHospitalSurveys] = useState<SurveyData[]>([]);
   const [isLoadingTarget, setIsLoadingTarget] = useState(false);
 
@@ -726,13 +643,17 @@ export default function LaporanTab({
 
     const TOTAL = flatDemografiRows.length;
 
-    // Capacities for pagination:
-    const CAP_FIRST_WITH_SUMMARY = 10;
-    const CAP_FIRST_NO_SUMMARY = 18;
-    const CAP_MID_NO_SUMMARY = 25;
-    const CAP_LAST_WITH_SUMMARY = 13;
+    // Capacities for pagination based on A4 printable area and row height (~27px):
+    // Page 1 with Bab III header, response rate, table header, and 3.1.3 summary (safe limit):
+    const CAP_FIRST_WITH_SUMMARY = 13;
+    // Page 1 with Bab III header, response rate, table header, NO summary (safe limit before footer):
+    const CAP_FIRST_NO_SUMMARY = 21;
+    // Continuation middle page (running header + table header, NO summary):
+    const CAP_MID_NO_SUMMARY = 26;
+    // Continuation last page (running header + table header + 3.1.3 summary):
+    const CAP_LAST_WITH_SUMMARY = 18;
 
-    // Case 1: Fits on Page 1 WITH summary
+    // Case 1: Fits entirely on Page 1 WITH summary
     if (TOTAL <= CAP_FIRST_WITH_SUMMARY) {
       pages.push({
         rows: flatDemografiRows,
@@ -744,16 +665,12 @@ export default function LaporanTab({
 
     let currentIndex = 0;
 
-    // Page 1 (First page, no summary)
+    // Page 1 (First page, maximize space before footer)
     let page1Limit = CAP_FIRST_NO_SUMMARY;
-    const remAfterP1 = TOTAL - page1Limit;
-
-    if (remAfterP1 > 0 && remAfterP1 <= CAP_LAST_WITH_SUMMARY) {
-      // Fits on Page 2 with summary perfectly
-      page1Limit = CAP_FIRST_NO_SUMMARY;
-    } else if (remAfterP1 > CAP_LAST_WITH_SUMMARY && remAfterP1 <= CAP_LAST_WITH_SUMMARY + CAP_MID_NO_SUMMARY) {
-      // Remaining will take 2 pages: take enough on page 1 so middle page fills nicely
-      page1Limit = Math.min(CAP_FIRST_NO_SUMMARY, Math.max(10, TOTAL - CAP_LAST_WITH_SUMMARY - 10));
+    if (TOTAL <= CAP_FIRST_NO_SUMMARY + CAP_LAST_WITH_SUMMARY) {
+      if (TOTAL - page1Limit < 3) {
+        page1Limit = Math.max(CAP_FIRST_WITH_SUMMARY + 1, TOTAL - 3);
+      }
     }
 
     const page1Rows = flatDemografiRows.slice(0, page1Limit);
@@ -779,7 +696,7 @@ export default function LaporanTab({
         currentIndex += remaining;
       } else if (remaining <= CAP_LAST_WITH_SUMMARY + CAP_MID_NO_SUMMARY) {
         // Two pages left: 1 middle page + 1 last page with summary
-        const midTake = Math.min(CAP_MID_NO_SUMMARY, remaining - 5);
+        const midTake = Math.min(CAP_MID_NO_SUMMARY, Math.max(remaining - CAP_LAST_WITH_SUMMARY, Math.min(CAP_MID_NO_SUMMARY, remaining - 3)));
         pages.push({
           rows: flatDemografiRows.slice(currentIndex, currentIndex + midTake),
           isFirstPage: false,
@@ -821,7 +738,7 @@ export default function LaporanTab({
   }, [demografiStats.unitData]);
 
   const totalReportPages = useMemo(() => {
-    return 5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 7;
+    return 6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 6;
   }, [demografiPages.length, profesiPages.length, unitPages.length]);
 
   const renderDemografiTableRows = (
@@ -869,23 +786,35 @@ export default function LaporanTab({
         return (
           <tr
             key={`${rItem.categoryKey}-${blockIdx}-${rIdx}`}
-            className={rIdx % 2 === 0 ? 'bg-slate-50/50' : 'bg-white'}
+            className={rIdx % 2 === 0 ? 'bg-slate-50/40' : 'bg-white'}
           >
             {rIdx === 0 && (
               <td
                 rowSpan={block.rows.length}
-                className="py-1.5 px-2.5 font-bold text-slate-850 border-r border-slate-200 align-top w-[22%] break-words text-[9px] text-left"
+                className="py-2 px-2.5 font-bold text-slate-900 border-r border-b border-slate-200 align-top w-[22%] break-words text-[9px] text-left bg-white"
+                style={{ verticalAlign: 'top', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}
               >
-                {categoryDisplayName}
+                <div className="font-bold text-slate-900 leading-tight">
+                  {categoryDisplayName}
+                </div>
               </td>
             )}
-            <td className="py-1.5 px-2.5 border-r border-slate-200 text-slate-700 w-[48%] break-words text-[9px] text-left">
+            <td 
+              className="py-1.5 px-2.5 border-r border-b border-slate-200 text-slate-700 w-[48%] break-words text-[9px] text-left"
+              style={{ borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}
+            >
               {rItem.name}
             </td>
-            <td className="py-1.5 px-2 border-r border-slate-200 text-center font-bold text-slate-900 w-[15%] text-[9px]">
+            <td 
+              className="py-1.5 px-2 border-r border-b border-slate-200 text-center font-bold text-slate-900 w-[15%] text-[9px]"
+              style={{ borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}
+            >
               {rItem.value}
             </td>
-            <td className="py-1.5 px-2 text-center font-bold text-teal-700 w-[15%] text-[9px]">
+            <td 
+              className="py-1.5 px-2 border-b border-slate-200 text-center font-bold text-teal-700 w-[15%] text-[9px]"
+              style={{ borderBottom: '1px solid #e2e8f0' }}
+            >
               {rItem.pctStr}
             </td>
           </tr>
@@ -1713,661 +1642,104 @@ export default function LaporanTab({
     return yearScores.sort((a, b) => a.year.localeCompare(b.year));
   }, [availableYears, validSurveys]);
 
-  // Print PDF via browser print dialog
-  const handlePrintPDF = () => {
-    window.print();
-  };
-
-  // Direct PDF export via client-side rendering (html2canvas + jsPDF)
+  // Unduh / Cetak Laporan PDF via html2canvas-pro & jsPDF engine (100% identik dengan tampilan di aplikasi tanpa pergeseran layout)
   const handleExportPDF = async () => {
-    if (!printRef.current) return;
-    setIsExportingPdf(true);
+    setIsExporting(true);
+    setExportProgress({ current: 0, total: 0 });
 
     const prevZoom = zoomLevel;
-    const prevScrollX = window.scrollX;
-    const prevScrollY = window.scrollY;
-
-    // Scroll window to top-left to avoid html2canvas offset/displacement bugs
-    window.scrollTo(0, 0);
-    setZoomLevel(100);
-
-    // Wait for DOM layout scale and web fonts to normalize
-    await new Promise(r => setTimeout(r, 450));
-    if (document.fonts && document.fonts.ready) {
-      try {
-        await document.fonts.ready;
-      } catch (e) {
-        // ignore font loading error
-      }
+    // Temporarily reset zoom to 100% so elements are rendered at canonical 1:1 scale
+    if (zoomLevel !== 100) {
+      setZoomLevel(100);
     }
 
-    let restoreGetComputedStyle: (() => void) | null = null;
+    // Allow DOM to settle and ensure all fonts (Poppins) are loaded
+    if (typeof document !== 'undefined' && document.fonts) {
+      await document.fonts.ready;
+    }
+    await new Promise(resolve => setTimeout(resolve, 350));
 
     try {
-      // 1. Temporarily patch window.getComputedStyle to intercept and replace modern color functions with rgb colors
-      const originalGetComputedStyle = window.getComputedStyle;
-      const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
-      const hasModernColor = (s: string) => {
-        const lower = s.toLowerCase();
-        return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
-      };
+      const pageElements = Array.from(document.querySelectorAll<HTMLElement>('#print-area .word-page'));
+      if (!pageElements || pageElements.length === 0) {
+        throw new Error('Tidak ada halaman laporan yang ditemukan.');
+      }
 
-      window.getComputedStyle = function (element, pseudoElt) {
-        const style = originalGetComputedStyle(element, pseudoElt);
-        return new Proxy(style, {
-          get(target, prop) {
-            const val = Reflect.get(target, prop);
-            if (typeof val === 'string' && hasModernColor(val)) {
-              return val.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-            }
-            if (typeof val === 'function') {
-              return function (...args: any[]) {
-                const res = val.apply(target, args);
-                if (typeof res === 'string' && hasModernColor(res)) {
-                  return res.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                }
-                return res;
-              };
-            }
-            return val;
-          }
-        });
-      };
-      restoreGetComputedStyle = () => {
-        window.getComputedStyle = originalGetComputedStyle;
-      };
-
-      const pages = printRef.current.querySelectorAll('.word-page');
-      const totalPages = pages.length || 1;
+      const totalPages = pageElements.length;
       setExportProgress({ current: 1, total: totalPages });
 
+      const firstIsLandscape = pageElements[0].classList.contains('word-page-landscape');
       const pdf = new jsPDF({
-        orientation: 'portrait',
+        orientation: firstIsLandscape ? 'landscape' : 'portrait',
         unit: 'mm',
         format: 'a4',
-        compress: true
+        compress: true,
       });
 
-      for (let i = 0; i < pages.length; i++) {
+      for (let i = 0; i < totalPages; i++) {
+        const pageEl = pageElements[i];
         setExportProgress({ current: i + 1, total: totalPages });
-        await new Promise(r => setTimeout(r, 50)); // Allow UI to update and DOM to repaint
 
-        const pageEl = pages[i] as HTMLElement;
-        pageEl.setAttribute('data-currently-exporting', 'true');
         const isLandscape = pageEl.classList.contains('word-page-landscape');
 
-        // Dimensions in pixels for 1:1 A4 mapping (96 dpi)
-        const targetWidthPx = isLandscape ? 1123 : 794;
-        const targetHeightPx = isLandscape ? 794 : 1123;
-
+        // Render page with high-res scale (2x) to ensure sharp typography and graphics
         const canvas = await html2canvas(pageEl, {
-          scale: 2, // 2x high resolution crisp rendering
+          scale: 2,
           useCORS: true,
           allowTaint: true,
-          logging: false,
           backgroundColor: '#ffffff',
-          width: targetWidthPx,
-          height: targetHeightPx,
-          windowWidth: targetWidthPx,
-          windowHeight: targetHeightPx,
+          logging: false,
+          imageTimeout: 20000,
           scrollX: 0,
           scrollY: 0,
-          onclone: (clonedDoc) => {
-            // Ensure cloned document body and html elements are allowed to expand naturally
-            clonedDoc.documentElement.style.width = 'auto';
-            clonedDoc.documentElement.style.height = 'auto';
-            clonedDoc.documentElement.style.margin = '0';
-            clonedDoc.documentElement.style.padding = '0';
-            clonedDoc.documentElement.style.overflow = 'visible';
-
-            clonedDoc.body.style.width = 'auto';
-            clonedDoc.body.style.height = 'auto';
-            clonedDoc.body.style.margin = '0';
-            clonedDoc.body.style.padding = '0';
-            clonedDoc.body.style.overflow = 'visible';
-            clonedDoc.body.style.position = 'relative';
-
-            // A. Inject global overrides into cloned document
-            const pdfOverrideStyle = clonedDoc.createElement('style');
-            pdfOverrideStyle.textContent = `
-              * {
-                transition: none !important;
-                animation: none !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                box-sizing: border-box !important;
-                -webkit-font-smoothing: antialiased !important;
-              }
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: auto !important;
-                height: auto !important;
-                min-width: none !important;
-                min-height: none !important;
-                max-width: none !important;
-                max-height: none !important;
-                background: #ffffff !important;
-                overflow: visible !important;
-              }
-              /* Middle Alignment Overrides for Tables, Charts & Bar Charts */
-              table, table th, table td, th, td {
-                vertical-align: middle !important;
-              }
-              svg text, svg tspan, .recharts-text, .recharts-label, .recharts-cartesian-axis-tick-value {
-                dominant-baseline: central !important;
-                alignment-baseline: middle !important;
-                vertical-align: middle !important;
-              }
-              .bg-emerald-500, .bg-yellow-500, .bg-rose-500, .bg-red-500, .bg-blue-500, .bg-slate-400, .bg-slate-500, .bg-indigo-500, .bg-purple-500 {
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-              }
-              .bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span, .bg-red-500 span, .bg-blue-500 span, .bg-slate-400 span, .bg-slate-500 span, .bg-indigo-500 span, .bg-purple-500 span,
-              .bg-emerald-500 p, .bg-yellow-500 p, .bg-rose-500 p, .bg-red-500 p, .bg-blue-500 p, .bg-slate-400 p, .bg-slate-500 p, .bg-indigo-500 p, .bg-purple-500 p {
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                line-height: 1 !important;
-                height: 100% !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                vertical-align: middle !important;
-                transform: none !important;
-              }
-            `;
-            clonedDoc.head.appendChild(pdfOverrideStyle);
-
-            // B. Find and isolate the page being currently exported
-            const clonedPage = clonedDoc.querySelector('[data-currently-exporting="true"]') as HTMLElement;
-            if (clonedPage) {
-              const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
-              const hasModernColor = (s: string) => {
-                const lower = s.toLowerCase();
-                return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
-              };
-
-              const allNodes = clonedPage.querySelectorAll('*');
-              allNodes.forEach((node) => {
-                const htmlNode = node as HTMLElement;
-                if (htmlNode.style && htmlNode.style.cssText && hasModernColor(htmlNode.style.cssText)) {
-                  htmlNode.style.cssText = htmlNode.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                }
-              });
-
-              if (clonedPage.style && clonedPage.style.cssText && hasModernColor(clonedPage.style.cssText)) {
-                clonedPage.style.cssText = clonedPage.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-              }
-
-              // Isolate: empty the body and append ONLY the clonedPage
-              clonedDoc.body.innerHTML = '';
-              clonedDoc.body.appendChild(clonedPage);
-
-              // Set strict dimensions and positioning on the isolated page to align 100% with viewport origin (0,0)
-              clonedPage.style.position = 'absolute';
-              clonedPage.style.top = '0';
-              clonedPage.style.left = '0';
-              clonedPage.style.margin = '0';
-              clonedPage.style.padding = '2.5cm'; // Maintain requested 25mm margins!
-              clonedPage.style.boxSizing = 'border-box';
-              clonedPage.style.transform = 'none';
-              clonedPage.style.backgroundColor = '#ffffff';
-
-              const isLand = clonedPage.classList.contains('word-page-landscape');
-              if (isLand) {
-                clonedPage.style.width = '1123px';
-                clonedPage.style.height = '794px';
-                clonedPage.style.minWidth = '1123px';
-                clonedPage.style.minHeight = '794px';
-                clonedPage.style.maxWidth = '1123px';
-                clonedPage.style.maxHeight = '794px';
-              } else {
-                clonedPage.style.width = '794px';
-                clonedPage.style.height = '1123px';
-                clonedPage.style.minWidth = '794px';
-                clonedPage.style.minHeight = '1123px';
-                clonedPage.style.maxWidth = '794px';
-                clonedPage.style.maxHeight = '1123px';
-              }
+          onclone: (clonedDoc, clonedEl) => {
+            const printArea = clonedDoc.getElementById('print-area');
+            if (printArea) {
+              printArea.style.transform = 'none';
+              printArea.style.margin = '0 auto';
+              printArea.style.padding = '0';
             }
-
-            // C. Sanitize <style> tags in cloned document without deleting rules
-            const styleElements = clonedDoc.querySelectorAll('style');
-            styleElements.forEach((styleEl) => {
-              if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
-                styleEl.textContent = styleEl.textContent.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-              }
+            clonedEl.style.transform = 'none';
+            clonedEl.style.boxShadow = 'none';
+            clonedEl.style.margin = '0 auto';
+            // Ensure all SVG and Recharts text elements explicitly use Poppins font
+            const svgTexts = clonedEl.querySelectorAll('svg text, .recharts-text, .recharts-surface text');
+            svgTexts.forEach((el: any) => {
+              el.style.fontFamily = "'Poppins', -apple-system, sans-serif";
             });
           }
         });
 
-        pageEl.removeAttribute('data-currently-exporting');
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgData = canvas.toDataURL('image/png');
+        const pageWidth = isLandscape ? 297 : 210;
+        const pageHeight = isLandscape ? 210 : 297;
 
         if (i > 0) {
           pdf.addPage('a4', isLandscape ? 'landscape' : 'portrait');
         }
 
-        if (isLandscape) {
-          pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
-        } else {
-          pdf.addImage(imgData, 'JPEG', 0, 0, 210, 297, undefined, 'FAST');
-        }
+        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
       }
 
-      const safeName = activeHospitalName.replace(/[^a-zA-Z0-9]/g, '_');
-      const displayYr = selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear;
-      pdf.save(`Laporan_Resmi_Budaya_Keselamatan_Pasien_${safeName}_${displayYr}.pdf`);
+      const safeHospitalName = (activeHospitalName || 'RS').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const safeYear = selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear;
+      const docTitle = `Laporan_Survei_Budaya_Keselamatan_Pasien_${safeHospitalName}_${safeYear}.pdf`;
+
+      pdf.save(docTitle);
     } catch (err) {
-      console.error('Failed to export PDF:', err);
+      console.error('Error exporting PDF via html2canvas-pro/jsPDF:', err);
       window.print();
     } finally {
-      if (restoreGetComputedStyle) restoreGetComputedStyle();
-      setZoomLevel(prevZoom);
-      window.scrollTo(prevScrollX, prevScrollY);
-      setIsExportingPdf(false);
-    }
-  };
-
-  // Export Word docx
-  const handleExportDocx = async () => {
-    if (!printRef.current) return;
-    setIsExporting(true);
-
-    const prevZoom = zoomLevel;
-    const prevScrollX = window.scrollX;
-    const prevScrollY = window.scrollY;
-
-    // Scroll window to top-left to avoid html2canvas offset/displacement bugs
-    window.scrollTo(0, 0);
-    setZoomLevel(100);
-
-    // Wait for DOM layout scale to normalize
-    await new Promise(r => setTimeout(r, 400));
-
-    let restoreStylesheets: (() => void) | null = null;
-    let restoreGetComputedStyle: (() => void) | null = null;
-
-    try {
-      // 1. Temporarily patch window.getComputedStyle to intercept and replace modern color functions
-      const originalGetComputedStyle = window.getComputedStyle;
-      const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
-      const hasModernColor = (s: string) => {
-        const lower = s.toLowerCase();
-        return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
-      };
-
-      window.getComputedStyle = function (element, pseudoElt) {
-        const style = originalGetComputedStyle(element, pseudoElt);
-        return new Proxy(style, {
-          get(target, prop) {
-            const val = Reflect.get(target, prop);
-            if (typeof val === 'string' && hasModernColor(val)) {
-              return val.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-            }
-            if (typeof val === 'function') {
-              return function (...args: any[]) {
-                const res = val.apply(target, args);
-                if (typeof res === 'string' && hasModernColor(res)) {
-                  return res.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                }
-                return res;
-              };
-            }
-            return val;
-          }
-        });
-      };
-      restoreGetComputedStyle = () => {
-        window.getComputedStyle = originalGetComputedStyle;
-      };
-
-      // 2. Temporarily clone and replace modern color functions with safe color in active document stylesheets
-      const originalSheetsState: { sheet: CSSStyleSheet; disabled: boolean }[] = [];
-      const tempStyleElements: HTMLStyleElement[] = [];
-
-      try {
-        const sheets = Array.from(document.styleSheets);
-        sheets.forEach((sheet) => {
-          originalSheetsState.push({ sheet, disabled: sheet.disabled });
-          try {
-            let hasModern = false;
-            const rules = sheet.cssRules || sheet.rules;
-            if (rules) {
-              for (let j = 0; j < rules.length; j++) {
-                if (rules[j].cssText && hasModernColor(rules[j].cssText)) {
-                  hasModern = true;
-                  break;
-                }
-              }
-            }
-
-            if (hasModern && rules) {
-              sheet.disabled = true;
-              let newCssText = '';
-              for (let j = 0; j < rules.length; j++) {
-                let ruleText = rules[j].cssText;
-                if (ruleText && hasModernColor(ruleText)) {
-                  ruleText = ruleText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                }
-                newCssText += (ruleText || '') + '\n';
-              }
-
-              const tempStyle = document.createElement('style');
-              tempStyle.setAttribute('data-temp-pdf-style', 'true');
-              tempStyle.textContent = newCssText;
-              document.head.appendChild(tempStyle);
-              tempStyleElements.push(tempStyle);
-            }
-          } catch (e) {
-            if (sheet.ownerNode && sheet.ownerNode instanceof HTMLStyleElement) {
-              const content = sheet.ownerNode.textContent;
-              if (content && hasModernColor(content)) {
-                sheet.disabled = true;
-                const cleanContent = content.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                const tempStyle = document.createElement('style');
-                tempStyle.setAttribute('data-temp-pdf-style', 'true');
-                tempStyle.textContent = cleanContent;
-                document.head.appendChild(tempStyle);
-                tempStyleElements.push(tempStyle);
-              }
-            }
-          }
-        });
-      } catch (errStylesheets) {
-        console.error('Error rewriting stylesheets for Word:', errStylesheets);
+      if (prevZoom !== 100) {
+        setZoomLevel(prevZoom);
       }
-
-      restoreStylesheets = () => {
-        originalSheetsState.forEach(({ sheet, disabled }) => {
-          sheet.disabled = disabled;
-        });
-        tempStyleElements.forEach((el) => {
-          el.parentNode?.removeChild(el);
-        });
-      };
-
-      const pages = printRef.current.querySelectorAll('.word-page');
-      const totalPages = pages.length;
-      setExportProgress({ current: 1, total: totalPages });
-
-      const pageImages: string[] = [];
-
-      for (let i = 0; i < pages.length; i++) {
-        setExportProgress({ current: i + 1, total: pages.length });
-        const pageEl = pages[i] as HTMLElement;
-        pageEl.setAttribute('data-currently-exporting', 'true');
-        const isLandscape = pageEl.classList.contains('word-page-landscape');
-
-        // Dimensions in pixels for 1:1 A4 mapping (96 dpi)
-        const targetWidthPx = isLandscape ? 1123 : 794;
-        const targetHeightPx = isLandscape ? 794 : 1123;
-
-        const canvas = await html2canvas(pageEl, {
-          scale: 2,
-          useCORS: true,
-          allowTaint: true,
-          logging: false,
-          backgroundColor: '#ffffff',
-          width: targetWidthPx,
-          height: targetHeightPx,
-          windowWidth: targetWidthPx,
-          windowHeight: targetHeightPx,
-          scrollX: 0,
-          scrollY: 0,
-          onclone: (clonedDoc) => {
-            // Ensure cloned document body and html elements are allowed to expand naturally
-            clonedDoc.documentElement.style.width = 'auto';
-            clonedDoc.documentElement.style.height = 'auto';
-            clonedDoc.documentElement.style.margin = '0';
-            clonedDoc.documentElement.style.padding = '0';
-            clonedDoc.documentElement.style.overflow = 'visible';
-
-            clonedDoc.body.style.width = 'auto';
-            clonedDoc.body.style.height = 'auto';
-            clonedDoc.body.style.margin = '0';
-            clonedDoc.body.style.padding = '0';
-            clonedDoc.body.style.overflow = 'visible';
-            clonedDoc.body.style.position = 'relative';
-
-            // A. Inject global overrides into cloned document
-            const pdfOverrideStyle = clonedDoc.createElement('style');
-            pdfOverrideStyle.textContent = `
-              * {
-                transition: none !important;
-                animation: none !important;
-                -webkit-print-color-adjust: exact !important;
-                print-color-adjust: exact !important;
-                box-sizing: border-box !important;
-                -webkit-font-smoothing: antialiased !important;
-              }
-              html, body {
-                margin: 0 !important;
-                padding: 0 !important;
-                width: auto !important;
-                height: auto !important;
-                min-width: none !important;
-                min-height: none !important;
-                max-width: none !important;
-                max-height: none !important;
-                background: #ffffff !important;
-                overflow: visible !important;
-              }
-              /* Middle Alignment Overrides for Tables, Charts & Bar Charts */
-              table, table th, table td, th, td {
-                vertical-align: middle !important;
-              }
-              svg text, svg tspan, .recharts-text, .recharts-label, .recharts-cartesian-axis-tick-value {
-                dominant-baseline: central !important;
-                alignment-baseline: middle !important;
-                vertical-align: middle !important;
-              }
-              .bg-emerald-500, .bg-yellow-500, .bg-rose-500, .bg-red-500, .bg-blue-500, .bg-slate-400, .bg-slate-500, .bg-indigo-500, .bg-purple-500 {
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-              }
-              .bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span, .bg-red-500 span, .bg-blue-500 span, .bg-slate-400 span, .bg-slate-500 span, .bg-indigo-500 span, .bg-purple-500 span,
-              .bg-emerald-500 p, .bg-yellow-500 p, .bg-rose-500 p, .bg-red-500 p, .bg-blue-500 p, .bg-slate-400 p, .bg-slate-500 p, .bg-indigo-500 p, .bg-purple-500 p {
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                line-height: 1 !important;
-                height: 100% !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                vertical-align: middle !important;
-                transform: none !important;
-              }
-            `;
-            clonedDoc.head.appendChild(pdfOverrideStyle);
-
-            // B. Find and isolate the page being currently exported
-            const clonedPage = clonedDoc.querySelector('[data-currently-exporting="true"]') as HTMLElement;
-            if (clonedPage) {
-              const modernColorRegex = /(oklch|oklab|lab|lch|color)\([^\)]+\)/gi;
-              const hasModernColor = (s: string) => {
-                const lower = s.toLowerCase();
-                return lower.includes('oklch') || lower.includes('oklab') || lower.includes('lab(') || lower.includes('lch(') || lower.includes('color(');
-              };
-
-              const allNodes = clonedPage.querySelectorAll('*');
-              allNodes.forEach((node) => {
-                const htmlNode = node as HTMLElement;
-                if (htmlNode.style && htmlNode.style.cssText && hasModernColor(htmlNode.style.cssText)) {
-                  htmlNode.style.cssText = htmlNode.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-                }
-              });
-
-              if (clonedPage.style && clonedPage.style.cssText && hasModernColor(clonedPage.style.cssText)) {
-                clonedPage.style.cssText = clonedPage.style.cssText.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-              }
-
-              // Isolate: empty the body and append ONLY the clonedPage
-              clonedDoc.body.innerHTML = '';
-              clonedDoc.body.appendChild(clonedPage);
-
-              // Set strict dimensions and positioning on the isolated page to align 100% with viewport origin (0,0)
-              clonedPage.style.position = 'absolute';
-              clonedPage.style.top = '0';
-              clonedPage.style.left = '0';
-              clonedPage.style.margin = '0';
-              clonedPage.style.padding = '2.5cm'; // Maintain requested 25mm margins!
-              clonedPage.style.boxSizing = 'border-box';
-              clonedPage.style.transform = 'none';
-              clonedPage.style.backgroundColor = '#ffffff';
-
-              const isLand = clonedPage.classList.contains('word-page-landscape');
-              if (isLand) {
-                clonedPage.style.width = '1123px';
-                clonedPage.style.height = '794px';
-                clonedPage.style.minWidth = '1123px';
-                clonedPage.style.minHeight = '794px';
-                clonedPage.style.maxWidth = '1123px';
-                clonedPage.style.maxHeight = '794px';
-              } else {
-                clonedPage.style.width = '794px';
-                clonedPage.style.height = '1123px';
-                clonedPage.style.minWidth = '794px';
-                clonedPage.style.minHeight = '1123px';
-                clonedPage.style.maxWidth = '794px';
-                clonedPage.style.maxHeight = '1123px';
-              }
-            }
-
-            // C. Sanitize <style> tags text content
-            const styleElements = clonedDoc.querySelectorAll('style');
-            styleElements.forEach((styleEl) => {
-              if (styleEl.textContent && hasModernColor(styleEl.textContent)) {
-                styleEl.textContent = styleEl.textContent.replace(modernColorRegex, (m) => parseOklchToRgb(m));
-              }
-            });
-
-            // 2. Filter cloned styles
-            try {
-              for (let i = 0; i < clonedDoc.styleSheets.length; i++) {
-                const sheet = clonedDoc.styleSheets[i];
-                try {
-                  const rules = sheet.cssRules || sheet.rules;
-                  if (!rules) continue;
-                  for (let j = rules.length - 1; j >= 0; j--) {
-                    const rule = rules[j];
-                    if (rule.cssText && hasModernColor(rule.cssText)) {
-                      sheet.deleteRule(j);
-                    }
-                  }
-                } catch (e) {
-                  // Ignore
-                }
-              }
-            } catch (e) {
-              // Ignore
-            }
-          }
-        });
-
-        pageEl.removeAttribute('data-currently-exporting');
-
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        pageImages.push(imgData);
-      }
-
-      const reportPayload: ReportData = {
-        namaRs: activeHospitalName,
-        tahun: selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear,
-        periodeSurvei,
-        totalTarget,
-        totalActual,
-        responseRate: responseRateStr,
-        demographics,
-        dimensionScores: dimensionScores.map(d => ({
-          id: d.id,
-          kode: d.kode,
-          nama: d.nama,
-          percentage: d.percentage,
-          status: d.status,
-          interpretasi: d.interpretasi
-        })),
-        overallAverage,
-        safetyRating: safetyRatingData.distribution,
-        safetyRatingPositivePct: safetyRatingData.positivePct,
-        reportedEvents: reportedEventsData.distribution,
-        reportedEventsAnyPct: reportedEventsData.reportedAnyPct,
-        strengths,
-        improvements,
-        moderates,
-        recommendations,
-        hasBenchmark: !!benchmarkData,
-        comments: commentsStats,
-        benchmarkName: selectedBenchmarkHospital?.namaRs || undefined,
-        benchmarkComparison: benchmarkData || undefined,
-        hasYearComparison: !!yearComparisonData,
-        yearComparison: yearComparisonData || undefined,
-        pengesahan: {
-          kota: pengesahanConfig?.kota || 'Sukabumi',
-          tanggal: pengesahanConfig?.tanggalPengesahan || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-          penanggungJawabNama: (pengesahanConfig?.pjNama || 'dr. Budi Santoso') + (pengesahanConfig?.pjGelar && !pengesahanConfig.pjNama?.includes(pengesahanConfig.pjGelar) ? ', ' + pengesahanConfig.pjGelar : ''),
-          penanggungJawabJabatan: pengesahanConfig?.pjJabatan || 'Ketua Komite Mutu & Keselamatan Pasien',
-          penanggungJawabNip: pengesahanConfig?.pjNip || '19820315 200804 1 005',
-          direkturNama: (pengesahanConfig?.direkturNama || 'dr. H. Ahmad Wijaya') + (pengesahanConfig?.direkturGelar && !pengesahanConfig.direkturNama?.includes(pengesahanConfig.direkturGelar) ? ', ' + pengesahanConfig.direkturGelar : ''),
-          direkturJabatan: pengesahanConfig?.direkturJabatan || 'Direktur Utama Rumah Sakit',
-          direkturNip: pengesahanConfig?.direkturNip || '19780512 200501 1 002'
-        },
-        pageImages,
-        positionDimensionScores,
-        unitDimensionScores,
-        tenureDimensionScores,
-        workHoursDimensionScores
-      };
-
-      await exportReportToDocx(reportPayload);
-    } catch (err) {
-      console.error('Error generating docx:', err);
-      alert('Gagal mengunduh dokumen Word. Silakan coba lagi.');
-    } finally {
-      if (restoreGetComputedStyle) restoreGetComputedStyle();
-      if (restoreStylesheets) restoreStylesheets();
-      setZoomLevel(prevZoom);
-      window.scrollTo(prevScrollX, prevScrollY);
       setIsExporting(false);
-      setShowDownloadDropdown(false);
+      setExportProgress(null);
     }
   };
 
   return (
     <div className="space-y-8 pb-16 font-sans">
-      {/* PDF & Word Export Progress Modal Overlay */}
-      {(isExportingPdf || isExporting) && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl text-center space-y-4 border border-slate-100 animate-in fade-in zoom-in duration-200">
-            <div className="w-14 h-14 bg-teal-50 border border-teal-200 rounded-2xl flex items-center justify-center mx-auto text-teal-700 shadow-sm">
-              <RefreshCw className="w-7 h-7 animate-spin" />
-            </div>
-            <div>
-              <h3 className="text-base font-extrabold text-slate-900">
-                {isExportingPdf ? 'Mengunduh Dokumen PDF' : 'Mengunduh Dokumen Word'}
-              </h3>
-              <p className="text-xs text-slate-500 font-medium mt-1">
-                Memproses Halaman {exportProgress.current} dari {exportProgress.total}...
-              </p>
-            </div>
-            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200/60">
-              <div 
-                className="bg-gradient-to-r from-teal-500 to-teal-700 h-full transition-all duration-300 rounded-full"
-                style={{ width: `${(exportProgress.current / Math.max(1, exportProgress.total)) * 100}%` }}
-              ></div>
-            </div>
-            <p className="text-[10.5px] font-semibold text-slate-400">
-              Menyusun data lengkap 10 Dimensi & Demografi RS
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* CONTROL BAR - MATCHING ANALISA DATA HEADER CARD DESIGN */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -2481,19 +1853,31 @@ export default function LaporanTab({
             </button>
           </div>
 
-          {/* Download Dokumen */}
-          <button
-            onClick={handleExportPDF}
-            disabled={isExportingPdf || isExporting}
-            className="flex items-center gap-2 bg-[#14B8A6] text-white hover:bg-teal-600 border border-teal-400/50 px-5 h-[42px] rounded-xl text-xs font-extrabold shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-95 transition-all duration-200 cursor-pointer disabled:opacity-50 shrink-0"
-          >
-            {isExportingPdf ? (
-              <RefreshCw className="w-4 h-4 animate-spin text-white" />
-            ) : (
-              <Download className="w-4 h-4 text-white" />
-            )}
-            <span>Download Dokumen</span>
-          </button>
+          {/* Download Dokumen PDF */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              title="Unduh / Cetak Laporan PDF"
+              className="flex items-center gap-2 px-4 h-[42px] bg-rose-500 text-white hover:bg-rose-600 disabled:opacity-75 disabled:cursor-not-allowed border border-rose-400/50 rounded-xl shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer shrink-0 font-bold text-xs"
+            >
+              {isExporting ? (
+                <>
+                  <Loader2 className="w-4 h-4 text-white animate-spin" />
+                  <span>
+                    {exportProgress && exportProgress.total > 0 
+                      ? `Menyiapkan PDF (${exportProgress.current}/${exportProgress.total})...` 
+                      : 'Menyiapkan PDF...'}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4 text-white" />
+                  <span>Unduh PDF</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </motion.div>
             <style dangerouslySetInnerHTML={{ __html: `
@@ -2502,47 +1886,46 @@ export default function LaporanTab({
             size: A4 portrait;
             margin: 0;
           }
+          @page page-landscape {
+            size: A4 landscape;
+            margin: 0;
+          }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            color-adjust: exact !important;
           }
-          body * {
-            visibility: hidden;
-          }
-          #print-area, #print-area * {
-            visibility: visible;
+          aside, nav, header, .print\\:hidden, .no-print {
+            display: none !important;
           }
           #print-area {
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            width: 210mm !important;
-            margin: 0 !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 auto !important;
             padding: 0 !important;
             background: white !important;
             transform: none !important;
           }
-          @page page-landscape {
-            size: A4 landscape;
-            margin: 0;
-          }
-          .print-page {
+          .print-page, .word-page {
             width: 210mm !important;
             min-height: 297mm !important;
             height: 297mm !important;
             max-height: 297mm !important;
             page-break-after: always !important;
+            break-after: page !important;
             page-break-inside: avoid !important;
-            margin: 0 !important;
+            break-inside: avoid !important;
+            margin: 0 auto !important;
             border: none !important;
             box-shadow: none !important;
-            padding-top: 2.5cm !important;
-            padding-bottom: 2.5cm !important;
+            padding-top: 2.2cm !important;
+            padding-bottom: 2cm !important;
             padding-left: 2.5cm !important;
-            padding-right: 2.5cm !important;
+            padding-right: 2cm !important;
             box-sizing: border-box !important;
             background: white !important;
             display: flex !important;
@@ -2550,51 +1933,35 @@ export default function LaporanTab({
             justify-content: space-between !important;
             overflow: hidden !important;
           }
-          .print-page.word-page-landscape {
-            page: page-landscape;
+          .print-page.word-page-landscape, .word-page.word-page-landscape {
+            page: page-landscape !important;
             width: 297mm !important;
             min-height: 210mm !important;
             height: 210mm !important;
             max-height: 210mm !important;
-            padding-top: 2.5cm !important;
-            padding-bottom: 2.5cm !important;
-            padding-left: 2.5cm !important;
-            padding-right: 2.5cm !important;
+            padding-top: 1.8cm !important;
+            padding-bottom: 1.8cm !important;
+            padding-left: 2.2cm !important;
+            padding-right: 2.2cm !important;
           }
-          .print-page.cover-page {
+          .print-page.cover-page, .word-page.cover-page {
             padding-top: 0 !important;
             padding-bottom: 0 !important;
             padding-left: 0 !important;
             padding-right: 0 !important;
             box-sizing: border-box !important;
           }
+          section, article, table, tr, .card, .chart-container, .recharts-wrapper, .recharts-surface, .keep-together {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
           .recharts-responsive-container {
             width: 100% !important;
-            height: 180px !important;
-          }
-          table, th, td {
-            vertical-align: middle !important;
-          }
-          svg text, svg tspan, .recharts-text, .recharts-label, .recharts-cartesian-axis-tick-value {
-            dominant-baseline: central !important;
-            alignment-baseline: middle !important;
-            vertical-align: middle !important;
-          }
-          .bg-emerald-500, .bg-yellow-500, .bg-rose-500, .bg-red-500, .bg-blue-500, .bg-slate-400, .bg-slate-500, .bg-indigo-500, .bg-purple-500 {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-          }
-          .bg-emerald-500 span, .bg-yellow-500 span, .bg-rose-500 span, .bg-red-500 span, .bg-blue-500 span, .bg-slate-400 span, .bg-slate-500 span, .bg-indigo-500 span, .bg-purple-500 span {
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            line-height: 1 !important;
             height: 100% !important;
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            vertical-align: middle !important;
+            min-height: 180px !important;
+          }
+          .recharts-text, svg text {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
           }
         }
         .preview-container {
@@ -2610,10 +1977,10 @@ export default function LaporanTab({
           max-height: 297mm;
           background-color: white;
           box-sizing: border-box;
-          padding-top: 2.5cm;
-          padding-bottom: 2.5cm;
+          padding-top: 2.2cm;
+          padding-bottom: 2cm;
           padding-left: 2.5cm;
-          padding-right: 2.5cm;
+          padding-right: 2cm;
           box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
           border: 1px solid #cbd5e1;
           border-radius: 4px;
@@ -2623,6 +1990,8 @@ export default function LaporanTab({
           overflow: hidden;
           position: relative;
           flex-shrink: 0;
+          page-break-inside: avoid;
+          break-inside: avoid;
         }
         .word-page.cover-page {
           padding-top: 0 !important;
@@ -2641,10 +2010,10 @@ export default function LaporanTab({
           height: 210mm !important;
           min-height: 210mm !important;
           max-height: 210mm !important;
-          padding-top: 2.5cm !important;
-          padding-bottom: 2.5cm !important;
-          padding-left: 2.5cm !important;
-          padding-right: 2.5cm !important;
+          padding-top: 1.8cm !important;
+          padding-bottom: 1.8cm !important;
+          padding-left: 2.2cm !important;
+          padding-right: 2.2cm !important;
         }
       ` }} />
 
@@ -2750,72 +2119,95 @@ export default function LaporanTab({
               </div>
 
               {/* BOTTOM RIGHT OVERLAY TEXT ON TEAL AREA */}
-              <div className="absolute bottom-12 sm:bottom-16 right-10 sm:right-14 z-10 text-right text-white max-w-[650px]">
+              <div className="absolute bottom-16 right-14 z-10 text-right text-white max-w-[650px]">
                 {/* Nama Rumah Sakit & Periode Tahun - Rata Kanan di atas "Keselamatan adalah Prioritas" */}
-                <h4 className="font-extrabold text-white text-[40px] sm:text-[52px] tracking-wide uppercase leading-tight font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
+                <h4 className="font-extrabold text-white text-[52px] tracking-wide uppercase leading-tight font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
                   {activeHospitalName}
                 </h4>
-                <p className="text-[24px] sm:text-[28px] font-black uppercase tracking-[0.2em] text-white mt-1 mb-5 font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.1)]">
+                <p className="text-[26px] font-black uppercase tracking-[0.2em] text-white mt-1 mb-5 font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.1)]">
                   PERIODE TAHUN {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
                 </p>
 
-                <h5 className="font-black text-white text-[14px] sm:text-[16px] tracking-wider uppercase leading-tight mt-6">
+                <h5 className="font-black text-white text-[15px] tracking-wider uppercase leading-tight mt-6">
                   KESELAMATAN ADALAH PRIORITAS
                 </h5>
                 <div className="w-12 h-[2px] bg-white/80 my-2.5 ml-auto"></div>
-                <p className="text-[11px] sm:text-[12px] text-teal-50 font-light leading-relaxed">
+                <p className="text-[12px] text-teal-50 font-light leading-relaxed">
                   Bersama membangun budaya keselamatan pasien yang kuat, untuk pelayanan yang bermutu.
                 </p>
               </div>
 
               {/* FOREGROUND CONTENT (LEFT ALIGNED) */}
-              <div className="absolute top-12 sm:top-16 left-12 sm:left-16 right-12 sm:right-16 z-10 flex flex-col justify-start items-start text-left">
+              <div className="absolute top-16 left-16 right-16 z-10 flex flex-col justify-start items-start text-left">
                 
                 {/* 2026 Year Display */}
-                <h1 className="text-[72px] sm:text-[84px] font-black leading-none text-[#007a78] tracking-tight font-sans">
+                <h1 className="text-[84px] font-black leading-none text-[#007a78] tracking-tight font-sans" style={{ lineHeight: '1', margin: 0 }}>
                   {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
                 </h1>
 
                 {/* LAPORAN */}
-                <h2 className="text-[40px] sm:text-[48px] font-black leading-none text-[#007a78] tracking-tight mt-1 font-sans uppercase">
+                <h2 className="text-[48px] font-black leading-none text-[#007a78] tracking-tight font-sans uppercase" style={{ lineHeight: '1', margin: '4px 0 0 0' }}>
                   LAPORAN
                 </h2>
 
                 {/* SURVEI BUDAYA KESELAMATAN PASIEN */}
-                <div className="mt-2 space-y-0">
-                  <h3 className="text-[30px] sm:text-[36px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
+                <div className="space-y-0" style={{ marginTop: '10px' }}>
+                  <h3 className="text-[36px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans" style={{ lineHeight: '1.1', margin: 0 }}>
                     SURVEI BUDAYA
                   </h3>
-                  <h3 className="text-[30px] sm:text-[36px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans">
+                  <h3 className="text-[36px] font-black leading-[1.1] text-slate-950 uppercase tracking-tight font-sans" style={{ lineHeight: '1.1', margin: 0 }}>
                     KESELAMATAN PASIEN
                   </h3>
                 </div>
 
                 {/* Short Accent Bar */}
-                <div className="w-16 h-[3.5px] bg-[#007a78] my-2.5"></div>
+                <div className="w-16 h-[4px] bg-[#007a78]" style={{ width: '64px', height: '4px', backgroundColor: '#007a78', margin: '12px 0' }}></div>
 
                 {/* Subtitle: Berdasarkan Instrumen */}
-                <p className="text-[11px] sm:text-[12px] font-extrabold uppercase tracking-[0.2em] text-slate-600 mb-1 font-sans">
+                <p className="text-[12px] font-extrabold uppercase tracking-[0.2em] text-slate-600 font-sans" style={{ letterSpacing: '0.2em', margin: '0 0 6px 0' }}>
                   Berdasarkan Instrumen
                 </p>
 
                 {/* Badge Pill: AHRQ SOPS® v2.0 */}
-                <div className="my-0.5">
-                  <div className="inline-flex items-center bg-[#007a78] text-white font-bold text-xs sm:text-[13px] px-4 py-1.5 rounded-full tracking-wider shadow-sm font-sans">
-                    AHRQ SOPS<sup>®</sup> v2.0
+                <div style={{ margin: '6px 0 12px 0' }}>
+                  <div 
+                    className="inline-block bg-[#007a78] text-white font-bold text-[13px] rounded-full tracking-wider shadow-xs font-sans text-center select-none"
+                    style={{
+                      display: 'inline-block',
+                      backgroundColor: '#007a78',
+                      color: '#ffffff',
+                      height: '30px',
+                      lineHeight: '30px',
+                      padding: '0 18px',
+                      borderRadius: '15px',
+                      textAlign: 'center',
+                      verticalAlign: 'middle',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    AHRQ SOPS® v2.0
                   </div>
                 </div>
 
                 {/* Three Outline Icons */}
-                <div className="flex items-center gap-3.5 my-2">
-                  <div className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center p-1.5 shadow-xs">
-                    <TrendingUp className="w-5 h-5 stroke-[2.2]" />
+                <div className="flex items-center gap-3.5 my-2" style={{ display: 'flex', alignItems: 'center', gap: '14px', margin: '10px 0' }}>
+                  <div 
+                    className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center shadow-xs" 
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #007a78', boxSizing: 'border-box' }}
+                  >
+                    <TrendingUp className="w-5 h-5 stroke-[2.2]" style={{ width: '20px', height: '20px', display: 'block' }} />
                   </div>
-                  <div className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center p-1.5 shadow-xs">
-                    <ShieldCheck className="w-5 h-5 stroke-[2.2]" />
+                  <div 
+                    className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center shadow-xs" 
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #007a78', boxSizing: 'border-box' }}
+                  >
+                    <ShieldCheck className="w-5 h-5 stroke-[2.2]" style={{ width: '20px', height: '20px', display: 'block' }} />
                   </div>
-                  <div className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center p-1.5 shadow-xs">
-                    <Users className="w-5 h-5 stroke-[2.2]" />
+                  <div 
+                    className="w-9 h-9 rounded-full border-2 border-[#007a78] text-[#007a78] flex items-center justify-center shadow-xs" 
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '2px solid #007a78', boxSizing: 'border-box' }}
+                  >
+                    <Users className="w-5 h-5 stroke-[2.2]" style={{ width: '20px', height: '20px', display: 'block' }} />
                   </div>
                 </div>
 
@@ -3399,17 +2791,17 @@ export default function LaporanTab({
                         )}
 
                         {/* Tabel Demografi Responden */}
-                        <div className="w-full border border-slate-200 rounded-xl text-[9px] overflow-hidden">
-                          <table className="w-full table-fixed text-left border-collapse">
+                        <div className="w-full border border-slate-200 rounded-xl text-[9px] overflow-hidden bg-white shadow-2xs" style={{ border: '1px solid #e2e8f0' }}>
+                          <table className="w-full table-fixed text-left border-collapse" style={{ borderCollapse: 'collapse', width: '100%' }}>
                             <thead>
-                              <tr className="bg-[#14B8A6] text-white font-extrabold uppercase tracking-wider text-[8.5px]">
-                                <th className="py-2 px-2.5 border-r border-white/20 text-left w-[22%]">Karakteristik</th>
-                                <th className="py-2 px-2.5 border-r border-white/20 text-left w-[48%]">Kategori / Detail</th>
-                                <th className="py-2 px-2 border-r border-white/20 text-center w-[15%]">Jumlah (n)</th>
-                                <th className="py-2 px-2 text-center w-[15%]">Persentase (%)</th>
+                              <tr className="bg-[#14B8A6] text-white font-extrabold uppercase tracking-wider text-[8.5px]" style={{ backgroundColor: '#14B8A6' }}>
+                                <th className="py-2 px-2.5 border-r border-white/20 text-left w-[22%]" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Karakteristik</th>
+                                <th className="py-2 px-2.5 border-r border-white/20 text-center w-[48%]" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Kategori / Detail</th>
+                                <th className="py-2 px-2 border-r border-white/20 text-center w-[15%]" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Jumlah (n)</th>
+                                <th className="py-2 px-2 text-center w-[15%]" style={{ borderBottom: '1px solid #0f766e' }}>Persentase (%)</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-200">
+                            <tbody>
                               {renderDemografiTableRows(pageItem.rows, flatDemografiRows)}
                             </tbody>
                           </table>
@@ -3469,12 +2861,13 @@ export default function LaporanTab({
           {/* LEMBAR 4-A: BAB III HASIL & PEMBAHASAN - Hasil Pengukuran 10 Dimensi (Tabel & Bar Chart) */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
 
                 <section className="space-y-3">
                   <div className="border-b border-slate-200 pb-1.5">
@@ -3499,9 +2892,9 @@ export default function LaporanTab({
                   {/* Visualisasi Detail Pengukuran Dimensi (Sesuai Visual Menu Analisa Data) */}
                   <div className="bg-white border border-slate-200/90 p-4 rounded-2xl shadow-xs my-2">
                     <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
-                      <h4 className="text-xs font-bold text-slate-800 flex items-center gap-2">
-                        <BarChart2 className="w-4 h-4 text-emerald-600" />
-                        Detail Pengukuran Dimensi Budaya Keselamatan Untuk {activeHospitalName}
+                      <h4 className="text-[10px] font-bold text-slate-800 flex items-center gap-2">
+                        <BarChart2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Detail Pengukuran Dimensi Budaya Keselamatan Untuk {activeHospitalName}</span>
                       </h4>
                       <span className="text-[8.5px] font-bold text-teal-700 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-200">
                         Periode: {displayYear}
@@ -3569,20 +2962,22 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 4-B: BAB III HASIL & PEMBAHASAN - Interpretasi & Rekomendasi 10 Dimensi */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Laporan Resmi Survei Budaya Keselamatan Pasien</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
 
                 <section className="space-y-4">
                   <div className="border-b border-slate-200 pb-1.5">
@@ -3670,10 +3065,11 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 1} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length + 1} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 5: BAB III HASIL & PEMBAHASAN - 3.2.2 Overall Rating */}
           <div className="w-full flex flex-col items-center">
@@ -3695,7 +3091,7 @@ export default function LaporanTab({
                             <HeartPulse className="w-4 h-4 text-rose-600" />
                             3.2.2 Keselamatan Pasien Keseluruhan (Overall Rating)
                           </h4>
-                          <p className="text-[10px] text-slate-500 mt-0.5">
+                          <p className="text-[8px] text-slate-500 mt-0.5">
                             Tingkat keselamatan pasien di unit kerja berdasarkan penilaian responden staf {activeHospitalName}
                           </p>
                         </div>
@@ -3705,20 +3101,41 @@ export default function LaporanTab({
                       </div>
 
                       {/* Grafik Penilaian Insiden Keselamatan Pasien */}
-                      <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-                        <h5 className="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
+                        <h5 className="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1.5" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
                           <BarChart2 className="w-3.5 h-3.5 text-rose-500" />
                           Grafik Penilaian Insiden Keselamatan Pasien (Overall Rating)
                         </h5>
-                        <div className="h-[185px] w-full">
+                        <div className="h-[185px] w-full" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={safetyRatingData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700 }} tickLine={false} />
-                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px' }} />
+                              <XAxis 
+                                dataKey="kategori" 
+                                stroke="#64748b" 
+                                tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                                tickLine={false} 
+                              />
+                              <YAxis 
+                                type="number" 
+                                domain={[0, 100]} 
+                                stroke="#64748b" 
+                                tick={{ fill: '#475569', fontSize: 9, fontWeight: 600, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                                tickLine={false} 
+                                tickFormatter={(v) => `${v}%`} 
+                              />
+                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
                               <Bar dataKey="percentage" name="Persentase" fill="#f43f5e" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                                <LabelList dataKey="percentage" position="top" offset={5} formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#334155" fontSize={9.5} fontWeight="bold" />
+                                <LabelList 
+                                  dataKey="percentage" 
+                                  position="top" 
+                                  offset={5} 
+                                  formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
+                                  fill="#334155" 
+                                  fontSize={9.5} 
+                                  fontWeight="bold" 
+                                  style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}
+                                />
                                 {safetyRatingData.distribution.map((entry, index) => {
                                   const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#b91c1c'];
                                   return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
@@ -3807,7 +3224,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 2} dari {totalReportPages}</span>
+                  <span>Halaman {6 + demografiPages.length + 2} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -3833,7 +3250,7 @@ export default function LaporanTab({
                             <Activity className="w-4 h-4 text-purple-600" />
                             3.2.3 Frekuensi Pelaporan Insiden
                           </h4>
-                          <p className="text-[10px] text-slate-500 mt-0.5">
+                          <p className="text-[9px] text-slate-500 mt-0.5">
                             Jumlah insiden keselamatan pasien yang dilaporkan oleh staf dalam 12 bulan terakhir
                           </p>
                         </div>
@@ -3843,20 +3260,41 @@ export default function LaporanTab({
                       </div>
 
                       {/* Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan */}
-                      <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100">
-                        <h5 className="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                      <div className="bg-slate-50/50 p-2.5 rounded-xl border border-slate-100" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
+                        <h5 className="text-[11px] font-bold text-slate-700 mb-1.5 flex items-center gap-1.5" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
                           <BarChart2 className="w-3.5 h-3.5 text-purple-500" />
                           Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan
                         </h5>
-                        <div className="h-[185px] w-full">
+                        <div className="h-[185px] w-full" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={reportedEventsData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
                               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                              <XAxis dataKey="kategori" stroke="#64748b" tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700 }} tickLine={false} />
-                              <YAxis type="number" domain={[0, 100]} stroke="#64748b" tick={{ fill: '#475569', fontSize: 9 }} tickLine={false} tickFormatter={(v) => `${v}%`} />
-                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px' }} />
+                              <XAxis 
+                                dataKey="kategori" 
+                                stroke="#64748b" 
+                                tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                                tickLine={false} 
+                              />
+                              <YAxis 
+                                type="number" 
+                                domain={[0, 100]} 
+                                stroke="#64748b" 
+                                tick={{ fill: '#475569', fontSize: 9, fontWeight: 600, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                                tickLine={false} 
+                                tickFormatter={(v) => `${v}%`} 
+                              />
+                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
                               <Bar dataKey="percentage" name="Persentase" fill="#8b5cf6" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                                <LabelList dataKey="percentage" position="top" offset={5} formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} fill="#334155" fontSize={9.5} fontWeight="bold" />
+                                <LabelList 
+                                  dataKey="percentage" 
+                                  position="top" 
+                                  offset={5} 
+                                  formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
+                                  fill="#334155" 
+                                  fontSize={9.5} 
+                                  fontWeight="bold" 
+                                  style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}
+                                />
                                 {reportedEventsData.distribution.map((entry, index) => {
                                   const colors = ['#64748b', '#8b5cf6', '#6366f1', '#0d9488', '#d97706'];
                                   return <Cell key={`cell-rep-${index}`} fill={colors[index % colors.length]} />;
@@ -3945,7 +3383,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 3} dari {totalReportPages}</span>
+                  <span>Halaman {6 + demografiPages.length + 3} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -3964,7 +3402,7 @@ export default function LaporanTab({
 
                   <section className="space-y-3.5">
                     <div>
-                      <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
+                      <h4 className="font-bold text-slate-800 text-[13px] flex items-center gap-2">
                         <BarChart2 className="w-4 h-4 text-indigo-600 shrink-0" />
                         <span>3.2.4 Rata-Rata Persentase Respon Positif per Item Dimensi Budaya Keselamatan Pasien</span>
                       </h4>
@@ -4100,7 +3538,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 4} dari {totalReportPages}</span>
+                  <span>Halaman {6 + demografiPages.length + 4} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -4245,7 +3683,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 5} dari {totalReportPages}</span>
+                  <span>Halaman {6 + demografiPages.length + 5} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -4390,7 +3828,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 6} dari {totalReportPages}</span>
+                  <span>Halaman {6 + demografiPages.length + 6} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -4570,7 +4008,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 7} dari {totalReportPages}</span>
+                  <span>Halaman {6 + demografiPages.length + 7} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -4578,7 +4016,7 @@ export default function LaporanTab({
 
           {/* LEMBAR 10: 3.2.5 Perbandingan berdasarkan Profesi (Dynamic Auto-Pagination Pages) */}
           {profesiPages.map((posChunk, pIdx) => {
-            const currentPageNum = 5 + demografiPages.length + 8 + pIdx;
+            const currentPageNum = 6 + demografiPages.length + 8 + pIdx;
             return (
               <div key={`profesi-page-${pIdx}`} className="w-full flex flex-col items-center">
                 <div className="word-page word-page-landscape print-page">
@@ -4612,7 +4050,7 @@ export default function LaporanTab({
                               <thead>
                                 <tr className="bg-indigo-900 text-white font-extrabold text-[7.5px] uppercase border-b border-indigo-950">
                                   <th className="p-1 border-r border-indigo-800 text-center" style={{ width: '5%' }}>No</th>
-                                  <th className="p-1 border-r border-indigo-800" style={{ width: '35%' }}>Dimensi Budaya Keselamatan</th>
+                                  <th className="p-1 border-r border-indigo-800 text-center" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
                                   {posChunk.map(pos => (
                                     <th key={pos.name} className="p-1 text-center border-r border-indigo-800" style={{ width: `${60 / posChunk.length}%` }}>
                                       {pos.name} <span className="font-mono font-normal block text-[6.5px] text-indigo-200">(N={pos.value})</span>
@@ -4659,7 +4097,7 @@ export default function LaporanTab({
 
           {/* LEMBAR 10-B: 3.2.5-B Perbandingan berdasarkan Unit Kerja (Dynamic Auto-Pagination Pages) */}
           {unitPages.map((unitChunk, uIdx) => {
-            const currentPageNum = 5 + demografiPages.length + 8 + profesiPages.length + uIdx;
+            const currentPageNum = 6 + demografiPages.length + 8 + profesiPages.length + uIdx;
             return (
               <div key={`unit-page-${uIdx}`} className="w-full flex flex-col items-center">
                 <div className="word-page word-page-landscape print-page">
@@ -4675,7 +4113,7 @@ export default function LaporanTab({
                         <div>
                           <h4 className="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
                             <LayoutDashboard className="w-3.5 h-3.5 text-teal-600" />
-                            3.2.5-B Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Unit Kerja {uIdx > 0 ? `(Bagian ${uIdx + 1})` : ''}
+                            3.2.5 Perbandingan Respon Positif Budaya Keselamatan Berdasarkan Karakteristik Demografis {uIdx > 0 ? `(Bagian ${uIdx + 1})` : ''}
                           </h4>
                           <p className="text-[9px] text-slate-500 mt-0.5 leading-relaxed text-justify">
                             Analisis tingkat unit pelayanan membantu pimpinan rumah sakit memetakan disparitas iklim keselamatan secara spesifik. Berikut adalah tabel perbandingan persentase respon positif seluruh dimensi berdasarkan Unit Kerja di <strong>{activeHospitalName}</strong>:
@@ -4693,7 +4131,7 @@ export default function LaporanTab({
                               <thead>
                                 <tr className="bg-teal-800 text-white font-extrabold text-[7.5px] uppercase border-b border-teal-900">
                                   <th className="p-1 border-r border-teal-700 text-center" style={{ width: '5%' }}>No</th>
-                                  <th className="p-1 border-r border-teal-700" style={{ width: '35%' }}>Dimensi Budaya Keselamatan</th>
+                                  <th className="p-1 border-r border-teal-700 text-center" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
                                   {unitChunk.map(u => (
                                     <th key={u.name} className="p-1 text-center border-r border-teal-700" style={{ width: `${60 / unitChunk.length}%` }}>
                                       {u.name} <span className="font-mono font-normal block text-[6.5px] text-teal-200">(N={u.value})</span>
@@ -4760,7 +4198,7 @@ export default function LaporanTab({
                         <thead>
                           <tr className="bg-slate-800 text-white font-extrabold text-[7px] uppercase border-b border-slate-900">
                             <th rowSpan={2} className="py-1 px-1 border-r border-slate-700 text-center align-middle" style={{ width: '4%' }}>No</th>
-                            <th rowSpan={2} className="py-1 px-1 border-r border-slate-700 align-middle" style={{ width: '32%' }}>Dimensi Budaya Keselamatan</th>
+                            <th rowSpan={2} className="py-1 px-1 border-r border-slate-700 text-center align-middle" style={{ width: '32%', textAlign: 'center', verticalAlign: 'middle' }}>Dimensi Budaya Keselamatan</th>
                             <th colSpan={4} className="py-1 px-1 text-center border-r border-slate-700 bg-slate-700" style={{ width: '32%' }}>Masa Kerja (Staff Tenure)</th>
                             <th colSpan={4} className="py-1 px-1 text-center bg-slate-600" style={{ width: '32%' }}>Jam Kerja per Minggu</th>
                           </tr>
@@ -4855,26 +4293,28 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length + 8 + profesiPages.length + unitPages.length} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 11: Perbandingan dengan Tahun Sebelumnya / Perbandingan Periode */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Trend Historis & Perbandingan Periode</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Analisis Trend Historis & Perbandingan Periode</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
 
                 <section className="space-y-3">
                   <div>
-                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-emerald-600" />
-                      3.2.6 Perbandingan Respon Positif Budaya Keselamatan dengan Periode / Tahun Sebelumnya
+                    <h4 className="font-bold text-slate-800 text-[12px] flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>3.2.6 Perbandingan Respon Positif Budaya Keselamatan dengan Periode / Tahun Sebelumnya</span>
                     </h4>
                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
                       Analisis tren longitudinal membandingkan capaian persentase respon positif antara tahun terpilih (<strong>{tahunSurvei}</strong>) dengan tahun perbandingan (<strong>{previousYear || 'Sebelumnya'}</strong>) guna mendeteksi peningkatan mutu atau penurunan iklim keselamatan:
@@ -4889,7 +4329,7 @@ export default function LaporanTab({
                           <span>Grafik Perbandingan Respon Positif Per Dimensi (%)</span>
                           <span className="text-emerald-700">{tahunSurvei} vs {previousYear}</span>
                         </div>
-                        <div className="w-full h-36">
+                        <div className="w-full h-36" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
                           <ResponsiveContainer width="100%" height="100%">
                             <BarChart 
                               data={dimensionScores.map(d => {
@@ -4903,10 +4343,10 @@ export default function LaporanTab({
                               margin={{ top: 5, right: 10, left: -25, bottom: 0 }}
                             >
                               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                              <XAxis dataKey="kode" tick={{ fontSize: 8, fill: '#475569' }} />
-                              <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569' }} unit="%" />
-                              <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold' }} />
-                              <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px' }} />
+                              <XAxis dataKey="kode" tick={{ fontSize: 8, fill: '#475569', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
+                              <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} unit="%" />
+                              <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
+                              <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
                               <Bar dataKey={previousYear} fill="#94a3b8" radius={[3, 3, 0, 0]} name={`Tahun ${previousYear}`} isAnimationActive={false} />
                               <Bar dataKey={tahunSurvei} fill="#0d9488" radius={[3, 3, 0, 0]} name={`Tahun ${tahunSurvei}`} isAnimationActive={false} />
                             </BarChart>
@@ -4985,26 +4425,28 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 1} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 1} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 11-B: Perbandingan dengan Rumah Sakit Lain (Benchmark) */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Perbandingan Benchmark</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Analisis Perbandingan Benchmark</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
 
                 <section className="space-y-3">
                   <div>
-                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                      <Globe className="w-4 h-4 text-indigo-600" />
-                      3.2.7 Perbandingan Respon Positif Dimensi Budaya Keselamatan dengan Rumah Sakit Lain (Benchmark)
+                    <h4 className="font-bold text-slate-800 text-[11px] flex items-center gap-2">
+                      <Globe className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>3.2.7 Perbandingan Respon Positif Dimensi Budaya Keselamatan dengan Rumah Sakit Lain (Benchmark)</span>
                     </h4>
                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
                       Pengukuran eksternal (benchmarking) membantu mengidentifikasi posisi tawar, gap pencapaian mutu, dan standar pelayanan rumah sakit dibanding fasilitas kesehatan mitra lainnya:
@@ -5020,14 +4462,14 @@ export default function LaporanTab({
                             <span>Grafik Komparasi Benchmark RS Anda vs RS Pembanding (%)</span>
                             <span className="text-indigo-700">{selectedBenchmarkHospital.namaRs}</span>
                           </div>
-                          <div className="w-full h-36">
+                          <div className="w-full h-36" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={benchmarkData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                <XAxis dataKey="kode" tick={{ fontSize: 8, fill: '#475569' }} />
-                                <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569' }} unit="%" />
-                                <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold' }} />
-                                <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px' }} />
+                                <XAxis dataKey="kode" tick={{ fontSize: 8, fill: '#475569', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
+                                <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: '#475569', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} unit="%" />
+                                <Tooltip formatter={(value: any) => [`${value}%`]} labelStyle={{ fontWeight: 'bold', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
+                                <Legend wrapperStyle={{ fontSize: '8.5px', paddingTop: '2px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
                                 <Bar dataKey="rsPct" fill="#4f46e5" radius={[3, 3, 0, 0]} name={`${activeHospitalName} (Anda)`} isAnimationActive={false} />
                                 <Bar dataKey="benchPct" fill="#94a3b8" radius={[3, 3, 0, 0]} name={selectedBenchmarkHospital.namaRs} isAnimationActive={false} />
                               </BarChart>
@@ -5116,26 +4558,28 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400 mt-auto">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 2} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 2} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 11.5: BAB III HASIL & PEMBAHASAN - Kualitatif */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Analisis Kualitatif & Rekomendasi</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Analisis Kualitatif & Rekomendasi</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
 
                 <section className="space-y-4">
                   <div>
-                    <h4 className="font-bold text-slate-800 text-xs md:text-sm flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-indigo-600" />
-                      3.2.8 Hasil Analisis Kualitatif dan Rekomendasi Peningkatan Budaya Keselamatan Pasien
+                    <h4 className="font-bold text-slate-800 text-[13px] flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-indigo-600 shrink-0" />
+                      <span>3.2.8 Hasil Analisis Kualitatif dan Rekomendasi Peningkatan Budaya Keselamatan Pasien</span>
                     </h4>
                     <p className="text-[10px] text-slate-500 mt-1 leading-relaxed text-justify">
                       Berdasarkan masukan responden survei budaya keselamatan pasien tahun {selectedYear === 'Semua Tahun' ? new Date().getFullYear().toString() : selectedYear} di {activeHospitalName}:
@@ -5210,20 +4654,22 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400 mt-auto">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 3} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 12: BAB III HASIL & PEMBAHASAN - Pembahasan */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span>Pembahasan Budaya Keselamatan Pasien</span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span>Pembahasan Budaya Keselamatan Pasien</span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
 
                 <section className="space-y-4">
                   <h3 className="font-bold text-slate-900 text-xs uppercase tracking-wide">3.3 Pembahasan</h3>
@@ -5316,20 +4762,22 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 4} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 13: BAB IV KESIMPULAN DAN REKOMENDASI */}
           <div className="w-full flex flex-col items-center">
             <div className="word-page print-page">
-              <div>
-                {/* Running Header */}
-                <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                  <span></span>
-                  <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
-                </div>
+              <div className="flex-1 flex flex-col justify-between">
+                <div>
+                  {/* Running Header */}
+                  <div className="border-b border-slate-200 pb-2 mb-4 flex items-center justify-between text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                    <span></span>
+                    <span className="text-teal-700 font-extrabold">{activeHospitalName}</span>
+                  </div>
 
                 <section className="space-y-4">
                   <div className="text-center mb-6 space-y-1">
@@ -5398,10 +4846,11 @@ export default function LaporanTab({
               {/* Running Footer */}
               <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                 <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5} dari {totalReportPages}</span>
+                <span>Halaman {6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 5} dari {totalReportPages}</span>
               </div>
             </div>
           </div>
+        </div>
 
           {/* LEMBAR 13-B: Rekomendasi Strategic Action Plan & Pengesahan */}
           <div className="w-full flex flex-col items-center">
@@ -5496,7 +4945,7 @@ export default function LaporanTab({
                 {/* Running Footer */}
                 <div className="border-t border-slate-200 pt-2 flex items-center justify-between text-[9px] font-bold text-slate-400">
                   <span>Laporan Survei Budaya Keselamatan Pasien</span>
-                  <span>Halaman {5 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 6} dari {totalReportPages}</span>
+                  <span>Halaman {6 + demografiPages.length + 8 + profesiPages.length + unitPages.length + 6} dari {totalReportPages}</span>
                 </div>
               </div>
             </div>
@@ -5504,6 +4953,5 @@ export default function LaporanTab({
         </div>
       </div>
     </div>
-  </div>
   );
 }

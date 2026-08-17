@@ -209,4 +209,78 @@ html, body {
   text-align: center !important;
 }
 
+/* Print & PDF Export Page Break and Layout Rules */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+  @page page-landscape {
+    size: A4 landscape;
+    margin: 0;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 100% !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  main, aside, nav, header, #dashboard-main-scroll, .preview-container {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    transform: none !important;
+  }
+
+  aside, nav, header, .print\:hidden, .no-print {
+    display: none !important;
+  }
+
+  .print-page, .word-page {
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Prevent awkward splits inside cards, charts, sections, and tables */
+  section, article, table, tr, .card, .chart-container, .recharts-wrapper, .recharts-surface, .keep-together {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Maintain consistent chart proportions and fonts in print */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .recharts-text, svg text, .recharts-surface text {
+    font-family: 'Poppins', var(--font-sans), sans-serif !important;
+  }
+}
+
+/* Page Break Utility Classes */
+.break-before-page {
+  page-break-before: always !important;
+  break-before: page !important;
+}
+
+.break-after-page {
+  page-break-after: always !important;
+  break-after: page !important;
+}
+
+.avoid-page-break {
+  page-break-inside: avoid !important;
+  break-inside: avoid !important;
+}
+
 

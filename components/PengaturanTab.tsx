@@ -1843,6 +1843,7 @@ CREATE POLICY "Menghapus Publik Banner" ON storage.objects FOR DELETE USING (buc
                         maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.3) 12%, rgba(0,0,0,0.9) 35%, black 100%)'
                       }}
                     >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={headerImageInput}
                         alt="Header preview"

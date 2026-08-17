@@ -1889,7 +1889,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
       }
     });
     return count > 0 ? sum / count : 65.5;
-  }, [activeBenchmarkSurveys, computeDimensionScores, masterBenchmarkData]);
+  }, [activeBenchmarkSurveys, masterBenchmarkData]);
 
   const targetPositionDimensionScores = useMemo(() => {
     if (activeBenchmarkSurveys.length === 0) return [];

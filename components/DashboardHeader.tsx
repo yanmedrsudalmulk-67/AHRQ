@@ -504,8 +504,10 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
             transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="w-full lg:w-[360px] xl:w-[420px] shrink-0 relative group self-stretch flex items-center"
           >
-            {/* Ambient Soft Glow Behind Image */}
-            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-l from-teal-500/15 via-cyan-400/10 to-transparent rounded-2xl filter blur-xl pointer-events-none -z-10" />
+            {/* Ambient Soft Glows (Radar Style) */}
+            <div className="absolute -top-24 -right-24 w-64 h-64 bg-teal-500/10 rounded-full blur-[60px] pointer-events-none -z-10 group-hover:bg-teal-500/15 transition-colors duration-700" />
+            <div className="absolute -bottom-24 -right-12 w-64 h-64 bg-emerald-500/10 rounded-full blur-[60px] pointer-events-none -z-10 group-hover:bg-emerald-500/15 transition-colors duration-700" />
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 w-full h-full bg-gradient-to-l from-emerald-500/20 via-teal-400/10 to-transparent rounded-2xl filter blur-xl pointer-events-none -z-10" />
 
             {/* Seamless Image Container without box/borders */}
             <div className="relative w-full h-44 sm:h-48 md:h-52 lg:h-56 overflow-hidden rounded-2xl pointer-events-none">
@@ -517,6 +519,7 @@ export default function DashboardHeader({ role, namaRs, surveys, selectedYear, a
                   maskImage: 'linear-gradient(to right, transparent 0%, rgba(0,0,0,0.8) 4%, black 12%, black 100%)'
                 }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={headerImage.url}
                   alt="Banner Card Header Dashboard"

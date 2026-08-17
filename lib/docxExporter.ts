@@ -80,7 +80,7 @@ export interface ReportData {
     direkturJabatan: string;
     direkturNip?: string;
   };
-  pageImages?: string[];
+  pageImages?: (string | { data: string; isLandscape?: boolean })[];
   positionDimensionScores?: any[];
   unitDimensionScores?: any[];
   tenureDimensionScores?: any[];
@@ -109,6 +109,53 @@ function base64ToUint8Array(base64: string): Uint8Array {
 }
 
 export async function exportReportToDocx(data: ReportData) {
+  // If we have page images (screenshots), use them for 100% fidelity
+  if (data.pageImages && data.pageImages.length > 0) {
+    const doc = new Document({
+      sections: data.pageImages.map((pageItem) => {
+        const isObj = typeof pageItem === 'object' && pageItem !== null;
+        const imgData = isObj ? pageItem.data : pageItem;
+        const isLandscape = isObj ? !!pageItem.isLandscape : false;
+
+        return {
+          properties: {
+            page: {
+              size: isLandscape ? {
+                width: 16838, // A4 Landscape width in dxa (297mm)
+                height: 11906, // A4 Landscape height in dxa (210mm)
+              } : {
+                width: 11906, // A4 Portrait width in dxa (210mm)
+                height: 16838, // A4 Portrait height in dxa (297mm)
+              },
+              margin: { top: 0, bottom: 0, left: 0, right: 0 }, // No margins for full-page images
+            },
+          },
+          children: [
+            new Paragraph({
+              children: [
+                new ImageRun({
+                  data: base64ToUint8Array(imgData),
+                  transformation: isLandscape ? {
+                    width: 1123, // ~297mm at 96dpi
+                    height: 794, // ~210mm at 96dpi
+                  } : {
+                    width: 794, // ~210mm at 96dpi
+                    height: 1123, // ~297mm at 96dpi
+                  },
+                  type: "png",
+                }),
+              ],
+            }),
+          ],
+        };
+      }),
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `Laporan_Resmi_Budaya_Keselamatan_Pasien_${data.namaRs.replace(/[^a-zA-Z0-9]/g, '_')}_${data.tahun}.docx`);
+    return;
+  }
+
   // Primary Palette: Dark Slate / Navy (#1E293B, #0F172A) & Teal Header (#0D9488)
   const headerBgColor = "0D9488";
   const headerTextColor = "FFFFFF";
@@ -678,7 +725,7 @@ export async function exportReportToDocx(data: ReportData) {
               new TableRow({
                 children: [
                   createHeaderCell("Karakteristik", AlignmentType.LEFT),
-                  createHeaderCell("Kategori / Detail", AlignmentType.LEFT),
+                  createHeaderCell("Kategori / Detail", AlignmentType.CENTER),
                   createHeaderCell("Jumlah (n)", AlignmentType.CENTER),
                   createHeaderCell("Persentase (%)", AlignmentType.CENTER),
                 ],
