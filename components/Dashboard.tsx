@@ -740,14 +740,14 @@ export default function Dashboard({
                 </h3>
 
                 {/* Description */}
-                <p className="text-slate-500 text-[11px] leading-tight max-w-[90%] mx-auto mb-2 font-medium">
+                <p className="text-slate-500 text-[10px] leading-tight max-w-[90%] mx-auto mb-2 font-medium">
                   Staf Fasyankes Yang Mengisi Survei
                 </p>
 
                 {/* Value */}
                 <div 
                   className="text-[28px] italic font-extrabold text-slate-800 leading-none"
-                  style={{ margin: '0px', marginBottom: '4px', paddingTop: '0px' }}
+                  style={{ margin: '0px', marginBottom: '10px', paddingTop: '0px' }}
                 >
                   {totalRespondents}
                 </div>
@@ -784,12 +784,12 @@ export default function Dashboard({
                 </div>
 
                 {/* Title */}
-                <h3 className="text-[16px] font-black text-slate-800 uppercase tracking-widest mb-1">
+                <h3 className="text-[15px] font-black text-slate-800 uppercase tracking-widest mb-1">
                   Area Kerja Terdata
                 </h3>
 
                 {/* Description */}
-                <p className="text-slate-500 text-[11px] leading-tight max-w-[90%] mx-auto mb-2 font-medium">
+                <p className="text-slate-500 text-[10px] leading-tight max-w-[90%] mx-auto mb-2 font-medium">
                   Total Unit / Area Kerja Yang Mengisi Survei
                 </p>
 

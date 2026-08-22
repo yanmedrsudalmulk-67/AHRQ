@@ -644,74 +644,55 @@ export default function LaporanTab({
     const TOTAL = flatDemografiRows.length;
 
     // Capacities for pagination based on A4 printable area and row height (~27px):
-    // Page 1 with Bab III header, response rate, table header, and 3.1.3 summary (safe limit):
-    const CAP_FIRST_WITH_SUMMARY = 13;
-    // Page 1 with Bab III header, response rate, table header, NO summary (safe limit before footer):
+    const CAP_FIRST_WITH_SUMMARY = 6;
     const CAP_FIRST_NO_SUMMARY = 21;
-    // Continuation middle page (running header + table header, NO summary):
     const CAP_MID_NO_SUMMARY = 26;
-    // Continuation last page (running header + table header + 3.1.3 summary):
-    const CAP_LAST_WITH_SUMMARY = 18;
-
-    // Case 1: Fits entirely on Page 1 WITH summary
-    if (TOTAL <= CAP_FIRST_WITH_SUMMARY) {
-      pages.push({
-        rows: flatDemografiRows,
-        isFirstPage: true,
-        isLastPage: true
-      });
-      return pages;
-    }
+    const CAP_LAST_WITH_SUMMARY = 10;
 
     let currentIndex = 0;
 
-    // Page 1 (First page, maximize space before footer)
-    let page1Limit = CAP_FIRST_NO_SUMMARY;
-    if (TOTAL <= CAP_FIRST_NO_SUMMARY + CAP_LAST_WITH_SUMMARY) {
-      if (TOTAL - page1Limit < 3) {
-        page1Limit = Math.max(CAP_FIRST_WITH_SUMMARY + 1, TOTAL - 3);
+    while (currentIndex < TOTAL) {
+      const isFirst = currentIndex === 0;
+      const remaining = TOTAL - currentIndex;
+
+      if (isFirst) {
+        if (remaining <= CAP_FIRST_WITH_SUMMARY) {
+          pages.push({ rows: flatDemografiRows.slice(0, remaining), isFirstPage: true, isLastPage: true });
+          currentIndex += remaining;
+        } else {
+          let take = Math.min(CAP_FIRST_NO_SUMMARY, remaining);
+          if (remaining - take > 0 && remaining - take < 4) {
+            take = Math.max(CAP_FIRST_WITH_SUMMARY + 1, remaining - 4);
+          }
+          if (remaining <= CAP_FIRST_NO_SUMMARY) {
+             pages.push({ rows: flatDemografiRows.slice(0, remaining), isFirstPage: true, isLastPage: false });
+             currentIndex += remaining;
+          } else {
+             pages.push({ rows: flatDemografiRows.slice(0, take), isFirstPage: true, isLastPage: false });
+             currentIndex += take;
+          }
+        }
+      } else {
+        if (remaining <= CAP_LAST_WITH_SUMMARY) {
+           pages.push({ rows: flatDemografiRows.slice(currentIndex, currentIndex + remaining), isFirstPage: false, isLastPage: true });
+           currentIndex += remaining;
+        } else if (remaining <= CAP_MID_NO_SUMMARY) {
+           pages.push({ rows: flatDemografiRows.slice(currentIndex, currentIndex + remaining), isFirstPage: false, isLastPage: false });
+           currentIndex += remaining;
+        } else {
+           let take = Math.min(CAP_MID_NO_SUMMARY, remaining);
+           if (remaining - take > 0 && remaining - take < 4) {
+             take = remaining - 4;
+           }
+           pages.push({ rows: flatDemografiRows.slice(currentIndex, currentIndex + take), isFirstPage: false, isLastPage: false });
+           currentIndex += take;
+        }
       }
     }
 
-    const page1Rows = flatDemografiRows.slice(0, page1Limit);
-    currentIndex += page1Rows.length;
-
-    pages.push({
-      rows: page1Rows,
-      isFirstPage: true,
-      isLastPage: currentIndex >= TOTAL
-    });
-
-    // Continuation pages
-    while (currentIndex < TOTAL) {
-      const remaining = TOTAL - currentIndex;
-
-      if (remaining <= CAP_LAST_WITH_SUMMARY) {
-        // Fits on this last page WITH summary!
-        pages.push({
-          rows: flatDemografiRows.slice(currentIndex, currentIndex + remaining),
-          isFirstPage: false,
-          isLastPage: true
-        });
-        currentIndex += remaining;
-      } else if (remaining <= CAP_LAST_WITH_SUMMARY + CAP_MID_NO_SUMMARY) {
-        // Two pages left: 1 middle page + 1 last page with summary
-        const midTake = Math.min(CAP_MID_NO_SUMMARY, Math.max(remaining - CAP_LAST_WITH_SUMMARY, Math.min(CAP_MID_NO_SUMMARY, remaining - 3)));
-        pages.push({
-          rows: flatDemografiRows.slice(currentIndex, currentIndex + midTake),
-          isFirstPage: false,
-          isLastPage: false
-        });
-        currentIndex += midTake;
-      } else {
-        // More than two pages left: fill middle page up to capacity
-        pages.push({
-          rows: flatDemografiRows.slice(currentIndex, currentIndex + CAP_MID_NO_SUMMARY),
-          isFirstPage: false,
-          isLastPage: false
-        });
-        currentIndex += CAP_MID_NO_SUMMARY;
-      }
+    // Ensure the summary is printed if the last page was full without summary
+    if (pages.length > 0 && !pages[pages.length - 1].isLastPage) {
+       pages.push({ rows: [], isFirstPage: false, isLastPage: true });
     }
 
     return pages;
@@ -1653,11 +1634,17 @@ export default function LaporanTab({
       setZoomLevel(100);
     }
 
+    // Scroll parent window to top to ensure clean viewport geometry and prevent scroll clipping
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, left: 0 });
+    }
+
     // Allow DOM to settle and ensure all fonts (Poppins) are loaded
     if (typeof document !== 'undefined' && document.fonts) {
       await document.fonts.ready;
     }
-    await new Promise(resolve => setTimeout(resolve, 350));
+    // Give enough time (450ms) for zoom and layout states to fully settle without animation delay
+    await new Promise(resolve => setTimeout(resolve, 450));
 
     try {
       const pageElements = Array.from(document.querySelectorAll<HTMLElement>('#print-area .word-page'));
@@ -1676,36 +1663,94 @@ export default function LaporanTab({
         compress: true,
       });
 
+      pdf.setProperties({
+        title: `Laporan Survei Budaya Keselamatan Pasien - ${activeHospitalName}`,
+        subject: 'AHRQ Hospital Survey on Patient Safety Culture (SOPS) Version 2.0',
+        author: activeHospitalName || 'Rumah Sakit',
+        keywords: 'AHRQ, SOPS 2.0, Keselamatan Pasien, Patient Safety Culture',
+        creator: 'Sistem Survei Budaya Keselamatan Pasien AHRQ SOPS 2.0'
+      });
+
       for (let i = 0; i < totalPages; i++) {
         const pageEl = pageElements[i];
         setExportProgress({ current: i + 1, total: totalPages });
 
         const isLandscape = pageEl.classList.contains('word-page-landscape');
+        const targetWidth = isLandscape ? 1123 : 794;
 
-        // Render page with high-res scale (2x) to ensure sharp typography and graphics
+        // Render page with 2.5x high-res scale to ensure extremely sharp, vector-like typography and graphics
+        // We do NOT manually override coordinate variables (x, y, scrollX, scrollY, windowHeight, width, height)
+        // to let html2canvas calculate the bounding rectangles of pages naturally without scroll/offset shifts!
         const canvas = await html2canvas(pageEl, {
-          scale: 2,
+          scale: 2.5,
           useCORS: true,
           allowTaint: true,
           backgroundColor: '#ffffff',
           logging: false,
-          imageTimeout: 20000,
-          scrollX: 0,
-          scrollY: 0,
+          imageTimeout: 30000,
+          windowWidth: targetWidth, // Force exact width matching A4 portrait/landscape layout
           onclone: (clonedDoc, clonedEl) => {
+            // 1. Inject Poppins and print-color-adjust css into cloned document
+            const styleEl = clonedDoc.createElement('style');
+            styleEl.textContent = `
+              @import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap');
+              * {
+                font-family: 'Poppins', var(--font-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+              }
+              .word-page {
+                box-shadow: none !important;
+                border: none !important;
+              }
+            `;
+            clonedDoc.head.appendChild(styleEl);
+
+            // 2. Clear borders and shadows on all pages in the cloned document for a clean PDF look
+            const allPages = clonedDoc.querySelectorAll('.word-page');
+            allPages.forEach((p: any) => {
+              p.style.boxShadow = 'none';
+              p.style.border = 'none';
+              p.style.margin = '0 auto';
+            });
+
+            // 3. Force instant, animation-free layout reset in cloned printArea
             const printArea = clonedDoc.getElementById('print-area');
             if (printArea) {
               printArea.style.transform = 'none';
-              printArea.style.margin = '0 auto';
-              printArea.style.padding = '0';
+              printArea.style.webkitTransform = 'none';
+              printArea.style.transition = 'none';
             }
-            clonedEl.style.transform = 'none';
-            clonedEl.style.boxShadow = 'none';
-            clonedEl.style.margin = '0 auto';
-            // Ensure all SVG and Recharts text elements explicitly use Poppins font
+
+            // 4. Synchronize all SVG and Recharts charts inner contents & styles from live DOM to cloned DOM
+            const origSvgs = pageEl.querySelectorAll('svg');
+            const clonedSvgs = clonedEl.querySelectorAll('svg');
+            origSvgs.forEach((origSvg, idx) => {
+              const clSvg = clonedSvgs[idx];
+              if (clSvg) {
+                clSvg.innerHTML = origSvg.innerHTML; // Copy full pre-rendered SVG pathways
+                const rect = origSvg.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                  clSvg.setAttribute('width', String(Math.round(rect.width)));
+                  clSvg.setAttribute('height', String(Math.round(rect.height)));
+                  clSvg.style.width = `${Math.round(rect.width)}px`;
+                  clSvg.style.height = `${Math.round(rect.height)}px`;
+                }
+              }
+            });
+
+            // 5. Ensure all SVG and Recharts text elements explicitly use Poppins font
             const svgTexts = clonedEl.querySelectorAll('svg text, .recharts-text, .recharts-surface text');
             svgTexts.forEach((el: any) => {
-              el.style.fontFamily = "'Poppins', -apple-system, sans-serif";
+              el.style.fontFamily = "'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+            });
+
+            // 6. Ensure recharts containers retain full width & height
+            const rechartsContainers = clonedEl.querySelectorAll('.recharts-responsive-container');
+            rechartsContainers.forEach((el: any) => {
+              el.style.width = '100%';
+              el.style.height = '100%';
             });
           }
         });
@@ -1718,7 +1763,8 @@ export default function LaporanTab({
           pdf.addPage('a4', isLandscape ? 'landscape' : 'portrait');
         }
 
-        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight, undefined, 'FAST');
+        // Use high-quality default compression to maintain crystal-clear text and zero blurring (avoid 'FAST')
+        pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
       }
 
       const safeHospitalName = (activeHospitalName || 'RS').replace(/[^a-zA-Z0-9_-]/g, '_');
@@ -1971,16 +2017,16 @@ export default function LaporanTab({
           border-radius: 1rem;
         }
         .word-page {
-          width: 210mm;
-          height: 297mm;
-          min-height: 297mm;
-          max-height: 297mm;
+          width: 794px;
+          height: 1123px;
+          min-height: 1123px;
+          max-height: 1123px;
           background-color: white;
           box-sizing: border-box;
-          padding-top: 2.2cm;
-          padding-bottom: 2cm;
-          padding-left: 2.5cm;
-          padding-right: 2cm;
+          padding-top: 83px;
+          padding-bottom: 76px;
+          padding-left: 94px;
+          padding-right: 76px;
           box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08), 0 2px 8px -2px rgba(15, 23, 42, 0.04);
           border: 1px solid #cbd5e1;
           border-radius: 4px;
@@ -2006,14 +2052,14 @@ export default function LaporanTab({
           justify-content: space-between !important;
         }
         .word-page.word-page-landscape {
-          width: 297mm !important;
-          height: 210mm !important;
-          min-height: 210mm !important;
-          max-height: 210mm !important;
-          padding-top: 1.8cm !important;
-          padding-bottom: 1.8cm !important;
-          padding-left: 2.2cm !important;
-          padding-right: 2.2cm !important;
+          width: 1123px !important;
+          height: 794px !important;
+          min-height: 794px !important;
+          max-height: 794px !important;
+          padding-top: 68px !important;
+          padding-bottom: 68px !important;
+          padding-left: 83px !important;
+          padding-right: 83px !important;
         }
       ` }} />
 
@@ -2084,13 +2130,16 @@ export default function LaporanTab({
           className="flex flex-col items-center gap-8 print:gap-0 font-sans leading-relaxed w-full max-w-[297mm] transition-transform duration-200"
         >
 
-          {/* LEMBAR 1: COVER PAGE */}
+ {/* LEMBAR 1: COVER PAGE */}
           <div className="w-full flex flex-col items-center">
-            <div className="word-page cover-page print-page bg-white relative overflow-hidden flex flex-col justify-between select-none">
+            <div 
+              className="word-page cover-page print-page bg-white relative overflow-hidden flex flex-col justify-between select-none"
+              style={{ width: '794px', height: '1123px', minHeight: '1123px' }}
+            >
               
-              {/* BACKGROUND VECTOR GEOMETRICS (Top Right Lines + Bottom Right Diagonal Teal Polygon & Stripes) */}
-              <div className="absolute inset-0 pointer-events-none z-0">
-                <svg className="w-full h-full" viewBox="0 0 800 1130" preserveAspectRatio="none" fill="none">
+               {/* BACKGROUND VECTOR GEOMETRICS (Top Right Lines + Bottom Right Diagonal Teal Polygon & Stripes) */}
+              <div className="absolute top-0 left-0 pointer-events-none z-0" style={{ width: '794px', height: '1123px' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" width="794" height="1123" className="w-full h-full" viewBox="0 0 800 1130" preserveAspectRatio="none" fill="none" style={{ width: '794px', height: '1123px' }}>
                   {/* Top-Right Corner Accent Lines */}
                   <line x1="580" y1="0" x2="800" y2="220" stroke="#007a78" strokeWidth="2.5" opacity="0.4" />
                   <line x1="620" y1="0" x2="800" y2="180" stroke="#007a78" strokeWidth="12" opacity="0.85" />
@@ -2098,33 +2147,39 @@ export default function LaporanTab({
 
                   {/* Main Teal Polygon Cutting Diagonally */}
                   {/* Layer 1: Dark Teal Shadow Base */}
-                  <path d="M -50 1180 L -50 960 L 850 250 L 850 1180 Z" fill="#005250" />
+                  <path d="M 0 1130 L 0 960 L 800 250 L 800 1130 Z" fill="#005250" />
                   
                   {/* Layer 2: Main Deep Teal Polygon */}
-                  <path d="M -50 1180 L -50 990 L 850 280 L 850 1180 Z" fill="#007a78" />
+                  <path d="M 0 1130 L 0 990 L 800 280 L 800 1130 Z" fill="#007a78" />
 
                   {/* Layer 3: Dark Accent Bottom-Right Wedge */}
-                  <path d="M 200 1180 L 850 630 L 850 1180 Z" fill="#004846" opacity="0.6" />
+                  <path d="M 200 1130 L 800 630 L 800 1130 Z" fill="#004846" opacity="0.6" />
 
                   {/* Parallel Diagonal Accent Stripes along the slope edge */}
                   {/* Thick Stripe 1 */}
-                  <line x1="-50" y1="945" x2="850" y2="235" stroke="#007a78" strokeWidth="18" />
+                  <line x1="0" y1="945" x2="800" y2="235" stroke="#007a78" strokeWidth="18" />
                   {/* White Gap Line */}
-                  <line x1="-50" y1="922" x2="850" y2="212" stroke="#ffffff" strokeWidth="6" />
+                  <line x1="0" y1="922" x2="800" y2="212" stroke="#ffffff" strokeWidth="6" />
                   {/* Thin Accent Stripe 2 */}
-                  <line x1="-50" y1="906" x2="850" y2="196" stroke="#007a78" strokeWidth="4" />
+                  <line x1="0" y1="906" x2="800" y2="196" stroke="#007a78" strokeWidth="4" />
                   {/* Light/Subtle Stripe 3 */}
-                  <line x1="-50" y1="875" x2="850" y2="165" stroke="#007a78" strokeWidth="2" opacity="0.5" />
+                  <line x1="0" y1="875" x2="800" y2="165" stroke="#007a78" strokeWidth="2" opacity="0.5" />
                 </svg>
               </div>
 
               {/* BOTTOM RIGHT OVERLAY TEXT ON TEAL AREA */}
-              <div className="absolute bottom-16 right-14 z-10 text-right text-white max-w-[650px]">
+              <div className="absolute bottom-16 right-14 z-10 text-right text-white max-w-[550px]">
                 {/* Nama Rumah Sakit & Periode Tahun - Rata Kanan di atas "Keselamatan adalah Prioritas" */}
-                <h4 className="font-extrabold text-white text-[52px] tracking-wide uppercase leading-tight font-sans drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
+                <h4 
+                  className="font-extrabold text-white text-[36px] tracking-wide uppercase leading-tight font-sans whitespace-normal break-words"
+                  style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                >
                   {activeHospitalName}
                 </h4>
-                <p className="text-[26px] font-black uppercase tracking-[0.2em] text-white mt-1 mb-5 font-sans drop-shadow-[0_1px_2px_rgba(0,0,0,0.1)]">
+                <p 
+                  className="text-[26px] font-black uppercase tracking-[0.2em] text-white mt-1 mb-5 font-sans"
+                  style={{ textShadow: '0 1px 2px rgba(0,0,0,0.2)' }}
+                >
                   PERIODE TAHUN {selectedYear === 'Semua Tahun' ? new Date().getFullYear() : selectedYear}
                 </p>
 
@@ -2132,7 +2187,7 @@ export default function LaporanTab({
                   KESELAMATAN ADALAH PRIORITAS
                 </h5>
                 <div className="w-12 h-[2px] bg-white/80 my-2.5 ml-auto"></div>
-                <p className="text-[12px] text-teal-50 font-light leading-relaxed">
+                <p className="text-[11px] text-teal-50 font-light leading-relaxed">
                   Bersama membangun budaya keselamatan pasien yang kuat, untuk pelayanan yang bermutu.
                 </p>
               </div>
@@ -2783,29 +2838,37 @@ export default function LaporanTab({
                               </div>
                             </div>
                           </>
-                        ) : (
+                        ) : pageItem.rows.length > 0 ? (
                           <div className="space-y-1">
                             <h4 className="font-bold text-slate-900 text-[11px]">3.1.2 Demografi Responden (Lanjutan)</h4>
                             <p className="text-[10px] text-slate-600 font-medium">Tabel lanjutan rincian data karakteristik dan sebaran responden per unit kerja</p>
                           </div>
-                        )}
+                        ) : null}
 
                         {/* Tabel Demografi Responden */}
-                        <div className="w-full border border-slate-200 rounded-xl text-[9px] overflow-hidden bg-white shadow-2xs" style={{ border: '1px solid #e2e8f0' }}>
-                          <table className="w-full table-fixed text-left border-collapse" style={{ borderCollapse: 'collapse', width: '100%' }}>
-                            <thead>
-                              <tr className="bg-[#14B8A6] text-white font-extrabold uppercase tracking-wider text-[8.5px]" style={{ backgroundColor: '#14B8A6' }}>
-                                <th className="py-2 px-2.5 border-r border-white/20 text-left w-[22%]" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Karakteristik</th>
-                                <th className="py-2 px-2.5 border-r border-white/20 text-center w-[48%]" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Kategori / Detail</th>
-                                <th className="py-2 px-2 border-r border-white/20 text-center w-[15%]" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Jumlah (n)</th>
-                                <th className="py-2 px-2 text-center w-[15%]" style={{ borderBottom: '1px solid #0f766e' }}>Persentase (%)</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {renderDemografiTableRows(pageItem.rows, flatDemografiRows)}
-                            </tbody>
-                          </table>
-                        </div>
+                        {pageItem.rows.length > 0 && (
+                          <div className="w-full border border-slate-200 rounded-xl text-[9px] overflow-hidden bg-white shadow-2xs" style={{ border: '1px solid #e2e8f0' }}>
+                            <table className="w-full table-fixed text-left border-collapse" style={{ borderCollapse: 'collapse', width: '100%' }}>
+                              <colgroup>
+                                <col style={{ width: '22%' }} />
+                                <col style={{ width: '48%' }} />
+                                <col style={{ width: '15%' }} />
+                                <col style={{ width: '15%' }} />
+                              </colgroup>
+                              <thead>
+                                <tr className="bg-teal-500 text-white font-extrabold uppercase tracking-wider text-[8.5px]">
+                                  <th className="py-2 px-2.5 border-r border-white/20 text-left w-[22%] break-words whitespace-normal" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Karakteristik</th>
+                                  <th className="py-2 px-2.5 border-r border-white/20 text-center w-[48%] break-words whitespace-normal" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Kategori / Detail</th>
+                                  <th className="py-2 px-2 border-r border-white/20 text-center w-[15%] break-words whitespace-normal" style={{ borderRight: '1px solid rgba(255,255,255,0.3)', borderBottom: '1px solid #0f766e' }}>Jumlah (n)</th>
+                                  <th className="py-2 px-2 text-center w-[15%] break-words whitespace-normal" style={{ borderBottom: '1px solid #0f766e' }}>Persentase (%)</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {renderDemografiTableRows(pageItem.rows, flatDemografiRows)}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
 
                         {/* Ringkasan Demografi Responden (Tampil di Halaman Terakhir Saja) */}
                         {pageItem.isLastPage && (
@@ -2903,11 +2966,16 @@ export default function LaporanTab({
 
                     <div className="w-full text-[9.5px]">
                       <table className="w-full table-fixed border-collapse text-[9.5px]">
+                        <colgroup>
+                          <col style={{ width: '6%' }} />
+                          <col style={{ width: '44%' }} />
+                          <col style={{ width: '50%' }} />
+                        </colgroup>
                         <thead>
                           <tr className="border-b border-slate-100 font-bold uppercase tracking-wider text-slate-400 text-[8.5px]">
-                            <th className="pb-2 text-left pl-1 font-bold" style={{ width: '6%' }}>NO.</th>
-                            <th className="pb-2 text-left font-bold" style={{ width: '44%' }}>KOMPONEN BUDAYA KESELAMATAN PASIEN</th>
-                            <th className="pb-2 text-center font-bold" style={{ width: '50%' }}>PERSENTASE RESPONS POSITIF</th>
+                            <th className="pb-2 text-left pl-1 font-bold break-words whitespace-normal" style={{ width: '6%' }}>NO.</th>
+                            <th className="pb-2 text-left font-bold break-words whitespace-normal" style={{ width: '44%' }}>KOMPONEN BUDAYA KESELAMATAN PASIEN</th>
+                            <th className="pb-2 text-center font-bold break-words whitespace-normal" style={{ width: '50%' }}>PERSENTASE RESPONS POSITIF</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-50 font-medium">
@@ -3106,43 +3174,41 @@ export default function LaporanTab({
                           <BarChart2 className="w-3.5 h-3.5 text-rose-500" />
                           Grafik Penilaian Insiden Keselamatan Pasien (Overall Rating)
                         </h5>
-                        <div className="h-[185px] w-full" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={safetyRatingData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                              <XAxis 
-                                dataKey="kategori" 
-                                stroke="#64748b" 
-                                tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
-                                tickLine={false} 
+                        <div className="h-[185px] w-full flex justify-center" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
+                          <BarChart width={560} height={185} data={safetyRatingData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                            <XAxis 
+                              dataKey="kategori" 
+                              stroke="#64748b" 
+                              tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                              tickLine={false} 
+                            />
+                            <YAxis 
+                              type="number" 
+                              domain={[0, 100]} 
+                              stroke="#64748b" 
+                              tick={{ fill: '#475569', fontSize: 9, fontWeight: 600, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                              tickLine={false} 
+                              tickFormatter={(v) => `${v}%`} 
+                            />
+                            <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
+                            <Bar dataKey="percentage" name="Persentase" fill="#f43f5e" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                              <LabelList 
+                                dataKey="percentage" 
+                                position="top" 
+                                offset={5} 
+                                formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
+                                fill="#334155" 
+                                fontSize={9.5} 
+                                fontWeight="bold" 
+                                style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}
                               />
-                              <YAxis 
-                                type="number" 
-                                domain={[0, 100]} 
-                                stroke="#64748b" 
-                                tick={{ fill: '#475569', fontSize: 9, fontWeight: 600, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
-                                tickLine={false} 
-                                tickFormatter={(v) => `${v}%`} 
-                              />
-                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
-                              <Bar dataKey="percentage" name="Persentase" fill="#f43f5e" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                                <LabelList 
-                                  dataKey="percentage" 
-                                  position="top" 
-                                  offset={5} 
-                                  formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
-                                  fill="#334155" 
-                                  fontSize={9.5} 
-                                  fontWeight="bold" 
-                                  style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}
-                                />
-                                {safetyRatingData.distribution.map((entry, index) => {
-                                  const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#b91c1c'];
-                                  return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
-                                })}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
+                              {safetyRatingData.distribution.map((entry, index) => {
+                                const colors = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#b91c1c'];
+                                return <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />;
+                              })}
+                            </Bar>
+                          </BarChart>
                         </div>
                       </div>
 
@@ -3265,43 +3331,41 @@ export default function LaporanTab({
                           <BarChart2 className="w-3.5 h-3.5 text-purple-500" />
                           Grafik Jumlah Insiden Keselamatan Pasien Yang Dilaporkan
                         </h5>
-                        <div className="h-[185px] w-full" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={reportedEventsData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                              <XAxis 
-                                dataKey="kategori" 
-                                stroke="#64748b" 
-                                tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
-                                tickLine={false} 
+                        <div className="h-[185px] w-full flex justify-center" style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}>
+                          <BarChart width={560} height={185} data={reportedEventsData.distribution.map(d => ({ kategori: d.name, percentage: parseFloat(d.percentage.replace('%', '')) || 0 }))} margin={{ top: 18, right: 15, left: -10, bottom: 8 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                            <XAxis 
+                              dataKey="kategori" 
+                              stroke="#64748b" 
+                              tick={{ fill: '#334155', fontSize: 9.5, fontWeight: 700, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                              tickLine={false} 
+                            />
+                            <YAxis 
+                              type="number" 
+                              domain={[0, 100]} 
+                              stroke="#64748b" 
+                              tick={{ fill: '#475569', fontSize: 9, fontWeight: 600, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
+                              tickLine={false} 
+                              tickFormatter={(v) => `${v}%`} 
+                            />
+                            <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
+                            <Bar dataKey="percentage" name="Persentase" fill="#8b5cf6" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+                              <LabelList 
+                                dataKey="percentage" 
+                                position="top" 
+                                offset={5} 
+                                formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
+                                fill="#334155" 
+                                fontSize={9.5} 
+                                fontWeight="bold" 
+                                style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}
                               />
-                              <YAxis 
-                                type="number" 
-                                domain={[0, 100]} 
-                                stroke="#64748b" 
-                                tick={{ fill: '#475569', fontSize: 9, fontWeight: 600, fontFamily: "'Poppins', var(--font-sans), sans-serif" }} 
-                                tickLine={false} 
-                                tickFormatter={(v) => `${v}%`} 
-                              />
-                              <Tooltip formatter={(value: number) => [`${value.toFixed(1)}%`, 'Persentase']} contentStyle={{ fontSize: '10px', borderRadius: '8px', fontFamily: "'Poppins', var(--font-sans), sans-serif" }} />
-                              <Bar dataKey="percentage" name="Persentase" fill="#8b5cf6" radius={[4, 4, 0, 0]} isAnimationActive={false}>
-                                <LabelList 
-                                  dataKey="percentage" 
-                                  position="top" 
-                                  offset={5} 
-                                  formatter={(val: number) => `${Number(Number(val || 0).toFixed(1)).toLocaleString('id-ID')}%`} 
-                                  fill="#334155" 
-                                  fontSize={9.5} 
-                                  fontWeight="bold" 
-                                  style={{ fontFamily: "'Poppins', var(--font-sans), sans-serif" }}
-                                />
-                                {reportedEventsData.distribution.map((entry, index) => {
-                                  const colors = ['#64748b', '#8b5cf6', '#6366f1', '#0d9488', '#d97706'];
-                                  return <Cell key={`cell-rep-${index}`} fill={colors[index % colors.length]} />;
-                                })}
-                              </Bar>
-                            </BarChart>
-                          </ResponsiveContainer>
+                              {reportedEventsData.distribution.map((entry, index) => {
+                                const colors = ['#64748b', '#8b5cf6', '#6366f1', '#0d9488', '#d97706'];
+                                return <Cell key={`cell-rep-${index}`} fill={colors[index % colors.length]} />;
+                              })}
+                            </Bar>
+                          </BarChart>
                         </div>
                       </div>
 
@@ -4047,10 +4111,17 @@ export default function LaporanTab({
                           </h5>
                           <div className="overflow-x-auto border border-slate-200 rounded-xl">
                             <table className="w-full table-fixed text-left border-collapse text-[7.5px]">
+                              <colgroup>
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '35%' }} />
+                                {posChunk.map(pos => (
+                                  <col key={`col-pos-${pos.name}`} style={{ width: `${60 / posChunk.length}%` }} />
+                                ))}
+                              </colgroup>
                               <thead>
                                 <tr className="bg-indigo-900 text-white font-extrabold text-[7.5px] uppercase border-b border-indigo-950">
-                                  <th className="p-1 border-r border-indigo-800 text-center" style={{ width: '5%' }}>No</th>
-                                  <th className="p-1 border-r border-indigo-800 text-center" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
+                                  <th className="p-1 border-r border-indigo-800 text-center break-words whitespace-normal" style={{ width: '5%' }}>No</th>
+                                  <th className="p-1 border-r border-indigo-800 text-center break-words whitespace-normal" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
                                   {posChunk.map(pos => (
                                     <th key={pos.name} className="p-1 text-center border-r border-indigo-800" style={{ width: `${60 / posChunk.length}%` }}>
                                       {pos.name} <span className="font-mono font-normal block text-[6.5px] text-indigo-200">(N={pos.value})</span>
@@ -4128,10 +4199,17 @@ export default function LaporanTab({
                           </h5>
                           <div className="overflow-x-auto border border-slate-200 rounded-xl">
                             <table className="w-full table-fixed text-left border-collapse text-[7.5px]">
+                              <colgroup>
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '35%' }} />
+                                {unitChunk.map(u => (
+                                  <col key={`col-unit-${u.name}`} style={{ width: `${60 / unitChunk.length}%` }} />
+                                ))}
+                              </colgroup>
                               <thead>
                                 <tr className="bg-teal-800 text-white font-extrabold text-[7.5px] uppercase border-b border-teal-900">
-                                  <th className="p-1 border-r border-teal-700 text-center" style={{ width: '5%' }}>No</th>
-                                  <th className="p-1 border-r border-teal-700 text-center" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
+                                  <th className="p-1 border-r border-teal-700 text-center break-words whitespace-normal" style={{ width: '5%' }}>No</th>
+                                  <th className="p-1 border-r border-teal-700 text-center break-words whitespace-normal" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
                                   {unitChunk.map(u => (
                                     <th key={u.name} className="p-1 text-center border-r border-teal-700" style={{ width: `${60 / unitChunk.length}%` }}>
                                       {u.name} <span className="font-mono font-normal block text-[6.5px] text-teal-200">(N={u.value})</span>
@@ -4207,9 +4285,9 @@ export default function LaporanTab({
                         </colgroup>
                         <thead>
                           <tr className="bg-slate-800 text-white font-extrabold text-[7.5px] uppercase border-b border-slate-700">
-                            <th rowSpan={2} className="p-1 border-r border-slate-700 text-center align-middle" style={{ width: '5%', textAlign: 'center' }}>No</th>
-                            <th rowSpan={2} className="p-1 border-r border-slate-700 text-center align-middle" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
-                            <th colSpan={demografiStats.g1Data.slice(0, 4).length || 4} className="p-1 text-center border-r border-slate-700 bg-slate-700" style={{ width: '30%', textAlign: 'center' }}>
+                            <th rowSpan={2} className="p-1 border-r border-slate-700 text-center align-middle break-words whitespace-normal" style={{ width: '5%', textAlign: 'center' }}>No</th>
+                            <th rowSpan={2} className="p-1 border-r border-slate-700 text-center align-middle break-words whitespace-normal" style={{ width: '35%', textAlign: 'center' }}>Dimensi Budaya Keselamatan</th>
+                            <th colSpan={demografiStats.g1Data.slice(0, 4).length || 4} className="p-1 text-center border-r border-slate-700 bg-slate-700 break-words whitespace-normal" style={{ width: '30%', textAlign: 'center' }}>
                               Masa Kerja (Staff Tenure)
                             </th>
                             <th colSpan={demografiStats.g3Data.slice(0, 4).length || 4} className="p-1 text-center bg-slate-650" style={{ width: '30%', textAlign: 'center' }}>
@@ -4371,13 +4449,20 @@ export default function LaporanTab({
                       {/* Tabel Perbandingan Periode */}
                       <div className="overflow-x-auto border border-slate-200 rounded-xl">
                         <table className="w-full table-fixed text-left border-collapse text-[8.5px]">
+                          <colgroup>
+                            <col style={{ width: '10%' }} />
+                            <col style={{ width: '45%' }} />
+                            <col style={{ width: '15%' }} />
+                            <col style={{ width: '15%' }} />
+                            <col style={{ width: '15%' }} />
+                          </colgroup>
                           <thead>
                             <tr className="bg-emerald-900 text-white font-extrabold uppercase text-[8px] border-b border-emerald-950">
-                              <th className="p-1.5 border-r border-emerald-800 text-center" style={{ width: '10%' }}>Kode</th>
-                              <th className="p-1.5 border-r border-emerald-800" style={{ width: '45%' }}>Dimensi Budaya Keselamatan</th>
-                              <th className="p-1.5 text-center border-r border-emerald-800" style={{ width: '15%' }}>{previousYear}</th>
-                              <th className="p-1.5 text-center border-r border-emerald-800" style={{ width: '15%' }}>{tahunSurvei}</th>
-                              <th className="p-1.5 text-center" style={{ width: '15%' }}>Selisih (Trend)</th>
+                              <th className="p-1.5 border-r border-emerald-800 text-center break-words whitespace-normal" style={{ width: '10%' }}>Kode</th>
+                              <th className="p-1.5 border-r border-emerald-800 break-words whitespace-normal" style={{ width: '45%' }}>Dimensi Budaya Keselamatan</th>
+                              <th className="p-1.5 text-center border-r border-emerald-800 break-words whitespace-normal" style={{ width: '15%' }}>{previousYear}</th>
+                              <th className="p-1.5 text-center border-r border-emerald-800 break-words whitespace-normal" style={{ width: '15%' }}>{tahunSurvei}</th>
+                              <th className="p-1.5 text-center break-words whitespace-normal" style={{ width: '15%' }}>Selisih (Trend)</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">
@@ -4494,13 +4579,20 @@ export default function LaporanTab({
                         {/* Tabel Benchmark */}
                         <div className="overflow-x-auto border border-slate-200 rounded-xl">
                           <table className="w-full table-fixed text-left border-collapse text-[8.5px]">
+                            <colgroup>
+                              <col style={{ width: '10%' }} />
+                              <col style={{ width: '40%' }} />
+                              <col style={{ width: '15%' }} />
+                              <col style={{ width: '15%' }} />
+                              <col style={{ width: '20%' }} />
+                            </colgroup>
                             <thead>
                               <tr className="bg-indigo-900 text-white font-extrabold uppercase text-[8px] border-b border-indigo-950">
-                                <th className="p-1.5 border-r border-indigo-800 text-center" style={{ width: '10%' }}>Kode</th>
-                                <th className="p-1.5 border-r border-indigo-800" style={{ width: '40%' }}>Dimensi Budaya Keselamatan</th>
-                                <th className="p-1.5 text-center border-r border-indigo-800" style={{ width: '15%' }}>{activeHospitalName} (Anda)</th>
-                                <th className="p-1.5 text-center border-r border-indigo-800" style={{ width: '15%' }}>{selectedBenchmarkHospital.namaRs}</th>
-                                <th className="p-1.5 text-center" style={{ width: '20%' }}>Kesenjangan (Gap)</th>
+                                <th className="p-1.5 border-r border-indigo-800 text-center break-words whitespace-normal" style={{ width: '10%' }}>Kode</th>
+                                <th className="p-1.5 border-r border-indigo-800 break-words whitespace-normal" style={{ width: '40%' }}>Dimensi Budaya Keselamatan</th>
+                                <th className="p-1.5 text-center border-r border-indigo-800 break-words whitespace-normal" style={{ width: '15%' }}>{activeHospitalName} (Anda)</th>
+                                <th className="p-1.5 text-center border-r border-indigo-800 break-words whitespace-normal" style={{ width: '15%' }}>{selectedBenchmarkHospital.namaRs}</th>
+                                <th className="p-1.5 text-center break-words whitespace-normal" style={{ width: '20%' }}>Kesenjangan (Gap)</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100 font-medium text-slate-600 bg-white">

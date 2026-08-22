@@ -6749,7 +6749,7 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                       <div>
                         <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Penilaian Insiden Keselamatan Pasien</h3>
                         <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Menampilkan perbandingan distribusi penilaian keselamatan pasien berdasarkan unit kerja antara rumah sakit Anda dengan {activeBenchmarkLabel}
+                          Menampilkan perbandingan distribusi penilaian keselamatan pasien berdasarkan unit kerja di {namaRs || 'Rumah Sakit'}
                         </p>
                       </div>
                       
@@ -8027,8 +8027,8 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     {/* Filter Bar */}
                     <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
                       <div className="space-y-1 font-sans">
-                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Matrix Perbandingan Per Item Berdasarkan Masa Jabatan / Lama Kerja</h3>
-                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan masa jabatan / lama kerja antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.</p>
+                        <h3 className="text-sm font-bold text-slate-800 uppercase tracking-wider">Tabel Perbandingan Per Item Berdasarkan Masa Jabatan / Lama Kerja</h3>
+                        <p className="text-xs text-slate-500 font-medium">Perbandingan % respon positif per item survei berdasarkan masa jabatan / lama kerja</p>
                       </div>
                       <div className="w-full md:w-96">
                         <select
@@ -8336,9 +8336,6 @@ export default function AnalisaDataTab({ surveys, role, identifier, namaRs, hosp
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-slate-100 pb-4 mb-4">
                       <div>
                         <h3 className="text-base font-bold text-slate-800 font-sans">Tabel Distribusi Frekuensi Pelaporan Peristiwa Berdasarkan Masa Jabatan / Lama Kerja</h3>
-                        <p className="text-xs text-slate-500 font-medium mt-0.5">
-                          Menunjukkan perbandingan persentase jumlah laporan yang diserahkan dalam 12 bulan terakhir berdasarkan masa jabatan / lama kerja antara {namaRs || 'Rumah Sakit'} dengan {activeBenchmarkLabel}.
-                        </p>
                       </div>
                       
                       {/* Filter and Pagination Navigation */}
