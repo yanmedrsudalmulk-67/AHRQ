@@ -467,7 +467,7 @@ export async function getHospitalAccounts(): Promise<HospitalAccount[]> {
 }
 
 // 4. Create hospital account in Supabase (no localStorage)
-export async function sendSystemEmail(to: string, subject: string, body: string, type: 'admin_notification' | 'approval' | 'rejection'): Promise<void> {
+export async function sendSystemEmail(to: string, subject: string, body: string, type: 'admin_notification' | 'approval' | 'rejection' | 'password_reset' | 'notification'): Promise<void> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
@@ -2208,6 +2208,106 @@ export async function savePengesahanConfig(hospitalIdOrUsername: string, config:
 
 export async function sendBenchmarkEmailNotification(to: string, subject: string, body: string): Promise<void> {
   console.log(`[EMAIL NOTIFICATION] To: ${to} | Subject: ${subject} | Body: ${body}`);
+}
+
+export async function requestHospitalPasswordReset(identifier: string): Promise<{ message: string, emailHint?: string }> {
+  const accounts = await getHospitalAccounts();
+  const account = accounts.find(a => 
+    a.username.toLowerCase() === identifier.toLowerCase() || 
+    (a.emailRs && a.emailRs.toLowerCase() === identifier.toLowerCase()) ||
+    (a.kodeRs && a.kodeRs.toLowerCase() === identifier.toLowerCase())
+  );
+
+  if (!account) {
+    throw new Error('Akun dengan username atau email tersebut tidak ditemukan.');
+  }
+  if (!account.emailRs) {
+    throw new Error('Akun tidak memiliki email terdaftar untuk reset password. Hubungi administrator.');
+  }
+
+  // Generate 6 digit code
+  const token = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 15 * 60 * 1000; // 15 mins
+
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    try {
+      await supabase.from('ahrq_surveys').upsert({
+        id: `PWDRESET_${account.id}`,
+        nama_rs: account.namaRs || 'RESET',
+        unit_kerja: 'PASSWORD_RESET',
+        jumlah_responden: 0,
+        tanggal_input: new Date().toISOString(),
+        dimensi_scores: { token, expiresAt, accountId: account.id }
+      });
+    } catch (e) {
+      console.warn("Error saving reset token to Supabase", e);
+    }
+  }
+  
+  const body = `Halo ${account.namaRs},
+  
+Anda telah meminta reset password. Berikut adalah kode verifikasi Anda:
+${token}
+
+Kode ini berlaku selama 15 menit. Jika Anda tidak merasa meminta reset password, abaikan email ini.`;
+  await sendSystemEmail(account.emailRs, 'Reset Password Portal AHRQ SOPS', body, 'password_reset');
+  
+  const [name, domain] = account.emailRs.split('@');
+  const maskedEmail = `${name.substring(0, Math.min(3, name.length))}***@${domain}`;
+
+  return { message: 'Kode reset password telah dikirim ke email terdaftar.', emailHint: maskedEmail };
+}
+
+export async function verifyResetTokenAndResetPassword(identifier: string, token: string, newPassword: string): Promise<{ success: boolean, message: string }> {
+  const accounts = await getHospitalAccounts();
+  const account = accounts.find(a => 
+    a.username.toLowerCase() === identifier.toLowerCase() || 
+    (a.emailRs && a.emailRs.toLowerCase() === identifier.toLowerCase()) ||
+    (a.kodeRs && a.kodeRs.toLowerCase() === identifier.toLowerCase())
+  );
+
+  if (!account) {
+    throw new Error('Akun tidak ditemukan.');
+  }
+
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error('Sistem database tidak tersedia.');
+  }
+
+  const { data, error } = await supabase.from('ahrq_surveys').select('*').eq('id', `PWDRESET_${account.id}`).single();
+  if (error || !data) {
+    throw new Error('Kode token tidak ditemukan atau sudah kadaluarsa. Silakan minta kode baru.');
+  }
+
+  const scores = data.dimensi_scores || {};
+  if (scores.token !== token) {
+    throw new Error('Kode verifikasi tidak valid.');
+  }
+  if (Date.now() > scores.expiresAt) {
+    throw new Error('Kode verifikasi sudah kadaluarsa.');
+  }
+
+  await updateHospitalProfile(account.id, { password: newPassword });
+
+  // Delete the token so it can't be reused
+  await supabase.from('ahrq_surveys').delete().eq('id', `PWDRESET_${account.id}`);
+  
+  try {
+    await addAccountAuditLog({
+      hospital_id: account.id,
+      hospital_name: account.namaRs,
+      action: 'password_reset',
+      action_label: 'Password Reset',
+      performed_by: account.username,
+      reason: 'Password was reset using email token'
+    });
+  } catch(e) {
+    console.warn("Failed to log password reset", e);
+  }
+
+  return { success: true, message: 'Password berhasil direset. Silakan login dengan password baru.' };
 }
 
 
