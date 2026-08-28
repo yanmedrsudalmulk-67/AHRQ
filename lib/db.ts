@@ -42,7 +42,7 @@ export interface AccountAuditLog {
   id: string;
   hospital_id: string;
   hospital_name: string;
-  action: 'approved' | 'rejected' | 'activated' | 'disabled' | 'archived' | 'restored' | 'deleted';
+  action: 'approved' | 'rejected' | 'activated' | 'disabled' | 'archived' | 'restored' | 'deleted' | 'updated' | 'password_reset';
   action_label: string;
   performed_by: string;
   timestamp: string;
@@ -54,7 +54,7 @@ export interface EmailNotification {
   to_email: string;
   subject: string;
   body: string;
-  type: 'admin_notification' | 'approval' | 'rejection';
+  type: 'admin_notification' | 'approval' | 'rejection' | 'password_reset' | 'notification';
   created_at?: string;
 }
 
