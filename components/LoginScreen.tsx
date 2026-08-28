@@ -1,10 +1,31 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { LogIn, ArrowLeft, ShieldCheck, ClipboardCheck, Eye, EyeOff } from 'lucide-react';
+import { 
+  LogIn, 
+  ArrowLeft, 
+  ShieldCheck, 
+  ClipboardCheck, 
+  Eye, 
+  EyeOff, 
+  Key, 
+  Mail, 
+  CheckCircle2, 
+  AlertCircle, 
+  X, 
+  Loader2, 
+  Lock, 
+  RefreshCw,
+  Sparkles
+} from 'lucide-react';
 import bcrypt from 'bcryptjs';
-import { motion } from 'motion/react';
-import { getHospitalAccounts, updateLastLogin } from '../lib/db';
+import { motion, AnimatePresence } from 'motion/react';
+import { 
+  getHospitalAccounts, 
+  updateLastLogin, 
+  requestHospitalPasswordReset, 
+  verifyResetTokenAndResetPassword 
+} from '../lib/db';
 import { LogoData } from '../lib/logo';
 
 interface LoginScreenProps {
@@ -32,6 +53,113 @@ export default function LoginScreen({
   const [error, setError] = useState('');
   const [hospitals, setHospitals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Forgot Password modal state
+  const [showForgotModal, setShowForgotModal] = useState(false);
+  const [forgotStep, setForgotStep] = useState<'request' | 'verify' | 'success'>('request');
+  const [forgotIdentifier, setForgotIdentifier] = useState('');
+  const [forgotToken, setForgotToken] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [showForgotNewPassword, setShowForgotNewPassword] = useState(false);
+  const [showForgotConfirmPassword, setShowForgotConfirmPassword] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState<{ text: string; type: 'success' | 'error' | 'info' } | null>(null);
+  const [forgotEmailHint, setForgotEmailHint] = useState<string | null>(null);
+
+  // Password strength calculation helper
+  const calculatePasswordStrength = (pass: string) => {
+    if (!pass) return { score: 0, label: 'Kosong', color: 'bg-slate-200', text: 'text-slate-400' };
+    let score = 0;
+    if (pass.length >= 8) score += 1;
+    if (/[A-Z]/.test(pass)) score += 1;
+    if (/[a-z]/.test(pass)) score += 1;
+    if (/[0-9]/.test(pass)) score += 1;
+    if (/[^A-Za-z0-9]/.test(pass)) score += 1;
+
+    if (score <= 2) return { score, label: 'Lemah', color: 'bg-rose-500', text: 'text-rose-600' };
+    if (score <= 3) return { score, label: 'Sedang', color: 'bg-amber-500', text: 'text-amber-600' };
+    return { score, label: 'Sangat Kuat', color: 'bg-emerald-500', text: 'text-emerald-600' };
+  };
+
+  const handleOpenForgotPassword = () => {
+    setForgotStep('request');
+    setForgotIdentifier(rsUsername || '');
+    setForgotToken('');
+    setForgotNewPassword('');
+    setForgotConfirmPassword('');
+    setForgotMessage(null);
+    setForgotEmailHint(null);
+    setShowForgotModal(true);
+  };
+
+  const handleRequestResetCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotIdentifier.trim()) {
+      setForgotMessage({ text: 'Harap masukkan username atau email rumah sakit.', type: 'error' });
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotMessage(null);
+
+    try {
+      const res = await requestHospitalPasswordReset(forgotIdentifier);
+      setForgotMessage({ text: res.message, type: 'info' });
+      if (res.emailHint) {
+        setForgotEmailHint(res.emailHint);
+      }
+      setForgotStep('verify');
+    } catch (err: any) {
+      setForgotMessage({ text: err.message || 'Terjadi kesalahan sistem.', type: 'error' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleVerifyAndResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotToken.trim()) {
+      setForgotMessage({ text: 'Harap masukkan 6 digit kode verifikasi.', type: 'error' });
+      return;
+    }
+    if (forgotNewPassword.length < 8) {
+      setForgotMessage({ text: 'Password baru minimal 8 karakter.', type: 'error' });
+      return;
+    }
+    if (forgotNewPassword !== forgotConfirmPassword) {
+      setForgotMessage({ text: 'Konfirmasi password baru tidak cocok.', type: 'error' });
+      return;
+    }
+
+    setForgotLoading(true);
+    setForgotMessage(null);
+
+    try {
+      const res = await verifyResetTokenAndResetPassword(forgotIdentifier, forgotToken, forgotNewPassword);
+      if (res.success) {
+        setForgotStep('success');
+        setForgotMessage({ text: res.message, type: 'success' });
+        // Refresh hospital accounts cache
+        const updatedAccounts = await getHospitalAccounts();
+        setHospitals(updatedAccounts);
+      } else {
+        setForgotMessage({ text: res.message, type: 'error' });
+      }
+    } catch (err: any) {
+      setForgotMessage({ text: err.message || 'Gagal mereset password.', type: 'error' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
+  const handleFinishReset = () => {
+    setShowForgotModal(false);
+    if (forgotIdentifier) {
+      setRsUsername(forgotIdentifier);
+    }
+    setRsPassword('');
+  };
 
   useEffect(() => {
     const loadHospitals = async () => {
@@ -219,7 +347,16 @@ export default function LoginScreen({
               </div>
 
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 ml-1">Password</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-slate-700 ml-1">Password</label>
+                  <button
+                    type="button"
+                    onClick={handleOpenForgotPassword}
+                    className="text-[10px] font-bold text-[#1E6F73] hover:text-[#2FA7A7] hover:underline transition-colors cursor-pointer"
+                  >
+                    Lupa Password?
+                  </button>
+                </div>
                 <div className="relative">
                   <input
                     type={showRsPassword ? 'text' : 'password'}
@@ -304,6 +441,275 @@ export default function LoginScreen({
           )}
         </div>
       </div>
+
+      {/* Forgot Password Modal (Glassmorphism 2.0) */}
+      <AnimatePresence>
+        {showForgotModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.25 }}
+              className="relative w-full max-w-lg bg-white/95 backdrop-blur-2xl border border-white/80 rounded-3xl shadow-2xl p-6 sm:p-8 overflow-hidden text-slate-800"
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setShowForgotModal(false)}
+                className="absolute top-5 right-5 p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors cursor-pointer"
+                aria-label="Tutup"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Modal Header */}
+              <div className="flex items-center gap-3.5 mb-6">
+                <div className="p-3 bg-gradient-to-tr from-[#43B8BD] to-[#1E6F73] text-white rounded-2xl shadow-md shadow-teal-500/20">
+                  <Key className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                    Lupa Password Portal RS
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Atur ulang password akun rumah sakit Anda dengan verifikasi aman.
+                  </p>
+                </div>
+              </div>
+
+              {/* Alert message if any */}
+              {forgotMessage && (
+                <div
+                  className={`mb-5 p-3.5 rounded-2xl text-xs font-medium flex items-start gap-2.5 ${
+                    forgotMessage.type === 'success'
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : forgotMessage.type === 'error'
+                      ? 'bg-rose-50 text-rose-800 border border-rose-200'
+                      : 'bg-teal-50 text-teal-900 border border-teal-200'
+                  }`}
+                >
+                  {forgotMessage.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  ) : forgotMessage.type === 'error' ? (
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  ) : (
+                    <Mail className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                  )}
+                  <span className="leading-relaxed">{forgotMessage.text}</span>
+                </div>
+              )}
+
+              {/* STEP 1: Request OTP Code */}
+              {forgotStep === 'request' && (
+                <form onSubmit={handleRequestResetCode} className="space-y-4">
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    Masukkan <strong>Username</strong> atau <strong>Email Rumah Sakit</strong> yang terdaftar saat registrasi. Sistem kami akan mengirimkan 6 digit kode verifikasi ke alamat email akun Anda.
+                  </p>
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                      Username / Email Rumah Sakit
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={forgotIdentifier}
+                        onChange={e => setForgotIdentifier(e.target.value)}
+                        placeholder="Contoh: rsudalmulk atau email@rs.com"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-800 focus:bg-white focus:border-[#43B8BD] focus:ring-2 focus:ring-[#43B8BD]/20 transition-all outline-none font-medium"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="pt-3 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowForgotModal(false)}
+                      className="flex-1 py-3 px-4 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotLoading}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-[#43B8BD] to-[#2FA7A7] hover:from-[#369C9F] hover:to-[#1E6F73] text-white rounded-2xl text-xs font-black uppercase tracking-wider shadow-md shadow-teal-500/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Mengirim...
+                        </>
+                      ) : (
+                        <>
+                          <Mail className="w-4 h-4" /> Kirim Kode OTP
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* STEP 2: Verify OTP and Enter New Password */}
+              {forgotStep === 'verify' && (
+                <form onSubmit={handleVerifyAndResetPassword} className="space-y-4">
+                  {forgotEmailHint && (
+                    <div className="p-2.5 bg-slate-100 rounded-xl text-[11px] text-slate-600 text-center font-mono">
+                      Email Tujuan: <strong className="text-slate-800">{forgotEmailHint}</strong>
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700 flex justify-between items-center">
+                      <span>Kode Verifikasi (6 Digit OTP)</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Berlaku 15 Menit</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      maxLength={6}
+                      value={forgotToken}
+                      onChange={e => setForgotToken(e.target.value.replace(/\D/g, ''))}
+                      placeholder="Contoh: 849201"
+                      className="w-full text-center tracking-[0.35em] font-mono text-base font-bold bg-slate-50 border border-slate-200 rounded-2xl py-3 focus:bg-white focus:border-[#43B8BD] focus:ring-2 focus:ring-[#43B8BD]/20 transition-all outline-none text-slate-800"
+                    />
+                  </div>
+
+                  {/* Password Baru */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                      Password Baru (Min. 8 Karakter)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showForgotNewPassword ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={forgotNewPassword}
+                        onChange={e => setForgotNewPassword(e.target.value)}
+                        placeholder="Masukkan password baru"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-800 focus:bg-white focus:border-[#43B8BD] focus:ring-2 focus:ring-[#43B8BD]/20 transition-all outline-none pr-12 font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotNewPassword(!showForgotNewPassword)}
+                        className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600"
+                      >
+                        {showForgotNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+
+                    {/* Live Strength Meter */}
+                    {forgotNewPassword && (
+                      <div className="pt-1 space-y-1">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-slate-500">Kekuatan Password:</span>
+                          <span className={`font-bold ${calculatePasswordStrength(forgotNewPassword).text}`}>
+                            {calculatePasswordStrength(forgotNewPassword).label}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                          <div
+                            className={`h-full ${calculatePasswordStrength(forgotNewPassword).color} transition-all duration-300`}
+                            style={{ width: `${(calculatePasswordStrength(forgotNewPassword).score / 5) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Konfirmasi Password Baru */}
+                  <div className="space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                      Konfirmasi Password Baru
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showForgotConfirmPassword ? 'text' : 'password'}
+                        required
+                        minLength={8}
+                        value={forgotConfirmPassword}
+                        onChange={e => setForgotConfirmPassword(e.target.value)}
+                        placeholder="Ulangi password baru"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-2xl px-4 py-3 text-xs text-slate-800 focus:bg-white focus:border-[#43B8BD] focus:ring-2 focus:ring-[#43B8BD]/20 transition-all outline-none pr-12 font-medium"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowForgotConfirmPassword(!showForgotConfirmPassword)}
+                        className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600"
+                      >
+                        {showForgotConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    {forgotConfirmPassword && (
+                      <div className="text-[10px] flex items-center gap-1 font-semibold">
+                        {forgotNewPassword === forgotConfirmPassword ? (
+                          <span className="text-emerald-600 flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3" /> Password cocok
+                          </span>
+                        ) : (
+                          <span className="text-rose-500 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" /> Password belum cocok
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pt-3 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setForgotStep('request')}
+                      className="py-3 px-4 rounded-2xl border border-slate-200 text-slate-600 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
+                    >
+                      Kembali
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={forgotLoading || !forgotToken || forgotNewPassword.length < 8 || forgotNewPassword !== forgotConfirmPassword}
+                      className="flex-1 py-3 px-4 bg-gradient-to-r from-[#43B8BD] to-[#2FA7A7] hover:from-[#369C9F] hover:to-[#1E6F73] text-white rounded-2xl text-xs font-black uppercase tracking-wider shadow-md shadow-teal-500/20 disabled:opacity-50 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      {forgotLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" /> Menyimpan...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="w-4 h-4" /> Simpan Password Baru
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* STEP 3: Success */}
+              {forgotStep === 'success' && (
+                <div className="text-center py-4 space-y-4">
+                  <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+                    <CheckCircle2 className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="text-base font-bold text-slate-900">
+                      Password Berhasil Diperbarui!
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      Akun rumah sakit Anda kini dapat diakses menggunakan password baru.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleFinishReset}
+                    className="w-full py-3.5 bg-gradient-to-r from-[#43B8BD] to-[#2FA7A7] hover:from-[#369C9F] hover:to-[#1E6F73] text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-md shadow-teal-500/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <LogIn className="w-4 h-4" /> Masuk ke Portal RS Sekarang
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Contact Person Card - Modern Glassmorphism 2.0 */}
       <motion.a
