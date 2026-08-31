@@ -471,7 +471,7 @@ export default function LoginScreen({
                   <h3 className="text-lg font-black text-slate-900 tracking-tight">
                     Lupa Password Portal RS
                   </h3>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-[10px] text-slate-500 font-medium">
                     Atur ulang password akun rumah sakit Anda dengan verifikasi aman.
                   </p>
                 </div>
@@ -502,7 +502,7 @@ export default function LoginScreen({
               {/* STEP 1: Request OTP Code */}
               {forgotStep === 'request' && (
                 <form onSubmit={handleRequestResetCode} className="space-y-4">
-                  <p className="text-xs text-slate-600 leading-relaxed">
+                  <p className="text-sm text-justify text-slate-600 leading-relaxed">
                     Masukkan <strong>Username</strong> atau <strong>Email Rumah Sakit</strong> yang terdaftar saat registrasi. Sistem kami akan mengirimkan 6 digit kode verifikasi ke alamat email akun Anda.
                   </p>
 
