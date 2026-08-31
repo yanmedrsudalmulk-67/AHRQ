@@ -8,9 +8,9 @@ const globalForSupabase = globalThis as unknown as {
 export function getSupabaseClient() {
   if (globalForSupabase.supabaseInstance) return globalForSupabase.supabaseInstance;
 
-  // Read strictly from environment variables configured in code/deployment.
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  // Read from environment variables (supports Next.js client prefix & Vercel / server-side standard envs)
+  let url = (process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL)?.trim();
+  const anonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)?.trim();
 
   if (url && anonKey) {
     // Robustly sanitize URL to extract only the origin (protocol + host + port),

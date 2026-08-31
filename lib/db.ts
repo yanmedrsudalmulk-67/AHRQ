@@ -2210,10 +2210,75 @@ export async function sendBenchmarkEmailNotification(to: string, subject: string
   console.log(`[EMAIL NOTIFICATION] To: ${to} | Subject: ${subject} | Body: ${body}`);
 }
 
+function extractAccountEmail(account: any): string {
+  if (!account || typeof account !== 'object') return '';
+  let email = (
+    account.email_rs || 
+    account.emailRs || 
+    account.email || 
+    account.email_kontak || 
+    account.kontak_email || 
+    account.email_pic || 
+    account.email_admin || 
+    ''
+  ).toString().trim();
+
+  if (!email || !email.includes('@')) {
+    for (const val of Object.values(account)) {
+      if (typeof val === 'string' && val.includes('@')) {
+        const match = val.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (match && match[1]) {
+          email = match[1].trim();
+          break;
+        }
+      }
+    }
+  }
+  return email;
+}
+
+function findHospitalAccountByIdentifier(accounts: HospitalAccount[], identifier: string): HospitalAccount | null {
+  if (!accounts || accounts.length === 0) return null;
+  const search = identifier.toLowerCase().trim();
+  const cleanSearch = search.replace(/[\s\-_.]/g, '');
+
+  // 1. Direct match
+  const exact = accounts.find(a => {
+    const u = (a.username || '').toLowerCase().trim();
+    const e = extractAccountEmail(a).toLowerCase().trim();
+    const k = (a.kodeRs || '').toLowerCase().trim();
+    const n = (a.namaRs || '').toLowerCase().trim();
+    const id = (a.id || '').toLowerCase().trim();
+    return u === search || e === search || k === search || n === search || id === search;
+  });
+
+  if (exact) return exact;
+
+  // 2. Normalized match (ignoring whitespace and symbols)
+  if (cleanSearch.length >= 3) {
+    const fuzzy = accounts.find(a => {
+      const u = (a.username || '').toLowerCase().replace(/[\s\-_.]/g, '');
+      const e = extractAccountEmail(a).toLowerCase().replace(/[\s\-_.]/g, '');
+      const k = (a.kodeRs || '').toLowerCase().replace(/[\s\-_.]/g, '');
+      const n = (a.namaRs || '').toLowerCase().replace(/[\s\-_.]/g, '');
+      return (
+        u === cleanSearch ||
+        e === cleanSearch ||
+        k === cleanSearch ||
+        n === cleanSearch ||
+        (n.length > 5 && (n.includes(cleanSearch) || cleanSearch.includes(n)))
+      );
+    });
+    if (fuzzy) return fuzzy;
+  }
+
+  return null;
+}
+
 export async function requestHospitalPasswordReset(identifier: string): Promise<{ message: string, emailHint?: string }> {
   const cleanId = (identifier || '').trim();
   if (!cleanId) {
-    throw new Error('Silakan masukkan Username atau Email terdaftar.');
+    throw new Error('Silakan masukkan Username, Email, atau Kode Rumah Sakit terdaftar.');
   }
 
   // 1. First attempt: Dedicated Server-Side API Endpoint
@@ -2223,7 +2288,15 @@ export async function requestHospitalPasswordReset(identifier: string): Promise<
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'request_otp', identifier: cleanId })
     });
-    const data = await res.json();
+    
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: text };
+    }
+
     if (res.ok && data.success) {
       return { message: data.message, emailHint: data.emailHint };
     }
@@ -2231,27 +2304,23 @@ export async function requestHospitalPasswordReset(identifier: string): Promise<
       throw new Error(data.error);
     }
   } catch (apiErr: any) {
-    if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('NetworkError')) {
+    if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('NetworkError') && !apiErr.message.includes('Failed to fetch')) {
       throw apiErr;
     }
-    console.warn("API reset-password route error, executing direct database fallback:", apiErr);
+    console.warn("API reset-password route unavailable or offline, executing direct database fallback:", apiErr);
   }
 
   // 2. Fallback: Direct Database Execution
   const accounts = await getHospitalAccounts();
-  const search = cleanId.toLowerCase();
-  const account = accounts.find(a => 
-    (a.username && a.username.toLowerCase().trim() === search) || 
-    (a.emailRs && a.emailRs.toLowerCase().trim() === search) ||
-    (a.kodeRs && a.kodeRs.toLowerCase().trim() === search) ||
-    (a.namaRs && a.namaRs.toLowerCase().trim() === search)
-  );
+  const account = findHospitalAccountByIdentifier(accounts, cleanId);
 
   if (!account) {
-    throw new Error('Akun dengan username atau email tersebut tidak ditemukan dalam sistem.');
+    throw new Error('Akun dengan username, email, atau nama RS tersebut tidak ditemukan dalam sistem.');
   }
-  if (!account.emailRs || !account.emailRs.includes('@')) {
-    throw new Error(`Akun "${account.namaRs}" belum memiliki alamat email yang terdaftar. Hubungi Administrator.`);
+
+  const registeredEmail = extractAccountEmail(account);
+  if (!registeredEmail || !registeredEmail.includes('@')) {
+    throw new Error(`Akun "${account.namaRs || account.username}" belum memiliki alamat email terdaftar di database. Silakan hubungi Administrator.`);
   }
 
   // Generate 6 digit code
@@ -2260,7 +2329,14 @@ export async function requestHospitalPasswordReset(identifier: string): Promise<
 
   const supabase = getSupabaseClient();
   if (supabase) {
-    const tokenPayload = { token, expiresAt, accountId: account.id, username: account.username, email: account.emailRs };
+    const tokenPayload = { 
+      token, 
+      expiresAt, 
+      accountId: account.id, 
+      username: account.username, 
+      email: registeredEmail,
+      createdAt: new Date().toISOString()
+    };
     
     // Save to app_settings
     try {
@@ -2287,6 +2363,14 @@ export async function requestHospitalPasswordReset(identifier: string): Promise<
       console.warn("Error saving reset token to ahrq_surveys", e);
     }
   }
+
+  // Store in client session storage as local fallback
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(`sops_otp_${account.id}`, JSON.stringify({ token, expiresAt, accountId: account.id }));
+      sessionStorage.setItem(`sops_otp_${account.username.toLowerCase()}`, JSON.stringify({ token, expiresAt, accountId: account.id }));
+    } catch (e) { /* ignore */ }
+  }
   
   const body = `Halo ${account.namaRs},
 
@@ -2295,13 +2379,16 @@ Kode Verifikasi (OTP) Anda: ${token}
 
 Kode ini berlaku selama 15 menit. Jika Anda tidak merasa meminta reset password, abaikan email ini.`;
 
-  await sendSystemEmail(account.emailRs, `[KODE OTP] Reset Password - ${account.namaRs}`, body, 'password_reset');
+  await sendSystemEmail(registeredEmail, `[KODE OTP] Reset Password - ${account.namaRs}`, body, 'password_reset');
   
-  const [name, domain] = account.emailRs.split('@');
+  const [name, domain] = registeredEmail.split('@');
   const visibleCount = Math.min(3, Math.max(1, Math.floor(name.length / 2)));
   const maskedEmail = `${name.substring(0, visibleCount)}***@${domain || ''}`;
 
-  return { message: `Kode reset password telah dikirim ke email terdaftar (${maskedEmail}).`, emailHint: maskedEmail };
+  return { 
+    message: `Kode verifikasi OTP 6 digit telah diproses untuk alamat email terdaftar (${maskedEmail}). Periksa Kotak Masuk atau folder Spam.`, 
+    emailHint: maskedEmail 
+  };
 }
 
 export async function verifyResetTokenAndResetPassword(identifier: string, token: string, newPassword: string): Promise<{ success: boolean, message: string }> {
@@ -2310,6 +2397,10 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
 
   if (!cleanId || !cleanToken || !newPassword) {
     throw new Error('Semua data (identitas akun, kode OTP, password baru) wajib diisi.');
+  }
+
+  if (newPassword.length < 8) {
+    throw new Error('Password baru minimal 8 karakter.');
   }
 
   // 1. First attempt: Server-Side API
@@ -2324,7 +2415,15 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
         newPassword
       })
     });
-    const data = await res.json();
+    
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { error: text };
+    }
+
     if (res.ok && data.success) {
       return { success: true, message: data.message };
     }
@@ -2332,24 +2431,18 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
       throw new Error(data.error);
     }
   } catch (apiErr: any) {
-    if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('NetworkError')) {
+    if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('NetworkError') && !apiErr.message.includes('Failed to fetch')) {
       throw apiErr;
     }
-    console.warn("API verify route error, executing direct fallback:", apiErr);
+    console.warn("API verify route unavailable, executing direct fallback:", apiErr);
   }
 
   // 2. Fallback: Direct Database Execution
   const accounts = await getHospitalAccounts();
-  const search = cleanId.toLowerCase();
-  const account = accounts.find(a => 
-    (a.username && a.username.toLowerCase().trim() === search) || 
-    (a.emailRs && a.emailRs.toLowerCase().trim() === search) ||
-    (a.kodeRs && a.kodeRs.toLowerCase().trim() === search) ||
-    (a.namaRs && a.namaRs.toLowerCase().trim() === search)
-  );
+  const account = findHospitalAccountByIdentifier(accounts, cleanId);
 
   if (!account) {
-    throw new Error('Akun tidak ditemukan.');
+    throw new Error('Akun rumah sakit tidak ditemukan.');
   }
 
   const supabase = getSupabaseClient();
@@ -2378,20 +2471,34 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
 
   // Check ahrq_surveys
   if (!storedTokenData) {
-    const { data, error } = await supabase.from('ahrq_surveys').select('*').eq('id', `PWDRESET_${account.id}`).maybeSingle();
-    if (data && data.dimensi_scores) {
-      storedTokenData = typeof data.dimensi_scores === 'string'
-        ? JSON.parse(data.dimensi_scores)
-        : data.dimensi_scores;
+    try {
+      const { data, error } = await supabase.from('ahrq_surveys').select('*').eq('id', `PWDRESET_${account.id}`).maybeSingle();
+      if (data && data.dimensi_scores) {
+        storedTokenData = typeof data.dimensi_scores === 'string'
+          ? JSON.parse(data.dimensi_scores)
+          : data.dimensi_scores;
+      }
+    } catch (e) {
+      console.warn("Read ahrq_surveys fallback:", e);
     }
   }
 
+  // Check sessionStorage fallback
+  if (!storedTokenData && typeof window !== 'undefined') {
+    try {
+      const sess = sessionStorage.getItem(`sops_otp_${account.id}`) || sessionStorage.getItem(`sops_otp_${account.username.toLowerCase()}`);
+      if (sess) {
+        storedTokenData = JSON.parse(sess);
+      }
+    } catch (e) { /* ignore */ }
+  }
+
   if (!storedTokenData || !storedTokenData.token) {
-    throw new Error('Kode token tidak ditemukan atau sudah kadaluarsa. Silakan minta kode baru.');
+    throw new Error('Kode token tidak ditemukan atau belum pernah diminta. Silakan minta kode verifikasi baru.');
   }
 
   if (storedTokenData.token.toString().trim() !== cleanToken) {
-    throw new Error('Kode verifikasi OTP tidak cocok. Periksa kembali email Anda.');
+    throw new Error('Kode verifikasi OTP salah atau tidak cocok. Periksa kembali email Anda.');
   }
   if (Date.now() > storedTokenData.expiresAt) {
     throw new Error('Kode verifikasi OTP sudah kadaluarsa (lebih dari 15 menit). Silakan minta kode baru.');
@@ -2406,6 +2513,12 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
   try {
     await supabase.from('ahrq_surveys').delete().eq('id', `PWDRESET_${account.id}`);
   } catch (e) { /* ignore */ }
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.removeItem(`sops_otp_${account.id}`);
+      sessionStorage.removeItem(`sops_otp_${account.username.toLowerCase()}`);
+    } catch (e) { /* ignore */ }
+  }
   
   try {
     await addAccountAuditLog({

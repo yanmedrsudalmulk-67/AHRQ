@@ -3,6 +3,9 @@ import { getSupabaseClient } from "@/lib/supabase";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 function cleanEnvValue(value: string | undefined): string | undefined {
   if (!value) return undefined;
   let cleaned = value.trim().replace(/^['"]|['"]$/g, '').trim();
@@ -10,6 +13,89 @@ function cleanEnvValue(value: string | undefined): string | undefined {
     return 'smtp.gmail.com';
   }
   return cleaned;
+}
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+};
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders,
+  });
+}
+
+function extractRegisteredEmail(account: any): string {
+  if (!account || typeof account !== 'object') return '';
+  
+  let email = (
+    account.email_rs || 
+    account.emailRs || 
+    account.email || 
+    account.email_kontak || 
+    account.kontak_email || 
+    account.email_pic || 
+    account.email_admin || 
+    ''
+  ).toString().trim();
+
+  if (!email || !email.includes('@')) {
+    // Scan all string properties for valid email syntax
+    for (const val of Object.values(account)) {
+      if (typeof val === 'string' && val.includes('@')) {
+        const match = val.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+        if (match && match[1]) {
+          email = match[1].trim();
+          break;
+        }
+      }
+    }
+  }
+
+  return email;
+}
+
+function findMatchingAccount(accounts: any[], identifier: string): any | null {
+  if (!accounts || accounts.length === 0) return null;
+  const search = identifier.toLowerCase().trim();
+  const cleanSearch = search.replace(/[\s\-_.]/g, '');
+
+  // 1. Direct match
+  const exact = accounts.find((a: any) => {
+    const u = (a.username || '').toLowerCase().trim();
+    const e = extractRegisteredEmail(a).toLowerCase().trim();
+    const k = (a.kode_rs || a.kodeRs || '').toLowerCase().trim();
+    const n = (a.nama_rs || a.namaRs || '').toLowerCase().trim();
+    const id = (a.id || '').toLowerCase().trim();
+
+    return u === search || e === search || k === search || n === search || id === search;
+  });
+
+  if (exact) return exact;
+
+  // 2. Normalized match (without spaces, dots, dashes)
+  if (cleanSearch.length >= 3) {
+    const fuzzy = accounts.find((a: any) => {
+      const u = (a.username || '').toLowerCase().replace(/[\s\-_.]/g, '');
+      const e = extractRegisteredEmail(a).toLowerCase().replace(/[\s\-_.]/g, '');
+      const k = (a.kode_rs || a.kodeRs || '').toLowerCase().replace(/[\s\-_.]/g, '');
+      const n = (a.nama_rs || a.namaRs || '').toLowerCase().replace(/[\s\-_.]/g, '');
+
+      return (
+        u === cleanSearch ||
+        e === cleanSearch ||
+        k === cleanSearch ||
+        n === cleanSearch ||
+        (n.length > 5 && (n.includes(cleanSearch) || cleanSearch.includes(n)))
+      );
+    });
+    if (fuzzy) return fuzzy;
+  }
+
+  return null;
 }
 
 async function sendResetEmail(to: string, hospitalName: string, username: string, token: string): Promise<boolean> {
@@ -105,7 +191,7 @@ Tim Sistem Informasi Survei Budaya Keselamatan Pasien (AHRQ SOPS 2.0)`;
   `;
 
   if (!host || !user || !pass) {
-    console.log(`[SMTP Not Configured] To: ${to} | OTP: ${token} | Subject: ${subject}`);
+    console.log(`[SMTP Belum Dikonfigurasi] Penerima: ${to} | OTP: ${token} | Subjek: ${subject}`);
     return false;
   }
 
@@ -125,6 +211,7 @@ Tim Sistem Informasi Survei Budaya Keselamatan Pasien (AHRQ SOPS 2.0)`;
       text: textBody,
       html: htmlBody
     });
+    console.log(`[Email OTP Terkirim Sukses] Ke: ${to} (${hospitalName})`);
     return true;
   } catch (e) {
     console.error("Gagal mengirim email reset password via SMTP:", e);
@@ -134,15 +221,24 @@ Tim Sistem Informasi Survei Budaya Keselamatan Pasien (AHRQ SOPS 2.0)`;
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { success: false, error: "Format request tidak valid (wajib JSON)." },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+
     const { action } = body;
     const supabase = getSupabaseClient();
 
     if (!supabase) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Koneksi database Supabase belum terkonfigurasi pada environment." 
-      }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "Koneksi database Supabase belum terkonfigurasi pada environment." },
+        { status: 500, headers: corsHeaders }
+      );
     }
 
     // ----------------------------------------------------
@@ -151,7 +247,10 @@ export async function POST(req: NextRequest) {
     if (action === 'request_otp') {
       const identifier = (body.identifier || '').toString().trim();
       if (!identifier) {
-        return NextResponse.json({ success: false, error: "Username atau Email Rumah Sakit wajib diisi." }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: "Username atau Email Rumah Sakit wajib diisi." },
+          { status: 400, headers: corsHeaders }
+        );
       }
 
       // Fetch accounts to find matching record
@@ -160,34 +259,30 @@ export async function POST(req: NextRequest) {
         .select('*');
 
       if (accError || !accounts || accounts.length === 0) {
-        return NextResponse.json({ 
-          success: false, 
-          error: "Gagal mengakses data akun rumah sakit. Pastikan database terhubung." 
-        }, { status: 500 });
+        return NextResponse.json(
+          { success: false, error: "Gagal mengakses data akun rumah sakit. Pastikan database terhubung." },
+          { status: 500, headers: corsHeaders }
+        );
       }
 
-      const search = identifier.toLowerCase();
-      const account = accounts.find((a: any) => {
-        const u = (a.username || '').toLowerCase().trim();
-        const e = (a.email_rs || a.emailRs || a.email || a.email_kontak || '').toLowerCase().trim();
-        const k = (a.kode_rs || a.kodeRs || '').toLowerCase().trim();
-        const n = (a.nama_rs || a.namaRs || '').toLowerCase().trim();
-        return u === search || e === search || k === search || n === search;
-      });
+      const account = findMatchingAccount(accounts, identifier);
 
       if (!account) {
-        return NextResponse.json({ 
-          success: false, 
-          error: "Akun dengan username atau email tersebut tidak ditemukan dalam sistem." 
-        }, { status: 404 });
+        return NextResponse.json(
+          { success: false, error: "Akun dengan username, email, atau nama RS tersebut tidak ditemukan dalam sistem." },
+          { status: 404, headers: corsHeaders }
+        );
       }
 
-      const registeredEmail = (account.email_rs || account.emailRs || account.email || account.email_kontak || '').trim();
+      const registeredEmail = extractRegisteredEmail(account);
       if (!registeredEmail || !registeredEmail.includes('@')) {
-        return NextResponse.json({ 
-          success: false, 
-          error: `Akun "${account.nama_rs || account.username}" belum memiliki alamat email yang terdaftar. Silakan hubungi Administrator untuk memperbarui email profil akun Anda.` 
-        }, { status: 400 });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Akun "${account.nama_rs || account.username}" belum memiliki alamat email yang terdaftar di database. Silakan hubungi Administrator untuk mendaftarkan email profil akun Anda.` 
+          },
+          { status: 400, headers: corsHeaders }
+        );
       }
 
       // Generate secure 6-digit OTP
@@ -236,7 +331,7 @@ export async function POST(req: NextRequest) {
           id: `email-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
           to_email: registeredEmail,
           subject: `[KODE OTP] Reset Password - ${hospitalName}`,
-          body: `Kode OTP Anda: ${token} (Berlaku 15 menit).`,
+          body: `Kode OTP Anda: ${token} (Berlaku 15 menit). Username: ${username}`,
           type: 'password_reset',
           created_at: new Date().toISOString()
         }]);
@@ -252,15 +347,18 @@ export async function POST(req: NextRequest) {
       const visibleCount = Math.min(3, Math.max(1, Math.floor(mailUser.length / 2)));
       const maskedEmail = `${mailUser.substring(0, visibleCount)}***@${mailDomain || ''}`;
 
-      return NextResponse.json({
-        success: true,
-        message: emailSent 
-          ? `Kode verifikasi OTP 6 digit berhasil dikirim ke alamat email ${maskedEmail}.`
-          : `Kode verifikasi telah diproses untuk alamat email ${maskedEmail}.`,
-        emailHint: maskedEmail,
-        emailDelivered: emailSent,
-        accountId: account.id
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          message: emailSent 
+            ? `Kode verifikasi OTP 6 digit berhasil dikirim ke alamat email terdaftar (${maskedEmail}). Periksa folder Kotak Masuk (Inbox) atau Spam.`
+            : `Kode verifikasi OTP telah dibuat untuk akun (${maskedEmail}). Silakan periksa email Anda atau hubungi Administrator jika email tidak masuk.`,
+          emailHint: maskedEmail,
+          emailDelivered: emailSent,
+          accountId: account.id
+        },
+        { status: 200, headers: corsHeaders }
+      );
     }
 
     // ----------------------------------------------------
@@ -272,11 +370,17 @@ export async function POST(req: NextRequest) {
       const newPassword = (body.newPassword || '').toString();
 
       if (!identifier || !token || !newPassword) {
-        return NextResponse.json({ success: false, error: "Identifier, kode verifikasi OTP, dan password baru wajib diisi." }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: "Identitas akun, kode verifikasi OTP, dan password baru wajib diisi." },
+          { status: 400, headers: corsHeaders }
+        );
       }
 
       if (newPassword.length < 8) {
-        return NextResponse.json({ success: false, error: "Password baru minimal 8 karakter." }, { status: 400 });
+        return NextResponse.json(
+          { success: false, error: "Password baru minimal 8 karakter." },
+          { status: 400, headers: corsHeaders }
+        );
       }
 
       // Fetch accounts to find matching record
@@ -285,20 +389,19 @@ export async function POST(req: NextRequest) {
         .select('*');
 
       if (accError || !accounts || accounts.length === 0) {
-        return NextResponse.json({ success: false, error: "Gagal mengakses data akun rumah sakit." }, { status: 500 });
+        return NextResponse.json(
+          { success: false, error: "Gagal mengakses data akun rumah sakit." },
+          { status: 500, headers: corsHeaders }
+        );
       }
 
-      const search = identifier.toLowerCase();
-      const account = accounts.find((a: any) => {
-        const u = (a.username || '').toLowerCase().trim();
-        const e = (a.email_rs || a.emailRs || a.email || a.email_kontak || '').toLowerCase().trim();
-        const k = (a.kode_rs || a.kodeRs || '').toLowerCase().trim();
-        const n = (a.nama_rs || a.namaRs || '').toLowerCase().trim();
-        return u === search || e === search || k === search || n === search;
-      });
+      const account = findMatchingAccount(accounts, identifier);
 
       if (!account) {
-        return NextResponse.json({ success: false, error: "Akun tidak ditemukan." }, { status: 404 });
+        return NextResponse.json(
+          { success: false, error: "Akun rumah sakit tidak ditemukan." },
+          { status: 404, headers: corsHeaders }
+        );
       }
 
       // Check OTP in app_settings or ahrq_surveys
@@ -341,31 +444,41 @@ export async function POST(req: NextRequest) {
       }
 
       if (!storedTokenData || !storedTokenData.token) {
-        return NextResponse.json({ 
-          success: false, 
-          error: "Kode OTP tidak ditemukan atau belum pernah diminta. Silakan minta kode verifikasi baru." 
-        }, { status: 400 });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "Kode OTP tidak ditemukan atau belum pernah diminta. Silakan minta kode verifikasi baru." 
+          },
+          { status: 400, headers: corsHeaders }
+        );
       }
 
       if (storedTokenData.token.toString().trim() !== token) {
-        return NextResponse.json({ 
-          success: false, 
-          error: "Kode verifikasi OTP salah atau tidak cocok. Mohon periksa kembali 6 digit kode pada email Anda." 
-        }, { status: 400 });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "Kode verifikasi OTP salah atau tidak cocok. Mohon periksa kembali 6 digit kode pada email Anda." 
+          },
+          { status: 400, headers: corsHeaders }
+        );
       }
 
       if (Date.now() > storedTokenData.expiresAt) {
-        return NextResponse.json({ 
-          success: false, 
-          error: "Kode verifikasi OTP sudah kadaluarsa (melewati batas 15 menit). Silakan minta kode baru." 
-        }, { status: 400 });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: "Kode verifikasi OTP sudah kadaluarsa (melewati batas 15 menit). Silakan minta kode baru." 
+          },
+          { status: 400, headers: corsHeaders }
+        );
       }
 
       // Hash new password securely
       const hashedPassword = await bcrypt.hash(newPassword, 10);
 
       // Update password in hospital_accounts table
-      const { error: updateError } = await supabase
+      let updateError: any = null;
+      const { error: err1 } = await supabase
         .from('hospital_accounts')
         .update({
           password: hashedPassword,
@@ -373,12 +486,26 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', account.id);
 
+      if (err1) {
+        // Fallback retry without updated_at column if missing in schema
+        const { error: err2 } = await supabase
+          .from('hospital_accounts')
+          .update({
+            password: hashedPassword
+          })
+          .eq('id', account.id);
+        updateError = err2;
+      }
+
       if (updateError) {
         console.error("Gagal memperbarui password di database:", updateError);
-        return NextResponse.json({ 
-          success: false, 
-          error: `Gagal memperbarui password: ${updateError.message}` 
-        }, { status: 500 });
+        return NextResponse.json(
+          { 
+            success: false, 
+            error: `Gagal memperbarui password di database: ${updateError.message}` 
+          },
+          { status: 500, headers: corsHeaders }
+        );
       }
 
       // Cleanup used OTP tokens
@@ -410,7 +537,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Send confirmation email
-      const registeredEmail = (account.email_rs || account.emailRs || account.email || account.email_kontak || '').trim();
+      const registeredEmail = extractRegisteredEmail(account);
       if (registeredEmail && registeredEmail.includes('@')) {
         try {
           const host = cleanEnvValue(process.env.SMTP_HOST);
@@ -449,15 +576,24 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      return NextResponse.json({
-        success: true,
-        message: "Password berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda."
-      });
+      return NextResponse.json(
+        {
+          success: true,
+          message: "Password berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda."
+        },
+        { status: 200, headers: corsHeaders }
+      );
     }
 
-    return NextResponse.json({ success: false, error: "Aksi tidak dikenali." }, { status: 400 });
+    return NextResponse.json(
+      { success: false, error: "Aksi tidak dikenali." },
+      { status: 400, headers: corsHeaders }
+    );
   } catch (error: any) {
     console.error("Reset password API exception:", error);
-    return NextResponse.json({ success: false, error: error.message || "Terjadi kesalahan internal pada server." }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: error.message || "Terjadi kesalahan internal pada server." },
+      { status: 500, headers: corsHeaders }
+    );
   }
 }
