@@ -483,7 +483,8 @@ export async function sendSystemEmail(to: string, subject: string, body: string,
       
       // Also, attempt to call standard API route
       try {
-        await fetch('/api/send-email', {
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+        await fetch(`${baseUrl}/api/send-email`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ to, subject, body })
@@ -2405,7 +2406,8 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
 
   // 1. First attempt: Server-Side API
   try {
-    const res = await fetch('/api/auth/reset-password', {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const res = await fetch(`${baseUrl}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
