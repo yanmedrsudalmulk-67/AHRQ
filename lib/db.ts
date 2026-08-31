@@ -161,7 +161,7 @@ export const mapToHospitalAccount = (item: any): HospitalAccount => {
     penanggungJawab: item.penanggung_jawab || '',
     jabatan: item.jabatan || '',
     noWhatsapp: item.no_whatsapp || '',
-    emailRs: item.email_rs || '',
+    emailRs: (item.email_rs || item.emailRs || item.email || item.email_kontak || '').trim(),
     status: (rawStatus as any),
     account_status: item.account_status || computedAccountStatus,
     last_login: lastLoginVal,
@@ -2211,18 +2211,47 @@ export async function sendBenchmarkEmailNotification(to: string, subject: string
 }
 
 export async function requestHospitalPasswordReset(identifier: string): Promise<{ message: string, emailHint?: string }> {
+  const cleanId = (identifier || '').trim();
+  if (!cleanId) {
+    throw new Error('Silakan masukkan Username atau Email terdaftar.');
+  }
+
+  // 1. First attempt: Dedicated Server-Side API Endpoint
+  try {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'request_otp', identifier: cleanId })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      return { message: data.message, emailHint: data.emailHint };
+    }
+    if (!res.ok && data.error) {
+      throw new Error(data.error);
+    }
+  } catch (apiErr: any) {
+    if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('NetworkError')) {
+      throw apiErr;
+    }
+    console.warn("API reset-password route error, executing direct database fallback:", apiErr);
+  }
+
+  // 2. Fallback: Direct Database Execution
   const accounts = await getHospitalAccounts();
+  const search = cleanId.toLowerCase();
   const account = accounts.find(a => 
-    a.username.toLowerCase() === identifier.toLowerCase() || 
-    (a.emailRs && a.emailRs.toLowerCase() === identifier.toLowerCase()) ||
-    (a.kodeRs && a.kodeRs.toLowerCase() === identifier.toLowerCase())
+    (a.username && a.username.toLowerCase().trim() === search) || 
+    (a.emailRs && a.emailRs.toLowerCase().trim() === search) ||
+    (a.kodeRs && a.kodeRs.toLowerCase().trim() === search) ||
+    (a.namaRs && a.namaRs.toLowerCase().trim() === search)
   );
 
   if (!account) {
-    throw new Error('Akun dengan username atau email tersebut tidak ditemukan.');
+    throw new Error('Akun dengan username atau email tersebut tidak ditemukan dalam sistem.');
   }
-  if (!account.emailRs) {
-    throw new Error('Akun tidak memiliki email terdaftar untuk reset password. Hubungi administrator.');
+  if (!account.emailRs || !account.emailRs.includes('@')) {
+    throw new Error(`Akun "${account.namaRs}" belum memiliki alamat email yang terdaftar. Hubungi Administrator.`);
   }
 
   // Generate 6 digit code
@@ -2231,40 +2260,92 @@ export async function requestHospitalPasswordReset(identifier: string): Promise<
 
   const supabase = getSupabaseClient();
   if (supabase) {
+    const tokenPayload = { token, expiresAt, accountId: account.id, username: account.username, email: account.emailRs };
+    
+    // Save to app_settings
+    try {
+      await supabase.from('app_settings').upsert({
+        key: `PWDRESET_${account.id}`,
+        value: JSON.stringify(tokenPayload),
+        updated_at: new Date().toISOString()
+      });
+    } catch (e) {
+      console.warn("Error saving reset token to app_settings", e);
+    }
+
+    // Save to ahrq_surveys
     try {
       await supabase.from('ahrq_surveys').upsert({
         id: `PWDRESET_${account.id}`,
         nama_rs: account.namaRs || 'RESET',
         unit_kerja: 'PASSWORD_RESET',
         jumlah_responden: 0,
-        tanggal_input: new Date().toISOString(),
-        dimensi_scores: { token, expiresAt, accountId: account.id }
+        tanggal_input: new Date().toISOString().split('T')[0],
+        dimensi_scores: tokenPayload
       });
     } catch (e) {
-      console.warn("Error saving reset token to Supabase", e);
+      console.warn("Error saving reset token to ahrq_surveys", e);
     }
   }
   
   const body = `Halo ${account.namaRs},
-  
-Anda telah meminta reset password. Berikut adalah kode verifikasi Anda:
-${token}
+
+Permintaan reset password telah diterima untuk akun username: ${account.username}.
+Kode Verifikasi (OTP) Anda: ${token}
 
 Kode ini berlaku selama 15 menit. Jika Anda tidak merasa meminta reset password, abaikan email ini.`;
-  await sendSystemEmail(account.emailRs, 'Reset Password Portal AHRQ SOPS', body, 'password_reset');
+
+  await sendSystemEmail(account.emailRs, `[KODE OTP] Reset Password - ${account.namaRs}`, body, 'password_reset');
   
   const [name, domain] = account.emailRs.split('@');
-  const maskedEmail = `${name.substring(0, Math.min(3, name.length))}***@${domain}`;
+  const visibleCount = Math.min(3, Math.max(1, Math.floor(name.length / 2)));
+  const maskedEmail = `${name.substring(0, visibleCount)}***@${domain || ''}`;
 
-  return { message: 'Kode reset password telah dikirim ke email terdaftar.', emailHint: maskedEmail };
+  return { message: `Kode reset password telah dikirim ke email terdaftar (${maskedEmail}).`, emailHint: maskedEmail };
 }
 
 export async function verifyResetTokenAndResetPassword(identifier: string, token: string, newPassword: string): Promise<{ success: boolean, message: string }> {
+  const cleanId = (identifier || '').trim();
+  const cleanToken = (token || '').trim();
+
+  if (!cleanId || !cleanToken || !newPassword) {
+    throw new Error('Semua data (identitas akun, kode OTP, password baru) wajib diisi.');
+  }
+
+  // 1. First attempt: Server-Side API
+  try {
+    const res = await fetch('/api/auth/reset-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'verify_and_reset',
+        identifier: cleanId,
+        token: cleanToken,
+        newPassword
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.success) {
+      return { success: true, message: data.message };
+    }
+    if (!res.ok && data.error) {
+      throw new Error(data.error);
+    }
+  } catch (apiErr: any) {
+    if (apiErr.message && !apiErr.message.includes('fetch') && !apiErr.message.includes('NetworkError')) {
+      throw apiErr;
+    }
+    console.warn("API verify route error, executing direct fallback:", apiErr);
+  }
+
+  // 2. Fallback: Direct Database Execution
   const accounts = await getHospitalAccounts();
+  const search = cleanId.toLowerCase();
   const account = accounts.find(a => 
-    a.username.toLowerCase() === identifier.toLowerCase() || 
-    (a.emailRs && a.emailRs.toLowerCase() === identifier.toLowerCase()) ||
-    (a.kodeRs && a.kodeRs.toLowerCase() === identifier.toLowerCase())
+    (a.username && a.username.toLowerCase().trim() === search) || 
+    (a.emailRs && a.emailRs.toLowerCase().trim() === search) ||
+    (a.kodeRs && a.kodeRs.toLowerCase().trim() === search) ||
+    (a.namaRs && a.namaRs.toLowerCase().trim() === search)
   );
 
   if (!account) {
@@ -2276,23 +2357,55 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
     throw new Error('Sistem database tidak tersedia.');
   }
 
-  const { data, error } = await supabase.from('ahrq_surveys').select('*').eq('id', `PWDRESET_${account.id}`).single();
-  if (error || !data) {
+  let storedTokenData: any = null;
+
+  // Check app_settings
+  try {
+    const { data: settingData } = await supabase
+      .from('app_settings')
+      .select('value')
+      .eq('key', `PWDRESET_${account.id}`)
+      .maybeSingle();
+
+    if (settingData && settingData.value) {
+      storedTokenData = typeof settingData.value === 'string'
+        ? JSON.parse(settingData.value)
+        : settingData.value;
+    }
+  } catch (e) {
+    console.warn("Read app_settings fallback:", e);
+  }
+
+  // Check ahrq_surveys
+  if (!storedTokenData) {
+    const { data, error } = await supabase.from('ahrq_surveys').select('*').eq('id', `PWDRESET_${account.id}`).maybeSingle();
+    if (data && data.dimensi_scores) {
+      storedTokenData = typeof data.dimensi_scores === 'string'
+        ? JSON.parse(data.dimensi_scores)
+        : data.dimensi_scores;
+    }
+  }
+
+  if (!storedTokenData || !storedTokenData.token) {
     throw new Error('Kode token tidak ditemukan atau sudah kadaluarsa. Silakan minta kode baru.');
   }
 
-  const scores = data.dimensi_scores || {};
-  if (scores.token !== token) {
-    throw new Error('Kode verifikasi tidak valid.');
+  if (storedTokenData.token.toString().trim() !== cleanToken) {
+    throw new Error('Kode verifikasi OTP tidak cocok. Periksa kembali email Anda.');
   }
-  if (Date.now() > scores.expiresAt) {
-    throw new Error('Kode verifikasi sudah kadaluarsa.');
+  if (Date.now() > storedTokenData.expiresAt) {
+    throw new Error('Kode verifikasi OTP sudah kadaluarsa (lebih dari 15 menit). Silakan minta kode baru.');
   }
 
   await updateHospitalProfile(account.id, { password: newPassword });
 
   // Delete the token so it can't be reused
-  await supabase.from('ahrq_surveys').delete().eq('id', `PWDRESET_${account.id}`);
+  try {
+    await supabase.from('app_settings').delete().eq('key', `PWDRESET_${account.id}`);
+  } catch (e) { /* ignore */ }
+  try {
+    await supabase.from('ahrq_surveys').delete().eq('id', `PWDRESET_${account.id}`);
+  } catch (e) { /* ignore */ }
   
   try {
     await addAccountAuditLog({
@@ -2301,13 +2414,13 @@ export async function verifyResetTokenAndResetPassword(identifier: string, token
       action: 'password_reset',
       action_label: 'Password Reset',
       performed_by: account.username,
-      reason: 'Password was reset using email token'
+      reason: 'Password direset menggunakan verifikasi kode OTP Email terdaftar'
     });
   } catch(e) {
     console.warn("Failed to log password reset", e);
   }
 
-  return { success: true, message: 'Password berhasil direset. Silakan login dengan password baru.' };
+  return { success: true, message: 'Password akun rumah sakit berhasil diperbarui. Silakan login dengan password baru.' };
 }
 
 
