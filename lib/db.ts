@@ -97,7 +97,8 @@ export const isSurveyResponse = (s: any): boolean => {
   if (s.namaRs === '_LINK_CONFIG_' || s.nama_rs === '_LINK_CONFIG_' || s.namaRs === '_PENGESAHAN_CONFIG_') {
     return false;
   }
-  if (s.dimensiScores && typeof s.dimensiScores === 'object' && 'token' in (s.dimensiScores as any)) {
+  if ((idStr.startsWith('LINK_CONFIG_') || s.namaRs === '_LINK_CONFIG_' || s.nama_rs === '_LINK_CONFIG_') &&
+      s.dimensiScores && typeof s.dimensiScores === 'object' && 'token' in (s.dimensiScores as any)) {
     return false;
   }
   return true;
@@ -227,13 +228,38 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
-      const { data, error } = await supabase
-        .from('ahrq_surveys')
-        .select('*')
-        .order('created_at', { ascending: false });
+      let allData: any[] = [];
+      let page = 0;
+      const limit = 1000;
+      let hasMore = true;
+      let fetchError = null;
 
-      if (!error && data) {
-        const allSurveys = data.map(mapToSurveyData);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from('ahrq_surveys')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .range(page * limit, (page + 1) * limit - 1);
+
+        if (error) {
+          fetchError = error;
+          break;
+        }
+
+        if (data && data.length > 0) {
+          allData = allData.concat(data);
+          if (data.length < limit) {
+            hasMore = false;
+          } else {
+            page++;
+          }
+        } else {
+          hasMore = false;
+        }
+      }
+
+      if (!fetchError && allData) {
+        const allSurveys = allData.map(mapToSurveyData);
 
         if (!hospitalId || hospitalId === 'admin') {
           return allSurveys;
@@ -287,12 +313,12 @@ export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
         });
       }
 
-      if (error) {
-        if (error.message?.includes('Failed to fetch') || error.details?.includes('Failed to fetch')) {
+      if (fetchError) {
+        if (fetchError.message?.includes('Failed to fetch') || fetchError.details?.includes('Failed to fetch')) {
           console.warn("Supabase ahrq_surveys query failed (Failed to fetch).");
           return [];
         }
-        console.warn("Supabase ahrq_surveys query failed:", error.message || error);
+        console.warn("Supabase ahrq_surveys query failed:", fetchError.message || fetchError);
       }
     } catch (e: any) {
       if (!e?.message?.includes('Failed to fetch') && !e?.details?.includes('Failed to fetch')) {

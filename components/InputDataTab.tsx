@@ -135,6 +135,7 @@ interface InputDataTabProps {
   hospitalId?: string;
   isPublic?: boolean;
   onSaveSurvey: (survey: SurveyData) => Promise<any> | void;
+  surveys?: SurveyData[];
 }
 
 const DIMENSI_AHRQ = [
@@ -298,7 +299,7 @@ export function getPublicBaseUrl() {
   return origin;
 }
 
-export default function InputDataTab({ currentRsName, identifier, hospitalId, isPublic, onSaveSurvey }: InputDataTabProps) {
+export default function InputDataTab({ currentRsName, identifier, hospitalId, isPublic, onSaveSurvey, surveys = [] }: InputDataTabProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
     setMounted(true);
@@ -399,17 +400,21 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
         .from('ahrq_surveys')
         .select('*')
         .eq('nama_rs', '_LINK_CONFIG_')
-        .eq('unit_kerja', identifier);
+        .eq('unit_kerja', identifier)
+        .order('created_at', { ascending: false });
       
       if (!error && data && data.length > 0) {
         const latest = data[0];
         const scores = parseDimensiScores(latest.dimensi_scores);
+        const actualCount = surveys.reduce((acc, curr) => acc + (curr.jumlahResponden || 1), 0);
+        const countToUse = Math.max(scores.respondentCount || 0, actualCount);
+
         setSurveyLinkConfig({
           token: scores.token || latest.tanggal_input,
           isActive: latest.jumlah_responden === 1,
           createdAt: scores.createdAt || latest.created_at || new Date().toISOString(),
           startDate: scores.startDate || '',
-          respondentCount: scores.respondentCount || 0,
+          respondentCount: countToUse,
           expiryDate: scores.expiryDate || '',
           maxRespondents: scores.maxRespondents || '',
           preventDuplicate: scores.preventDuplicate !== false,
@@ -448,6 +453,9 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
       }
 
       const todayDate = new Date().toISOString().split('T')[0]; // valid date YYYY-MM-DD
+      const actualCount = surveys.reduce((acc, curr) => acc + (curr.jumlahResponden || 1), 0);
+      const currentCount = Math.max(surveyLinkConfig?.respondentCount || 0, actualCount);
+
       const newConfig = {
         id: `LINK_CONFIG_${token}`,
         nama_rs: '_LINK_CONFIG_',
@@ -458,7 +466,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
           token: token,
           rsName: currentRsName,
           createdAt: new Date().toISOString(),
-          respondentCount: 0,
+          respondentCount: currentCount,
           expiryDate: '',
           maxRespondents: '',
           preventDuplicate: true,
@@ -483,7 +491,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
         isActive: true,
         createdAt: newConfig.dimensi_scores.createdAt,
         startDate: '',
-        respondentCount: 0,
+        respondentCount: currentCount,
         expiryDate: '',
         maxRespondents: '',
         preventDuplicate: true,

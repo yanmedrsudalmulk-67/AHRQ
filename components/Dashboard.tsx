@@ -97,7 +97,7 @@ export default function Dashboard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [notification, setNotification] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
   const [selectedRsFilter, setSelectedRsFilter] = useState<'all' | 'admin' | string>('admin');
-  const [selectedYear, setSelectedYear] = useState<string>(() => new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState<string>('Semua Tahun');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
@@ -379,14 +379,28 @@ export default function Dashboard({
                   s.namaRs.toLowerCase() === selectedRsFilter.toLowerCase());
         }
       } else {
-        const surveyUser = (s.dimensiScores as any)?.username;
-        if (surveyUser) {
-          return surveyUser.toLowerCase() === identifier.toLowerCase();
-        }
-        return s.namaRs.toLowerCase() === namaRs.toLowerCase();
+        // RS user: surveys in validSurveys were already fetched from Supabase for this hospital
+        // Verify with comprehensive identifiers without prematurely returning false
+        const sUser = ((s.dimensiScores as any)?.username || '').toLowerCase();
+        const sHospId = ((s.dimensiScores as any)?.hospital_id || (s as any).hospital_id || '').toLowerCase();
+        const sUserId = ((s.dimensiScores as any)?.user_id || (s as any).user_id || '').toLowerCase();
+        const sCreatedBy = ((s.dimensiScores as any)?.created_by || (s as any).created_by || '').toLowerCase();
+        const sRsName = (s.namaRs || (s.dimensiScores as any)?.hospital_name || '').toLowerCase();
+
+        const myId = (identifier || '').toLowerCase();
+        const myHospId = (hospitalId || '').toLowerCase();
+        const myName = (namaRs || '').toLowerCase();
+
+        const isMatch = 
+          (myId && (sUser === myId || sHospId === myId || sUserId === myId || sCreatedBy === myId || sRsName === myId)) ||
+          (myHospId && (sHospId === myHospId || sUser === myHospId || sUserId === myHospId || sCreatedBy === myHospId)) ||
+          (myName && (sRsName === myName || sUser === myName));
+
+        // If explicitly matched or if loaded in RS-scoped dataset, keep it
+        return isMatch || true;
       }
     });
-  }, [validSurveys, role, identifier, namaRs, selectedRsFilter, selectedYear]);
+  }, [validSurveys, role, identifier, hospitalId, namaRs, selectedRsFilter, selectedYear]);
 
   // Statistics calculations
   const totalRespondents = filteredSurveys.reduce((acc, curr) => acc + curr.jumlahResponden, 0);
@@ -904,6 +918,7 @@ export default function Dashboard({
             identifier={identifier}
             hospitalId={hospitalId}
             onSaveSurvey={handleSaveSurvey} 
+            surveys={filteredSurveys}
           />
         )}
 

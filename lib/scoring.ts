@@ -43,8 +43,8 @@ export function computeDimensionScores(targetSurveys: SurveyData[], masterBenchm
     let totalResponden = 0;
 
     targetSurveys.forEach(survey => {
-      // Exclude MASTER_BENCHMARK, LINK_CONFIG_, or token metadata rows
-      if (!survey || !survey.id || survey.id === 'MASTER_BENCHMARK' || survey.id.startsWith('LINK_CONFIG_') || ('token' in ((survey.dimensiScores as any) || {}))) return;
+      // Exclude MASTER_BENCHMARK or LINK_CONFIG_ config rows
+      if (!survey || !survey.id || survey.id === 'MASTER_BENCHMARK' || survey.id.startsWith('LINK_CONFIG_') || survey.namaRs === '_LINK_CONFIG_') return;
       totalResponden += survey.jumlahResponden || 1;
       const raw = (survey.dimensiScores as any)?._rawAnswers;
       if (raw) {

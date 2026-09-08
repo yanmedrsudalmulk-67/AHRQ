@@ -218,7 +218,7 @@ export default function LaporanTab({
   const printRef = useRef<HTMLDivElement>(null);
   
   // State Filters
-  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+  const [selectedYear, setSelectedYear] = useState<string>('Semua Tahun');
   const tahunSurvei = selectedYear === 'Semua Tahun' ? 'Semua Tahun' : selectedYear;
   
   const [selectedComparisonYear, setSelectedComparisonYear] = useState<string>(() => {
