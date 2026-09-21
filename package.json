@@ -23,6 +23,7 @@
     "jspdf": "^4.2.1",
     "lucide-react": "^0.468.0",
     "motion": "^12.42.2",
+    "mysql2": "^3.24.4",
     "next": "^15.5.22",
     "nodemailer": "^9.0.3",
     "postcss": "^8.4.49",

@@ -5,6 +5,7 @@ import { notFound, useParams } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
 import InputDataTab from '../../../components/InputDataTab';
 import { getSupabaseClient } from '../../../lib/supabase';
+import { getMysqlSurveyLinkConfig, saveMysqlSurvey, saveMysqlSurveySubmission } from '../../../lib/mysqlClient';
 import { SurveyData, convertIndoDateToISO } from '../../../lib/db';
 import { getLogo, LogoData } from '../../../lib/logo';
 
@@ -18,33 +19,44 @@ export default function PublicSurveyPage() {
 
   useEffect(() => {
     async function loadData() {
-      const supabase = getSupabaseClient();
-      if (!supabase) {
-        setError('Koneksi database tidak tersedia.');
-        setLoading(false);
-        return;
-      }
-
       try {
-        const { data, error: fetchErr } = await supabase
-          .from('ahrq_surveys')
-          .select('*')
-          .eq('id', `LINK_CONFIG_${token}`)
-          .single();
+        // 1. Coba ambil konfigurasi dari MySQL Hostinger terlebih dahulu
+        let data: any = null;
+        try {
+          data = await getMysqlSurveyLinkConfig(token);
+        } catch (e) {
+          console.warn("Gagal mengambil konfigurasi dari MySQL API:", e);
+        }
 
-        if (fetchErr || !data) {
+        // 2. Fallback ke Supabase jika ada
+        if (!data) {
+          const supabase = getSupabaseClient();
+          if (supabase) {
+            const { data: sbData } = await supabase
+              .from('ahrq_surveys')
+              .select('*')
+              .eq('id', `LINK_CONFIG_${token}`)
+              .single();
+            if (sbData) {
+              data = sbData;
+            }
+          }
+        }
+
+        if (!data) {
           setError('Mohon maaf, tautan survei yang Anda buka sudah tidak aktif, telah kedaluwarsa, atau tidak ditemukan. Silakan hubungi administrator Rumah Sakit untuk memperoleh tautan survei yang terbaru.');
           setLoading(false);
           return;
         }
 
-        if (data.jumlah_responden !== 1) {
-          setError('Mohon maaf, tautan survei yang Anda buka sudah tidak aktif, telah kedaluwarsa, atau tidak ditemukan. Silakan hubungi administrator Rumah Sakit untuk memperoleh tautan survei yang terbaru.');
+        const jumlahResponden = data.jumlah_responden !== undefined ? data.jumlah_responden : data.jumlahResponden;
+        if (jumlahResponden !== 1 && data.isActive === false) {
+          setError('Mohon maaf, tautan survei yang Anda buka sudah dinonaktifkan oleh administrator.');
           setLoading(false);
           return;
         }
 
-        let parsedScores = data.dimensi_scores;
+        let parsedScores = data.dimensi_scores || data.dimensiScores || data;
         if (typeof parsedScores === 'string') {
           try {
             parsedScores = JSON.parse(parsedScores);
@@ -87,8 +99,8 @@ export default function PublicSurveyPage() {
         }
 
         setConfig({
-          rsName: parsedScores.rsName || 'Rumah Sakit',
-          identifier: data.unit_kerja,
+          rsName: parsedScores.rsName || parsedScores.hospital_name || data.nama_rs || 'Rumah Sakit',
+          identifier: data.unit_kerja || parsedScores.hospital_id || parsedScores.user_id,
           hospitalId: data.hospital_id || parsedScores.hospital_id || data.unit_kerja,
           userId: data.user_id || parsedScores.user_id || data.unit_kerja,
           createdBy: data.created_by || parsedScores.created_by || data.unit_kerja,
@@ -111,88 +123,46 @@ export default function PublicSurveyPage() {
   }, [token]);
 
   const handleSaveSurvey = async (survey: SurveyData) => {
-    const supabase = getSupabaseClient();
-    if (!supabase) throw new Error("Supabase tidak terhubung");
-
-    // We add it to the DB with the target hospital's name
-    const dbRow: any = {
-      id: survey.id,
-      nama_rs: config.rsName,
-      unit_kerja: survey.unitKerja,
-      jumlah_responden: survey.jumlahResponden,
-      tanggal_input: convertIndoDateToISO(survey.tanggalInput),
-      dimensi_scores: {
-        ...survey.dimensiScores,
-        username: config.identifier,
-        hospital_id: config.hospitalId,
-        user_id: config.userId,
-        created_by: config.createdBy,
-        hospital_name: config.hospitalName
-      },
-      hospital_id: config.hospitalId,
-      user_id: config.userId,
-      created_by: config.createdBy,
-      hospital_name: config.hospitalName
-    };
-
-    let attempts = 0;
-    const maxAttempts = 3;
-    const insertRow = { ...dbRow };
-
-    while (attempts < maxAttempts) {
-      attempts++;
-      try {
-        const { error } = await supabase.from('ahrq_surveys').insert([insertRow]);
-        if (!error) break;
-        throw error;
-      } catch (error: any) {
-        const isColError = error.code === '42703' || 
-                           error.code === 'PGRST204' ||
-                           error.message?.includes('column') || 
-                           error.message?.includes('does not exist') ||
-                           error.message?.includes('schema cache');
-        if (isColError && attempts < maxAttempts) {
-          delete insertRow.hospital_id;
-          delete insertRow.user_id;
-          delete insertRow.created_by;
-          delete insertRow.hospital_name;
-          continue;
-        }
-        console.warn(`Public saveSurvey attempt ${attempts} failed:`, error);
-        throw new Error(`Gagal menyimpan pengisian survei: ${error.message}`);
-      }
-    }
-    
-    // Increment respondent count on the link config silently
+    // 1. Simpan ke database MySQL Hostinger
     try {
-      const { data } = await supabase
-        .from('ahrq_surveys')
-        .select('dimensi_scores')
-        .eq('id', `LINK_CONFIG_${token}`)
-        .single();
-        
-      if (data) {
-        let parsedScores = data.dimensi_scores;
-        if (typeof parsedScores === 'string') {
-          try {
-            parsedScores = JSON.parse(parsedScores);
-          } catch (e) {
-            parsedScores = {};
-          }
-        }
-        const currentCount = parsedScores?.respondentCount || 0;
-        await supabase
-          .from('ahrq_surveys')
-          .update({
-            dimensi_scores: { ...parsedScores, respondentCount: currentCount + 1 }
-          })
-          .eq('id', `LINK_CONFIG_${token}`);
+      await saveMysqlSurvey(survey, {
+        token,
+        hospitalId: config.hospitalId,
+        userId: config.userId,
+        createdBy: config.createdBy,
+        hospitalName: config.hospitalName,
+        identifier: config.identifier
+      });
+    } catch (mysqlErr) {
+      console.warn("Gagal simpan ke MySQL API, mencoba fallback:", mysqlErr);
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        const dbRow: any = {
+          id: survey.id,
+          nama_rs: config.rsName,
+          unit_kerja: survey.unitKerja,
+          jumlah_responden: survey.jumlahResponden,
+          tanggal_input: convertIndoDateToISO(survey.tanggalInput),
+          dimensi_scores: {
+            ...survey.dimensiScores,
+            username: config.identifier,
+            hospital_id: config.hospitalId,
+            user_id: config.userId,
+            created_by: config.createdBy,
+            hospital_name: config.hospitalName
+          },
+          hospital_id: config.hospitalId,
+          user_id: config.userId,
+          created_by: config.createdBy,
+          hospital_name: config.hospitalName
+        };
+        await supabase.from('ahrq_surveys').insert([dbRow]);
+      } else {
+        throw mysqlErr;
       }
-    } catch (e) {
-      console.error("Gagal mengupdate jumlah responden link", e);
     }
     
-    // Set flag
+    // Set flag local agar tidak duplikat
     localStorage.setItem(`survey_submitted_${token}`, 'true');
   };
 

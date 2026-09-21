@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase";
+import { fetchApi, isMysqlConfigured } from "@/lib/mysqlClient";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 
@@ -235,10 +236,22 @@ export async function POST(req: NextRequest) {
     const supabase = getSupabaseClient();
 
     if (!supabase) {
-      return NextResponse.json(
-        { success: false, error: "Koneksi database Supabase belum terkonfigurasi pada environment." },
-        { status: 500, headers: corsHeaders }
-      );
+      // Forward to MySQL Hostinger API backend
+      try {
+        const mysqlRes = await fetchApi('auth', {
+          method: 'POST',
+          body: JSON.stringify(body)
+        });
+        return NextResponse.json(mysqlRes, {
+          status: mysqlRes.success ? 200 : (mysqlRes.status || 400),
+          headers: corsHeaders
+        });
+      } catch (err: any) {
+        return NextResponse.json(
+          { success: false, error: "Koneksi database belum terkonfigurasi. Pastikan MySQL Hostinger atau Supabase telah diatur." },
+          { status: 500, headers: corsHeaders }
+        );
+      }
     }
 
     // ----------------------------------------------------

@@ -1,6 +1,38 @@
 import { getSupabaseClient } from './supabase';
 export { getSupabaseClient };
 import bcrypt from 'bcryptjs';
+import {
+  getMysqlSurveys,
+  saveMysqlSurvey,
+  saveMysqlSurveysBatch,
+  deleteMysqlSurvey,
+  deleteMysqlSurveysByUnit,
+  deleteMysqlSurveysByHospital,
+  renameMysqlUnit,
+  getMysqlMasterPosisiConfig,
+  saveMysqlMasterPosisi,
+  getMysqlMasterUnitConfig,
+  saveMysqlMasterUnit,
+  getMysqlPengesahanConfig,
+  saveMysqlPengesahanConfig,
+  getMysqlHospitalAccounts,
+  getMysqlHospitalAccountByUsername,
+  createMysqlHospitalAccount,
+  updateMysqlHospitalProfile,
+  updateMysqlHospitalStatus,
+  deleteMysqlHospitalAccount,
+  getMysqlMasterBenchmark,
+  saveMysqlMasterBenchmark,
+  getMysqlBenchmarkInteraksi,
+  saveMysqlBenchmarkInteraksi,
+  getMysqlBenchmarkRequests,
+  createMysqlBenchmarkRequest,
+  updateMysqlBenchmarkRequestStatus,
+  deleteMysqlBenchmarkRequest,
+  getMysqlAuditLogs,
+  addMysqlAuditLog,
+  isMysqlConfigured
+} from './mysqlClient';
 
 export interface SurveyData {
   id: string;
@@ -223,8 +255,17 @@ export function calculateOverallScore(submission: Partial<SurveySubmission>): nu
   return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
 }
 
-// 1. Fetch all surveys (strictly from Supabase, no localStorage)
+// 1. Fetch all surveys (supports MySQL Hostinger PHP API and Supabase)
 export async function getSurveys(hospitalId?: string): Promise<SurveyData[]> {
+  try {
+    const mysqlData = await getMysqlSurveys(hospitalId);
+    if (mysqlData && mysqlData.length > 0) {
+      return mysqlData;
+    }
+  } catch (mysqlErr) {
+    console.warn("MySQL getSurveys warning:", mysqlErr);
+  }
+
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
@@ -350,7 +391,7 @@ export function convertIndoDateToISO(indoDate: string): string {
   return indoDate;
 }
 
-// 2. Save a survey to Supabase directly (no localStorage)
+// 2. Save a survey (supports MySQL Hostinger PHP API and Supabase)
 export async function saveSurvey(
   survey: SurveyData,
   hospitalId?: string,
@@ -358,6 +399,14 @@ export async function saveSurvey(
   createdBy?: string,
   hospitalName?: string
 ): Promise<SurveyData> {
+  let mysqlSaved = false;
+  try {
+    await saveMysqlSurvey(survey, { hospitalId, userId, createdBy, hospitalName });
+    mysqlSaved = true;
+  } catch (mysqlErr) {
+    console.warn("MySQL saveSurvey warning:", mysqlErr);
+  }
+
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
@@ -406,7 +455,6 @@ export async function saveSurvey(
                              error.message?.includes('schema cache');
           
           if (isColError && attempts < maxAttempts) {
-            // Attempt to remove any top-level keys that might cause schema issues if added dynamically later
             delete insertRow.hospital_id;
             delete insertRow.user_id;
             delete insertRow.created_by;
@@ -414,19 +462,33 @@ export async function saveSurvey(
             continue;
           }
           console.warn(`saveSurvey attempt ${attempts} failed:`, error);
-          throw new Error(`Gagal menyimpan survei ke database Supabase: ${error.message}`);
+          if (!mysqlSaved) {
+            throw new Error(`Gagal menyimpan survei ke database: ${error.message}`);
+          }
         }
       }
     } catch (e: any) {
       console.error("Supabase insert ahrq_surveys exception:", e);
-      throw new Error(e.message || "Gagal menyimpan survei ke database Supabase.");
+      if (!mysqlSaved) {
+        throw new Error(e.message || "Gagal menyimpan survei ke database.");
+      }
     }
   }
 
-  throw new Error("Koneksi Supabase belum terkonfigurasi.");
+  if (mysqlSaved) {
+    return survey;
+  }
+
+  throw new Error("Koneksi database belum terkonfigurasi. Pastikan MySQL Hostinger atau Supabase telah diatur.");
 }
 
 export async function deleteSurvey(id: string): Promise<void> {
+  try {
+    await deleteMysqlSurvey(id);
+  } catch (err) {
+    console.warn("MySQL deleteSurvey warning:", err);
+  }
+
   const supabase = getSupabaseClient();
   if (supabase) {
     try {
@@ -437,10 +499,10 @@ export async function deleteSurvey(id: string): Promise<void> {
         .eq('id', id);
 
       if (error) {
-        throw new Error(`Gagal menghapus survei dari database Supabase: ${error.message}`);
+        console.warn(`Supabase delete warning: ${error.message}`);
       }
 
-      // 2. Safely attempt to clean up any related survey_submissions (prevent orphan data)
+      // 2. Safely attempt to clean up any related survey_submissions
       try {
         await supabase
           .from('survey_submissions')
@@ -458,19 +520,25 @@ export async function deleteSurvey(id: string): Promise<void> {
           .delete()
           .eq('id', `sub-${cleanId}`);
       } catch (subErr) {
-        console.warn("Latar belakang cleanup survey_submissions diabaikan atau berhasil:", subErr);
+        console.warn("Cleanup survey_submissions diabaikan:", subErr);
       }
     } catch (e: any) {
       console.error("Supabase delete ahrq_surveys exception:", e);
-      throw new Error(e.message || "Gagal menghapus survei dari database Supabase.");
     }
-  } else {
-    throw new Error("Koneksi Supabase belum terkonfigurasi.");
   }
 }
 
-// 3. Fetch hospital accounts (strictly from Supabase, no localStorage)
+// 3. Fetch hospital accounts (supports MySQL Hostinger PHP API and Supabase)
 export async function getHospitalAccounts(): Promise<HospitalAccount[]> {
+  try {
+    const mysqlAccounts = await getMysqlHospitalAccounts();
+    if (mysqlAccounts && mysqlAccounts.length > 0) {
+      return mysqlAccounts;
+    }
+  } catch (mysqlErr) {
+    console.warn("MySQL getHospitalAccounts warning:", mysqlErr);
+  }
+
   const supabase = getSupabaseClient();
   if (supabase) {
     try {

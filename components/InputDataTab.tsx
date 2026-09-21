@@ -2567,16 +2567,16 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       if (val.firstUnansweredId) scrollToQuestion(val.firstUnansweredId);
                     }}
                     title="Klik untuk langsung menuju pertanyaan yang belum diisi"
-                    className="text-[10px] font-semibold text-rose-600 hover:text-rose-700 bg-rose-50/90 hover:bg-rose-100 px-2.5 py-1 rounded-lg border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-2xs active:scale-95"
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 hover:bg-rose-100 border border-rose-200/90 text-[9.5px] font-semibold text-rose-600 transition-colors shadow-2xs cursor-pointer active:scale-95 whitespace-nowrap leading-tight mb-0.5"
                   >
-                    <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+                    <AlertCircle className="w-2.5 h-2.5 text-rose-500 shrink-0" />
                     <span>{val.unanswered} belum diisi (klik untuk isi)</span>
                   </button>
                 );
               }
               return (
-                <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1 whitespace-nowrap">
-                  <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[9.5px] font-semibold text-emerald-700 whitespace-nowrap leading-tight mb-0.5">
+                  <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                   <span>Lengkap ({val.answered}/{val.total})</span>
                 </span>
               );
@@ -2586,6 +2586,7 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
               const val = getStepValidation(step);
               return (
                 <button
+                  type="button"
                   onClick={handleNextStep}
                   disabled={!val.isValid}
                   title={
@@ -2593,10 +2594,10 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
                       ? `Harap jawab ${val.unanswered} pertanyaan yang belum diisi di bagian ini sebelum melanjutkan`
                       : 'Lanjut ke bagian berikutnya'
                   }
-                  className={`px-5 sm:px-6 py-2.5 sm:py-3 font-bold rounded-xl text-xs transition-all transform-gpu flex items-center gap-1.5 ${
+                  className={`px-5 sm:px-6 py-2.5 sm:py-3 font-bold rounded-xl text-xs transition-all transform-gpu flex items-center gap-1.5 select-none ${
                     val.isValid
-                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 cursor-pointer active:scale-95'
-                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/15 cursor-pointer active:scale-95'
+                      : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 shadow-none pointer-events-none'
                   }`}
                 >
                   Berikutnya <ChevronRight className="w-4 h-4" />
@@ -2607,24 +2608,25 @@ export default function InputDataTab({ currentRsName, identifier, hospitalId, is
         ) : step === 9 ? (
           <div className="flex flex-col items-end gap-1">
             {unansweredCount > 0 ? (
-              <span className="text-[10px] font-semibold text-rose-600 bg-rose-50/90 px-2.5 py-1 rounded-lg border border-rose-200 flex items-center gap-1 whitespace-nowrap shadow-2xs">
-                <AlertCircle className="w-3 h-3 text-rose-500 shrink-0" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200/90 text-[9.5px] font-semibold text-rose-600 whitespace-nowrap leading-tight mb-0.5 shadow-2xs">
+                <AlertCircle className="w-2.5 h-2.5 text-rose-500 shrink-0" />
                 <span>{unansweredCount} belum lengkap</span>
               </span>
             ) : (
-              <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200 inline-flex items-center gap-1 whitespace-nowrap">
-                <Check className="w-3 h-3 text-emerald-600 shrink-0" />
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[9.5px] font-semibold text-emerald-700 whitespace-nowrap leading-tight mb-0.5">
+                <Check className="w-2.5 h-2.5 text-emerald-600 shrink-0" />
                 <span>Semua terjawab</span>
               </span>
             )}
             <button
+              type="button"
               onClick={() => setShowConfirmModal(true)}
               disabled={unansweredCount > 0}
               title={unansweredCount > 0 ? `Masih ada ${unansweredCount} pertanyaan belum diisi` : 'Kirim Kuesioner'}
-              className={`px-5 sm:px-6 py-2.5 sm:py-3 font-bold rounded-xl text-xs transition-all transform-gpu flex items-center gap-1.5 ${
+              className={`px-5 sm:px-6 py-2.5 sm:py-3 font-bold rounded-xl text-xs transition-all transform-gpu flex items-center gap-1.5 select-none ${
                 unansweredCount === 0
-                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/10 cursor-pointer active:scale-95'
-                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed shadow-none'
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/15 cursor-pointer active:scale-95'
+                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed opacity-60 shadow-none pointer-events-none'
               }`}
             >
               Kirim Kuesioner <Check className="w-4 h-4" />

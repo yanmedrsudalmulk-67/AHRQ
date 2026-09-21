@@ -34,13 +34,25 @@ import {
   FileText,
   Calendar,
   Award,
-  UserCheck
+  UserCheck,
+  Server,
+  HardDrive,
+  CheckCircle2,
+  AlertTriangle,
+  ExternalLink
 } from 'lucide-react';
 import bcrypt from 'bcryptjs';
 import { saveWallpaper, clearWallpaper, WallpaperData } from '../lib/wallpaper';
 import { saveLogo, clearLogo, LogoData } from '../lib/logo';
 import { saveHeaderImage, clearHeaderImage, HeaderImageData } from '../lib/headerBanner';
 import { isSupabaseConnected, testSupabaseConnection } from '../lib/supabase';
+import { 
+  testMysqlConnection, 
+  getApiBaseUrl, 
+  setCustomApiBaseUrl, 
+  isMysqlConfigured 
+} from '../lib/mysqlClient';
+import { MYSQL_SCHEMA_SQL } from '../lib/mysqlSchemaSql';
 import { 
   syncAllLocalDataToSupabase, 
   getHospitalAccountByUsername, 
@@ -338,6 +350,75 @@ export default function PengaturanTab({
   const [syncResult, setSyncResult] = useState<null | { success: boolean; message: string; surveysSynced: number; accountsSynced: number; wallpaperSynced: boolean }>(null);
   const [showSqlSchema, setShowSqlSchema] = useState(false);
   const [copiedSql, setCopiedSql] = useState(false);
+
+  // MySQL Hostinger states
+  const [mysqlApiUrl, setMysqlApiUrl] = useState('');
+  const [isTestingMysql, setIsTestingMysql] = useState(false);
+  const [mysqlTestResult, setMysqlTestResult] = useState<{
+    success: boolean;
+    status?: string;
+    message?: string;
+    database_name?: string;
+    database_version?: string;
+    all_tables_ready?: boolean;
+    missing_tables?: string[];
+    table_row_counts?: Record<string, any>;
+    error?: string;
+  } | null>(null);
+  const [copiedMysqlSql, setCopiedMysqlSql] = useState(false);
+  const [showMysqlSqlViewer, setShowMysqlSqlViewer] = useState(false);
+  const [isSavingMysqlUrl, setIsSavingMysqlUrl] = useState(false);
+
+  useEffect(() => {
+    setMysqlApiUrl(getApiBaseUrl());
+  }, []);
+
+  const handleTestMysql = async () => {
+    setIsTestingMysql(true);
+    setMysqlTestResult(null);
+    try {
+      const res = await testMysqlConnection(mysqlApiUrl);
+      setMysqlTestResult(res);
+      if (res.success) {
+        showToast("✅ Berhasil terhubung ke database MySQL Hostinger!", "success");
+      } else {
+        showToast("⚠️ " + (res.message || res.error || "Gagal terhubung ke MySQL"), "error");
+      }
+    } catch (e: any) {
+      setMysqlTestResult({
+        success: false,
+        status: 'error',
+        message: e?.message || 'Gagal terhubung ke API Hostinger',
+        error: e?.message
+      });
+      showToast("❌ " + (e?.message || "Koneksi gagal"), "error");
+    } finally {
+      setIsTestingMysql(false);
+    }
+  };
+
+  const handleSaveMysqlUrl = () => {
+    setIsSavingMysqlUrl(true);
+    setCustomApiBaseUrl(mysqlApiUrl);
+    showToast("💾 URL API Hostinger disimpan!", "success");
+    setTimeout(() => {
+      setIsSavingMysqlUrl(false);
+      handleTestMysql();
+    }, 200);
+  };
+
+  const handleResetMysqlUrl = () => {
+    setCustomApiBaseUrl('');
+    setMysqlApiUrl(getApiBaseUrl());
+    showToast("🔄 URL diatur ulang ke bawaan", "info");
+  };
+
+  const handleCopyMysqlSql = () => {
+    navigator.clipboard.writeText(MYSQL_SCHEMA_SQL);
+    setCopiedMysqlSql(true);
+    showToast("📋 Script SQL MySQL Hostinger (schema.sql) berhasil disalin!", "success");
+    setTimeout(() => setCopiedMysqlSql(false), 2500);
+  };
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -2027,6 +2108,195 @@ CREATE POLICY "Menghapus Publik Banner" ON storage.objects FOR DELETE USING (buc
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* MySQL Hostinger & Backend PHP Integration Settings */}
+      {role === 'admin' && (
+        <div id="mysql-hostinger-integration-card" className="bg-white backdrop-blur-md rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-100 pb-4">
+            <div>
+              <h3 className="text-[16px] font-semibold text-slate-800 flex items-center gap-2">
+                <HardDrive className="w-5 h-5 text-indigo-600" /> Integrasi Database MySQL Hostinger & Backend PHP
+              </h3>
+              <p className="text-[12px] text-slate-500 mt-1">
+                Gunakan database MySQL Hostinger dengan REST API PHP native untuk penyimpanan mandiri, hemat biaya, dan performa tinggi di cPanel / hPanel Anda.
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                id="btn-copy-mysql-schema"
+                type="button"
+                onClick={handleCopyMysqlSql}
+                className="px-3.5 py-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu shadow-sm cursor-pointer"
+              >
+                {copiedMysqlSql ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-indigo-600" />}
+                {copiedMysqlSql ? 'SQL Disalin!' : 'Salin schema.sql'}
+              </button>
+              <button
+                id="btn-toggle-mysql-schema-viewer"
+                type="button"
+                onClick={() => setShowMysqlSqlViewer(!showMysqlSqlViewer)}
+                className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu cursor-pointer"
+              >
+                <Terminal className="w-3.5 h-3.5 text-slate-600" />
+                {showMysqlSqlViewer ? 'Tutup SQL' : 'Lihat SQL'}
+              </button>
+            </div>
+          </div>
+
+          {/* MySQL Connection Status Banner */}
+          <div className={`p-4 rounded-xl border text-xs flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+            mysqlTestResult?.success 
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800' 
+              : mysqlTestResult?.error
+                ? 'bg-rose-50 border-rose-200 text-rose-800'
+                : 'bg-indigo-50/60 border-indigo-200/80 text-indigo-900'
+          }`}>
+            <div className="flex items-start gap-3">
+              {mysqlTestResult?.success ? (
+                <CheckCircle2 className="w-5 h-5 shrink-0 text-emerald-600 mt-0.5" />
+              ) : mysqlTestResult?.error ? (
+                <AlertTriangle className="w-5 h-5 shrink-0 text-rose-600 mt-0.5" />
+              ) : (
+                <Server className="w-5 h-5 shrink-0 text-indigo-600 mt-0.5" />
+              )}
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-sm">
+                    {mysqlTestResult?.success 
+                      ? 'Database MySQL Hostinger Terhubung' 
+                      : mysqlTestResult?.error
+                        ? 'Koneksi ke Hostinger Gagal'
+                        : 'Status Endpoint API MySQL Hostinger'}
+                  </span>
+                  {mysqlTestResult?.database_version && (
+                    <span className="text-[10px] bg-white/80 border border-emerald-300 px-2 py-0.5 rounded-full font-mono text-emerald-700 font-medium">
+                      {mysqlTestResult.database_version}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] opacity-90">
+                  {mysqlTestResult?.message || (
+                    mysqlApiUrl 
+                      ? `Endpoint aktif: ${mysqlApiUrl}. Klik "Uji Koneksi" untuk memeriksa koneksi ke MySQL phpMyAdmin.`
+                      : 'Endpoint belum disetel. Masukkan URL backend PHP di bawah ini.'
+                  )}
+                </p>
+                {mysqlTestResult?.table_row_counts && (
+                  <div className="pt-2 flex flex-wrap gap-2 text-[10px] font-mono">
+                    {Object.entries(mysqlTestResult.table_row_counts).map(([tbl, count]) => (
+                      <span key={tbl} className="bg-white/90 border border-slate-200 px-2 py-0.5 rounded-md text-slate-700 font-semibold">
+                        {tbl}: <strong className="text-indigo-600">{String(count)}</strong>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end md:self-center">
+              <button
+                id="btn-test-mysql-conn"
+                type="button"
+                onClick={handleTestMysql}
+                disabled={isTestingMysql}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 transition-all transform-gpu shadow-sm cursor-pointer"
+              >
+                {isTestingMysql ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                {isTestingMysql ? 'Memeriksa...' : 'Uji Koneksi API'}
+              </button>
+            </div>
+          </div>
+
+          {/* Form Endpoint API Hostinger */}
+          <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-3">
+            <label className="text-xs font-bold text-slate-700 block">
+              URL Base API PHP Hostinger:
+            </label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <input
+                  id="input-mysql-api-url"
+                  type="text"
+                  value={mysqlApiUrl}
+                  onChange={(e) => setMysqlApiUrl(e.target.value)}
+                  placeholder="https://domain-anda.com/api atau /api/mysql"
+                  className="w-full bg-white border border-slate-300 rounded-xl px-3.5 py-2 text-xs text-slate-800 font-mono focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-colors"
+                />
+              </div>
+              <button
+                id="btn-save-mysql-api-url"
+                type="button"
+                onClick={handleSaveMysqlUrl}
+                disabled={isSavingMysqlUrl}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all transform-gpu shadow-sm cursor-pointer shrink-0"
+              >
+                {isSavingMysqlUrl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                Simpan & Terapkan
+              </button>
+              <button
+                id="btn-reset-mysql-api-url"
+                type="button"
+                onClick={handleResetMysqlUrl}
+                className="px-3 py-2 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 font-medium rounded-xl text-xs transition-all cursor-pointer shrink-0"
+              >
+                Reset Default
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-500">
+              * Jika di-upload ke Hostinger di folder <code className="bg-slate-200 text-slate-800 px-1 py-0.5 rounded font-mono">public_html/api</code>, masukkan: <span className="font-mono text-indigo-700">https://domain-anda.com/api</span>.
+            </p>
+          </div>
+
+          {/* Collapsible SQL Viewer */}
+          {showMysqlSqlViewer && (
+            <div className="space-y-2 animate-fadeIn">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                  <Terminal className="w-4 h-4 text-indigo-600" /> Skrip Struktur Database MySQL (schema.sql):
+                </span>
+                <button
+                  type="button"
+                  onClick={handleCopyMysqlSql}
+                  className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1"
+                >
+                  {copiedMysqlSql ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedMysqlSql ? 'Tersalin!' : 'Salin Semua'}
+                </button>
+              </div>
+              <div className="relative">
+                <pre className="p-4 bg-slate-900 text-slate-100 rounded-xl text-[11px] font-mono overflow-x-auto max-h-80 overflow-y-auto leading-relaxed border border-slate-800">
+                  {MYSQL_SCHEMA_SQL}
+                </pre>
+              </div>
+            </div>
+          )}
+
+          {/* Panduan 5 Langkah Pemasangan ke Hostinger */}
+          <div className="border border-slate-200/80 rounded-xl p-4 bg-white space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
+              <ExternalLink className="w-4 h-4 text-indigo-600" /> Panduan Langkah Cepat Pemasangan ke Hostinger:
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-[11px] text-slate-600">
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 space-y-1">
+                <strong className="text-slate-800 block font-semibold">1. Buat Database MySQL di Hostinger</strong>
+                <p>Buka <em>hPanel Hostinger</em> &rarr; <em>Databases</em> &rarr; <em>MySQL Databases</em>. Buat nama database, username, dan password baru.</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 space-y-1">
+                <strong className="text-slate-800 block font-semibold">2. Import schema.sql di phpMyAdmin</strong>
+                <p>Klik tombol <em>Enter phpMyAdmin</em> pada database yang dibuat, buka tab <em>Import</em> (atau <em>SQL</em>), tempel isi file <code className="font-mono text-indigo-600">schema.sql</code>, lalu klik <em>Go</em>.</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 space-y-1">
+                <strong className="text-slate-800 block font-semibold">3. Upload File PHP Backend</strong>
+                <p>Buka <em>File Manager</em> di Hostinger, buat folder <code className="font-mono text-indigo-600">public_html/api</code>, lalu upload seluruh file dari folder <code className="font-mono text-indigo-600">/php-backend</code> di aplikasi ini.</p>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200/60 space-y-1">
+                <strong className="text-slate-800 block font-semibold">4. Konfigurasi Kredensial DB</strong>
+                <p>Edit file <code className="font-mono text-indigo-600">public_html/api/config.php</code> di File Manager Hostinger dengan nama database, user, dan password yang tadi dibuat.</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
